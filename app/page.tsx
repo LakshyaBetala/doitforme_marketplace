@@ -207,12 +207,16 @@ export default function HomePage() {
           {/* Stats / Social Proof */}
           <div className="mt-12 flex gap-8 border-t border-white/10 pt-8">
             <div>
-              <h3 className="text-2xl font-bold text-white">2k+</h3>
-              <p className="text-sm text-white/40">Tasks Done</p>
+              <h3 className="text-2xl font-bold text-white">100%</h3>
+              <p className="text-sm text-white/40">Verified IDs</p>
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-white">₹5L+</h3>
-              <p className="text-sm text-white/40">Earned by Students</p>
+              <h3 className="text-2xl font-bold text-white">Escrow</h3>
+              <p className="text-sm text-white/40">Payment Protection</p>
+            </div>
+             <div>
+              <h3 className="text-2xl font-bold text-white">Beta</h3>
+              <p className="text-sm text-white/40">Early Access</p>
             </div>
           </div>
         </div>
@@ -293,7 +297,7 @@ export default function HomePage() {
           <StepCard
             number={3}
             title="Escrow Payment"
-            desc="Money stays safe until work is delivered."
+            desc="Funds are held safely until work is approved."
             icon="🔒"
           />
         </div>
@@ -473,7 +477,7 @@ function FAQItem({ question, answer, open, toggle, i }: any) {
 
 function Footer() {
   return (
-    <footer className="w-full bg-[#06060A] py-16 border-t border-white/10">
+    <footer className="w-full bg-[#06060A] py-16 border-t border-white/10 relative z-10">
       <div className="max-w-6xl mx-auto px-6 grid sm:grid-cols-4 gap-12">
         <div>
           <div className="flex items-center gap-3 mb-4">
@@ -486,28 +490,33 @@ function Footer() {
         </div>
 
         <div>
-          <h4 className="font-bold text-white mb-4">Quick</h4>
+          <h4 className="font-bold text-white mb-4">Platform</h4>
           <ul className="text-sm text-white/60 space-y-2">
-            <li className="hover:text-[#8825F5] cursor-pointer transition-colors">About</li>
-            <li className="hover:text-[#8825F5] cursor-pointer transition-colors">FAQ</li>
+            <li><Link href="/login" className="hover:text-[#8825F5] cursor-pointer transition-colors">Login</Link></li>
+            <li><Link href="/#how-it-works" className="hover:text-[#8825F5] cursor-pointer transition-colors">How it works</Link></li>
+            <li><Link href="/#faq" className="hover:text-[#8825F5] cursor-pointer transition-colors">FAQ</Link></li>
           </ul>
         </div>
 
         <div>
-          <h4 className="font-bold text-white mb-4">Support</h4>
+          <h4 className="font-bold text-white mb-4">Legal</h4>
           <ul className="text-sm text-white/60 space-y-2">
-            <li className="hover:text-[#8825F5] cursor-pointer transition-colors">Terms</li>
-            <li className="hover:text-[#8825F5] cursor-pointer transition-colors">Privacy</li>
+            <li><Link href="/terms" className="hover:text-[#8825F5] cursor-pointer transition-colors">Terms & Conditions</Link></li>
+            <li><Link href="/privacy-policy" className="hover:text-[#8825F5] cursor-pointer transition-colors">Privacy Policy</Link></li>
+            <li><Link href="/refund-policy" className="hover:text-[#8825F5] cursor-pointer transition-colors">Refund Policy</Link></li>
           </ul>
         </div>  
 
         <div>
           <h4 className="font-bold text-white mb-4">Contact</h4>
-          <p className="text-sm text-white/60 hover:text-white transition-colors">lakshbetala15@gmail.com</p>
+          <ul className="text-sm text-white/60 space-y-2">
+             <li><Link href="/contact" className="hover:text-[#8825F5] cursor-pointer transition-colors">Contact Us</Link></li>
+             <li className="text-white/40">betala911@gmail.com</li>
+          </ul>
         </div>
       </div>
       <div className="mt-12 text-center text-white/20 text-xs">
-        © 2025 DoItForMe. All rights reserved.
+        © 2025 DoItForMe. All rights reserved. Made in Chennai.
       </div>
     </footer>
   );
@@ -519,11 +528,11 @@ function Footer() {
 const studentFaq = [
   { q: "How do I earn?", a: "Browse gigs, apply, complete tasks and get paid securely." },
   { q: "Is verification required?", a: "Yes — student ID verification ensures safety." },
-  { q: "How do payments work?", a: "Escrow holds payments until you deliver work." },
+  { q: "How do payments work?", a: "Funds are held in Escrow and released only after you complete the work." },
 ];
 
 const posterFaq = [
   { q: "How do I post a task?", a: "Login, add details, set price, and post." },
-  { q: "How is quality ensured?", a: "Students submit work; you approve before payment." },
-  { q: "What if the task fails?", a: "Escrow protects you; disputes handled by support." },
+  { q: "Is my money safe?", a: "Yes, we use Escrow. If the work isn't done, you get a refund." },
+  { q: "What about refunds?", a: "You can request a refund if the worker fails to deliver. 10% platform fee applies on withdrawals." },
 ];
