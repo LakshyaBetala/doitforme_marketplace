@@ -34,3 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Supabase OTP Setup
+
+If you want to use email One-Time Passwords (OTP) instead of Magic Links, update your Supabase Email Template:
+
+- In the Supabase Dashboard go to **Authentication → Templates → Email Templates** (or, for self-hosted/local, edit your email templates).
+- Modify the template used for sign-in to include the token variable `{{ .Token }}` where you want the 6-digit code to appear, for example:
+
+	<h2>One time login code</h2>
+	<p>Please enter this code: {{ .Token }}</p>
+
+- Do NOT rely on `emailRedirectTo` in the client when you want OTP-only flow — removing the redirect avoids sending a magic link. The app already uses `signInWithOtp` and `verifyOtp` in the client.
+
+Security notes:
+- By default OTPs expire after 1 hour and users can request an OTP once every 60 seconds. Configure these in the Dashboard under **Auth → Providers → Email** if needed, but keep expirations short to reduce brute-force risk.

@@ -1,26 +1,137 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------
+   GLOBAL THEME — ULTRA DARK + NEON
+--------------------------------------- */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-dark: #0B0B11;
+  --bg-darker: #06060A;
+
+  --brand-purple: #8825F5;
+  --brand-pink: #D31CE7;
+  --brand-blue: #0097FF;
+
+  --glass-light: rgba(255,255,255,0.05);
+  --glass-border: rgba(255,255,255,0.08);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html, body {
+  background: var(--bg-dark);
+  color: white;
+  scroll-behavior: smooth;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
+  overflow-x: hidden; /* Prevent horizontal scroll from blobs */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ---------------------------------------
+   CUSTOM CURSOR LOGIC
+--------------------------------------- */
+
+@media (min-width: 1024px) {
+  /* We create a specific class '.use-sloth-cursor' 
+     instead of targeting 'html' or 'body' directly.
+     This ensures other pages like Login keep their default cursor.
+  */
+  .use-sloth-cursor,
+  .use-sloth-cursor a,
+  .use-sloth-cursor button,
+  .use-sloth-cursor input,
+  .use-sloth-cursor select,
+  .use-sloth-cursor textarea,
+  .use-sloth-cursor [role="button"] {
+    cursor: none !important;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---------------------------------------
+   SELECTION
+--------------------------------------- */
+::selection {
+  background: var(--brand-purple);
+  color: white;
+}
+
+/* ---------------------------------------
+   SCROLLBAR
+--------------------------------------- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--brand-purple), var(--brand-blue));
+  border-radius: 20px;
+}
+::-webkit-scrollbar-track {
+  background: #06060A;
+}
+
+/* ---------------------------------------
+   ANIMATIONS
+--------------------------------------- */
+
+/* 1. Float (for the Sloth Image in Hero) */
+@keyframes float {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-18px); }
+  100% { transform: translateY(0); }
+}
+
+/* 2. Blob (for Backgrounds) */
+@keyframes blob {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(30px, -50px) scale(1.1); }
+  66%  { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+/* 3. Marquee (For the Timbukdo Ticker) */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-float { animation: float 6s ease-in-out infinite; }
+.animate-blob { animation: blob 12s ease-in-out infinite; }
+.animate-marquee { animation: marquee 25s linear infinite; }
+
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }
+
+/* ---------------------------------------
+   NOISE TEXTURE (Grain)
+--------------------------------------- */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.07'/%3E%3C/svg%3E");
+  z-index: -1;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+}
+
+/* ---------------------------------------
+   UTILITIES
+--------------------------------------- */
+
+/* Glass Effect */
+.glass {
+  background: var(--glass-light);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border: 1px solid var(--glass-border);
+}
+
+/* Neon Glows */
+.neon-text {
+  text-shadow: 0 0 10px rgba(136,37,245, 0.6);
+}
+
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 8px rgba(136,37,245,0.5));
 }
