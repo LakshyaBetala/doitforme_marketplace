@@ -17,7 +17,7 @@ import {
   X,
   ShieldAlert,
   User,
-  Users // Imported Users icon for the applicant count
+  Users 
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -72,7 +72,6 @@ export default function Dashboard() {
         setWallet(walletData || { balance: 0 });
 
         // 2. Fetch Marketplace Gigs + Applicant Count
-        // Added ", applications(count)" to fetch the number of applicants
         const { data: gigsData } = await supabase
           .from("gigs")
           .select("*, applications(count)") 
@@ -107,22 +106,25 @@ export default function Dashboard() {
   const isKycVerified = user?.user_metadata?.kyc_verified === true;
 
   return (
-    <main className="min-h-screen p-6 lg:p-12 max-w-7xl mx-auto space-y-12 relative">
+    // Added 'pb-32' to bottom padding so scrolling clears the fixed buttons
+    <main className="min-h-screen p-6 lg:p-12 pb-32 max-w-7xl mx-auto space-y-8 lg:space-y-12 relative overflow-x-hidden">
       
       {/* --- HERO HEADER --- */}
-      <header className="flex flex-col md:flex-row justify-between items-end gap-6 relative z-10">
-        <div className="flex flex-col gap-6">
+      {/* Changed flex alignment for mobile: items-start on mobile, items-end on desktop */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
+        <div className="flex flex-col gap-4 w-full md:w-auto">
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10">
+            <div className="relative w-8 h-8 lg:w-10 lg:h-10">
                <Image src="/logo.svg" alt="Logo" fill className="object-contain" />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">DoItForMe</span>
+            <span className="text-lg lg:text-xl font-bold text-white tracking-tight">DoItForMe</span>
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.1]">
+            {/* Reduced text size on mobile (text-4xl) vs desktop (text-6xl) */}
+            <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tight leading-[1.1]">
               Hello, <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple via-brand-pink to-white animate-pulse capitalize">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple via-brand-pink to-white animate-pulse capitalize break-all">
                 {username}
               </span>
             </h1>
@@ -130,26 +132,26 @@ export default function Dashboard() {
         </div>
 
         {/* --- PROFILE BUTTON AREA --- */}
-        <div className="relative">
+        {/* On mobile, this will now stack nicely below the name */}
+        <div className="relative w-full md:w-auto">
             
             {/* Small Yellow Floating Icon with Tooltip */}
             <Link 
               href="/profile"
-              className="group absolute bottom-full mb-3 right-6 z-20 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.3)] animate-bounce hover:bg-yellow-500/20 transition-all hover:scale-110 flex items-center justify-center"
+              className="group absolute bottom-full mb-3 right-0 md:right-6 z-20 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.3)] animate-bounce hover:bg-yellow-500/20 transition-all hover:scale-110 flex items-center justify-center"
             >
               <User className="w-4 h-4" />
-              
-              {/* TOOLTIP: Appears on Hover */}
-              <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 w-max px-3 py-1.5 bg-[#1A1A24] border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-xl">
+              {/* Tooltip hidden on mobile to prevent overflow, shown on hover */}
+              <span className="hidden md:block absolute right-full mr-3 top-1/2 -translate-y-1/2 w-max px-3 py-1.5 bg-[#1A1A24] border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-xl">
                 Verify KYC Now
                 <span className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-[#1A1A24] border-t border-r border-yellow-500/20 rotate-45"></span>
               </span>
             </Link>
 
             {/* Existing Main Profile Button */}
-            <Link href="/profile" className="group relative overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 block">
+            <Link href="/profile" className="group relative overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 block w-full md:w-auto">
                 <span className="absolute inset-[-1000%] animate-[spin_2s_linear_infinite] bg-[conic-gradient(from_90deg_at_50%_50%,#E2CBFF_0%,#393BB2_50%,#E2CBFF_100%)]" />
-                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-brand-dark px-6 py-2.5 text-sm font-medium text-white backdrop-blur-3xl">
+                <span className="inline-flex h-full w-full cursor-pointer items-center justify-center rounded-full bg-brand-dark px-6 py-3 md:py-2.5 text-sm font-medium text-white backdrop-blur-3xl">
                   <span className="flex items-center gap-2">
                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                      My Profile
@@ -165,7 +167,7 @@ export default function Dashboard() {
         <div className="absolute -top-20 -left-20 w-96 h-96 bg-brand-purple/20 rounded-full blur-[128px] pointer-events-none"></div>
 
         {/* CREDIT CARD WALLET */}
-        <div className="lg:col-span-8 relative group overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-[#121212] to-[#0A0A0A] p-8 md:p-10 flex flex-col justify-between min-h-[340px] shadow-2xl">
+        <div className="lg:col-span-8 relative group overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-[#121212] to-[#0A0A0A] p-6 md:p-10 flex flex-col justify-between min-h-[300px] md:min-h-[340px] shadow-2xl">
           <div className="absolute inset-0 opacity-30 group-hover:opacity-50 transition-opacity duration-700">
              <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-brand-blue/20 rounded-full blur-[100px] animate-blob"></div>
              <div className="absolute bottom-[-20%] right-[-20%] w-[400px] h-[400px] bg-brand-purple/20 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
@@ -177,19 +179,19 @@ export default function Dashboard() {
             </div>
             <div className="flex flex-col items-end">
                <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-1">Wallet ID</span>
-               <span className="font-mono text-white/70 text-sm tracking-wider">{walletId}</span>
+               <span className="font-mono text-white/70 text-xs md:text-sm tracking-wider">{walletId}</span>
             </div>
           </div>
 
-          <div className="relative z-10 mt-auto">
+          <div className="relative z-10 mt-auto pt-8">
             <p className="text-white/50 text-xs font-bold tracking-widest uppercase mb-3">Available Balance</p>
             <div className="flex items-end gap-4 mb-8">
-              <span className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-none drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              <span className="text-5xl md:text-8xl font-black text-white tracking-tighter leading-none drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                 ₹{wallet?.balance?.toLocaleString()}
               </span>
             </div>
             
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Link href="/dashboard/wallet/add-money" className="flex-1 bg-white text-black font-bold py-4 px-6 rounded-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,255,255,0.2)]">
                 <Plus className="w-5 h-5" /> Add Funds
               </Link>
@@ -214,22 +216,22 @@ export default function Dashboard() {
           </Link>
 
           <div className="flex-1 grid grid-cols-2 gap-4">
-             <Link href="/gig/my-gigs" className="bg-[#121217] border border-white/5 rounded-3xl p-6 hover:bg-[#1A1A20] hover:border-brand-blue/30 transition-all group flex flex-col justify-between">
+             <Link href="/gig/my-gigs" className="bg-[#121217] border border-white/5 rounded-3xl p-6 hover:bg-[#1A1A20] hover:border-brand-blue/30 transition-all group flex flex-col justify-between min-h-[140px]">
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
                   <Briefcase className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider mb-1">Manage</div>
-                  <div className="text-lg font-bold text-white">My Gigs</div>
+                  <div className="text-lg font-bold text-white leading-none">My Gigs</div>
                 </div>
              </Link>
-             <Link href="/gig/applied" className="bg-[#121217] border border-white/5 rounded-3xl p-6 hover:bg-[#1A1A20] hover:border-brand-pink/30 transition-all group flex flex-col justify-between">
+             <Link href="/gig/applied" className="bg-[#121217] border border-white/5 rounded-3xl p-6 hover:bg-[#1A1A20] hover:border-brand-pink/30 transition-all group flex flex-col justify-between min-h-[140px]">
                 <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center group-hover:bg-pink-500/20 transition-colors">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider mb-1">Track</div>
-                  <div className="text-lg font-bold text-white">Applied</div>
+                  <div className="text-lg font-bold text-white leading-none">Applied</div>
                 </div>
              </Link>
           </div>
@@ -240,8 +242,8 @@ export default function Dashboard() {
       <section className="space-y-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-3xl font-bold text-white">Marketplace</h2>
-            <span className="px-3 py-1 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue text-xs font-bold uppercase tracking-wider animate-pulse">
+            <h2 className="text-2xl md:text-3xl font-bold text-white">Marketplace</h2>
+            <span className="hidden md:inline-block px-3 py-1 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue text-xs font-bold uppercase tracking-wider animate-pulse">
               Live Feed
             </span>
           </div>
@@ -323,7 +325,7 @@ export default function Dashboard() {
       
       {/* --- 💬 FLOATING CHAT WIDGET (Bottom Right) --- */}
       {activeChats.length > 0 && (
-        <div className="fixed bottom-8 right-8 z-50 flex flex-col items-end gap-4">
+        <div className="fixed bottom-24 md:bottom-8 right-6 md:right-8 z-50 flex flex-col items-end gap-4">
           
           {/* Chat List Popover */}
           {isChatListOpen && (
