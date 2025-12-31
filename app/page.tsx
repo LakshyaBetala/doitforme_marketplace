@@ -492,6 +492,8 @@ function Footer() {
         <div>
           <h4 className="font-bold text-white mb-4">Platform</h4>
           <ul className="text-sm text-white/60 space-y-2">
+            <li><Link href="/about" className="hover:text-[#8825F5] cursor-pointer transition-colors">About Us</Link></li>
+            <li><Link href="/pricing" className="hover:text-[#8825F5] cursor-pointer transition-colors">Pricing</Link></li>
             <li><Link href="/login" className="hover:text-[#8825F5] cursor-pointer transition-colors">Login</Link></li>
             <li><Link href="/#how-it-works" className="hover:text-[#8825F5] cursor-pointer transition-colors">How it works</Link></li>
             <li><Link href="/#faq" className="hover:text-[#8825F5] cursor-pointer transition-colors">FAQ</Link></li>
