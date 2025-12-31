@@ -1,11 +1,15 @@
 "use client";
 
+// --- FIX: This line prevents the "prerender-error" during build ---
+export const dynamic = "force-dynamic";
+
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, Suspense } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+// 1. The Logic Component
 function VerifyContent() {
   const supabase = supabaseBrowser();
   const router = useRouter();
@@ -169,7 +173,7 @@ function VerifyContent() {
   const resendDisabled = timer > 0;
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-6 bg-[#0B0B11] text-white">
+    <div className="flex items-center justify-center min-h-screen p-6 bg-[#0B0B11] text-white cursor-default">
       <div className="w-full max-w-md bg-[#1A1A24] border border-white/10 shadow-2xl rounded-3xl p-8 relative">
         
         {/* Back Button */}
@@ -240,7 +244,7 @@ function VerifyContent() {
   );
 }
 
-// THIS WRAPPER FIXES THE BUILD ERROR
+// 2. The Main Page Component
 export default function VerifyPage() {
   return (
     <Suspense fallback={
