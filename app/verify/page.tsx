@@ -1,10 +1,12 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import { Loader2, ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
-export default function VerifyPage() {
+function VerifyContent() {
   const supabase = supabaseBrowser();
   const router = useRouter();
   const params = useSearchParams();
@@ -167,19 +169,24 @@ export default function VerifyPage() {
   const resendDisabled = timer > 0;
 
   return (
-    // Added 'cursor-default' to ensure cursor is visible on this page
-    <div className="flex items-center justify-center min-h-screen p-6 cursor-default">
-      <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-6">
-        {/* Added 'text-black' so the title is visible */}
-        <h1 className="text-2xl font-bold mb-4 text-center text-black">
-          Enter the OTP sent to {email}
-        </h1>
+    <div className="flex items-center justify-center min-h-screen p-6 bg-[#0B0B11] text-white">
+      <div className="w-full max-w-md bg-[#1A1A24] border border-white/10 shadow-2xl rounded-3xl p-8 relative">
+        
+        {/* Back Button */}
+        <Link href="/login" className="absolute top-6 left-6 text-white/40 hover:text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
 
-        <p className="text-sm text-gray-500 mb-6 text-center">
-          Please enter the 6-digit verification code.
-        </p>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-black mb-2 tracking-tight text-white">Verify Email</h1>
+          <p className="text-sm text-white/50">
+            Enter the 6-digit code sent to <br/>
+            <span className="text-white font-bold">{email || "your email"}</span>
+          </p>
+        </div>
 
-        <div className="flex justify-center gap-4 mb-4">
+        {/* Input Grid */}
+        <div className="flex justify-center gap-3 mb-8">
           {digits.map((digit, i) => (
             <input
               key={i}
@@ -188,8 +195,7 @@ export default function VerifyPage() {
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={1}
-              // FIX: Added 'text-black bg-white' here
-              className="w-12 h-14 rounded-xl border border-gray-400 text-center text-2xl font-semibold focus:outline-none focus:ring-2 focus:ring-purple-500 text-black bg-white"
+              className="w-12 h-14 rounded-xl border border-white/10 bg-[#0B0B11] text-center text-2xl font-bold text-white focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all caret-[#8825F5]"
               value={digit}
               onChange={(e) => handleChange(e.target.value, i)}
               onKeyDown={(e) => handleKeyDown(e, i)}
@@ -198,33 +204,51 @@ export default function VerifyPage() {
           ))}
         </div>
 
+        {/* Error Message */}
         {error && (
-          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center mb-6">
+            {error}
+          </div>
         )}
 
-        <div className="flex items-center justify-between">
-          {resendDisabled ? (
-            <p className="text-sm text-gray-600">
-              Resend OTP in <b>{timer}s</b>
-            </p>
-          ) : (
-            <button
-              onClick={resendOTP}
-              className="text-sm text-purple-600 underline"
-            >
-              Resend OTP
-            </button>
-          )}
-
+        <div className="space-y-6">
           <button
             onClick={verifyOTP}
             disabled={loading}
-            className="bg-purple-600 text-white py-3 px-5 rounded-lg disabled:bg-purple-300 hover:bg-purple-700 transition-colors"
+            className="w-full bg-[#8825F5] hover:bg-[#7a1fe0] text-white font-bold py-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(136,37,245,0.3)] hover:shadow-[0_0_30px_rgba(136,37,245,0.5)] flex items-center justify-center gap-2"
           >
-            {loading ? "Verifying..." : "Verify OTP"}
+            {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Verify & Continue"}
           </button>
+
+          <div className="text-center">
+            {resendDisabled ? (
+              <p className="text-sm text-white/40">
+                Resend code in <span className="text-white font-mono font-bold">{timer}s</span>
+              </p>
+            ) : (
+              <button
+                onClick={resendOTP}
+                className="text-sm text-[#8825F5] hover:text-white transition-colors font-medium hover:underline underline-offset-4"
+              >
+                Resend Verification Code
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// THIS WRAPPER FIXES THE BUILD ERROR
+export default function VerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-[#8825F5] animate-spin" />
+      </div>
+    }>
+      <VerifyContent />
+    </Suspense>
   );
 }
