@@ -1,6 +1,14 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { Cashfree } from "cashfree-pg"; 
+
+// FIX: We cast this to 'any' to silence TypeScript
+const PgCashfree = Cashfree as any;
+
+PgCashfree.XClientId = process.env.CASHFREE_APP_ID;
+PgCashfree.XClientSecret = process.env.CASHFREE_SECRET_KEY;
+PgCashfree.XEnvironment = PgCashfree.Environment.SANDBOX; 
 
 export async function POST(req: Request) {
   const cookieStore = await cookies()
@@ -10,23 +18,9 @@ export async function POST(req: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value, ...options })
-          } catch (error) {
-            // Ignored
-          }
-        },
-        remove(name: string, options: CookieOptions) {
-          try {
-            cookieStore.set({ name, value: '', ...options })
-          } catch (error) {
-            // Ignored
-          }
-        },
+        get(name: string) { return cookieStore.get(name)?.value },
+        set(name: string, value: string, options: CookieOptions) { try { cookieStore.set({ name, value, ...options }) } catch (error) {} },
+        remove(name: string, options: CookieOptions) { try { cookieStore.set({ name, value: '', ...options }) } catch (error) {} },
       },
     }
   )
@@ -41,70 +35,51 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Get User's Wallet
-    const { data: wallet, error: walletErr } = await supabase
-        .from("wallets")
-        .select("balance")
-        .eq("user_id", user.id)
-        .single();
-
-    if (walletErr || !wallet) {
-        // If wallet doesn't exist, create it with funds (Auto-Fund for testing)
-        console.log("Creating wallet with initial funds...");
-        await supabase.from("wallets").insert({ 
-            user_id: user.id, 
-            balance: price 
-        });
-    } else if (wallet.balance < price) {
-        // --- AUTO-FUNDING LOGIC (For Testing) ---
-        // If balance is too low, add the necessary funds first!
-        const needed = price - wallet.balance;
-        console.log(`Auto-funding wallet with ₹${needed}...`);
-        
-        await supabase
-            .from("wallets")
-            .update({ balance: wallet.balance + needed })
-            .eq("user_id", user.id);
-    }
-
-    // 3. Deduct Balance (Now guaranteed to have enough)
-    // We re-fetch balance to be safe, or just trust our math. Let's do the deduction.
-    // Note: In production, use RPC for atomic transaction.
+    // 2. Create Cashfree Order
+    const orderId = `ORDER_${gigId}_${Date.now()}`;
     
-    // Fetch fresh wallet state
-    const { data: freshWallet } = await supabase.from("wallets").select("balance").eq("user_id", user.id).single();
+    // Return URL: where user goes after payment
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/gig/${gigId}?payment=verify&order_id={order_id}&worker_id=${workerId}`;
+
+    const request = {
+        order_amount: price,
+        order_currency: "INR",
+        order_id: orderId,
+        customer_details: {
+            customer_id: user.id,
+            customer_phone: user.phone || "9999999999",
+            customer_email: user.email || "no-email@example.com"
+        },
+        order_meta: {
+            return_url: returnUrl,
+        },
+        order_tags: {
+            gig_id: gigId,
+            worker_id: workerId
+        }
+    };
+
+    console.log("Initiating Payment for Order:", orderId);
     
-    const { error: updateError } = await supabase
-        .from("wallets")
-        .update({ balance: (freshWallet?.balance || price) - price })
-        .eq("user_id", user.id);
+    // FIX IS HERE: Use 'PgCashfree' instead of 'Cashfree'
+    const response = await PgCashfree.PGCreateOrder("2023-08-01", request);
+    
+    const paymentSessionId = response.data.payment_session_id;
 
-    if (updateError) throw updateError;
+    // 3. Mark Gig as Payment Pending
+    await supabase.from("gigs").update({ 
+        payment_gateway: 'CASHFREE',
+        gateway_order_id: orderId 
+    }).eq("id", gigId);
 
-    // 4. Update Gig Status
-    const { error: gigError } = await supabase
-        .from("gigs")
-        .update({ 
-            assigned_worker_id: workerId, 
-            status: "ASSIGNED" 
-        })
-        .eq("id", gigId);
-
-    if (gigError) throw gigError;
-
-    // 5. Update Application Status
-    const { error: appError } = await supabase
-        .from("applications")
-        .update({ status: "accepted" })
-        .eq("gig_id", gigId)
-        .eq("worker_id", workerId);
-
-    if (appError) throw appError;
-
-    return NextResponse.json({ success: true, message: "Worker hired & funds secured!" });
+    return NextResponse.json({ 
+        success: true, 
+        paymentSessionId: paymentSessionId,
+        orderId: orderId
+    });
 
   } catch (error: any) {
-    console.error("Hire Error:", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    console.error("Cashfree Order Error:", error.response?.data?.message || error.message);
+    return NextResponse.json({ error: "Payment initiation failed." }, { status: 500 });
   }
 }

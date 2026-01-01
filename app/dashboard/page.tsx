@@ -5,7 +5,6 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Link from "next/link";
 import Image from "next/image";
 import { 
-  Wallet, 
   Plus, 
   Briefcase, 
   ArrowUpRight, 
@@ -15,16 +14,16 @@ import {
   ShieldCheck,
   MessageSquare,
   X,
-  ShieldAlert,
   User,
-  Users 
+  Users,
+  Star,
+  Trophy
 } from "lucide-react";
 
 export default function Dashboard() {
   const supabase = supabaseBrowser();
 
   const [user, setUser] = useState<any>(null);
-  const [wallet, setWallet] = useState<any>(null);
   const [gigs, setGigs] = useState<any[]>([]);
   const [activeChats, setActiveChats] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +36,7 @@ export default function Dashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Fetch live data from DB to ensure kyc_verified and rating are current
+        // Fetch live data from DB to ensure kyc_verified, rating, jobs_completed are current
         const { data: dbUser } = await supabase
           .from("users")
           .select("*")
@@ -54,24 +53,8 @@ export default function Dashboard() {
         };
         
         setUser(mergedUser);
-        // 1. Fetch Wallet
-        let { data: walletData } = await supabase
-          .from("wallets")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
-        
-        if (!walletData) {
-           const { data: newWallet } = await supabase
-             .from("wallets")
-             .insert({ user_id: user.id, balance: 0 })
-             .select()
-             .single();
-           walletData = newWallet;
-        }
-        setWallet(walletData || { balance: 0 });
 
-        // 2. Fetch Marketplace Gigs + Applicant Count
+        // 1. Fetch Marketplace Gigs + Applicant Count
         const { data: gigsData } = await supabase
           .from("gigs")
           .select("*, applications(count)") 
@@ -81,7 +64,7 @@ export default function Dashboard() {
           .limit(6);
         setGigs(gigsData || []);
 
-        // 3. Fetch Active Chats (For the widget)
+        // 2. Fetch Active Chats (For the widget)
         const { data: activeGigs } = await supabase
           .from("gigs")
           .select("*")
@@ -100,17 +83,17 @@ export default function Dashboard() {
   if (loading) return <DashboardSkeleton />;
 
   const username = user?.user_metadata?.name || user?.email?.split("@")[0] || "Partner";
-  const walletId = user?.id ? `**** **** **** ${user.id.slice(0, 4).toUpperCase()}` : "**** **** **** 0000";
-
+  
   // --- KYC CHECK ---
   const isKycVerified = user?.user_metadata?.kyc_verified === true;
+  const rating = user?.user_metadata?.rating ? Number(user.user_metadata.rating).toFixed(1) : "5.0";
+  const jobsCompleted = user?.user_metadata?.jobs_completed || 0;
 
   return (
     // Added 'pb-32' to bottom padding so scrolling clears the fixed buttons
     <main className="min-h-screen p-6 lg:p-12 pb-32 max-w-7xl mx-auto space-y-8 lg:space-y-12 relative overflow-x-hidden">
       
       {/* --- HERO HEADER --- */}
-      {/* Changed flex alignment for mobile: items-start on mobile, items-end on desktop */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 relative z-10">
         <div className="flex flex-col gap-4 w-full md:w-auto">
           <div className="flex items-center gap-3">
@@ -121,7 +104,6 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-1">
-            {/* Reduced text size on mobile (text-4xl) vs desktop (text-6xl) */}
             <h1 className="text-4xl lg:text-6xl font-black text-white tracking-tight leading-[1.1]">
               Hello, <br/>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple via-brand-pink to-white animate-pulse capitalize break-all">
@@ -132,21 +114,20 @@ export default function Dashboard() {
         </div>
 
         {/* --- PROFILE BUTTON AREA --- */}
-        {/* On mobile, this will now stack nicely below the name */}
         <div className="relative w-full md:w-auto">
-            
             {/* Small Yellow Floating Icon with Tooltip */}
-            <Link 
-              href="/profile"
-              className="group absolute bottom-full mb-3 right-0 md:right-6 z-20 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.3)] animate-bounce hover:bg-yellow-500/20 transition-all hover:scale-110 flex items-center justify-center"
-            >
-              <User className="w-4 h-4" />
-              {/* Tooltip hidden on mobile to prevent overflow, shown on hover */}
-              <span className="hidden md:block absolute right-full mr-3 top-1/2 -translate-y-1/2 w-max px-3 py-1.5 bg-[#1A1A24] border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-xl">
-                Verify KYC Now
-                <span className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-[#1A1A24] border-t border-r border-yellow-500/20 rotate-45"></span>
-              </span>
-            </Link>
+            {!isKycVerified && (
+              <Link 
+                href="/verify-id"
+                className="group absolute bottom-full mb-3 right-0 md:right-6 z-20 p-2 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.3)] animate-bounce hover:bg-yellow-500/20 transition-all hover:scale-110 flex items-center justify-center"
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden md:block absolute right-full mr-3 top-1/2 -translate-y-1/2 w-max px-3 py-1.5 bg-[#1A1A24] border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-xl">
+                  Verify KYC Now
+                  <span className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-[#1A1A24] border-t border-r border-yellow-500/20 rotate-45"></span>
+                </span>
+              </Link>
+            )}
 
             {/* Existing Main Profile Button */}
             <Link href="/profile" className="group relative overflow-hidden rounded-full p-[1px] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 focus:ring-offset-slate-50 block w-full md:w-auto">
@@ -166,7 +147,7 @@ export default function Dashboard() {
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
         <div className="absolute -top-20 -left-20 w-96 h-96 bg-brand-purple/20 rounded-full blur-[128px] pointer-events-none"></div>
 
-        {/* CREDIT CARD WALLET */}
+        {/* PROFILE STATS CARD (REPLACES WALLET) */}
         <div className="lg:col-span-8 relative group overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-[#121212] to-[#0A0A0A] p-6 md:p-10 flex flex-col justify-between min-h-[300px] md:min-h-[340px] shadow-2xl">
           <div className="absolute inset-0 opacity-30 group-hover:opacity-50 transition-opacity duration-700">
              <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-brand-blue/20 rounded-full blur-[100px] animate-blob"></div>
@@ -175,29 +156,42 @@ export default function Dashboard() {
 
           <div className="relative z-10 flex justify-between items-start">
             <div className="p-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-inner">
-              <Wallet className="w-6 h-6 text-white" />
+              <Briefcase className="w-6 h-6 text-white" />
             </div>
-            <div className="flex flex-col items-end">
-               <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-1">Wallet ID</span>
-               <span className="font-mono text-white/70 text-xs md:text-sm tracking-wider">{walletId}</span>
-            </div>
+            {isKycVerified ? (
+                 <span className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-green-500 text-xs font-bold uppercase tracking-widest">
+                    Verified Pro
+                 </span>
+            ) : (
+                <span className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-yellow-500 text-xs font-bold uppercase tracking-widest">
+                    Action Required
+                 </span>
+            )}
           </div>
 
           <div className="relative z-10 mt-auto pt-8">
-            <p className="text-white/50 text-xs font-bold tracking-widest uppercase mb-3">Available Balance</p>
-            <div className="flex items-end gap-4 mb-8">
-              <span className="text-5xl md:text-8xl font-black text-white tracking-tighter leading-none drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                ₹{wallet?.balance?.toLocaleString()}
-              </span>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/dashboard/wallet/add-money" className="flex-1 bg-white text-black font-bold py-4 px-6 rounded-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(255,255,255,0.2)]">
-                <Plus className="w-5 h-5" /> Add Funds
-              </Link>
-              <Link href="/dashboard/wallet/withdraw" className="flex-1 bg-white/5 border border-white/10 text-white font-bold py-4 px-6 rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-2 backdrop-blur-md">
-                Withdraw
-              </Link>
+            <div className="flex flex-col md:flex-row md:items-end gap-12">
+                
+                {/* Stat 1: Rating */}
+                <div className="space-y-2">
+                    <p className="text-white/50 text-xs font-bold tracking-widest uppercase flex items-center gap-2">
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> Current Rating
+                    </p>
+                    <div className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                        {rating}
+                    </div>
+                </div>
+
+                {/* Stat 2: Jobs Completed */}
+                <div className="space-y-2">
+                    <p className="text-white/50 text-xs font-bold tracking-widest uppercase flex items-center gap-2">
+                        <Trophy className="w-4 h-4 text-brand-purple" /> Jobs Completed
+                    </p>
+                    <div className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-none drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                        {jobsCompleted}
+                    </div>
+                </div>
+
             </div>
           </div>
         </div>

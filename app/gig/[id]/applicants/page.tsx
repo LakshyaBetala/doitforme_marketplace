@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
+import { load } from '@cashfreepayments/cashfree-js'; // Import Cashfree Frontend SDK
 import { 
   ArrowLeft, 
   User, 
@@ -32,15 +33,24 @@ export default function ApplicantsPage() {
   const [gig, setGig] = useState<any | null>(null);
   const [applicants, setApplicants] = useState<any[]>([]);
 
+  // Initialize Cashfree SDK
+  const [cashfree, setCashfree] = useState<any>(null);
+  useEffect(() => {
+    load({
+      mode: "sandbox" // Change to "production" when live
+    }).then((sdk) => {
+      setCashfree(sdk);
+    });
+  }, []);
+
   useEffect(() => {
     if (!id) return;
 
-    const load = async () => {
+    const loadData = async () => {
       try {
         // 1. Get Current User
         const { data: userData } = await supabase.auth.getUser();
         const u = userData?.user ?? null;
-
         if (!u) return router.push("/login");
 
         // 2. Fetch Gig
@@ -67,17 +77,12 @@ export default function ApplicantsPage() {
           .select(`
             *,
             worker:users (
-              id,
-              email,
-              name,
-              kyc_verified,
-              rating,
-              rating_count
+              id, email, name, kyc_verified, rating, rating_count
             )
           `)
           .eq("gig_id", id)
           .order("created_at", { ascending: false })
-          .limit(10); // <--- LIMIT TO 10 APPLICANTS
+          .limit(10);
 
         if (appsError) throw appsError;
         setApplicants(apps || []);
@@ -90,21 +95,21 @@ export default function ApplicantsPage() {
       }
     };
 
-    load();
+    loadData();
   }, [id, supabase, router]);
 
-  // --- HIRE WORKER (ESCROW TRANSACTION) ---
+  // --- HIRE WORKER (DIRECT PAYMENT FLOW) ---
   const handleAccept = async (workerId: string) => {
-    if (!gig) return;
+    if (!gig || !cashfree) return;
     
     // 1. Confirmation
-    const confirmMsg = `HIRING CONFIRMATION:\n\nThis will deduct ₹${gig.price} from your wallet and hold it in escrow.\n\nDo you want to proceed?`;
+    const confirmMsg = `HIRING CONFIRMATION:\n\nYou are about to hire this worker.\nYou will be redirected to pay ₹${gig.price} securely.`;
     if (!confirm(confirmMsg)) return;
     
     setAssigning(workerId);
 
     try {
-      // 2. Call the Secure API Route
+      // 2. Call API to create Cashfree Order
       const res = await fetch("/api/gig/hire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,21 +123,26 @@ export default function ApplicantsPage() {
       const json = await res.json();
 
       if (!res.ok) {
-        throw new Error(json.error || "Payment failed");
+        throw new Error(json.error || "Payment initiation failed");
       }
 
-      // 3. Success
-      alert("Success! Funds moved to escrow. You can now chat with the worker.");
-      window.location.reload();
+      if (json.paymentSessionId) {
+          // 3. Open Cashfree Checkout
+          cashfree.checkout({
+              paymentSessionId: json.paymentSessionId,
+              redirectTarget: "_self", // Redirects back to your website after payment
+          });
+      } else {
+          throw new Error("Invalid payment session");
+      }
 
     } catch (err: any) {
-      alert("Transaction Failed: " + err.message);
+      alert("Error: " + err.message);
       setAssigning(null);
     }
   };
 
   // --- RENDER ---
-
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center">
@@ -194,7 +204,7 @@ export default function ApplicantsPage() {
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Worker Assigned!</h2>
             <p className="text-white/60 mb-8 max-w-md mx-auto">
-              Funds are held in escrow. You can now chat with the worker to discuss deliverables.
+              Funds are held in escrow. You can now chat with the worker.
             </p>
             
             {(() => {
@@ -230,11 +240,11 @@ export default function ApplicantsPage() {
           /* --- APPLICANT LIST --- */
           <div className="space-y-4">
             
-            {/* Limit Warning if max reached */}
+            {/* Limit Warning */}
             {applicants.length >= 10 && (
                 <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-center gap-3 text-yellow-500 text-sm mb-4">
                     <AlertCircle className="w-4 h-4" />
-                    <span>Application limit reached (10/10). No new applicants can join.</span>
+                    <span>Application limit reached.</span>
                 </div>
             )}
 
@@ -255,7 +265,6 @@ export default function ApplicantsPage() {
                     
                     {/* Worker Info */}
                     <div className="flex items-start gap-4">
-                      {/* Avatar / Initial Fallback */}
                       <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 overflow-hidden relative flex-shrink-0 flex items-center justify-center text-xl font-bold uppercase text-white/60">
                         {app.worker?.name?.[0] || app.worker?.email?.[0] || <User className="w-6 h-6"/>}
                       </div>
@@ -263,9 +272,8 @@ export default function ApplicantsPage() {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-bold text-lg text-white">
-                            {app.worker?.name || app.worker?.email?.split('@')[0] || "Unknown Student"}
+                            {app.worker?.name || app.worker?.email?.split('@')[0] || "Unknown"}
                           </h3>
-                          
                           {app.worker?.kyc_verified && (
                             <div className="p-1" title="Verified ID">
                               <ShieldCheck className="w-4 h-4 text-green-500" />
@@ -274,33 +282,24 @@ export default function ApplicantsPage() {
                         </div>
                         
                         <div className="flex flex-wrap items-center gap-4 text-xs text-white/40 mb-3">
-                          {/* Rating - Updated Logic */}
                           <div className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">
                             <Star className="w-3 h-3 fill-current" />
                             <span className="font-bold">
                               {app.worker?.rating ? Number(app.worker.rating).toFixed(1) : "New"}
                             </span>
-                            <span className="text-white/30 text-[10px] ml-1">
-                              {/* Display "0 reviews" if count is missing, otherwise pluralize correctly */}
-                              ({app.worker?.rating_count || 0} {app.worker?.rating_count === 1 ? 'review' : 'reviews'})
-                            </span>
                           </div>
-
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> ETA: <span className="text-white">{app.eta || "Not specified"}</span>
+                            <Clock className="w-3 h-3" /> ETA: <span className="text-white">{app.eta || "N/A"}</span>
                           </span>
-                          
-                          <span className="hidden sm:inline">Applied {new Date(app.created_at).toLocaleDateString()}</span>
                         </div>
 
-                        {/* Pitch */}
                         <div className="bg-white/5 rounded-xl p-4 text-sm text-white/80 leading-relaxed border border-white/5 max-w-2xl">
                           "{app.pitch || app.message || "No message provided."}"
                         </div>
                       </div>
                     </div>
 
-                    {/* Hire Button */}
+                    {/* HIRE BUTTON (NOW DIRECT PAYMENT) */}
                     <div className="flex-shrink-0">
                       <button
                         onClick={() => handleAccept(app.worker_id)}
@@ -312,7 +311,7 @@ export default function ApplicantsPage() {
                         ) : (
                           <DollarSign className="w-4 h-4" />
                         )}
-                        <span>Hire & Pay ₹{gig.price}</span>
+                        <span>Pay ₹{gig.price} & Hire</span>
                       </button>
                     </div>
 
@@ -322,7 +321,6 @@ export default function ApplicantsPage() {
             )}
           </div>
         )}
-
       </div>
     </div>
   );
