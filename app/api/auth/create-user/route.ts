@@ -4,10 +4,21 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { id, email, name, phone, college } = body;
+    // 1. Extract upi_id from the request body
+    // This comes from the 'verify' page where we passed the metadata
+    const { id, email, name, phone, college, upi_id } = body;
 
     if (!id || !email) {
       return NextResponse.json({ error: "Missing ID or Email" }, { status: 400 });
+    }
+
+    // 2. Validate UPI ID Format (Regex Check)
+    // This prevents bad data from entering the database early on.
+    if (upi_id) {
+      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+      if (!upiRegex.test(upi_id)) {
+        return NextResponse.json({ error: "Invalid UPI ID format. Example: name@oksbi" }, { status: 400 });
+      }
     }
 
     // Initialize Admin Client (Bypasses RLS to ensure we can read/write everything)
@@ -17,14 +28,14 @@ export async function POST(req: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // --- 1. FETCH EXISTING USER DATA ---
+    // --- 3. FETCH EXISTING USER DATA ---
     const { data: existingUser } = await supabase
       .from("users")
       .select("*")
       .eq("id", id)
       .single();
 
-    // --- 2. PREPARE SMART DATA (The Fix) ---
+    // --- 4. PREPARE SMART DATA ---
     // If user exists, keep their old data. Only overwrite if new data is sent (truthy).
     // If user is new, use the defaults.
     
@@ -32,10 +43,14 @@ export async function POST(req: Request) {
     const finalPhone = phone || existingUser?.phone || null;
     const finalCollege = college || existingUser?.college || null;
     
+    // Preserve existing UPI if not provided in this update, otherwise use new one
+    // This is crucial: If they log in again later without sending UPI, we don't want to erase the old one.
+    const finalUpi = upi_id || existingUser?.upi_id || null;
+    
     // Preserve verification status
     const finalKyc = existingUser?.kyc_verified || false;
 
-    // --- 3. UPSERT USER ---
+    // --- 5. UPSERT USER (With UPI ID) ---
     const { error: userError } = await supabase
       .from("users")
       .upsert({ 
@@ -44,6 +59,7 @@ export async function POST(req: Request) {
         name: finalName,
         phone: finalPhone,
         college: finalCollege,
+        upi_id: finalUpi, // <--- Storing the UPI ID here for Payouts
         kyc_verified: finalKyc,
         updated_at: new Date().toISOString(),
       })
@@ -55,7 +71,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: userError.message }, { status: 500 });
     }
 
-    // --- 4. ENSURE WALLET EXISTS ---
+    // --- 6. ENSURE WALLET EXISTS (For Stats Only) ---
+    // We keep this so the Profile page can show "Total Earned" without crashing.
+    // We are NOT using this for holding money anymore.
     const { error: walletError } = await supabase
       .from("wallets")
       .upsert(

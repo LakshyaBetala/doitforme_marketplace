@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Eye, EyeOff } from "lucide-react"; // Icons for password visibility
+import { Eye, EyeOff, Wallet } from "lucide-react"; 
 
 // --- COLLEGES LIST ---
 const COLLEGES = [
@@ -69,6 +69,9 @@ export default function AuthPage() {
   const [phone, setPhone] = useState("");
   const [college, setCollege] = useState(COLLEGES[0]);
   const [customCollege, setCustomCollege] = useState(""); 
+  
+  // NEW: UPI ID State
+  const [upiId, setUpiId] = useState("");
 
   // --- HELPER: SYNC USER TO DB ---
   const syncUser = async (id: string, email: string) => {
@@ -142,9 +145,10 @@ export default function AuthPage() {
   const handleSignup = async () => {
     const finalCollege = college === "Other" ? customCollege.trim() : college;
 
-    if (!email || !password || !name || !phone) {
+    // 1. Basic Field Validation
+    if (!email || !password || !name || !phone || !upiId) {
       setLoading(false);
-      return setMessage("Please fill in all fields.");
+      return setMessage("Please fill in all fields, including UPI ID.");
     }
     
     if (college === "Other" && !finalCollege) {
@@ -152,16 +156,25 @@ export default function AuthPage() {
       return setMessage("Please enter your university name.");
     }
 
-    // 1. REGISTER USER
+    // 2. UPI Regex Validation (Critical for Payouts)
+    const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+    if (!upiRegex.test(upiId)) {
+        setLoading(false);
+        return setMessage("Invalid UPI ID format. (e.g., name@oksbi)");
+    }
+
+    // 3. REGISTER USER
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        // We save profile data here, but we DO NOT create the public profile yet
+        // We save profile data here. The verify page must read this metadata
+        // and pass it to the /api/auth/create-user endpoint.
         data: {
           full_name: name,
           phone: phone,
           college: finalCollege,
+          upi_id: upiId // <--- PASSING UPI TO METADATA
         },
       },
     });
@@ -172,17 +185,13 @@ export default function AuthPage() {
     }
 
     if (data.user) {
-      // 2. FORCE OTP SENDING
-      // signUp() often sends a "Confirm Link" by default. 
-      // We explicitly call signInWithOtp to send a "6-digit Code" immediately.
+      // 4. FORCE OTP SENDING
       await supabase.auth.signInWithOtp({
         email,
         options: { shouldCreateUser: false },
       });
 
-      // 3. FORCE VERIFY REDIRECT
-      // Even if data.session exists, we IGNORE it and send them to verify.
-      // We do NOT call syncUser() here. The profile is created only after OTP is entered.
+      // 5. REDIRECT TO VERIFY
       setLoading(false);
       router.push(`/verify?email=${encodeURIComponent(email)}&mode=signup`);
     }
@@ -293,6 +302,20 @@ export default function AuthPage() {
                 onChange={(e) => setPhone(e.target.value)}
               />
 
+              {/* NEW UPI INPUT */}
+              <div className="relative">
+                <input
+                    type="text"
+                    placeholder="UPI ID (e.g. name@oksbi)"
+                    className={inputStyle}
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
+                    <Wallet size={18} />
+                </div>
+              </div>
+
               <div className="relative">
                 <label className="block text-xs font-bold text-white/40 mb-1.5 ml-1 uppercase tracking-wider">Select University</label>
                 <select
@@ -355,7 +378,7 @@ export default function AuthPage() {
               disabled={loading}
               className={buttonStyle}
             >
-              {loading ? "Processing..." : view === "LOGIN" ? "Login" : "Create Account"}
+              {loading ? "Processing..." : view === "LOGIN" ? "Login" : "Join Now"}
             </button>
           </div>
 

@@ -170,12 +170,24 @@ export default function ProfilePage() {
                           <Phone className="w-4 h-4" /> {profile.phone}
                       </span>
                   )}
+                  
+                  {/* --- NEW: UPI DISPLAY --- */}
+                  {profile.upi_id ? (
+                      <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#8825F5]/10 border border-[#8825F5]/30 text-[#8825F5]">
+                          <Wallet className="w-4 h-4" /> {profile.upi_id}
+                      </span>
+                  ) : (
+                      <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400">
+                          <Wallet className="w-4 h-4" /> No UPI Linked
+                      </span>
+                  )}
+
                   {profile.college && (
                       <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-yellow-400">
                           <GraduationCap className="w-4 h-4" /> {profile.college}
                       </span>
                   )}
-                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-[#8825F5]">
+                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-white/40">
                     <Calendar className="w-4 h-4" /> Joined {joinDate}
                   </span>
                 </div>

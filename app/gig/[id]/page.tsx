@@ -44,7 +44,7 @@ interface GigData {
   description: string;
   price: number;
   location: string | null;
-  status: 'open' | 'ASSIGNED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED';
+  status: 'open' | 'ASSIGNED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED';
   created_at: string;
   poster_id: string;
   assigned_worker_id?: string;
@@ -52,6 +52,7 @@ interface GigData {
   delivered_at?: string;
   images?: string[];
   user_id?: string; // Legacy support if schema varies
+  dispute_reason?: string;
 }
 
 interface UserProfile {
@@ -274,7 +275,7 @@ export default function GigDetailPage() {
 
   // 4. Poster: Cancel Gig
   const handleRefund = async () => {
-    const confirmed = confirm("Are you sure? This will cancel the gig and refund your wallet. This action cannot be undone.");
+    const confirmed = confirm("Are you sure? This will cancel the gig. This action cannot be undone.");
     if (!confirmed) return;
 
     try {
@@ -287,13 +288,44 @@ export default function GigDetailPage() {
       const json = await res.json();
       
       if (json.success) {
-        alert("Gig cancelled and funds refunded.");
+        alert("Gig cancelled and funds refunded (if applicable).");
         router.push("/dashboard");
       } else {
-        alert(json.error || "Refund failed");
+        alert(json.error || "Cancellation failed");
       }
     } catch (e) {
       alert("Network error. Please check your connection.");
+    }
+  };
+
+  // 5. NEW: Handle Dispute Logic
+  const handleDispute = async () => {
+    const reason = prompt("Please explain why you are rejecting this work (min 50 chars). This will freeze funds for Admin review.");
+    
+    if (!reason) return;
+    if (reason.length < 50) {
+        alert("Dispute reason must be at least 50 characters to prevent spam.");
+        return;
+    }
+
+    setSubmitting(true);
+    try {
+        const res = await fetch("/api/gig/dispute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ gigId: id, reason }),
+        });
+        const json = await res.json();
+        if (json.success) {
+            alert("Dispute raised. Funds are frozen and Support will contact you.");
+            window.location.reload();
+        } else {
+            alert(json.error || "Failed to raise dispute");
+        }
+    } catch (e) {
+        alert("Network Error");
+    } finally {
+        setSubmitting(false);
     }
   };
 
@@ -408,7 +440,6 @@ export default function GigDetailPage() {
         
         {/* Navigation Bar */}
         <div className="flex justify-between items-center mb-4">
-          {/* UPDATED BACK BUTTON TO /gig/my-gigs */}
           <Link 
             href="/gig/my-gigs"
             className="flex items-center gap-2 text-white/50 hover:text-white transition-colors group"
@@ -449,6 +480,18 @@ export default function GigDetailPage() {
           </div>
         )}
 
+        {gig.status === 'DISPUTED' && (
+           <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 md:p-6 flex items-center gap-4 text-red-400">
+             <div className="p-2 bg-red-500/20 rounded-full shrink-0">
+               <AlertTriangle className="w-6 h-6" />
+             </div>
+             <div>
+               <h4 className="font-bold text-lg">Dispute Raised</h4>
+               <p className="text-sm opacity-80">Funds are frozen pending admin review. Reason: "{gig.dispute_reason}"</p>
+             </div>
+           </div>
+        )}
+
         {gig.status === 'CANCELLED' && (
            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 md:p-6 flex items-center gap-4 text-red-400">
              <div className="p-2 bg-red-500/20 rounded-full shrink-0">
@@ -468,7 +511,6 @@ export default function GigDetailPage() {
             
             {/* 1. Header Card */}
             <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-10 shadow-2xl">
-              {/* Card Glow */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-brand-purple/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
 
               <div className="flex flex-col gap-6">
@@ -480,6 +522,7 @@ export default function GigDetailPage() {
                     gig.status === 'ASSIGNED' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
                     gig.status === 'DELIVERED' ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400' :
                     gig.status === 'COMPLETED' ? 'bg-teal-500/10 border-teal-500/20 text-teal-400' :
+                    gig.status === 'DISPUTED' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
                     'bg-red-500/10 border-red-500/20 text-red-400'
                   }`}>
                     {gig.status.replace(/_/g, " ")}
@@ -535,7 +578,7 @@ export default function GigDetailPage() {
             </div>
 
             {/* --- SUBMISSION DISPLAY (Public/Restricted View) --- */}
-            {(gig.status === 'DELIVERED' || gig.status === 'COMPLETED') && (isOwner || isWorker) && (
+            {(gig.status === 'DELIVERED' || gig.status === 'COMPLETED' || gig.status === 'DISPUTED') && (isOwner || isWorker) && (
               <div className="rounded-[32px] border border-brand-purple/30 bg-[#121217] p-8 relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-brand-purple to-brand-blue"></div>
                 <div className="absolute inset-0 bg-brand-purple/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
@@ -657,17 +700,33 @@ export default function GigDetailPage() {
                   </div>
                 )}
 
-                {/* --- B. POSTER VIEW: Review --- */}
+                {/* --- B. POSTER VIEW: Review (UPDATED) --- */}
                 {isOwner && gig.status === 'DELIVERED' && (
-                  <div className="p-4 rounded-2xl bg-[#0B0B11] border border-green-500/30 text-center animate-in fade-in">
-                    <h3 className="font-bold text-white mb-2">Action Required</h3>
-                    <p className="text-xs text-white/50 mb-4">Worker has submitted the task. Please verify.</p>
-                    <button 
-                        onClick={() => setShowReviewModal(true)} 
-                        className="w-full py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-                    >
-                        <CheckCircle className="w-5 h-5"/> Review & Complete
-                    </button>
+                  <div className="p-5 rounded-2xl bg-[#0B0B11] border border-white/10 text-center animate-in fade-in space-y-4">
+                    <div>
+                        <h3 className="font-bold text-white text-lg">Work Delivered</h3>
+                        <p className="text-xs text-white/50 mt-1">
+                           Auto-approval in 24 hours. Review carefully.
+                        </p>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={handleDispute}
+                            disabled={submitting}
+                            className="flex-1 py-3 bg-red-500/10 text-red-400 font-bold rounded-xl hover:bg-red-500/20 transition-colors border border-red-500/20 text-sm"
+                        >
+                            Raise Dispute
+                        </button>
+
+                        <button 
+                            onClick={() => setShowReviewModal(true)} 
+                            disabled={submitting}
+                            className="flex-[2] py-3 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 transition-colors flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                        >
+                            <CheckCircle className="w-5 h-5"/> Approve & Pay
+                        </button>
+                    </div>
                   </div>
                 )}
 
@@ -713,7 +772,7 @@ export default function GigDetailPage() {
                 )}
 
                 {/* --- SHARED: Open Chat --- */}
-                {(isWorker || isOwner) && (gig.status === 'ASSIGNED' || gig.status === 'DELIVERED' || gig.status === 'COMPLETED') && (
+                {(isWorker || isOwner) && (gig.status === 'ASSIGNED' || gig.status === 'DELIVERED' || gig.status === 'COMPLETED' || gig.status === 'DISPUTED') && (
                   <Link 
                     href={`/gig/${id}/chat`} 
                     className="block w-full py-3 bg-[#1A1A24] border border-white/10 text-white/70 font-bold rounded-xl text-center hover:bg-white/5 hover:text-white transition-all flex items-center justify-center gap-2"
@@ -722,8 +781,8 @@ export default function GigDetailPage() {
                   </Link>
                 )}
 
-                {/* --- OWNER: Refund/Cancel --- */}
-                {isOwner && gig.status === "ASSIGNED" && (
+                {/* --- OWNER: Refund/Cancel (Only if NOT Assigned yet) --- */}
+                {isOwner && gig.status === "open" && (
                    <div className="pt-4 border-t border-white/5">
                       <button
                         onClick={handleRefund}
