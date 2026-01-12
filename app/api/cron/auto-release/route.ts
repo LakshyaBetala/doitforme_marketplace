@@ -7,7 +7,6 @@ const supabase = createClient(
 );
 
 export async function GET(req: Request) {
-  // protect cron endpoint with secret header
   try {
     const secret = process.env.CRON_SECRET;
     if (secret) {
@@ -17,49 +16,55 @@ export async function GET(req: Request) {
       }
     }
   } catch (_) {}
+
   const details: Array<any> = [];
   let releasedCount = 0;
 
   try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const now = new Date().toISOString();
 
-    // Fetch eligible gigs
+    // 1. Fetch eligible gigs (Timer Passed + Held + No Dispute)
     const { data: gigs, error: gigsErr } = await supabase
       .from("gigs")
-      .select("*")
+      .select("*, users!assigned_worker_id(id, upi_id)")
       .eq("status", "DELIVERED")
-      .lt("delivered_at", sevenDaysAgo)
-      .eq("payment_status", "ESCROW_HELD")
-      .limit(200);
+      .lt("auto_release_at", now) // <--- Check 24h timer
+      .eq("payment_status", "HELD")
+      .is("dispute_reason", null)   
+      .limit(50);
 
-    if (gigsErr) {
-      console.error("Failed to fetch gigs for auto-release:", gigsErr);
-      return NextResponse.json({ success: false, error: gigsErr.message || gigsErr }, { status: 500 });
-    }
+    if (gigsErr) return NextResponse.json({ error: gigsErr.message }, { status: 500 });
+    if (!gigs || gigs.length === 0) return NextResponse.json({ success: true, releasedCount: 0, message: "No gigs to release" });
 
-    if (!gigs || gigs.length === 0) {
-      return NextResponse.json({ success: true, releasedCount: 0, details: [] });
-    }
-
+    // 2. Process Auto-Release
     for (const gig of gigs) {
-      const gigId = gig.id;
-      try {
-        const { data: rpcData, error: rpcErr } = await supabase.rpc('release_escrow_transactional', { p_gig_id: gigId });
-        if (rpcErr) {
-          details.push({ gigId, released: false, error: rpcErr.message || rpcErr });
-          continue;
-        }
-        releasedCount += 1;
-        details.push({ gigId, released: true, detail: rpcData });
-      } catch (gigErr: any) {
-        console.error('Auto-release failed for gig', gig.id, gigErr);
-        details.push({ gigId: gig.id, released: false, error: gigErr?.message || gigErr });
+      const payoutAmount = gig.price * 0.90;
+      console.log(`[AUTO-RELEASE] Pay ₹${payoutAmount} to UPI: ${gig.users?.upi_id}`);
+
+      // Update Gig Status -> PAYOUT_PENDING
+      const { error: updateErr } = await supabase
+        .from("gigs")
+        .update({
+            status: 'COMPLETED',
+            payment_status: 'PAYOUT_PENDING',
+            auto_release_at: null
+        })
+        .eq('id', gig.id);
+      
+      if (!updateErr) {
+          releasedCount++;
+          // Update stats too (optional for auto-release)
+          await supabase.rpc('increment_worker_stats', { worker_id: gig.assigned_worker_id, amount: payoutAmount });
+          details.push({ gigId: gig.id, status: "Queued for Manual Payout" });
+      } else {
+          details.push({ gigId: gig.id, error: updateErr.message });
       }
     }
 
     return NextResponse.json({ success: true, releasedCount, details });
+
   } catch (err: any) {
     console.error("Auto-release cron failed:", err);
-    return NextResponse.json({ success: false, error: err?.message || err });
+    return NextResponse.json({ success: false, error: err?.message }, { status: 500 });
   }
 }

@@ -21,16 +21,21 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    // Calculate 24 Hour Auto-Release Time
+    const autoReleaseTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
     // Update Gig
     const { error } = await supabase
       .from("gigs")
       .update({ 
         status: "DELIVERED",
         delivery_link: deliveryLink,
-        delivered_at: new Date().toISOString()
+        delivered_at: new Date().toISOString(),
+        auto_release_at: autoReleaseTime, // <--- START 24H TIMER
+        payment_status: 'HELD' // <--- MARK FUNDS AS HELD
       })
       .eq("id", gigId)
-      .eq("assigned_worker_id", user.id); // Security check
+      .eq("assigned_worker_id", user.id); 
 
     if (error) throw error;
 
@@ -39,4 +44,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
