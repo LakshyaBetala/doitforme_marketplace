@@ -15,8 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing verification data (order, gig, or worker)" }, { status: 400 });
     }
 
-    // 1. Verify Status with Cashfree DIRECTLY (No SDK)
-    // NOTE: using sandbox.cashfree.com. Change to api.cashfree.com for production.
+    // 1. Verify Status with Cashfree DIRECTLY
     const response = await fetch(`https://sandbox.cashfree.com/pg/orders/${orderId}/payments`, {
         method: "GET",
         headers: {
@@ -29,7 +28,6 @@ export async function POST(req: Request) {
     const data = await response.json();
     
     // Check if any transaction in the list is successful
-    // Cashfree returns an array of payment attempts for an order
     const validPayment = Array.isArray(data) 
         ? data.find((p: any) => p.payment_status === "SUCCESS") 
         : null;
@@ -39,9 +37,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Payment pending or failed" }, { status: 400 });
     }
 
-    const paidAmount = validPayment.payment_amount;
+    const paidAmount = validPayment.payment_amount; // e.g., 1020
 
-    // 2. Idempotency: Check if already processed to prevent double recording
+    // 2. Idempotency: Check if already processed
     const { data: existingTxn } = await supabaseAdmin
       .from("transactions")
       .select("id")
@@ -52,58 +50,64 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Transaction already processed" });
     }
 
-    // 3. Fetch Gig Details to get Poster ID
+    // 3. Fetch Gig Details (Price & Poster ID)
     const { data: gig } = await supabaseAdmin
       .from("gigs")
-      .select("poster_id")
+      .select("poster_id, price") // Fetch price here!
       .eq("id", gigId)
       .single();
 
     if (!gig) throw new Error("Gig not found");
 
-    // 4. Calculate Fees (10% Platform Fee)
-    const platformFee = paidAmount * 0.10;
-    const amountHeld = paidAmount - platformFee;
+    // 4. Calculate Fees (FIXED LOGIC)
+    // We use the DB Price (1000) for splits, NOT the Paid Amount (1020)
+    const basePrice = Number(gig.price); 
+    const platformFee = basePrice * 0.10; // 100
+    const amountHeld = basePrice * 0.90;  // 900 (This is net worker pay)
+    const gatewayFee = paidAmount - basePrice; // 20 (The surcharge)
 
-    // 5. Create Transaction Record (Audit Log)
+    // 5. Create Transaction Record
     const { error: txnError } = await supabaseAdmin.from("transactions").insert({
       gig_id: gigId,
       user_id: gig.poster_id,
-      amount: paidAmount,
+      amount: paidAmount, // Record full amount paid by user
       type: "ESCROW_DEPOSIT",
       status: "COMPLETED",
       gateway: "CASHFREE",
       gateway_order_id: orderId,
       gateway_payment_id: validPayment.cf_payment_id,
-      provider_data: validPayment // Store full JSON for debugging
+      provider_data: validPayment 
     });
 
     if (txnError) throw txnError;
 
-    // 6. Create Escrow Record (THE IMPORTANT PART)
-    // We upsert here just in case, but usually this is a new insert
+    // 6. Create Escrow Record (The "Manual Payout" Ledger)
     const { error: escrowError } = await supabaseAdmin.from("escrow").upsert({
         gig_id: gigId,
         poster_id: gig.poster_id,
-        worker_id: workerId, // Assign the worker now
-        original_amount: paidAmount,
-        platform_fee: platformFee, // 10%
-        gateway_fee: 0, // Absorbed or calculated separately if needed
-        amount_held: amountHeld, // 90%
+        worker_id: workerId,
+        original_amount: basePrice, // Store 1000
+        platform_fee: platformFee,  // Store 100
+        gateway_fee: gatewayFee,    // Store 20
+        amount_held: amountHeld,    // Store 900 (Liability)
         status: "HELD",
-        release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // Default 14 days
+        release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
     }, { onConflict: 'gig_id' });
 
     if (escrowError) throw escrowError;
 
-    // 7. Update Gig Status (Official Assignment)
+    // 7. Update Gig Status
     await supabaseAdmin.from("gigs").update({
-      status: "assigned", // Gig is now active
+      status: "assigned", 
       assigned_worker_id: workerId,
       payment_status: "ESCROW_FUNDED",
       escrow_status: "HELD",
       escrow_amount: amountHeld,
-      escrow_locked_at: new Date().toISOString()
+      escrow_locked_at: new Date().toISOString(),
+      // Track splits for easy reference
+      platform_fee: platformFee, 
+      net_worker_pay: amountHeld,
+      gateway_fee: gatewayFee
     }).eq("id", gigId);
 
     return NextResponse.json({ success: true, message: "Escrow funded and worker assigned successfully" });
