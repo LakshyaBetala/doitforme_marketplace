@@ -7,11 +7,11 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowRight, CheckCircle2, ShieldCheck, Zap, Lock, 
-  DollarSign, ChevronDown, Quote, Star, Wallet, Code2, PenTool, Bike, Users, Mail 
+  DollarSign, ChevronDown, Quote, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock
 } from "lucide-react";
 
 // -------------------------------------------------------
-// 1. "VOGUE" PRELOADER (Purple Text, 0.9s Reveal)
+// 1. "VOGUE" PRELOADER (Purple Text, 0.95s Reveal)
 // -------------------------------------------------------
 const words = ["HUSTLE", "EARN", "BUILD", "SCALE", "RELAX"];
 
@@ -38,7 +38,7 @@ const Preloader = ({ onComplete }: { onComplete: () => void }) => {
   return (
     <motion.div 
       initial={{ y: 0 }}
-      exit={{ y: "-100%", transition: { duration: 0.9, ease: [0.76, 0, 0.24, 1] } }} // Set to 0.9s
+      exit={{ y: "-100%", transition: { duration: 0.95, ease: [0.76, 0, 0.24, 1] } }} // 0.95s Duration
       className="fixed inset-0 z-[9999] bg-[#020202] flex items-center justify-center overflow-hidden cursor-wait"
     >
       <AnimatePresence mode="wait">
@@ -49,7 +49,9 @@ const Preloader = ({ onComplete }: { onComplete: () => void }) => {
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 0.9, filter: "blur(5px)" }}
             transition={{ duration: 0.15 }}
-            className="text-7xl md:text-9xl font-black text-[#8825F5] tracking-tighter"
+            // FORCED STYLE TO ENSURE PURPLE COLOR WORKS
+            style={{ color: '#8825F5' }} 
+            className="text-7xl md:text-9xl font-black tracking-tighter"
           >
             {words[index]}
           </motion.h1>
@@ -60,6 +62,7 @@ const Preloader = ({ onComplete }: { onComplete: () => void }) => {
             transition={{ duration: 0.6, ease: "circOut" }}
             className="relative flex flex-col items-center"
           >
+             {/* WHITE LOGO */}
              <h1 className="text-6xl md:text-8xl font-black text-white tracking-tighter mix-blend-normal">
                DoItForMe.
              </h1>
@@ -85,12 +88,13 @@ const gigsMock = [
   { id: 3, user: "Rohan M.", role: "Errand", title: "Drop Lab Record to Block 4", price: "₹150", icon: Bike, color: "bg-emerald-500" }
 ];
 
+// UPDATED: Using direct hex codes for style prop
 const testimonials = [
-  { role: "Poster", quote: "Got my assignment printed and delivered in 2 hours!", color: "border-[#8825F5]" },
-  { role: "Worker", quote: "I made ₹2000 last weekend just helping with Figma designs.", color: "border-blue-500" },
-  { role: "Student", quote: "The direct payment flow is so much better than other apps.", color: "border-pink-500" },
-  { role: "Dev", quote: "Found someone to debug my code instantly.", color: "border-emerald-500" },
-  { role: "Artist", quote: "Sold 3 custom sketches for a festival through this.", color: "border-yellow-500" }
+  { role: "Poster", quote: "Got my assignment printed and delivered in 2 hours!", color: "#8825F5" }, // Purple
+  { role: "Worker", quote: "I made ₹2000 last weekend just helping with Figma designs.", color: "#3B82F6" }, // Blue
+  { role: "Student", quote: "The direct payment flow is so much better than other apps.", color: "#EC4899" }, // Pink
+  { role: "Dev", quote: "Found someone to debug my code instantly.", color: "#10B981" }, // Emerald
+  { role: "Artist", quote: "Sold 3 custom sketches for a festival through this.", color: "#EAB308" } // Yellow
 ];
 
 const useScrollPosition = () => {
@@ -194,11 +198,11 @@ export default function LandingPage() {
             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
             className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-[#8825F5] rounded-full blur-[150px] opacity-10"
          />
-         {/* LIGHTER Blue Tint (#60A5FA) */}
+         {/* LIGHTER Blue Tint (#93C5FD) */}
          <motion.div 
             animate={{ scale: [1, 1.25, 1], opacity: [0.08, 0.12, 0.08] }}
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-            className="absolute top-[10%] right-[-10%] w-[50vw] h-[50vw] bg-[#60A5FA] rounded-full blur-[180px] opacity-10"
+            className="absolute top-[10%] right-[-10%] w-[50vw] h-[50vw] bg-[#93C5FD] rounded-full blur-[180px] opacity-10"
          />
       </div>
 
@@ -390,9 +394,9 @@ export default function LandingPage() {
          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
                { title: "Zero Friction", desc: "No CVs. No Interviews. Just apply and get to work.", icon: Zap },
-               { title: "Student Verified", desc: "Real students from your campus. No bots.", icon: Users },
-               { title: "Instant Payouts", desc: "Money sent to UPI the second the job is done.", icon: DollarSign },
-               { title: "24/7 Email Support", desc: "Dedicated email assistance for any dispute or issue.", icon: Mail } // FIX: Updated Title & Icon
+               { title: "Student Verified", desc: "Real students from verified colleges. No bots.", icon: Users },
+               { title: "Payouts in 24h", desc: "Money sent to your UPI within 24 hours of job completion.", icon: Clock },
+               { title: "24/7 Email Support", desc: "Dedicated email assistance for any dispute or issue.", icon: Mail }
             ].map((item, i) => (
                <div key={i} className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-brand-purple/50 transition-colors group">
                   <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
@@ -504,7 +508,7 @@ export default function LandingPage() {
         <div className="w-full overflow-hidden">
             <div className="flex animate-marquee gap-6 px-6">
                {[...testimonials, ...testimonials].map((t, i) => (
-                  <div key={i} className={`flex-shrink-0 w-[320px] bg-[#0A0A0A] border-l-2 ${t.color} p-6 rounded-r-xl border-y border-r border-white/5`}>
+                  <div key={i} className={`flex-shrink-0 w-[320px] bg-[#0A0A0A] border-l-2 p-6 rounded-r-xl border-y border-r border-white/5`} style={{ borderLeftColor: t.color }}>
                      <div className="flex items-center gap-2 mb-3">
                         <div className="p-1.5 bg-white/5 rounded-full"><Quote size={12} className="text-zinc-400" /></div>
                         <span className="text-xs font-bold uppercase tracking-wider text-zinc-500">{t.role}</span>
