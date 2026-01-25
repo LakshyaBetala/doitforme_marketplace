@@ -17,7 +17,7 @@ export async function POST(req: Request) {
         remove(name: string, options: CookieOptions) { 
             // FIX: 'value' is not in scope here, so we must explicitly set it to empty string
             try { cookieStore.set({ name, value: '', ...options }) } catch (error) {} 
-        },
+        }
       },
     }
   )
