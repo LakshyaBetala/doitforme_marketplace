@@ -41,7 +41,7 @@ export default function ContactPage() {
               <h3 className="font-bold text-white text-lg">Registered Office</h3>
               <p className="text-white/60 text-sm leading-relaxed">
                 DoItForMe HQ<br/>
-                Chennai, Tamil Nadu, India<br/>
+                Chennai, Tamil Nadu, India.<br/>
                 <span className="opacity-50 text-xs">(Full address provided upon request or invoice generation)</span>
               </p>
             </div>
