@@ -9,7 +9,7 @@ import LogoutButton from "@/components/LogoutButton";
 import { 
   User, Mail, ShieldCheck, ShieldAlert, Star, Briefcase, 
   Loader2, Wallet, Calendar, CheckCircle2, 
-  ArrowLeft, Save, Lock, AlertCircle
+  ArrowLeft, Save, Lock, AlertCircle, Phone, GraduationCap
 } from "lucide-react";
 
 export default function ProfilePage() {
@@ -26,7 +26,7 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [upiId, setUpiId] = useState("");
   
-  // Locking: Once data is saved, we lock it to prevent accidental changes
+  // Locking States
   const [isNameLocked, setIsNameLocked] = useState(false);
   const [isUpiLocked, setIsUpiLocked] = useState(false);
 
@@ -39,30 +39,38 @@ export default function ProfilePage() {
           return;
         }
 
-        // 1. Fetch Existing Profile
+        // 1. Fetch Existing Profile from DB
         let { data: userData } = await supabase
           .from("users")
           .select("*")
           .eq("id", user.id)
           .maybeSingle();
 
-        // 2. AUTO-SYNC: If Profile is missing OR missing fields, pull from Signup Data
+        // 2. CRITICAL SYNC: Check Signup Metadata (Auth) vs DB
         const meta = user.user_metadata || {};
-        const needsSync = !userData || !userData.upi_id || !userData.name;
+        
+        // We sync if:
+        // A) Profile doesn't exist
+        // B) DB is missing UPI but Signup has it
+        // C) DB is missing Name but Signup has it
+        const needsSync = !userData || 
+                          (!userData.upi_id && meta.upi_id) || 
+                          (!userData.name && meta.full_name);
 
         if (needsSync) {
-            console.log("Syncing Signup Data to Profile...");
+            console.log("Syncing Signup Data to Database...");
             
-            // Prepare the sync payload
             const updates = {
                 id: user.id,
                 email: user.email,
+                // Prioritize DB value, fallback to Signup Metadata, fallback to empty
                 name: userData?.name || meta.full_name || "",
-                upi_id: userData?.upi_id || meta.upi_id || "", // <--- Pull UPI from Signup
+                upi_id: userData?.upi_id || meta.upi_id || "", 
                 phone: userData?.phone || meta.phone || "",
+                college: userData?.college || meta.college || "",
             };
 
-            // Upsert (Create or Update)
+            // Save to DB immediately
             const { data: newProfile, error } = await supabase
                 .from("users")
                 .upsert(updates)
@@ -70,7 +78,7 @@ export default function ProfilePage() {
                 .single();
             
             if (!error && newProfile) {
-                userData = newProfile; // Use the synced data
+                userData = newProfile; // Update local variable with fresh data
             }
         }
 
@@ -93,14 +101,14 @@ export default function ProfilePage() {
         setProfile(userData);
         setStats({ completed: completedCount, earnings: totalEarned });
 
-        // 4. Set & Lock Fields
+        // 4. Initialize Inputs & Lock if data exists
         if (userData.name) {
             setName(userData.name);
-            setIsNameLocked(true); 
+            setIsNameLocked(true); // Lock Name
         }
         if (userData.upi_id) {
             setUpiId(userData.upi_id);
-            setIsUpiLocked(true); 
+            setIsUpiLocked(true);  // Lock UPI
         }
 
       } catch (err) {
@@ -114,18 +122,18 @@ export default function ProfilePage() {
   }, [router, supabase]);
 
   const handleSave = async () => {
-    // Basic Format Validation
+    // UPI Validation
     const upiRegex = /[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}/;
     if (upiId && !upiRegex.test(upiId)) {
-        alert("Invalid UPI ID format. It should look like 'name@oksbi'.");
+        alert("Invalid UPI ID format. It should look like 'name@bank'.");
         return;
     }
 
     setSaving(true);
     try {
         const updates: any = {};
-        if (!isNameLocked) updates.name = name;
-        if (!isUpiLocked) updates.upi_id = upiId;
+        if (!isNameLocked && name) updates.name = name;
+        if (!isUpiLocked && upiId) updates.upi_id = upiId;
 
         const { error } = await supabase
             .from("users")
@@ -134,7 +142,9 @@ export default function ProfilePage() {
 
         if (error) throw error;
         
-        alert("Profile Saved!");
+        alert("Profile Saved! Details are now locked.");
+        
+        // Lock fields locally
         if (name) setIsNameLocked(true);
         if (upiId) setIsUpiLocked(true);
 
@@ -206,7 +216,7 @@ export default function ProfilePage() {
                         </div>
                     </div>
 
-                    {/* UPI Field */}
+                    {/* UPI Field (The Fix) */}
                     <div>
                         <label className="text-xs font-bold text-green-400 uppercase mb-2 flex items-center gap-2">
                            UPI ID for Payouts
@@ -229,6 +239,24 @@ export default function ProfilePage() {
                                 className="bg-transparent w-full outline-none font-bold text-lg text-green-100 placeholder:text-green-500/30 disabled:opacity-60"
                             />
                             {isUpiLocked && <Lock className="w-4 h-4 text-green-500/50" />}
+                        </div>
+                        {!isUpiLocked && (
+                            <p className="text-xs text-white/40 mt-2 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" /> 
+                                Once saved, this cannot be changed. Ensure it's correct.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* College & Phone Display (Read Only) */}
+                    <div className="flex gap-4">
+                        <div className="flex-1 p-3 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3 text-sm text-white/50">
+                            <GraduationCap className="w-4 h-4" />
+                            <span className="truncate">{profile.college || "No College Listed"}</span>
+                        </div>
+                        <div className="flex-1 p-3 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3 text-sm text-white/50">
+                            <Phone className="w-4 h-4" />
+                            <span className="truncate">{profile.phone || "No Phone"}</span>
                         </div>
                     </div>
 
