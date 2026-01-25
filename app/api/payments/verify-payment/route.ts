@@ -62,6 +62,8 @@ export async function POST(req: Request) {
     if (!gig) throw new Error("Gig not found");
 
     // 4. Calculate Fees
+    // Logic: User pays Price + Gateway Fee. 
+    // Platform takes 10% of Price. Worker gets 90% of Price.
     const basePrice = Number(gig.price); 
     const platformFee = basePrice * 0.10; 
     const amountHeld = basePrice * 0.90; // Net worker pay
@@ -121,7 +123,7 @@ export async function POST(req: Request) {
         throw gigUpdateError;
     }
 
-    // 8. UPDATE APPLICATIONS (Fix for Worker Status)
+    // 8. UPDATE APPLICATIONS (CRITICAL FIX FOR "PENDING" STATUS)
     // Accept the selected worker
     await supabaseAdmin
         .from("applications")

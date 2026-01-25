@@ -52,8 +52,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Unauthorized: You are not the assigned worker." }, { status: 403 });
     }
 
-    // Logic Check: Is the gig active?
-    // We allow 'assigned' (first delivery) or 'delivered' (updating submission)
+    // Logic Check: Is the gig active? (Allow 'assigned' or 'open' or 'delivered' for updates)
     const currentStatus = gig.status.toLowerCase();
     if (currentStatus !== 'assigned' && currentStatus !== 'delivered') {
          return NextResponse.json({ error: `Gig is not in progress (Status: ${gig.status})` }, { status: 400 });
@@ -69,7 +68,7 @@ export async function POST(req: Request) {
         status: "delivered",
         delivery_link: deliveryLink,
         delivered_at: new Date().toISOString(),
-        auto_release_at: autoReleaseTime
+        auto_release_at: autoReleaseTime,
       })
       .eq("id", gigId);
 
