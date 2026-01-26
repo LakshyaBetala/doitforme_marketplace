@@ -2,18 +2,25 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "DoItForMe — Students Helping Students",
+  title: "DoItForMe - Students Helping Students",
   description:
     "India’s first Gen-Z student marketplace. Outsource tasks. Earn from free time.",
+  
+  // --- FIX 1: Explicit Icon Definitions ---
+  // This forces devices to use YOUR logo instead of the default favicon.ico
   icons: {
-    icon: "/logo.svg",
+    icon: "/logo.png",       // General favicon
+    shortcut: "/logo.png",   // Shortcut icon
+    apple: "/logo.png",      // Apple/iOS home screen icon
   },
+  
   openGraph: {
     title: "DoItForMe",
     description: "Students Helping Students.",
-    images: ["/logo.svg"],
+    images: ["/logo.png"],
+    type: "website",
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in'),
 };
 
 export default function RootLayout({
@@ -21,15 +28,31 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // --- FIX 2: Google Search "Organization" Schema ---
+  // This tells Google: "Hey, this image is THE logo for this brand."
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "DoItForMe",
+    "url": "https://www.doitforme.in",
+    "logo": "https://www.doitforme.in/logo.png",
+    "sameAs": [
+      "https://www.instagram.com/doitforme.in/",
+      "https://www.linkedin.com/company/doitforme1/"
+    ]
+  };
+
   return (
     <html lang="en">
-      {/* 1. bg-[#0B0B11]: Matches the dark theme of the landing page.
-          2. selection:... : Customizes the text highlight color to purple.
-          3. overflow-x-hidden: Prevents horizontal scrolling from animations.
-      */}
       <body className="bg-[#0B0B11] text-white antialiased relative overflow-x-hidden selection:bg-[#8825F5] selection:text-white">
         
-        {/* GLOBAL BACKGROUND NOISE (Texture) */}
+        {/* Inject JSON-LD for Google Search */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+
+        {/* Global Background Texture */}
         <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.03] mix-blend-overlay">
            <svg className="h-full w-full">
              <filter id="noise">
@@ -39,12 +62,9 @@ export default function RootLayout({
            </svg>
         </div>
 
-        {/* MAIN CONTENT WRAPPER */}
         <main className="relative z-10 min-h-screen flex flex-col">
           {children}
         </main>
-
-        {/* BUG REPORT BUTTON REMOVED */}
 
       </body>
     </html>
