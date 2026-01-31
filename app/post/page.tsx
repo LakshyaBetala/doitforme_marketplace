@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
+import Link from "next/link";
 import { 
   Type, 
   AlignLeft, 
@@ -28,6 +29,7 @@ export default function PostGigPage() {
   // --- STATE MANAGEMENT ---
   const [user, setUser] = useState<any | null>(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
 
   // Form Fields
   const [title, setTitle] = useState("");
@@ -49,6 +51,11 @@ export default function PostGigPage() {
       const { data } = await supabase.auth.getUser();
       const u = data?.user ?? null;
       setUser(u);
+      // Fetch public profile to check UPI
+      if (u) {
+        const { data: dbUser } = await supabase.from("users").select("upi_id").eq("id", u.id).maybeSingle();
+        setUserProfile(dbUser);
+      }
       setUserLoading(false);
       if (!u) router.push("/login");
     })();
@@ -116,6 +123,13 @@ export default function PostGigPage() {
     }
     
     if (!user) return setError("Session expired. Please login again.");
+
+    if (!userProfile?.upi_id) {
+      setError("Please add your UPI ID in your profile before posting a gig.");
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
 
@@ -212,6 +226,13 @@ export default function PostGigPage() {
           <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-4">
             Post a <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-purple to-brand-blue">New Request</span>
           </h1>
+          {!userProfile?.upi_id && (
+            <div className="mx-auto max-w-2xl mb-4">
+              <div className="p-3 rounded-md bg-red-600 text-white text-sm font-bold text-center">
+                Please add your UPI ID in your <Link href="/profile" className="underline">Profile</Link> to post gigs. You won't be able to receive payments without it.
+              </div>
+            </div>
+          )}
           <p className="text-white/50 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
             Need help with an assignment, delivery, or task? <br className="hidden md:block"/>
             Set your budget and let verified peers handle it.
@@ -427,7 +448,7 @@ export default function PostGigPage() {
           {/* --- SUBMIT ACTIONS --- */}
           <div className="pt-2">
             <button
-              disabled={loading}
+              disabled={loading || !userProfile?.upi_id}
               className="w-full relative group overflow-hidden rounded-2xl p-[1px] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_40px_rgba(136,37,245,0.3)] hover:shadow-[0_0_60px_rgba(136,37,245,0.5)] transition-shadow duration-500"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-brand-purple via-brand-pink to-brand-blue group-hover:opacity-100 transition-opacity duration-300 animate-gradient-xy"></div>
@@ -445,6 +466,9 @@ export default function PostGigPage() {
                 )}
               </div>
             </button>
+            {!userProfile?.upi_id && (
+              <p className="text-center text-sm text-red-400 mt-3">Please add your UPI ID in your <Link href="/profile" className="underline">Profile</Link> to post gigs.</p>
+            )}
             <p className="text-center text-xs text-white/30 mt-4">
               By posting, you agree to our Terms of Service. Payment will be held in escrow.
             </p>

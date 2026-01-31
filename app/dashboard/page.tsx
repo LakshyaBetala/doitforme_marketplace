@@ -121,6 +121,14 @@ export default function Dashboard() {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 pt-10">
+        {/* UPI MISSING BANNER */}
+        {!user?.user_metadata?.upi_id && (
+          <div className="mb-6">
+            <div className="px-4 py-2 rounded-md bg-red-600 text-white text-sm font-bold text-center">
+              Please add your UPI ID in your <Link href="/profile" className="underline">Profile</Link> to start receiving work. You won't be able to post or apply for gigs without it.
+            </div>
+          </div>
+        )}
         
         {/* --- CONTROL DECK (Stats & Actions) --- */}
         <section className="mb-12 grid grid-cols-1 md:grid-cols-12 gap-6">

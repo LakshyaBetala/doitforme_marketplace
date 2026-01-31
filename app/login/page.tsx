@@ -146,9 +146,9 @@ export default function AuthPage() {
     const finalCollege = college === "Other" ? customCollege.trim() : college;
 
     // 1. Basic Field Validation
-    if (!email || !password || !name || !phone || !upiId) {
+    if (!email || !password || !name || !phone) {
       setLoading(false);
-      return setMessage("Please fill in all fields, including UPI ID.");
+      return setMessage("Please fill in all required fields. UPI is optional and can be added later in your profile.");
     }
     
     if (college === "Other" && !finalCollege) {
@@ -156,9 +156,9 @@ export default function AuthPage() {
       return setMessage("Please enter your university name.");
     }
 
-    // 2. UPI Regex Validation (Critical for Payouts)
+    // 2. UPI Regex Validation (If provided)
     const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
-    if (!upiRegex.test(upiId)) {
+    if (upiId && !upiRegex.test(upiId)) {
         setLoading(false);
         return setMessage("Invalid UPI ID format. (e.g., name@oksbi)");
     }
@@ -174,7 +174,7 @@ export default function AuthPage() {
           full_name: name,
           phone: phone,
           college: finalCollege,
-          upi_id: upiId // <--- PASSING UPI TO METADATA
+          upi_id: upiId || undefined // <--- PASSING UPI TO METADATA (optional)
         },
       },
     });
@@ -315,6 +315,7 @@ export default function AuthPage() {
                     <Wallet size={18} />
                 </div>
               </div>
+              <p className="text-xs text-white/40 mt-2">Optional — You can add your UPI later in your <a className="underline">Profile</a>. Note: you must add it to apply for or post gigs.</p>
 
               <div className="relative">
                 <label className="block text-xs font-bold text-white/40 mb-1.5 ml-1 uppercase tracking-wider">Select University</label>

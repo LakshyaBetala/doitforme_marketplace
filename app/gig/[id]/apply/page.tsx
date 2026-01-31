@@ -27,6 +27,7 @@ export default function ApplyPage() {
   const [gig, setGig] = useState<any | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
 
   // Form State
   const [message, setMessage] = useState("");
@@ -62,6 +63,14 @@ export default function ApplyPage() {
           console.log("User missing from public DB. Attempting auto-fix...");
           await fetch("/api/auth/create-user", { method: "POST" });
         }
+
+        // Fetch user's public profile to check UPI
+        const { data: dbUser } = await supabase
+          .from("users")
+          .select("upi_id")
+          .eq("id", u.id)
+          .maybeSingle();
+        setUserProfile(dbUser);
         // ------------------------------------------------
 
         // 2. Fetch Gig (Using * to avoid column name errors)
@@ -119,6 +128,8 @@ export default function ApplyPage() {
     if (!message.trim()) return setError("Message is required");
     if (message.length > 300) return setError("Message must be ≤ 300 characters");
 
+    if (!userProfile?.upi_id) return setError("Please add your UPI ID in your profile before applying.");
+
     setSubmitting(true);
 
     try {
@@ -151,6 +162,30 @@ export default function ApplyPage() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-10 h-10 text-brand-purple animate-spin" />
           <p className="text-white/50 text-sm animate-pulse">Loading Gig...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user has no UPI, show a friendly message and block applying
+  if (!loading && user && !userProfile?.upi_id) {
+    return (
+      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-[#121217] border border-white/10 rounded-3xl p-8 text-center relative overflow-hidden">
+          <div className="absolute top-[-50%] left-[-50%] w-full h-full bg-brand-purple/20 blur-[80px] rounded-full pointer-events-none"></div>
+          
+          <div className="relative z-10">
+            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
+              <AlertCircle className="w-10 h-10 text-red-400" />
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-3">UPI Required</h2>
+            <p className="text-white/60 mb-8 text-lg leading-relaxed">
+              Please add your UPI ID in the <Link href="/profile" className="underline">Profile</Link> before applying. You won't be able to receive payouts otherwise.
+            </p>
+            <Link href="/profile" className="block w-full py-4 bg-white text-black rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-lg shadow-white/10">
+              Go to Profile
+            </Link>
+          </div>
         </div>
       </div>
     );
