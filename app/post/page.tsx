@@ -37,6 +37,9 @@ export default function PostGigPage() {
   const [price, setPrice] = useState("");
   const [mode, setMode] = useState("Online");
   const [location, setLocation] = useState("");
+  // Deadline (date + time)
+  const [deadlineDate, setDeadlineDate] = useState("");
+  const [deadlineTime, setDeadlineTime] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
@@ -108,6 +111,12 @@ export default function PostGigPage() {
     const p = Number(price);
     if (Number.isNaN(p) || p < 20) return "Minimum budget is ₹20.";
     if (mode !== "Online" && !location.trim()) return "Location is required for offline tasks.";
+    // Deadline validation (if provided)
+    if (deadlineDate) {
+      const dt = new Date(`${deadlineDate}T${deadlineTime || "23:59"}`);
+      if (isNaN(dt.getTime())) return "Invalid deadline date/time.";
+      if (dt.getTime() <= Date.now()) return "Deadline must be in the future.";
+    }
     return null;
   };
 
@@ -165,6 +174,8 @@ export default function PostGigPage() {
         is_physical: mode !== "Online", // Convert UI mode to boolean
         location: mode === "Online" ? null : location.trim(),
         images: uploadedPaths,        // Array of string paths
+        // Persist deadline as ISO string if provided
+        deadline: deadlineDate ? new Date(`${deadlineDate}T${deadlineTime || "23:59"}`).toISOString() : null,
         status: "open",               // Initial status
         created_at: new Date().toISOString()
       };
@@ -386,7 +397,35 @@ export default function PostGigPage() {
             </div>
           </div>
 
-          {/* SECTION 3: ATTACHMENTS */}
+          {/* SECTION 3: DEADLINE */}
+          <div className="space-y-8">
+            <h3 className="text-sm font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+              <span className="w-8 h-[1px] bg-white/20"></span> Deadline (optional)
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+              <div className="sm:col-span-2">
+                <input
+                  type="date"
+                  className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:outline-none focus:border-brand-purple/50 transition-all text-lg"
+                  value={deadlineDate}
+                  onChange={(e) => setDeadlineDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div>
+                <input
+                  type="time"
+                  className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:outline-none focus:border-brand-purple/50 transition-all text-lg"
+                  value={deadlineTime}
+                  onChange={(e) => setDeadlineTime(e.target.value)}
+                  step={900}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 4: ATTACHMENTS */}
           <div className="space-y-8">
             <h3 className="text-sm font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
               <span className="w-8 h-[1px] bg-white/20"></span> Attachments

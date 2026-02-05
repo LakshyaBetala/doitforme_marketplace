@@ -45,10 +45,13 @@ export default function FeedPage() {
       try {
         setLoading(true);
 
+        const nowIso = new Date().toISOString();
+        // Only show open gigs that are not past their deadline (or have no deadline)
         const { data, error: fetchError } = await supabase
           .from("gigs")
           .select("*")
           .eq("status", "open") // Only show open gigs
+          .or(`deadline.is.null,deadline.gt.${nowIso}`)
           .order("created_at", { ascending: false });
 
         if (fetchError) throw fetchError;

@@ -47,13 +47,15 @@ export default function Dashboard() {
         setUser({ ...user, user_metadata: { ...user.user_metadata, ...dbUser } });
 
         // Fetch Gigs
-        const { data: gigsData } = await supabase
-          .from("gigs")
-          .select("*, applications(count)") 
-          .neq("poster_id", user.id)
-          .eq("status", "open")
-          .order("created_at", { ascending: false })
-          .limit(20);
+            const nowIso = new Date().toISOString();
+            const { data: gigsData } = await supabase
+               .from("gigs")
+               .select("*, applications(count)") 
+               .neq("poster_id", user.id)
+               .eq("status", "open")
+               .or(`deadline.is.null,deadline.gt.${nowIso}`)
+               .order("created_at", { ascending: false })
+               .limit(20);
         setGigs(gigsData || []);
 
         // Fetch Chats

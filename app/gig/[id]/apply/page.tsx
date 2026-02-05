@@ -31,7 +31,9 @@ export default function ApplyPage() {
 
   // Form State
   const [message, setMessage] = useState("");
-  const [eta, setEta] = useState("Within 24 hours");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [dateError, setDateError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -130,14 +132,43 @@ export default function ApplyPage() {
 
     if (!userProfile?.upi_id) return setError("Please add your UPI ID in your profile before applying.");
 
+    // Validate selected date/time
+    if (!selectedDate) {
+      setDateError("Please select a delivery date.");
+      return setError("Please select a delivery date.");
+    }
+    if (!selectedTime) {
+      setDateError("Please select a delivery time.");
+      return setError("Please select a delivery time.");
+    }
+
+    // Ensure selected datetime is before gig deadline (if provided)
+    if (gig?.deadline) {
+      const selectedTs = new Date(`${selectedDate}T${selectedTime}`).getTime();
+      const deadlineTs = new Date(gig.deadline).getTime();
+      if (isNaN(selectedTs)) {
+        setDateError("Invalid selected date/time.");
+        return setError("Invalid selected date/time.");
+      }
+      if (selectedTs > deadlineTs) {
+        const d = new Date(gig.deadline).toLocaleString();
+        setDateError(`Selected finish time must be on or before the deadline (${d}).`);
+        return setError(`Selected finish time must be on or before the deadline (${d}).`);
+      }
+    }
+
     setSubmitting(true);
 
     try {
+      // Build finish_by datetime from selected date + time
+      const finishBy = new Date(`${selectedDate}T${selectedTime || "23:59"}`).toISOString();
+
       const { error: insertError } = await supabase.from("applications").insert({
         gig_id: id,
         worker_id: user.id,
         pitch: message.trim(),
         status: "applied",
+        finish_by: finishBy,
       });
 
       if (insertError) throw insertError;
@@ -284,26 +315,43 @@ export default function ApplyPage() {
               </div>
             </div>
 
-            {/* ETA Input */}
+            {/* ETA Input: Date + Time Picker */}
             <div className="space-y-3 group">
               <label className="text-sm font-bold text-white/70 uppercase tracking-wider flex items-center gap-2 group-focus-within:text-brand-purple transition-colors">
                 <Clock className="w-4 h-4" /> When can you finish?
               </label>
-              <div className="relative">
-                <select
-                  className="w-full bg-black/20 border border-white/10 rounded-2xl p-5 text-white focus:outline-none focus:border-brand-purple/50 focus:bg-brand-purple/5 transition-all text-lg appearance-none cursor-pointer hover:bg-white/5 shadow-inner"
-                  value={eta}
-                  onChange={(e) => setEta(e.target.value)}
-                >
-                  <option className="bg-[#121217]">Within 24 hours</option>
-                  <option className="bg-[#121217]">1–2 days</option>
-                  <option className="bg-[#121217]">3–5 days</option>
-                  <option className="bg-[#121217]">More than 5 days</option>
-                </select>
-                <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
-                  ▼
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="flex-1">
+                  <input
+                    type="date"
+                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:outline-none focus:border-brand-purple/50 transition-all text-lg"
+                    value={selectedDate}
+                    onChange={(e) => { setSelectedDate(e.target.value); setDateError(null); }}
+                    max={gig?.deadline ? new Date(gig.deadline).toISOString().split('T')[0] : undefined}
+                    required
+                  />
+                </div>
+
+                <div className="w-40">
+                  <input
+                    type="time"
+                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:outline-none focus:border-brand-purple/50 transition-all text-lg"
+                    value={selectedTime}
+                    onChange={(e) => { setSelectedTime(e.target.value); setDateError(null); }}
+                    step={900}
+                    required
+                  />
                 </div>
               </div>
+
+              {gig?.deadline && (
+                <div className="text-xs text-white/40 mt-2">Deadline: {new Date(gig.deadline).toLocaleString()}</div>
+              )}
+
+              {dateError && (
+                <div className="text-sm text-red-400 mt-2">{dateError}</div>
+              )}
             </div>
 
             {/* Error Message */}
