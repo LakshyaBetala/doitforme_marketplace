@@ -303,11 +303,16 @@ export default function GigDetailPage() {
 
   const handleRefund = async () => {
     if (!confirm("Cancel gig? This cannot be undone.")) return;
+    
+    setSubmitting(true);
     try {
-      const res = await fetch("/api/gig/refund", { 
+      const res = await fetch("/api/escrow/refund", { // Corrected endpoint
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gigId: id }),
+        body: JSON.stringify({ 
+          gigId: id, 
+          posterId: user?.id // Added required posterId for the backend
+        }),
       });
       const json = await res.json();
       if (json.success) {
@@ -318,6 +323,8 @@ export default function GigDetailPage() {
       }
     } catch (e) {
       alert("Network error.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -394,7 +401,6 @@ export default function GigDetailPage() {
       <div className="w-full max-w-6xl relative z-10 space-y-6">
         {/* Nav */}
         <div className="flex justify-between items-center mb-4">
-          {/* FIX: Always link to /dashboard */}
           <Link href="/dashboard" className="flex items-center gap-2 text-white/50 hover:text-white group">
             <div className="p-2 rounded-full bg-white/5 border border-white/5"><ArrowLeft className="w-5 h-5" /></div>
             <span className="text-sm font-medium">Back to Dashboard</span>
@@ -502,7 +508,6 @@ export default function GigDetailPage() {
                 {isWorker && isAssigned && !gig.delivery_link && (
                   <div className="space-y-3">
                     {!gig.is_physical ? (
-                       // Remote Gig Input
                        <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/10">
                           <label className="text-xs text-white/50 block mb-2 font-bold uppercase">Submission URL</label>
                           <input type="text" placeholder="https://..." value={deliveryLink} onChange={(e) => setDeliveryLink(e.target.value)} className="w-full bg-[#121217] border border-white/10 rounded-lg p-3 text-sm text-white focus:border-brand-purple outline-none" />
@@ -511,7 +516,6 @@ export default function GigDetailPage() {
                           </p>
                        </div>
                     ) : (
-                       // Physical Gig Info
                        <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-300 text-sm">
                           <p>Once you have completed the task in person, click below to notify the poster.</p>
                        </div>
@@ -569,10 +573,16 @@ export default function GigDetailPage() {
                   </Link>
                 )}
 
-                {/* 6. Cancel (Owner) */}
-                {isOwner && status === "open" && (
+                {/* 6. Cancel (Owner) - ONLY visible if gig is open and not finalized in escrow */}
+                {isOwner && status === "open" && gig.escrow_status !== "RELEASED" && (
                    <div className="pt-4 border-t border-white/5">
-                      <button onClick={handleRefund} className="w-full py-3 rounded-xl bg-red-500/5 border border-red-500/10 text-red-500/60 hover:bg-red-500/10 hover:text-red-400 font-bold text-sm flex items-center justify-center gap-2"><AlertTriangle className="w-4 h-4" /> Cancel Gig</button>
+                      <button 
+                        onClick={handleRefund} 
+                        disabled={submitting}
+                        className="w-full py-3 rounded-xl bg-red-500/5 border border-red-500/10 text-red-500/60 hover:bg-red-500/10 hover:text-red-400 font-bold text-sm flex items-center justify-center gap-2"
+                      >
+                        <AlertTriangle className="w-4 h-4" /> Cancel Gig
+                      </button>
                    </div>
                 )}
               </div>
