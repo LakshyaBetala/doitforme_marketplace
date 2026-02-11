@@ -111,11 +111,18 @@ export default function PostGigPage() {
     const p = Number(price);
     if (Number.isNaN(p) || p < 20) return "Minimum budget is ₹20.";
     if (mode !== "Online" && !location.trim()) return "Location is required for offline tasks.";
-    // Deadline validation (if provided)
+    
+    // Deadline validation (Corrected for Local Timezone & Next Hour issue)
     if (deadlineDate) {
-      const dt = new Date(`${deadlineDate}T${deadlineTime || "23:59"}`);
-      if (isNaN(dt.getTime())) return "Invalid deadline date/time.";
-      if (dt.getTime() <= Date.now()) return "Deadline must be in the future.";
+      // Build date object from user local input
+      const localDeadline = new Date(`${deadlineDate}T${deadlineTime || "23:59:59"}`);
+      
+      if (isNaN(localDeadline.getTime())) return "Invalid deadline date/time.";
+      
+      // Use a 1-minute buffer to prevent "past time" errors during the submission process
+      if (localDeadline.getTime() <= Date.now() - 60000) {
+        return "Deadline must be in the future.";
+      }
     }
     return null;
   };
@@ -166,6 +173,11 @@ export default function PostGigPage() {
       }
 
       // 2. Prepare Payload (Mapping to DB Schema)
+      // Fix: Construct the ISO string from the local time components
+      const deadlineISO = deadlineDate 
+        ? new Date(`${deadlineDate}T${deadlineTime || "23:59:59"}`).toISOString() 
+        : null;
+
       const payload = {
         poster_id: user.id,           // Correct field name
         title: title.trim(),
@@ -174,8 +186,7 @@ export default function PostGigPage() {
         is_physical: mode !== "Online", // Convert UI mode to boolean
         location: mode === "Online" ? null : location.trim(),
         images: uploadedPaths,        // Array of string paths
-        // Persist deadline as ISO string if provided
-        deadline: deadlineDate ? new Date(`${deadlineDate}T${deadlineTime || "23:59"}`).toISOString() : null,
+        deadline: deadlineISO,        // Persist corrected ISO string
         status: "open",               // Initial status
         created_at: new Date().toISOString()
       };

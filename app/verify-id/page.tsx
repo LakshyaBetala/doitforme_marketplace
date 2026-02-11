@@ -26,7 +26,6 @@ export default function VerifyIDPage() {
   const [status, setStatus] = useState<"idle" | "success">("idle");
   const [error, setError] = useState("");
   
-  // New State for Drag & Drop Visuals
   const [isDragging, setIsDragging] = useState(false);
 
   // Redirect if already verified
@@ -61,7 +60,6 @@ export default function VerifyIDPage() {
     setError("");
   };
 
-  // --- DRAG & DROP HANDLERS ---
   const onDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -80,7 +78,6 @@ export default function VerifyIDPage() {
       e.dataTransfer.clearData();
     }
   };
-  // ----------------------------
 
   const handleUpload = async () => {
     if (!file) return;
@@ -92,14 +89,27 @@ export default function VerifyIDPage() {
       if (!user) throw new Error("Not authenticated");
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}_student_id.${fileExt}`;
+      // Using a unique timestamp to prevent caching issues if they re-upload
+      const fileName = `${user.id}_student_id_${Date.now()}.${fileExt}`;
       const path = `${user.id}/${fileName}`;
 
+      // 1. Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("kyc-ids") 
         .upload(path, file, { upsert: true });
 
       if (uploadError) throw uploadError;
+
+      // 2. FIX: Link the uploaded file path to the User Table
+      const { error: dbUpdateError } = await supabase
+        .from("users")
+        .update({ 
+          id_card_url: path, // Save the path in the id_card_url column
+          updated_at: new Date().toISOString() 
+        })
+        .eq("id", user.id);
+
+      if (dbUpdateError) throw dbUpdateError;
 
       setStatus("success");
       setTimeout(() => router.push("/profile"), 3000);
@@ -138,19 +148,16 @@ export default function VerifyIDPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white p-6 flex flex-col items-center justify-center relative overflow-hidden">
-      
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] bg-brand-purple/10 blur-[150px] rounded-full"></div>
       </div>
 
       <div className="w-full max-w-xl relative z-10">
-        
         <Link href="/profile" className="inline-flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Profile
         </Link>
 
         <div className="bg-[#121217] border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-          
           <div className="text-center mb-10">
             <div className="w-16 h-16 bg-brand-purple/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-purple/20">
               <ScanLine className="w-8 h-8 text-brand-purple" />
@@ -230,11 +237,7 @@ export default function VerifyIDPage() {
                 )}
               </div>
             </button>
-            <p className="text-center text-xs text-white/30 mt-4 flex items-center justify-center gap-1">
-              <ShieldCheck className="w-3 h-3" /> Securely stored for admin review
-            </p>
           </div>
-
         </div>
       </div>
     </div>
