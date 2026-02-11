@@ -2,53 +2,67 @@ import { NextResponse } from "next/server";
 import { Cashfree } from "cashfree-pg";
 import { supabaseServer } from "@/lib/supabaseServer";
 
-// @ts-ignore
-Cashfree.XClientId = process.env.CASHFREE_APP_ID!;
-// @ts-ignore
-Cashfree.XClientSecret = process.env.CASHFREE_SECRET_KEY!;
-// @ts-ignore
-Cashfree.XEnvironment = Cashfree.Environment.SANDBOX; // Switch to PRODUCTION when live
-
 export async function POST(req: Request) {
   try {
-    const { gigId, posterId, posterPhone, posterEmail } = await req.json();
+    // 1. Setup Cashfree
+    // @ts-ignore
+    Cashfree.XClientId = process.env.CASHFREE_APP_ID!;
+    // @ts-ignore
+    Cashfree.XClientSecret = process.env.CASHFREE_SECRET_KEY!;
+    // @ts-ignore
+    Cashfree.XEnvironment = process.env.NODE_ENV === "production" ? "PRODUCTION" : "SANDBOX";
+
+    const { gigId } = await req.json();
 
     const supabase = await supabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 1. Fetch the REAL price from DB (Security: Never trust the client side)
-    const { data: gig, error } = await supabase
+    // 2. Fetch GIG AND POSTER details in one go using a Join or separate query
+    // Fetch the gig price
+    const { data: gig, error: gigError } = await supabase
       .from("gigs")
-      .select("price, title")
+      .select("price, title, poster_id")
       .eq("id", gigId)
       .single();
 
-    if (error || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
+    if (gigError || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    // 2. Calculate Surcharge (The 2% Gateway Fee)
-    // We add this to the total so the Poster pays it, not you.
+    // 3. FETCH ACTUAL USER DETAILS (Phone and Email) from the users table
+    const { data: dbUser, error: userError } = await supabase
+      .from("users")
+      .select("email, phone, name")
+      .eq("id", gig.poster_id)
+      .single();
+
+    if (userError || !dbUser) {
+        return NextResponse.json({ error: "Poster profile not found" }, { status: 404 });
+    }
+
+    // 4. Calculate Surcharge
     const basePrice = Number(gig.price);
-    const surcharge = Math.ceil(basePrice * 0.02); // 2% 
+    const surcharge = Math.ceil(basePrice * 0.02); 
     const totalAmountToCharge = basePrice + surcharge;
 
-    // Generate Order ID
     const orderId = `gig_${gigId}_${Date.now()}`;
 
+    // 5. Build Cashfree Request using DATABASE values
     const request = {
-      order_amount: totalAmountToCharge, // <--- We send the Higher Amount here
+      order_amount: totalAmountToCharge, 
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
-        customer_id: posterId,
-        customer_phone: posterPhone || "9999999999",
-        customer_email: posterEmail || user?.email || "user@example.com",
+        customer_id: gig.poster_id,
+        // Convert numeric phone from DB to string for Cashfree
+        customer_phone: dbUser.phone ? String(dbUser.phone) : "9999999999", 
+        customer_email: dbUser.email || user.email,
+        customer_name: dbUser.name || "Customer"
       },
       order_meta: {
-        // Pass gig_id in return_url so we can read it in the Verify step
         return_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/verify-payment?order_id={order_id}&gig_id=${gigId}`, 
         notify_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/webhook`,
       },
-      order_note: `Gig: ${gig.title} (Incl. Gateway Fee)`,
+      order_note: `Gig: ${gig.title}`,
     };
 
     // @ts-ignore
@@ -56,10 +70,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(response.data);
   } catch (error: any) {
-    console.error("Cashfree Create Order Error:", error.response?.data?.message || error.message);
-    return NextResponse.json(
-      { error: error.response?.data?.message || "Payment initialization failed" },
-      { status: 500 }
-    );
+    console.error("Cashfree Order Error:", error.message);
+    return NextResponse.json({ error: "Payment setup failed" }, { status: 500 });
   }
 }
