@@ -11,7 +11,9 @@ import {
   MessageSquare, 
   Loader2, 
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  CalendarDays,
+  Timer
 } from "lucide-react";
 
 export default function ApplyPage() {
@@ -35,6 +37,9 @@ export default function ApplyPage() {
   const [selectedTime, setSelectedTime] = useState("");
   const [dateError, setDateError] = useState<string | null>(null);
 
+  // UX: Quick hour presets for faster selection
+  const quickHours = ["09:00", "12:00", "15:00", "18:00", "21:00", "23:59"];
+
   useEffect(() => {
     if (!id) {
       setError("Invalid Gig ID");
@@ -54,7 +59,6 @@ export default function ApplyPage() {
         }
 
         // --- FIX 1: AUTO-CREATE PUBLIC USER IF MISSING ---
-        // This solves the "Foreign Key Constraint" error
         const { data: publicUser } = await supabase
           .from("users")
           .select("id")
@@ -73,7 +77,6 @@ export default function ApplyPage() {
           .eq("id", u.id)
           .maybeSingle();
         setUserProfile(dbUser);
-        // ------------------------------------------------
 
         // 2. Fetch Gig (Using * to avoid column name errors)
         const { data: gigData, error: gigError } = await supabase
@@ -90,7 +93,7 @@ export default function ApplyPage() {
         // 3. Block Owner from Applying
         const posterId = gigData.poster_id || gigData.user_id;
         if (posterId === u.id) {
-          return; // Will be handled by render logic
+          return; 
         }
 
         // 4. Check Existing Application
@@ -121,7 +124,6 @@ export default function ApplyPage() {
     if (!user) return router.push("/login");
     if (!gig) return setError("Gig not found");
     
-    // Safety check for owner
     const posterId = gig.poster_id || gig.user_id;
     if (posterId === user.id) return setError("You cannot apply to your own gig.");
     if (alreadyApplied) return setError("You already applied.");
@@ -131,7 +133,6 @@ export default function ApplyPage() {
 
     if (!userProfile?.upi_id) return setError("Please add your UPI ID in your profile before applying.");
 
-    // Validate selected date/time
     if (!selectedDate) {
       setDateError("Please select a delivery date.");
       return setError("Please select a delivery date.");
@@ -141,10 +142,8 @@ export default function ApplyPage() {
       return setError("Please select a delivery time.");
     }
 
-    // FIXED: Construct the ISO string from local components to avoid timezone offset issues
     const finishBy = new Date(`${selectedDate}T${selectedTime}`).toISOString();
 
-    // Ensure selected datetime is before gig deadline (if provided)
     if (gig?.deadline) {
       const selectedTs = new Date(`${selectedDate}T${selectedTime}`).getTime();
       const deadlineTs = new Date(gig.deadline).getTime();
@@ -162,13 +161,12 @@ export default function ApplyPage() {
     setSubmitting(true);
 
     try {
-      // FIXED: Corrected the column name to 'finish_by' as per your schema
       const { error: insertError } = await supabase.from("applications").insert({
         gig_id: id,
         worker_id: user.id,
         pitch: message.trim(),
         status: "applied",
-        finish_by: finishBy, // Mapped to correct database column
+        finish_by: finishBy,
       });
 
       if (insertError) throw insertError;
@@ -185,7 +183,6 @@ export default function ApplyPage() {
     }
   };
 
-  // --- LOADING STATE ---
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center">
@@ -197,54 +194,29 @@ export default function ApplyPage() {
     );
   }
 
-  // If user has no UPI, show a friendly message and block applying
   if (!loading && user && !userProfile?.upi_id) {
     return (
-      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-[#121217] border border-white/10 rounded-3xl p-8 text-center relative overflow-hidden">
+      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-[#121217] border border-white/10 rounded-3xl p-8 relative overflow-hidden">
           <div className="absolute top-[-50%] left-[-50%] w-full h-full bg-brand-purple/20 blur-[80px] rounded-full pointer-events-none"></div>
-          
-          <div className="relative z-10">
-            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-              <AlertCircle className="w-10 h-10 text-red-400" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-3">UPI Required</h2>
-            <p className="text-white/60 mb-8 text-lg leading-relaxed">
-              Please add your UPI ID in the <Link href="/profile" className="underline">Profile</Link> before applying. You won't be able to receive payouts otherwise.
-            </p>
-            <Link href="/profile" className="block w-full py-4 bg-white text-black rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-lg shadow-white/10">
-              Go to Profile
-            </Link>
-          </div>
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-6" />
+          <h2 className="text-3xl font-bold text-white mb-3">UPI Required</h2>
+          <p className="text-white/60 mb-8">Add your UPI ID in your profile before applying to receive payouts.</p>
+          <Link href="/profile" className="block w-full py-4 bg-white text-black rounded-xl font-bold hover:scale-[1.02] transition-transform">Go to Profile</Link>
         </div>
       </div>
     );
   }
 
-  // --- OWNER / APPLIED STATE ---
   const posterId = gig?.poster_id || gig?.user_id;
   if (gig && (posterId === user?.id || alreadyApplied)) {
     return (
-      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-[#121217] border border-white/10 rounded-3xl p-8 text-center relative overflow-hidden">
+      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-[#121217] border border-white/10 rounded-3xl p-8 relative overflow-hidden">
           <div className="absolute top-[-50%] left-[-50%] w-full h-full bg-brand-purple/20 blur-[80px] rounded-full pointer-events-none"></div>
-          
-          <div className="relative z-10">
-            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10">
-              {alreadyApplied ? <CheckCircle2 className="w-10 h-10 text-brand-green" /> : <AlertCircle className="w-10 h-10 text-brand-pink" />}
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-3">
-              {alreadyApplied ? "Application Sent!" : "This is your gig"}
-            </h2>
-            <p className="text-white/60 mb-8 text-lg leading-relaxed">
-              {alreadyApplied 
-                ? "Good luck! You'll be notified if the poster accepts your request." 
-                : "You cannot apply to a gig you posted yourself."}
-            </p>
-            <Link href="/dashboard" className="block w-full py-4 bg-white text-black rounded-xl font-bold hover:scale-[1.02] transition-transform shadow-lg shadow-white/10">
-              Return to Dashboard
-            </Link>
-          </div>
+          {alreadyApplied ? <CheckCircle2 className="w-16 h-16 text-brand-green mx-auto mb-6" /> : <AlertCircle className="w-16 h-16 text-brand-pink mx-auto mb-6" />}
+          <h2 className="text-3xl font-bold text-white mb-3">{alreadyApplied ? "Application Sent!" : "Your Gig"}</h2>
+          <Link href="/dashboard" className="block w-full py-4 bg-white text-black rounded-xl font-bold hover:scale-[1.02] transition-transform">Return to Dashboard</Link>
         </div>
       </div>
     );
@@ -252,7 +224,6 @@ export default function ApplyPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white flex items-center justify-center p-4 md:p-8 relative overflow-hidden selection:bg-brand-purple selection:text-white">
-      
       {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-brand-purple/20 blur-[150px] rounded-full"></div>
@@ -260,43 +231,24 @@ export default function ApplyPage() {
       </div>
 
       <div className="w-full max-w-2xl relative z-10">
-        
-        {/* Back Button */}
-        <button 
-          onClick={() => router.back()} 
-          className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 group"
-        >
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 group">
           <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </div>
-          <span className="text-sm font-medium">Cancel Application</span>
+          <span className="text-sm font-medium">Cancel</span>
         </button>
 
         <div className="bg-[#121217]/90 backdrop-blur-xl border border-white/10 rounded-[32px] p-8 md:p-10 shadow-2xl relative overflow-hidden">
-          
-          {/* Subtle Border Gradient */}
-          <div className="absolute inset-0 rounded-[32px] border border-white/5 pointer-events-none"></div>
-
-          {/* Header */}
           <div className="mb-8 border-b border-white/10 pb-8">
-            <h1 className="text-3xl md:text-4xl font-black text-white mb-2 tracking-tight">
-              Apply for Gig
-            </h1>
-            <p className="text-white/60 text-lg">
-              Pitch yourself for <span className="text-white font-bold">"{gig?.title}"</span>
-            </p>
-            <div className="mt-4 inline-flex items-center px-4 py-1.5 rounded-full bg-brand-purple/10 border border-brand-purple/20 text-brand-purple text-sm font-bold uppercase tracking-wider">
-              Budget: ₹{gig?.price}
-            </div>
+            <h1 className="text-3xl md:text-4xl font-black text-white mb-2 tracking-tight">Apply for Gig</h1>
+            <p className="text-white/60 text-lg">Pitching yourself for <span className="text-white font-bold">"{gig?.title}"</span></p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-8">
-            
-            {/* Message Input */}
+            {/* Pitch Section */}
             <div className="space-y-3 group">
-              <label className="text-sm font-bold text-white/70 uppercase tracking-wider flex items-center gap-2 group-focus-within:text-brand-blue transition-colors">
-                <MessageSquare className="w-4 h-4" /> Why you?
+              <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" /> Why should we pick you?
               </label>
               <textarea
                 className="w-full bg-black/20 border border-white/10 rounded-2xl p-5 text-white placeholder:text-white/20 focus:outline-none focus:border-brand-blue/50 focus:bg-brand-blue/5 transition-all min-h-[160px] resize-none leading-relaxed text-lg shadow-inner"
@@ -308,55 +260,87 @@ export default function ApplyPage() {
                 autoFocus
               />
               <div className="flex justify-end">
-                <span className={`text-xs ${message.length > 250 ? "text-brand-pink" : "text-white/30"}`}>
+                <span className={`text-[10px] font-bold ${message.length > 250 ? "text-brand-pink" : "text-white/20"}`}>
                   {message.length}/300
                 </span>
               </div>
             </div>
 
-            {/* ETA Input: Date + Time Picker */}
-            <div className="space-y-3 group">
-              <label className="text-sm font-bold text-white/70 uppercase tracking-wider flex items-center gap-2 group-focus-within:text-brand-purple transition-colors">
-                <Clock className="w-4 h-4" /> When can you finish?
+            {/* IMPROVED DATE & TIME UX SECTION */}
+            <div className="space-y-6 bg-white/5 border border-white/5 p-6 rounded-3xl">
+              <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
+                <Clock className="w-4 h-4" /> Delivery Promise
               </label>
 
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                <div className="flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Custom Styled Date Picker */}
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-purple pointer-events-none group-focus-within:scale-110 transition-transform">
+                    <CalendarDays className="w-5 h-5" />
+                  </div>
                   <input
                     type="date"
-                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:outline-none focus:border-brand-purple/50 transition-all text-lg"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-brand-purple/50 focus:bg-brand-purple/5 transition-all appearance-none cursor-pointer"
                     value={selectedDate}
                     onChange={(e) => { setSelectedDate(e.target.value); setDateError(null); }}
-                    // FIXED: Safety check for gig.deadline to prevent crash
+                    min={new Date().toISOString().split('T')[0]}
                     max={gig?.deadline ? new Date(gig.deadline).toISOString().split('T')[0] : undefined}
                     required
                   />
                 </div>
 
-                <div className="w-40">
+                {/* Custom Styled Time Picker */}
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-blue pointer-events-none group-focus-within:scale-110 transition-transform">
+                    <Timer className="w-5 h-5" />
+                  </div>
                   <input
                     type="time"
-                    className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:outline-none focus:border-brand-purple/50 transition-all text-lg"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-brand-blue/50 focus:bg-brand-blue/5 transition-all appearance-none cursor-pointer"
                     value={selectedTime}
                     onChange={(e) => { setSelectedTime(e.target.value); setDateError(null); }}
-                    step={900}
                     required
                   />
                 </div>
               </div>
 
+              {/* Quick Time Selector Chips */}
+              <div className="space-y-3">
+                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Quick Hour Pick</p>
+                <div className="flex flex-wrap gap-2">
+                  {quickHours.map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      onClick={() => setSelectedTime(h)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                        selectedTime === h 
+                          ? "bg-brand-purple border-brand-purple text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
+                          : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                      }`}
+                    >
+                      {h === "23:59" ? "End of Day" : h}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {gig?.deadline && (
-                <div className="text-xs text-white/40 mt-2">Deadline: {new Date(gig.deadline).toLocaleString()}</div>
+                <div className="px-4 py-2 rounded-lg bg-red-500/5 border border-red-500/10 inline-flex items-center gap-2 text-[10px] font-bold text-red-400 uppercase tracking-wider">
+                  <AlertCircle className="w-3 h-3" /> Max Deadline: {new Date(gig.deadline).toLocaleString()}
+                </div>
               )}
 
               {dateError && (
-                <div className="text-sm text-red-400 mt-2">{dateError}</div>
+                <div className="text-sm text-red-400 font-medium flex items-center gap-2 animate-pulse">
+                   <AlertCircle className="w-4 h-4" /> {dateError}
+                </div>
               )}
             </div>
 
             {/* Error Message */}
             {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-medium flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-medium flex items-center gap-3">
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 {error}
               </div>
@@ -366,24 +350,13 @@ export default function ApplyPage() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full relative group overflow-hidden rounded-2xl p-[1px] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_40px_rgba(136,37,245,0.3)] hover:shadow-[0_0_60px_rgba(136,37,245,0.5)] transition-shadow duration-500"
+              className="w-full relative group overflow-hidden rounded-[24px] bg-white text-black py-5 font-black text-xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-purple via-brand-pink to-brand-blue group-hover:opacity-100 transition-opacity duration-300 animate-gradient-xy"></div>
-              <div className="relative bg-[#1a1a24] group-hover:bg-transparent transition-colors rounded-[15px] p-5 flex items-center justify-center gap-3">
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    <span className="font-bold text-xl text-white tracking-wide">Sending...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5 text-white group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    <span className="font-bold text-xl text-white tracking-wide">Submit Application</span>
-                  </>
-                )}
+              <div className="flex items-center justify-center gap-3">
+                {submitting ? <Loader2 className="w-6 h-6 animate-spin" /> : <Send className="w-6 h-6" />}
+                <span>{submitting ? "SENDING..." : "SUBMIT APPLICATION"}</span>
               </div>
             </button>
-
           </form>
         </div>
       </div>
