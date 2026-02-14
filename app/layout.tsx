@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next"; // Added Viewport
 import "./globals.css";
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: "DoItForMe - Students Helping Students",
@@ -75,6 +76,7 @@ export default function RootLayout({
         <main className="relative z-10 flex-1 flex flex-col w-full">
           {children}
         </main>
+        <Analytics />
 
       </body>
     </html>

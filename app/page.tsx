@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LandingPage from "@/components/home/LandingPage";
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
   title: "DoItForMe | India's #1 Verified Student Gig Marketplace",
