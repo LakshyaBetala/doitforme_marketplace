@@ -15,62 +15,119 @@ export async function POST(req: Request) {
     const { gigId } = await req.json();
 
     const supabase = await supabaseServer();
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser(); // The Payer
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 2. Fetch GIG AND POSTER details in one go using a Join or separate query
-    // Fetch the gig price
+    // 2. Fetch Gig Details
     const { data: gig, error: gigError } = await supabase
       .from("gigs")
-      .select("price, title, poster_id")
+      .select("price, title, poster_id, listing_type, market_type, security_deposit, assigned_worker_id")
       .eq("id", gigId)
       .single();
 
     if (gigError || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    // 3. FETCH ACTUAL USER DETAILS (Phone and Email) from the users table
-    const { data: dbUser, error: userError } = await supabase
-      .from("users")
-      .select("email, phone, name")
-      .eq("id", gig.poster_id)
-      .single();
-
-    if (userError || !dbUser) {
-        return NextResponse.json({ error: "Poster profile not found" }, { status: 404 });
+    // 3. Determine Recipient (Who gets the money/whose stats determine fee?)
+    // Market: Poster (Seller)
+    // Hustle: Assigned Worker (Worker)
+    let recipientId = gig.poster_id;
+    if (gig.listing_type === 'HUSTLE') {
+      if (!gig.assigned_worker_id) return NextResponse.json({ error: "No worker assigned to pay" }, { status: 400 });
+      recipientId = gig.assigned_worker_id;
     }
 
-    // 4. Calculate Surcharge
-    const basePrice = Number(gig.price);
-    const surcharge = Math.ceil(basePrice * 0.02); 
-    const totalAmountToCharge = basePrice + surcharge;
+    // 4. Fetch Recipient Stats (for Tiered Fee) & Payer Details (for Gateway)
+    // We need Payer's phone/email for Cashfree
+    const { data: payerProfile } = await supabase
+      .from('users')
+      .select('name, email, phone')
+      .eq('id', user.id) // Payer is current user
+      .single();
 
-    const orderId = `gig_${gigId}_${Date.now()}`;
+    if (!payerProfile) return NextResponse.json({ error: "Complete your profile to pay" }, { status: 400 });
 
-    // 5. Build Cashfree Request using DATABASE values
+    const { data: recipientProfile } = await supabase
+      .from('users')
+      .select('jobs_completed')
+      .eq('id', recipientId)
+      .single();
+
+    // 5. Calculate Fees
+    const price = Number(gig.price);
+    const jobsCompleted = recipientProfile?.jobs_completed || 0;
+
+    // Tiered Platform Fee
+    const feeRate = jobsCompleted < 10 ? 0.075 : 0.10; // 7.5% vs 10%
+    const platformFee = Math.ceil(price * feeRate);
+
+    // Security Deposit (Only for Market Rent)
+    let deposit = 0;
+    let escrowCategory = 'PROJECT';
+
+    if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
+      deposit = Number(gig.security_deposit) || 0;
+      escrowCategory = 'RENTAL_DEPOSIT';
+    }
+
+    // Subtotal (Base charge before Gateway)
+    // Logic: User Pays: Price + Deposit + Platform Fee + Gateway Fee
+    const subtotal = price + deposit + platformFee;
+
+    // Gateway Fee (2%)
+    const gatewayFee = Math.ceil(subtotal * 0.02);
+
+    const totalAmount = subtotal + gatewayFee;
+
+    const orderId = `order_${gigId}_${Date.now()}`;
+
+    // 6. Create Cashfree Order
     const request = {
-      order_amount: totalAmountToCharge, 
+      order_amount: totalAmount,
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
-        customer_id: gig.poster_id,
-        // Convert numeric phone from DB to string for Cashfree
-        customer_phone: dbUser.phone ? String(dbUser.phone) : "9999999999", 
-        customer_email: dbUser.email || user.email,
-        customer_name: dbUser.name || "Customer"
+        customer_id: user.id,
+        customer_name: payerProfile.name || "User",
+        customer_email: payerProfile.email || "user@example.com",
+        customer_phone: String(payerProfile.phone || "9999999999"),
       },
       order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/verify-payment?order_id={order_id}&gig_id=${gigId}`, 
-        notify_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/webhook`,
+        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/gig/${gigId}?payment_status={order_status}`,
+        notify_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/webhook`,
       },
-      order_note: `Gig: ${gig.title}`,
     };
 
     // @ts-ignore
     const response = await Cashfree.PGCreateOrder("2023-08-01", request);
 
+    await supabase.from('gigs').update({
+      gateway_order_id: orderId,
+      payment_gateway: 'CASHFREE',
+      escrow_amount: totalAmount,
+    }).eq('id', gigId);
+
+    await supabase.from('transactions').insert({
+      gig_id: gigId,
+      user_id: user.id,
+      amount: totalAmount,
+      type: 'DEBIT',
+      status: 'INITIATED',
+      gateway_order_id: orderId,
+      provider_data: {
+        breakdown: {
+          price,
+          deposit,
+          platformFee,
+          gatewayFee,
+          recipientId
+        }
+      }
+    });
+
     return NextResponse.json(response.data);
+
   } catch (error: any) {
-    console.error("Cashfree Order Error:", error.message);
-    return NextResponse.json({ error: "Payment setup failed" }, { status: 500 });
+    console.error("Order Creation Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

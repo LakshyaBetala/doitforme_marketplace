@@ -2,10 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { containsSensitiveInfo } from "@/lib/moderation";
 import Image from "next/image";
 import Link from "next/link";
-import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star } from "lucide-react";
+import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle } from "lucide-react";
 
 export default function ChatPage() {
     const supabase = supabaseBrowser();
@@ -159,59 +158,44 @@ export default function ChatPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // --- MODERATION & LIMITS ---
-    const checkLimits = () => {
-        if (!activeChat || !user) return false;
-
-        const chat = conversations.find(c => c.conversationKey === activeChat);
-        if (!chat || !chat.gig) return true; // Fail safe
-
-        // 1. If Gig is Assigned/Completed/Sold -> UNLIMITED
-        // (In a real app, we'd fetch the latest status, but for now relies on chat.gig which might be stale. 
-        //  ideally we fetch gig details when opening chat)
-        // For robustness, let's assume if we are in a chat, we want to enforce limits unless we know otherwise.
-        // We'll trust the loaded messages count for now.
-
-        const myMessagesCount = messages.filter(m => m.sender_id === user.id).length;
-        const limit = chat.gig.listing_type === 'MARKET' ? 4 : 2;
-
-        if (myMessagesCount >= limit) {
-            return false;
-        }
-        return true;
-    };
-
     const sendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim() || !user || !activeChat) return;
 
-        // 1. Content Moderation
-        const modification = containsSensitiveInfo(newMessage);
-        if (modification.detected) {
-            alert(`Subject to Moderation: ${modification.reason}`);
-            return;
-        }
-
-        // 2. Check Limits
-        if (!checkLimits()) {
-            // Re-check logic: If I am the poster, I should have a button to Hire. 
-            // If I am the worker, I am blocked.
-            // We'll handle the UI blocking in the Render, but double check here.
-            alert("Message limit reached. Please hire the worker (or wait to be hired) to continue chatting.");
-            return;
-        }
-
         const [gigId, otherUserId] = activeChat.split('_');
 
-        const { error } = await supabase.from('messages').insert({
-            gig_id: gigId,
-            sender_id: user.id,
-            receiver_id: otherUserId,
-            content: newMessage,
-        });
+        try {
+            const res = await fetch("/api/chat/send", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    gigId,
+                    receiverId: otherUserId,
+                    content: newMessage
+                })
+            });
 
-        if (error) alert("Failed to send");
-        else setNewMessage("");
+            const data = await res.json();
+
+            if (!res.ok) {
+                // Handle specific errors
+                if (res.status === 403) {
+                    alert(data.message || "Limit Reached. Please accepting the proposal to continue.");
+                } else if (res.status === 400) {
+                    alert(`Message Blocked: ${data.reason || data.error}`);
+                } else {
+                    alert(data.error || "Failed to send message");
+                }
+                return;
+            }
+
+            // Success
+            setNewMessage("");
+            // The realtime subscription will handle adding the message to the list
+        } catch (err: any) {
+            console.error("Failed to send:", err);
+            alert("Network error. Please try again.");
+        }
     };
 
     return (

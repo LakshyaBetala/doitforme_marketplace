@@ -246,6 +246,36 @@ export default function GigDetailPage() {
     router.push(`/gig/${id}/apply`);
   };
 
+  const handleBuy = async () => {
+    if (!user) return alert("Please login to purchase.");
+    // Confirm action
+    const action = gig?.market_type === 'RENT' ? "Rent" : "Buy";
+    if (!confirm(`Are you sure you want to ${action} this item? You will be redirected to payment.`)) return;
+
+    setSubmitting(true);
+    try {
+      // 1. Create Order
+      const res = await fetch("/api/payments/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gigId: id })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to initiate payment");
+
+      // 2. Redirect to Cashfree
+      if (data.payment_link) {
+        window.location.href = data.payment_link;
+      } else {
+        throw new Error("No payment link received");
+      }
+    } catch (err: any) {
+      alert(err.message);
+      setSubmitting(false);
+    }
+  };
+
   const handleDeliver = async () => {
     // RENTAL RETURN LOGIC
     if (gig?.listing_type === "MARKET" && gig.market_type === "RENT") {
@@ -369,47 +399,6 @@ export default function GigDetailPage() {
     } catch (e) {
       alert("Network error.");
     } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleBuy = async () => {
-    if (!gig || !cashfree) return;
-    if (!user) return alert("Please login to purchase.");
-
-    const basePrice = gig.price;
-    const deposit = gig.security_deposit || 0;
-    const subtotal = basePrice + deposit;
-    const fee = Math.ceil(subtotal * 0.02); // 2% gateway fee
-    const total = subtotal + fee;
-
-    const confirmMsg = `CONFIRM PURCHASE:\n\nItem Price: ₹${basePrice}\n${deposit > 0 ? `Security Deposit: ₹${deposit}\n` : ""}Gateway Fee (2%): ₹${fee}\nTotal to Pay: ₹${total}\n\nProceed to payment?`;
-    if (!confirm(confirmMsg)) return;
-
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/gig/hire", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gigId: id,
-          workerId: user.id
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Payment initiation failed");
-
-      if (json.paymentSessionId) {
-        cashfree.checkout({
-          paymentSessionId: json.paymentSessionId,
-          redirectTarget: "_self",
-        });
-      } else {
-        throw new Error("Invalid payment session");
-      }
-    } catch (e: any) {
-      alert("Error: " + e.message);
       setSubmitting(false);
     }
   };
@@ -612,7 +601,14 @@ export default function GigDetailPage() {
               <div className="flex items-center gap-4 text-white/60 text-sm">
                 <span>Posted {new Date(gig.created_at).toLocaleDateString()}</span>
                 <span>•</span>
-                <span>{gig.poster_email?.split('@')[0]}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-white">{posterDetails?.name || gig.poster_email?.split('@')[0]}</span>
+                  {posterDetails?.kyc_verified && (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30 flex items-center gap-1">
+                      <ShieldCheck size={10} /> ID VERIFIED
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
