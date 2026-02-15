@@ -890,15 +890,34 @@ export default function GigDetailPage() {
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Posted By</h3>
 
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/5 flex items-center justify-center text-lg font-bold text-white shadow-inner overflow-hidden">
-                  {posterDetails?.avatar_url ? (
-                    <Image src={posterDetails.avatar_url} alt={posterDetails.name} width={56} height={56} className="object-cover w-full h-full" />
-                  ) : (
-                    <span className="text-white/40">{posterDetails?.name?.[0] || "?"}</span>
-                  )}
+                {/* Avatar with Campus Pro Border */}
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${(posterDetails?.jobs_completed || 0) > 10
+                    ? "p-[2px] bg-gradient-to-r from-amber-500 to-yellow-600 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                    : "border border-white/5 bg-zinc-800"
+                  }`}>
+                  <div className="w-full h-full rounded-full overflow-hidden bg-zinc-900 relative flex items-center justify-center">
+                    {posterDetails?.avatar_url ? (
+                      <Image src={posterDetails.avatar_url} alt={posterDetails.name} width={56} height={56} className="object-cover w-full h-full" />
+                    ) : (
+                      <span className="text-white/40 font-bold text-lg">{posterDetails?.name?.[0] || "?"}</span>
+                    )}
+                  </div>
                 </div>
+
                 <div>
-                  <h4 className="font-bold text-white text-lg leading-tight">{posterDetails?.name || "Anonymous User"}</h4>
+                  <h4 className="font-bold text-white text-lg leading-tight flex items-center gap-2">
+                    {posterDetails?.name || "Anonymous User"}
+                    {(posterDetails?.jobs_completed || 0) > 10 && (
+                      <div className="group relative">
+                        <Sparkles size={14} className="text-yellow-500 text-fill-yellow-500 animate-pulse" fill="currentColor" />
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-yellow-500 text-black text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+                          Campus Pro: 10+ Successful Deals
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-yellow-500"></div>
+                        </div>
+                      </div>
+                    )}
+                  </h4>
                   <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
                     <span className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20">
                       <Star size={10} fill="currentColor" />

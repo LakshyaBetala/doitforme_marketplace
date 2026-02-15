@@ -56,10 +56,6 @@ export async function POST(req: Request) {
     const price = Number(gig.price);
     const jobsCompleted = recipientProfile?.jobs_completed || 0;
 
-    // Tiered Platform Fee
-    const feeRate = jobsCompleted < 10 ? 0.075 : 0.10; // 7.5% vs 10%
-    const platformFee = Math.ceil(price * feeRate);
-
     // Security Deposit (Only for Market Rent)
     let deposit = 0;
     let escrowCategory = 'PROJECT';
@@ -67,6 +63,20 @@ export async function POST(req: Request) {
     if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
       deposit = Number(gig.security_deposit) || 0;
       escrowCategory = 'RENTAL_DEPOSIT';
+    }
+
+    // Platform Fee Logic
+    let platformFee = 0;
+
+    if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
+      // Rental Fee: 3% of (Price + Deposit)
+      platformFee = Math.ceil((price + deposit) * 0.03);
+    } else {
+      // Hustle Tiered: 7.5% if jobs > 10, else 10%
+      // Note: "Hustle Reward Tier: If a worker has completed more than 10 jobs...". 
+      // V3 says "> 10". Previous V2 said ">= 10". I will use "> 10" as per latest prompt.
+      const rate = jobsCompleted > 10 ? 0.075 : 0.10;
+      platformFee = Math.ceil(price * rate);
     }
 
     // Subtotal (Base charge before Gateway)

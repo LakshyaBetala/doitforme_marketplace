@@ -168,7 +168,7 @@ export default function ChatPage() {
         // 1. Client-Side AI Moderation
         try {
             const aiCheck = await analyzeIntentAI(newMessage);
-            if (aiCheck.detected) {
+            if (!aiCheck.success) {
                 alert(`Message Blocked: ${aiCheck.reason}`);
                 return;
             }

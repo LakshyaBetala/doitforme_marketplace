@@ -42,36 +42,37 @@ export const containsSensitiveInfo = (text: string): { detected: boolean; reason
     return { detected: false };
 };
 
-export const analyzeIntentAI = async (text: string): Promise<{ detected: boolean; reason?: string }> => {
-    // Client-side only check for now to prevent serverless timeouts
-    if (typeof window === 'undefined') return { detected: false };
+
+export const analyzeIntentAI = async (text: string) => {
+    // 1. Instant Regex Guard (Standard phone/email block)
+    const basicCheck = containsSensitiveInfo(text);
+    if (basicCheck.detected) return { success: false, reason: basicCheck.reason };
+
+    // Client-side guard for now if needed, but the try-catch below handles server errors too.
+    // If strict server-side is requested, we rely on the try/catch.
 
     try {
-        const classifier = await getClassifier();
-        const labels = ["sharing contact info", "outside payment", "normal campus talk", "question about task"];
+        // 2. Semantic AI Guard with 2s Timeout
+        // Note: pipeline() might need await if it returns a promise of the pipeline function
+        const aiCheckPromise = pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncensored-mnli');
+        const timeout = new Promise((_, reject) => setTimeout(() => reject('Timeout'), 2000));
 
+        // Race the LOADING of the model, or the execution?
+        // simple pipeline() call loads the model.
+
+        const classifier: any = await Promise.race([aiCheckPromise, timeout]);
+
+        // If we get here, model loaded within 2s. Now run it.
+        const labels = ['contact info', 'outside payment', 'campus talk'];
         const output = await classifier(text, labels);
-        // output: { labels: string[], scores: number[] }
 
-        // Find indices of bad labels
-        const contactIndex = output.labels.indexOf("sharing contact info");
-        const paymentIndex = output.labels.indexOf("outside payment");
-
-        const contactScore = output.scores[contactIndex];
-        const paymentScore = output.scores[paymentIndex];
-
-        // Threshold 0.85 to avoid false positives
-        if (contactScore > 0.85) {
-            return { detected: true, reason: "AI detected intent to share contact info. Please keep comms on-platform." };
+        if ((output.labels[0] === 'contact info' || output.labels[0] === 'outside payment') && output.scores[0] > 0.8) {
+            return { success: false, reason: "AI: Please keep contact and payments on the platform." };
         }
-        if (paymentScore > 0.85) {
-            return { detected: true, reason: "AI detected intent to pay outside. This is a ban-able offense." };
-        }
-
-        return { detected: false };
-
-    } catch (error) {
-        console.error("AI Moderation Error:", error);
-        return { detected: false }; // Fail open if AI breaks
+    } catch (e) {
+        // Fallback: Allow but mark for manual audit in logs
+        console.warn("AI Check Skipped/Failed:", e);
+        return { success: true, flagged: true };
     }
+    return { success: true };
 };
