@@ -138,23 +138,8 @@ export async function POST(req: Request) {
       escrow_amount: totalAmount,
     }).eq('id', gigId);
 
-    await supabase.from('transactions').insert({
-      gig_id: gigId,
-      user_id: user.id,
-      amount: totalAmount,
-      type: 'DEBIT',
-      status: 'INITIATED',
-      gateway_order_id: orderId,
-      provider_data: {
-        breakdown: {
-          price,
-          deposit,
-          platformFee,
-          gatewayFee,
-          recipientId
-        }
-      }
-    });
+    // Duplicate Transaction Insert Removed.
+    // The "PENDING" transaction created earlier is the Single Source of Truth V3.
 
     return NextResponse.json(response.data);
 

@@ -42,6 +42,19 @@ export async function POST(req: Request) {
     if (isPoster) {
       // Poster -> Applicant
       if (!applicantId) return NextResponse.json({ error: "Applicant ID required for reply" }, { status: 400 });
+
+      // Security: Verify Receiver is an Applicant
+      const { data: validApp } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('gig_id', gigId)
+        .eq('worker_id', applicantId)
+        .single();
+
+      if (!validApp) {
+        return NextResponse.json({ error: "Security Alert: This user has not applied to this gig." }, { status: 403 });
+      }
+
       receiverId = applicantId;
     } else {
       // Applicant -> Poster
