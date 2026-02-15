@@ -6,8 +6,8 @@ let classifier: any = null;
 
 const getClassifier = async () => {
     if (!classifier) {
-        // Using a lightweight Zero-Shot Classification model
-        classifier = await pipeline('zero-shot-classification', 'Xenova/mobilebert-uncased-mnli');
+        // V3 Model: DistilBERT for better semantic understanding
+        classifier = await pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncensored-mnli');
     }
     return classifier;
 };
@@ -48,21 +48,20 @@ export const analyzeIntentAI = async (text: string) => {
     const basicCheck = containsSensitiveInfo(text);
     if (basicCheck.detected) return { success: false, reason: basicCheck.reason };
 
-    // Client-side guard for now if needed, but the try-catch below handles server errors too.
-    // If strict server-side is requested, we rely on the try/catch.
+    // Client-side guard check (optional, but robust)
 
     try {
         // 2. Semantic AI Guard with 2s Timeout
-        // Note: pipeline() might need await if it returns a promise of the pipeline function
-        const aiCheckPromise = pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncensored-mnli');
+        // Use Singleton to prevent reloading model
+        const classifierPromise = getClassifier();
         const timeout = new Promise((_, reject) => setTimeout(() => reject('Timeout'), 2000));
 
-        // Race the LOADING of the model, or the execution?
-        // simple pipeline() call loads the model.
+        // Race the LOADING/GETTING of the model? 
+        // If model is already loaded, getClassifier returns fast.
 
-        const classifier: any = await Promise.race([aiCheckPromise, timeout]);
+        const classifier: any = await Promise.race([classifierPromise, timeout]);
 
-        // If we get here, model loaded within 2s. Now run it.
+        // Run classification
         const labels = ['contact info', 'outside payment', 'campus talk'];
         const output = await classifier(text, labels);
 

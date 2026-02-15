@@ -90,6 +90,28 @@ export async function POST(req: Request) {
 
     const orderId = `order_${gigId}_${Date.now()}`;
 
+    // [New] Create Transaction Record (PENDING) with Fee Breakdown
+    const breakdown = {
+      base_price: price,
+      deposit: deposit,
+      platform_fee: platformFee,
+      gateway_fee: gatewayFee,
+      net_worker_pay: price // Surcharge Model: Worker gets full Price
+    };
+
+    const { error: txnError } = await supabase.from('transactions').insert({
+      gig_id: gigId,
+      user_id: user.id, // Payer
+      amount: totalAmount,
+      type: 'ESCROW_DEPOSIT',
+      status: 'PENDING',
+      gateway: 'CASHFREE',
+      gateway_order_id: orderId,
+      provider_data: { breakdown }
+    });
+
+    if (txnError) throw txnError;
+
     // 6. Create Cashfree Order
     const request = {
       order_amount: totalAmount,

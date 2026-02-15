@@ -120,7 +120,7 @@ export default function FeedPage() {
       </div>
 
       {/* FEED GRID */}
-      <div className="max-w-xl mx-auto space-y-4 pb-24">
+      <div className="max-w-xl mx-auto space-y-4 pb-24 overflow-hidden">
         {loading ? (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mb-4"></div>

@@ -41,61 +41,53 @@ export async function POST(req: Request) {
 
     const paidAmount = validPayment.payment_amount;
 
-    // 2. Idempotency: Check if already processed to prevent duplicates
-    const { data: existingTxn } = await supabaseAdmin
+    // 2. Idempotency & Fetch Breakdown (Created in create-order)
+    const { data: txn } = await supabaseAdmin
       .from("transactions")
-      .select("id")
+      .select("*")
       .eq("gateway_order_id", orderId)
       .single();
 
-    if (existingTxn) {
-      return NextResponse.json({ success: true, message: "Transaction already processed" });
+    if (txn) {
+      if (txn.status === 'COMPLETED') {
+        return NextResponse.json({ success: true, message: "Transaction already processed" });
+      }
+    } else {
+      // If no transaction record exists, create-order failed or wasn't called.
+      // We could recalculate here as fallback, but V3 requires using the stored breakdown.
+      return NextResponse.json({ error: "Order record not found" }, { status: 404 });
     }
 
-    // 3. Fetch Gig Details (Price & Poster ID)
-    const { data: gig } = await supabaseAdmin
-      .from("gigs")
-      .select("poster_id, price, security_deposit")
-      .eq("id", gigId)
-      .single();
+    // 3. Extract Breakdown from Pending Transaction
+    const breakdown = txn.provider_data?.breakdown || {};
+    const basePrice = breakdown.base_price || 0;
+    const deposit = breakdown.deposit || 0;
+    const platformFee = breakdown.platform_fee || 0;
+    const netWorkerPay = breakdown.net_worker_pay || 0;
 
+    // 4. Update Transaction to COMPLETED
+    const { error: updateError } = await supabaseAdmin
+      .from("transactions")
+      .update({
+        status: 'COMPLETED',
+        gateway_payment_id: validPayment.cf_payment_id,
+        // amount should match paidAmount
+      })
+      .eq('id', txn.id);
+
+    if (updateError) {
+      console.error("Transaction Update Error", updateError);
+      throw updateError;
+    }
+
+    // 5. Create Escrow Record (The "Liability" Ledger)
+    // Fetch Poster ID for Escrow
+    const { data: gig } = await supabaseAdmin.from('gigs').select('poster_id').eq('id', gigId).single();
     if (!gig) throw new Error("Gig not found");
 
-    // 4. Calculate Fees
-    // Logic: User pays Price + Deposit (if any) + Gateway Fee. 
-    // Platform takes 10% of Price. Worker/Seller gets 90% of Price. 
-    // Deposit is held in Escrow fully refundable.
-    const basePrice = Number(gig.price);
-    const deposit = Number(gig.security_deposit) || 0;
+    const amountHeld = basePrice + deposit;
+    const gatewayFee = breakdown.gateway_fee || 0;
 
-    const platformFee = basePrice * 0.10;
-    const netBase = basePrice * 0.90;
-
-    // Amount Held in Escrow = Net Base + Full Deposit
-    const amountHeld = netBase + deposit;
-
-    // Gateway fee is the surcharge paid by user on top of (Base + Deposit)
-    const gatewayFee = paidAmount - (basePrice + deposit);
-
-    // 5. Create Transaction Record (Log the money coming in)
-    const { error: txnError } = await supabaseAdmin.from("transactions").insert({
-      gig_id: gigId,
-      user_id: gig.poster_id,
-      amount: paidAmount, // Full amount from user
-      type: "ESCROW_DEPOSIT",
-      status: "COMPLETED",
-      gateway: "CASHFREE",
-      gateway_order_id: orderId,
-      gateway_payment_id: validPayment.cf_payment_id,
-      provider_data: validPayment
-    });
-
-    if (txnError) {
-      console.error("Transaction Create Error", txnError);
-      throw txnError;
-    }
-
-    // 6. Create Escrow Record (The "Liability" Ledger)
     const { error: escrowError } = await supabaseAdmin.from("escrow").upsert({
       gig_id: gigId,
       poster_id: gig.poster_id,
@@ -104,7 +96,9 @@ export async function POST(req: Request) {
       platform_fee: platformFee,
       gateway_fee: gatewayFee,
       amount_held: amountHeld,
+      net_amount: netWorkerPay,
       status: "HELD",
+      release_condition: deposit > 0 ? "RENTAL_RETURN" : "GIG_COMPLETION",
       release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
     }, { onConflict: 'gig_id' });
 
@@ -122,7 +116,7 @@ export async function POST(req: Request) {
       escrow_amount: amountHeld,
       escrow_locked_at: new Date().toISOString(),
       platform_fee: platformFee,
-      net_worker_pay: amountHeld,
+      net_worker_pay: netWorkerPay,
       gateway_fee: gatewayFee
     }).eq("id", gigId);
 

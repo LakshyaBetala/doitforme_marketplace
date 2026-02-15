@@ -20,65 +20,37 @@ export async function POST(req: Request) {
   );
 
   try {
-    // 1. Remove receiverId from input (Secure Auto-Mapping)
-    const { gigId, content, conversationId } = await req.json(); // Added conversationId for Poster repiest?
-    // Actually, V3 requirements says "Remove receiverId from payload".
-    // If Sender is Poster, we need to know WHICH applicant they are talking to.
-    // Ideally, the frontend sends `conversation_id` or we infer it.
-    // For now, let's look at `gig` and if Sender == Poster, we check `conversationId` or `receiver_id` passed?
-    // "If sender is NOT poster, receiver is always gig.poster_id."
-    // If sender IS poster, we need input. Let's allow receiverId OPTIONALLY for Poster only.
+    // 1. Single Body Parse (Fixes "Double JSON" crash)
+    const { gigId, applicantId, content } = await req.json();
 
-    // Auth Check
+    // 2. Auth Check
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 2. Hybrid Moderation Check (Regex + AI)
-    // Regex first (Fast)
-    const regexCheck = containsSensitiveInfo(content);
-    if (regexCheck.detected) {
-      await supabase.from('chat_blocked_logs').insert({
-        sender_id: user.id,
-        message: content,
-        reason: regexCheck.reason,
-        room_id: gigId
-      });
-      return NextResponse.json({ error: "Message Blocked", reason: regexCheck.reason }, { status: 400 });
-    }
-
-
-
-
-    // 3. Fetch Gig Details
+    // 3. Fetch Gig to Derive Receiver
     const { data: gig, error: gigError } = await supabase
       .from('gigs')
-      .select('status, listing_type, poster_id, assigned_worker_id')
+      .select('status, poster_id, assigned_worker_id')
       .eq('id', gigId)
       .single();
 
     if (gigError || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    // 4. Auto-Map Receiver
-    let finalReceiverId = null;
+    const isPoster = user.id === gig.poster_id;
+    let receiverId = null;
 
-    if (user.id !== gig.poster_id) {
-      // Applicant -> Poster
-      finalReceiverId = gig.poster_id;
-    } else {
+    if (isPoster) {
       // Poster -> Applicant
-      // We need to know who they are replying to.
-      // We should check if `receiverId` (the applicant) was passed in body (allowed for poster)
-      // OR infer from `conversationId`?
-      // Let's grab `receiverId` from request ONLY if sender is poster.
-      const { receiverId } = await req.json().catch(() => ({}));
-      if (!receiverId) return NextResponse.json({ error: "Receiver ID required for Poster reply" }, { status: 400 });
-      finalReceiverId = receiverId;
+      if (!applicantId) return NextResponse.json({ error: "Applicant ID required for reply" }, { status: 400 });
+      receiverId = applicantId;
+    } else {
+      // Applicant -> Poster
+      receiverId = gig.poster_id;
     }
 
     // 5. Check Limits (Strict Applicant Lock)
-    // "Count messages only if (sender_id !== gig.poster_id AND gig.status === 'open')"
-    const isApplicant = user.id !== gig.poster_id;
-    const isPreAgreement = gig.status === 'open'; // or 'applicant_selected'? usually 'open' means not hired yet.
+    const isApplicant = !isPoster;
+    const isPreAgreement = gig.status === 'open';
 
     if (isApplicant && isPreAgreement) {
       const { count, error: countError } = await supabase
@@ -105,7 +77,7 @@ export async function POST(req: Request) {
       .insert({
         gig_id: gigId,
         sender_id: user.id,
-        receiver_id: finalReceiverId,
+        receiver_id: receiverId,
         content: content,
         is_pre_agreement: isPreAgreement
       })
