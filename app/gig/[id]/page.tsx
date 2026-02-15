@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ChevronLeft,
+  Sparkles,
   RefreshCcw, // Included for verification retry
   Send,
   MessageSquare
@@ -603,7 +604,11 @@ export default function GigDetailPage() {
                 <span>•</span>
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-white">{posterDetails?.name || gig.poster_email?.split('@')[0]}</span>
-                  {posterDetails?.kyc_verified && (
+                  {posterDetails?.kyc_verified && (posterDetails.jobs_completed || 0) > 10 ? (
+                    <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 text-[10px] font-bold border border-yellow-500/50 flex items-center gap-1 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+                      <Sparkles size={10} fill="currentColor" /> CAMPUS PRO
+                    </span>
+                  ) : posterDetails?.kyc_verified && (
                     <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-bold border border-blue-500/30 flex items-center gap-1">
                       <ShieldCheck size={10} /> ID VERIFIED
                     </span>
