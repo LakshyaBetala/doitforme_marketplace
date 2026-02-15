@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import { analyzeIntentAI } from "@/lib/moderation";
 import Image from "next/image";
 import Link from "next/link";
 import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle } from "lucide-react";
@@ -163,6 +164,17 @@ export default function ChatPage() {
         if (!newMessage.trim() || !user || !activeChat) return;
 
         const [gigId, otherUserId] = activeChat.split('_');
+
+        // 1. Client-Side AI Moderation
+        try {
+            const aiCheck = await analyzeIntentAI(newMessage);
+            if (aiCheck.detected) {
+                alert(`Message Blocked: ${aiCheck.reason}`);
+                return;
+            }
+        } catch (e) {
+            console.error("AI Check Failed (Non-blocking):", e);
+        }
 
         try {
             const res = await fetch("/api/chat/send", {

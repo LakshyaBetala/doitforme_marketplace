@@ -46,18 +46,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Message Blocked", reason: regexCheck.reason }, { status: 400 });
     }
 
-    // AI Check (Slow/Async) - We can run this in background or await. 
-    // To ensure safety, await it.
-    const aiCheck = await analyzeIntentAI(content);
-    if (aiCheck.detected) {
-      await supabase.from('chat_blocked_logs').insert({
-        sender_id: user.id,
-        message: content,
-        reason: aiCheck.reason,
-        room_id: gigId
-      });
-      return NextResponse.json({ error: "Message Blocked by AI", reason: aiCheck.reason }, { status: 400 });
-    }
+
 
 
     // 3. Fetch Gig Details

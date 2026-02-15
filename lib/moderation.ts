@@ -43,6 +43,9 @@ export const containsSensitiveInfo = (text: string): { detected: boolean; reason
 };
 
 export const analyzeIntentAI = async (text: string): Promise<{ detected: boolean; reason?: string }> => {
+    // Client-side only check for now to prevent serverless timeouts
+    if (typeof window === 'undefined') return { detected: false };
+
     try {
         const classifier = await getClassifier();
         const labels = ["sharing contact info", "outside payment", "normal campus talk", "question about task"];
