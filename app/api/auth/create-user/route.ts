@@ -38,23 +38,23 @@ export async function POST(req: Request) {
     // --- 4. PREPARE SMART DATA ---
     // If user exists, keep their old data. Only overwrite if new data is sent (truthy).
     // If user is new, use the defaults.
-    
+
     const finalName = name || existingUser?.name || email.split("@")[0];
     const finalPhone = phone || existingUser?.phone || null;
     const finalCollege = college || existingUser?.college || null;
-    
+
     // Preserve existing UPI if not provided in this update, otherwise use new one
     // This is crucial: If they log in again later without sending UPI, we don't want to erase the old one.
     const finalUpi = upi_id || existingUser?.upi_id || null;
-    
+
     // Preserve verification status
     const finalKyc = existingUser?.kyc_verified || false;
 
     // --- 5. UPSERT USER (With UPI ID) ---
     const { error: userError } = await supabase
       .from("users")
-      .upsert({ 
-        id: id, 
+      .upsert({
+        id: id,
         email: email,
         name: finalName,
         phone: finalPhone,
@@ -71,17 +71,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: userError.message }, { status: 500 });
     }
 
-    // --- 6. ENSURE WALLET EXISTS (For Stats Only) ---
-    // We keep this so the Profile page can show "Total Earned" without crashing.
-    // We are NOT using this for holding money anymore.
-    const { error: walletError } = await supabase
-      .from("wallets")
-      .upsert(
-        { user_id: id, balance: 0, frozen: 0, total_earned: 0, total_withdrawn: 0 }, 
-        { onConflict: "user_id", ignoreDuplicates: true }
-      );
-
-    if (walletError) console.error("API: Wallet Error:", walletError);
+    // --- 6. WALLET REMOVED ---
+    // Wallets table is deprecated in favor of direct payouts.
+    // Stats are now tracked directly on the users table (jobs_completed, total_earned).
 
     return NextResponse.json({ success: true });
 

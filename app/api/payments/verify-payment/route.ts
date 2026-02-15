@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
     // 1. Verify Status with Cashfree DIRECTLY
     const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
-    
+
     const response = await fetch(`https://${CASHFREE_ENV}.cashfree.com/pg/orders/${orderId}/payments`, {
       method: "GET",
       headers: {
@@ -28,18 +28,18 @@ export async function POST(req: Request) {
     });
 
     const data = await response.json();
-    
+
     // Check if any transaction in the list is successful
-    const validPayment = Array.isArray(data) 
-        ? data.find((p: any) => p.payment_status === "SUCCESS") 
-        : null;
+    const validPayment = Array.isArray(data)
+      ? data.find((p: any) => p.payment_status === "SUCCESS")
+      : null;
 
     if (!validPayment) {
       console.error("Cashfree Payment Verification Failed:", data);
       return NextResponse.json({ error: "Payment pending or failed" }, { status: 400 });
     }
 
-    const paidAmount = validPayment.payment_amount; 
+    const paidAmount = validPayment.payment_amount;
 
     // 2. Idempotency: Check if already processed to prevent duplicates
     const { data: existingTxn } = await supabaseAdmin
@@ -55,19 +55,27 @@ export async function POST(req: Request) {
     // 3. Fetch Gig Details (Price & Poster ID)
     const { data: gig } = await supabaseAdmin
       .from("gigs")
-      .select("poster_id, price") 
+      .select("poster_id, price, security_deposit")
       .eq("id", gigId)
       .single();
 
     if (!gig) throw new Error("Gig not found");
 
     // 4. Calculate Fees
-    // Logic: User pays Price + Gateway Fee. 
-    // Platform takes 10% of Price. Worker gets 90% of Price.
-    const basePrice = Number(gig.price); 
-    const platformFee = basePrice * 0.10; 
-    const amountHeld = basePrice * 0.90; // Net worker pay
-    const gatewayFee = paidAmount - basePrice; // Extra amount paid by user
+    // Logic: User pays Price + Deposit (if any) + Gateway Fee. 
+    // Platform takes 10% of Price. Worker/Seller gets 90% of Price. 
+    // Deposit is held in Escrow fully refundable.
+    const basePrice = Number(gig.price);
+    const deposit = Number(gig.security_deposit) || 0;
+
+    const platformFee = basePrice * 0.10;
+    const netBase = basePrice * 0.90;
+
+    // Amount Held in Escrow = Net Base + Full Deposit
+    const amountHeld = netBase + deposit;
+
+    // Gateway fee is the surcharge paid by user on top of (Base + Deposit)
+    const gatewayFee = paidAmount - (basePrice + deposit);
 
     // 5. Create Transaction Record (Log the money coming in)
     const { error: txnError } = await supabaseAdmin.from("transactions").insert({
@@ -79,64 +87,70 @@ export async function POST(req: Request) {
       gateway: "CASHFREE",
       gateway_order_id: orderId,
       gateway_payment_id: validPayment.cf_payment_id,
-      provider_data: validPayment 
+      provider_data: validPayment
     });
 
     if (txnError) {
-        console.error("Transaction Create Error", txnError);
-        throw txnError;
+      console.error("Transaction Create Error", txnError);
+      throw txnError;
     }
 
     // 6. Create Escrow Record (The "Liability" Ledger)
     const { error: escrowError } = await supabaseAdmin.from("escrow").upsert({
-        gig_id: gigId,
-        poster_id: gig.poster_id,
-        worker_id: workerId,
-        original_amount: basePrice, 
-        platform_fee: platformFee, 
-        gateway_fee: gatewayFee, 
-        amount_held: amountHeld, 
-        status: "HELD",
-        release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      gig_id: gigId,
+      poster_id: gig.poster_id,
+      worker_id: workerId,
+      original_amount: basePrice,
+      platform_fee: platformFee,
+      gateway_fee: gatewayFee,
+      amount_held: amountHeld,
+      status: "HELD",
+      release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
     }, { onConflict: 'gig_id' });
 
     if (escrowError) {
-        console.error("Escrow Create Error", escrowError);
-        throw escrowError;
+      console.error("Escrow Create Error", escrowError);
+      throw escrowError;
     }
 
     // 7. Update Gig Status
     const { error: gigUpdateError } = await supabaseAdmin.from("gigs").update({
-      status: "assigned", 
+      status: "assigned",
       assigned_worker_id: workerId,
       payment_status: "ESCROW_FUNDED",
       escrow_status: "HELD",
       escrow_amount: amountHeld,
       escrow_locked_at: new Date().toISOString(),
-      platform_fee: platformFee, 
+      platform_fee: platformFee,
       net_worker_pay: amountHeld,
       gateway_fee: gatewayFee
     }).eq("id", gigId);
 
     if (gigUpdateError) {
-        console.error("Gig Update Error", gigUpdateError);
-        throw gigUpdateError;
+      console.error("Gig Update Error", gigUpdateError);
+      throw gigUpdateError;
     }
 
     // 8. UPDATE APPLICATIONS (CRITICAL FIX FOR "PENDING" STATUS)
+    console.log(`Updating applications for Gig ${gigId}, Worker ${workerId}`);
+
     // Accept the selected worker
-    await supabaseAdmin
-        .from("applications")
-        .update({ status: "accepted" })
-        .eq("gig_id", gigId)
-        .eq("worker_id", workerId);
+    const { error: appUpdateError } = await supabaseAdmin
+      .from("applications")
+      .update({ status: "accepted" })
+      .eq("gig_id", gigId)
+      .eq("worker_id", workerId);
+
+    if (appUpdateError) console.error("Error accepting application:", appUpdateError);
 
     // Reject everyone else
-    await supabaseAdmin
-        .from("applications")
-        .update({ status: "rejected" })
-        .eq("gig_id", gigId)
-        .neq("worker_id", workerId);
+    const { error: rejectError } = await supabaseAdmin
+      .from("applications")
+      .update({ status: "rejected" })
+      .eq("gig_id", gigId)
+      .neq("worker_id", workerId);
+
+    if (rejectError) console.error("Error rejecting other applications:", rejectError);
 
     return NextResponse.json({ success: true, message: "Escrow funded and worker assigned successfully" });
 
