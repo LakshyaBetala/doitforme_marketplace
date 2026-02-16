@@ -96,7 +96,7 @@ export default function MyGigsPage() {
             href="/post"
             className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
           >
-            <Plus className="w-5 h-5" /> Post New Gig
+            <Plus className="w-5 h-5" /> Post Hustle / Item
           </Link>
         </div>
 
@@ -215,6 +215,13 @@ export default function MyGigsPage() {
           )}
         </div>
       </div>
+      {/* MOBILE FAB */}
+      <Link
+        href="/post"
+        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-white text-black rounded-full shadow-2xl shadow-white/20 flex items-center justify-center active:scale-90 transition-transform"
+      >
+        <Plus size={28} strokeWidth={2.5} />
+      </Link>
     </div>
   );
 }

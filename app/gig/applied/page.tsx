@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Link from "next/link";
-import { 
-  ArrowLeft, 
-  Search, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
+import {
+  ArrowLeft,
+  Search,
+  Clock,
+  CheckCircle2,
+  XCircle,
   Loader2,
   Briefcase,
   IndianRupee,
@@ -93,7 +93,7 @@ export default function AppliedGigsPage() {
 
   return (
     <div className="min-h-screen bg-[#0B0B11] p-6 lg:p-12 pb-24 text-white selection:bg-brand-purple selection:text-white">
-      
+
       {/* Background Decor */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-brand-purple/5 blur-[150px] rounded-full"></div>
@@ -101,7 +101,7 @@ export default function AppliedGigsPage() {
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10 space-y-8">
-        
+
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -120,13 +120,13 @@ export default function AppliedGigsPage() {
               if (!gig) return null;
 
               return (
-                <Link 
-                  key={app.id} 
+                <Link
+                  key={app.id}
                   href={`/gig/${gig.id}`}
                   className="group relative bg-[#121217] border border-white/10 rounded-3xl p-6 hover:border-brand-purple/30 transition-all hover:-translate-y-1 overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-brand-purple/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  
+
                   <div className="relative z-10 flex flex-col h-full justify-between gap-6">
                     <div>
                       <div className="flex justify-between items-start mb-4">
@@ -135,11 +135,11 @@ export default function AppliedGigsPage() {
                         </div>
                         {getStatusBadge(app.status)}
                       </div>
-                      
+
                       <h3 className="text-xl font-bold text-white mb-2 line-clamp-2 group-hover:text-brand-purple transition-colors">
                         {gig.title}
                       </h3>
-                      
+
                       <div className="flex items-center gap-2 text-white/50 text-sm">
                         <IndianRupee className="w-4 h-4" />
                         <span className="font-mono text-white/80">{gig.price?.toLocaleString()}</span>
@@ -169,8 +169,8 @@ export default function AppliedGigsPage() {
             <p className="text-white/50 max-w-md mb-8">
               You haven't applied to any gigs yet. Explore the marketplace to find tasks you can help with.
             </p>
-            <Link 
-              href="/feed" 
+            <Link
+              href="/feed"
               className="px-8 py-4 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform"
             >
               Browse Marketplace
@@ -178,6 +178,13 @@ export default function AppliedGigsPage() {
           </div>
         )}
       </div>
+      {/* MOBILE FAB */}
+      <Link
+        href="/feed"
+        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-white text-black rounded-full shadow-2xl shadow-white/20 flex items-center justify-center active:scale-90 transition-transform"
+      >
+        <Search size={28} strokeWidth={2.5} />
+      </Link>
     </div>
   );
 }

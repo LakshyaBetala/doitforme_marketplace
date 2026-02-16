@@ -184,13 +184,13 @@ export default function Dashboard() {
           {/* Quick Actions */}
           <div className="md:col-span-4 flex flex-col gap-3">
             <Link href="/post" className="flex-1 flex items-center justify-between p-6 rounded-[24px] bg-white text-black hover:bg-zinc-200 active:scale-[0.98] transition-all touch-manipulation group">
-              <span className="font-black text-lg">Post New Task</span>
+              <span className="font-black text-lg">Post Hustle / Item</span>
               <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center group-hover:scale-110 transition-transform"><Plus size={20} /></div>
             </Link>
             <div className="flex-1 grid grid-cols-2 gap-3">
               <Link href="/gig/my-gigs" className="flex flex-col justify-center p-5 rounded-[24px] bg-[#121217] border border-white/5 hover:border-zinc-700 active:scale-[0.95] transition-all touch-manipulation group">
                 <Briefcase size={20} className="text-zinc-500 group-hover:text-white mb-2 transition-colors" />
-                <span className="text-xs font-black text-zinc-400 uppercase tracking-wider">My Gigs</span>
+                <span className="text-xs font-black text-zinc-400 uppercase tracking-wider">My Hustles</span>
               </Link>
               <Link href="/gig/applied" className="flex flex-col justify-center p-5 rounded-[24px] bg-[#121217] border border-white/5 hover:border-zinc-700 active:scale-[0.95] transition-all touch-manipulation group">
                 <ShieldCheck size={20} className="text-zinc-500 group-hover:text-white mb-2 transition-colors" />
@@ -414,6 +414,14 @@ export default function Dashboard() {
           </div>
         )
       }
+
+      {/* MOBILE FAB (Sweet Spot) */}
+      <Link
+        href="/post"
+        className="md:hidden fixed bottom-24 right-6 z-50 w-14 h-14 bg-white text-black rounded-full shadow-2xl shadow-white/20 flex items-center justify-center active:scale-90 transition-transform"
+      >
+        <Plus size={28} strokeWidth={2.5} />
+      </Link>
 
     </main >
   );

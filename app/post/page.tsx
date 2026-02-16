@@ -22,13 +22,16 @@ import {
   UploadCloud,
   Briefcase as BriefcaseIcon,
   ShoppingBag as ShoppingBagIcon,
-  ShieldCheck
+  ShieldCheck,
+  Camera,
+  Maximize2
 } from "lucide-react";
 
 export default function PostGigPage() {
   const supabase = supabaseBrowser();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // --- STATE MANAGEMENT ---
   const [user, setUser] = useState<any | null>(null);
@@ -47,6 +50,10 @@ export default function PostGigPage() {
   const [deadlineTime, setDeadlineTime] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  // Lightbox State
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // UI States
   const [loading, setLoading] = useState(false);
@@ -79,6 +86,13 @@ export default function PostGigPage() {
   // Handle Image Selection
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
+
+    // Limits
+    if (images.length + files.length > 5) {
+      setError("You can only upload up to 5 images.");
+      return;
+    }
+
     const newFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
 
     // Create local previews for immediate UI feedback
@@ -86,31 +100,22 @@ export default function PostGigPage() {
 
     setImages((prev) => [...prev, ...newFiles]);
     setImagePreviews((prev) => [...prev, ...newPreviews]);
+    setError(""); // Clear error on success
   };
 
   const onFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleFiles(e.target.files);
   };
 
-  // Drag & Drop Handlers
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    handleFiles(e.dataTransfer.files);
-  };
-
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  }
 
   // Validation
   const validate = () => {
@@ -273,9 +278,9 @@ export default function PostGigPage() {
               <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-6 text-white/60 group-hover:text-white group-hover:scale-110 transition-all">
                 <BriefcaseIcon className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-medium mb-2 text-white/90">Hire a Student</h2>
+              <h2 className="text-xl font-medium mb-2 text-white/90">Post a Hustle</h2>
               <p className="text-sm text-white/40 leading-relaxed">
-                Post a task, gig, or errand. Get it done by peers on campus.
+                Post a task or errand. Get it done by peers on campus.
               </p>
             </button>
 
@@ -287,9 +292,9 @@ export default function PostGigPage() {
               <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-6 text-white/60 group-hover:text-white group-hover:scale-110 transition-all">
                 <ShoppingBagIcon className="w-6 h-6" />
               </div>
-              <h2 className="text-xl font-medium mb-2 text-white/90">Sell or Rent</h2>
+              <h2 className="text-xl font-medium mb-2 text-white/90">Marketplace</h2>
               <p className="text-sm text-white/40 leading-relaxed">
-                List items for sale or rent to other students on campus.
+                Sell or rent out items to other students on campus.
               </p>
             </button>
           </div>
@@ -308,6 +313,28 @@ export default function PostGigPage() {
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white flex items-center justify-center p-4 py-12 selection:bg-brand-purple">
       <div className="w-full max-w-3xl relative z-10">
+
+        {/* LIGHTBOX */}
+        {lightboxOpen && (
+          <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setLightboxOpen(false)}>
+            <button className="absolute top-6 right-6 text-white/60 hover:text-white p-2">
+              <X size={32} />
+            </button>
+            <div className="relative w-full max-w-4xl max-h-[90vh] aspect-square md:aspect-video">
+              <Image
+                src={imagePreviews[lightboxIndex]}
+                alt="Full Preview"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2">
+              {imagePreviews.map((_, i) => (
+                <div key={i} className={`w-2 h-2 rounded-full ${i === lightboxIndex ? 'bg-white' : 'bg-white/20'}`} />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* NAV */}
         <div className="flex items-center justify-between mb-8">
@@ -328,7 +355,7 @@ export default function PostGigPage() {
         {/* HEADER */}
         <div className="mb-10">
           <h1 className="text-3xl font-light tracking-tight mb-2">
-            {listingType === "MARKET" ? "List an Item" : "Post a Request"}
+            {listingType === "MARKET" ? "List an Item" : "Post a Hustle"}
           </h1>
           <p className="text-white/40 text-sm">
             {listingType === "MARKET" ? "Sell or rent out your unused items." : "Get help with your tasks quickly."}
@@ -415,18 +442,21 @@ export default function PostGigPage() {
             <div className="space-y-6">
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-white/40 uppercase tracking-wider">
-                  {listingType === "MARKET" ? (marketType === "RENT" ? "Rental Fee" : "Price") : "Budget"}
+                  {listingType === "MARKET" ? (marketType === "RENT" ? "Rental Fee (Per Day)" : "Price") : "Budget"}
                 </label>
-                <div className="flex items-baseline gap-1">
+                <div className="flex items-center gap-1">
                   <span className="text-xl text-white/40">₹</span>
                   <input
                     type="number"
                     inputMode="decimal"
-                    className="w-full bg-transparent border-b border-white/10 py-2 text-3xl font-light text-white placeholder:text-white/10 focus:outline-none focus:border-white/40 transition-colors"
+                    className="flex-1 bg-transparent border-b border-white/10 py-2 text-3xl font-light text-white placeholder:text-white/10 focus:outline-none focus:border-white/40 transition-colors"
                     value={price}
                     onChange={(e) => { setPrice(e.target.value); setError(""); }}
                     placeholder="0"
                   />
+                  {listingType === "MARKET" && marketType === "RENT" && (
+                    <span className="text-white/40 text-sm font-light whitespace-nowrap">/ day</span>
+                  )}
                 </div>
               </div>
 
@@ -487,6 +517,7 @@ export default function PostGigPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <input
                         type="date"
+                        style={{ colorScheme: "dark" }} // Fix for black text on dark bg
                         className="bg-transparent border-b border-white/10 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition-colors"
                         value={deadlineDate}
                         min={new Date().toISOString().split("T")[0]}
@@ -494,6 +525,7 @@ export default function PostGigPage() {
                       />
                       <input
                         type="time"
+                        style={{ colorScheme: "dark" }} // Fix for black text on dark bg
                         className="bg-transparent border-b border-white/10 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition-colors"
                         value={deadlineTime}
                         onChange={(e) => setDeadlineTime(e.target.value)}
@@ -505,15 +537,23 @@ export default function PostGigPage() {
             </div>
           </div>
 
-          {/* SECTION 3: MEDIA (Minimalist) */}
+          {/* SECTION 3: MEDIA */}
           <div className="border-t border-white/5 pt-8 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">Attachments</h3>
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs text-brand-purple hover:text-white transition-colors cursor-pointer flex items-center gap-1">
-                <UploadCloud className="w-3 h-3" /> Add Photos
-              </button>
+              <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">Attachments (Max 5)</h3>
+              <div className="flex gap-2">
+                {/* Standard Upload */}
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-1.5">
+                  <ImageIcon className="w-3 h-3" /> Gallery
+                </button>
+                {/* Camera Upload */}
+                <button type="button" onClick={() => cameraInputRef.current?.click()} className="text-xs px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors cursor-pointer flex items-center gap-1.5">
+                  <Camera className="w-3 h-3" /> Camera
+                </button>
+              </div>
             </div>
 
+            {/* Hidden Inputs */}
             <input
               ref={fileInputRef}
               type="file"
@@ -522,31 +562,60 @@ export default function PostGigPage() {
               className="hidden"
               onChange={onFilesChange}
             />
+            {/* Camera Specific Input */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment" // Forces camera on mobile
+              className="hidden"
+              onChange={onFilesChange}
+            />
 
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {/* Add Button Box */}
-              <div onClick={() => fileInputRef.current?.click()} className="w-20 h-20 rounded-xl border border-dashed border-white/10 flex items-center justify-center text-white/20 hover:border-white/30 hover:text-white cursor-pointer transition-all shrink-0">
-                <span className="text-xl font-light">+</span>
-              </div>
-
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {/* Image Previews */}
               {imagePreviews.map((src, i) => (
-                <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10 shrink-0 group">
+                <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/10 shrink-0 group">
                   <Image src={src} alt="Preview" fill className="object-cover" />
+
+                  {/* Remove Button */}
                   <button
                     type="button"
-                    onClick={() => removeImage(i)}
-                    className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                    onClick={(e) => { e.stopPropagation(); removeImage(i); }}
+                    className="absolute top-1 right-1 bg-black/50 p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3 h-3" />
+                  </button>
+
+                  {/* View Button overlay */}
+                  <button
+                    type="button"
+                    onClick={() => openLightbox(i)}
+                    className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Maximize2 className="w-5 h-5 text-white drop-shadow-md" />
                   </button>
                 </div>
               ))}
+
+              {/* Add More Placeholder (if < 5) */}
+              {images.length < 5 && (
+                <div onClick={() => fileInputRef.current?.click()} className="w-24 h-24 rounded-xl border border-dashed border-white/10 flex flex-col items-center justify-center text-white/20 hover:border-white/30 hover:text-white cursor-pointer transition-all shrink-0">
+                  <Plus className="w-6 h-6 mb-1" />
+                  <span className="text-[10px]">Add</span>
+                </div>
+              )}
             </div>
+
+            {/* Info Text */}
+            <p className="text-[10px] text-white/30">
+              You can upload up to 5 photos. Use meaningful images to get better responses.
+            </p>
           </div>
 
           {/* SUBMIT */}
-          <div className="border-t border-white/5 pt-8 pb-20">
-            {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+          <div className="border-t border-white/5 pt-8 pb-32">
+            {error && <p className="text-red-400 text-sm mb-4 bg-red-500/10 p-3 rounded-lg border border-red-500/20">{error}</p>}
 
             {!userProfile?.upi_id && (
               <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
@@ -556,9 +625,13 @@ export default function PostGigPage() {
 
             <button
               disabled={loading || !userProfile?.upi_id}
-              className="w-full bg-white text-black font-medium py-4 rounded-xl hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.99]"
+              className="w-full bg-white text-black font-bold text-lg py-4 rounded-xl hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.99] shadow-xl shadow-white/5"
             >
-              {loading ? "Publishing..." : "Publish Listing"}
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin" /> Publishing...
+                </div>
+              ) : "Publish Listing"}
             </button>
           </div>
 
@@ -566,4 +639,14 @@ export default function PostGigPage() {
       </div>
     </div>
   );
+}
+
+// Icon for add button
+function Plus({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M5 12h14" />
+      <path d="M12 5v14" />
+    </svg>
+  )
 }
