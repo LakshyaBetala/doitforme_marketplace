@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useRef } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { analyzeIntentAI } from "@/lib/moderation";
+// `analyzeIntentAI` uses native/server-only dependencies (@xenova/transformers).
+// Call it via a server API to avoid bundling server-only code into the client.
 import Image from "next/image";
 import Link from "next/link";
 import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle } from "lucide-react";
@@ -165,9 +166,20 @@ export default function ChatPage() {
 
         const [gigId, otherUserId] = activeChat.split('_');
 
-        // 1. Client-Side AI Moderation
+        // 1. Server-side AI Moderation via API (avoids bundling server-only libs)
         try {
-            const aiCheck = await analyzeIntentAI(newMessage);
+            const modRes = await fetch('/api/moderation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: newMessage })
+            });
+
+            const aiCheck = await modRes.json();
+
+            if (!modRes.ok) {
+                console.error('Moderation API error', aiCheck);
+            }
+
             if (!aiCheck.success) {
                 alert(`Message Blocked: ${aiCheck.reason}`);
                 return;

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DoItForMe | Get It Done by Students",
     description: "The safest marketplace for student gigs. Verified IDs and secure payments.",
-    images: ["/logo.png"], 
+    images: ["/sloth.png"], 
   }
 };
 

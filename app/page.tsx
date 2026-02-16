@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: "Connect with ambitious university students for freelance gigs, errands, and micro-internships. Secure Escrow payments and instant UPI withdrawals.",
   // --- ADD THIS SECTION ---
   icons: {
-    icon: "/logo.png", // Path to your logo in public folder
-    apple: "/logo.png",
+    icon: "/sloth.png",
+    apple: "/sloth.png",
   },
   // -----------------------
   keywords: [
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DoItForMe | Get It Done by Students",
     description: "The safest marketplace for student gigs. Verified IDs and secure payments.",
-    images: ["/logo.png"], 
+    images: ["/sloth.png"], 
   }
 };
 

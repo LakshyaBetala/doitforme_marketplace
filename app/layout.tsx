@@ -8,8 +8,8 @@ import RealtimeListener from "@/components/RealtimeListener"; // Helper componen
 export const metadata: Metadata = {
   title: "DoItForMe - Students Helping Students",
   description: "India’s first Gen-Z student marketplace. Outsource tasks. Earn from free time.",
-  icons: { icon: "/logo.png", shortcut: "/logo.png", apple: "/logo.png" },
-  openGraph: { title: "DoItForMe", description: "Students Helping Students.", images: ["/logo.png"], type: "website" },
+  icons: { icon: "/sloth.png", shortcut: "/sloth.png", apple: "/sloth.png" },
+  openGraph: { title: "DoItForMe", description: "Students Helping Students.", images: ["/sloth.png"], type: "website" },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in'),
   appleWebApp: { capable: true, statusBarStyle: "black-translucent" },
 };
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "@type": "Organization",
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
-    "logo": "https://www.doitforme.in/logo.png",
+    "logo": "https://www.doitforme.in/sloth.png",
     "sameAs": ["https://www.instagram.com/doitforme.in/", "https://www.linkedin.com/company/doitforme1/"]
   };
 

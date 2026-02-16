@@ -116,14 +116,13 @@ export default function Dashboard() {
     <main className="min-h-[100dvh] bg-[#0B0B11] text-foreground pb-20 font-sans selection:bg-brand-purple selection:text-white overflow-x-hidden">
 
       {/* --- HEADER --- */}
-      <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+      <header className="sticky top-0 z-40 w-full">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 h-28 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group active:scale-95 transition-transform touch-manipulation">
-              <div className="relative w-7 h-7">
-                <Image src="/logo.svg" alt="Logo" fill className="object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+              <div className="relative w-20 h-20 md:w-28 md:h-28">
+                <Image src="/sloth.png" alt="Logo" fill className="object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
               </div>
-              <span className="font-bold text-lg tracking-tight">DoItForMe</span>
             </Link>
           </div>
 

@@ -163,7 +163,7 @@ export default function LandingPage() {
 
   // 2. Asset Preloading (Logo and Sloth)
   useEffect(() => {
-    const criticalImages = ["/logo.svg", "/sloth.png"];
+    const criticalImages = ["/sloth.png"];
     let loaded = 0;
 
     criticalImages.forEach((src) => {
@@ -280,21 +280,18 @@ export default function LandingPage() {
       />
 
       {/* NAVBAR */}
-      <header className={`fixed z-50 w-full top-0 left-0 transition-all duration-500 border-b ${scrollY > 20 ? "bg-[#020202]/80 backdrop-blur-xl border-white/5" : "bg-transparent border-transparent"}`}>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
+      <header className="fixed z-50 w-full top-0 left-0 transition-all duration-500">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-28 md:h-32 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 md:gap-3 group">
-            <div className="relative w-6 h-6 md:w-8 md:h-8 transition-transform duration-500 group-hover:rotate-12">
-              <Image src="/logo.svg" alt="logo" fill className="object-contain" />
+            <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-500 group-hover:rotate-12">
+              <Image src="/sloth.png" alt="logo" fill className="object-contain" />
             </div>
-            <span className="font-bold text-lg md:text-xl tracking-tight text-white group-hover:text-zinc-300 transition-colors">
-              DoItForMe
-            </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors">How it works</button>
-            <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors">FAQ</button>
-            <Link href="/contact" className="text-sm font-medium text-white/60 hover:text-white transition-colors">Support</Link>
+          <nav className="hidden md:flex items-center gap-3">
+            <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm hover:bg-white/10">How it works</button>
+            <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm hover:bg-white/10">FAQ</button>
+            <Link href="/contact" className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm hover:bg-white/10">Support</Link>
           </nav>
 
           <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95">
@@ -315,7 +312,7 @@ export default function LandingPage() {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-center lg:text-left flex flex-col items-center lg:items-start"
         >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 w-fit mb-6 md:mb-8 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 w-fit mb-6 md:mb-8 mt-8 md:mt-12 backdrop-blur-md">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-purple opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-purple"></span>
@@ -699,7 +696,7 @@ export default function LandingPage() {
 
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-              <div className="relative w-6 h-6 grayscale opacity-50"><Image src="/logo.svg" alt="logo" fill className="object-contain" /></div>
+              <div className="relative w-6 h-6 grayscale opacity-50"><Image src="/sloth.png" alt="logo" fill className="object-contain" /></div>
               <span className="font-bold text-lg text-white">DoItForMe</span>
             </div>
             <p className="text-[10px] md:text-xs text-zinc-600">© 2026 DoItForMe Inc.</p>
