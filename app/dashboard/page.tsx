@@ -28,14 +28,15 @@ export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
   const [gigs, setGigs] = useState<any[]>([]);
   const [activeChats, setActiveChats] = useState<any[]>([]);
+  const [campusFilter, setCampusFilter] = useState<'ALL' | 'MY_CAMPUS'>('ALL');
   const [loading, setLoading] = useState(true);
   const [isChatListOpen, setIsChatListOpen] = useState(false);
-
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   // --- SEARCH STATE ---
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadUserAndChats = async () => {
       // OPTIMIZATION: Check session directly to prevent race conditions on redirect
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -55,18 +56,6 @@ export default function Dashboard() {
 
         setUser({ ...authUser, user_metadata: { ...authUser.user_metadata, ...dbUser } });
 
-        // Fetch Gigs
-        const nowIso = new Date().toISOString();
-        const { data: gigsData } = await supabase
-          .from("gigs")
-          .select("*, applications(count)")
-          .neq("poster_id", authUser.id)
-          .eq("status", "open")
-          .or(`deadline.is.null,deadline.gt.${nowIso}`)
-          .order("created_at", { ascending: false })
-          .limit(20);
-        setGigs(gigsData || []);
-
         // Fetch Chats
         const { data: activeGigs } = await supabase
           .from("gigs")
@@ -76,10 +65,43 @@ export default function Dashboard() {
           .order("created_at", { ascending: false });
         setActiveChats(activeGigs || []);
       }
+      // Note: We don't set loading false here, we wait for gigs
+    };
+    loadUserAndChats();
+  }, [router, supabase]);
+
+  // Separate Effect for Gigs to support Campus Filter Re-fetching
+  useEffect(() => {
+    const loadGigs = async () => {
+      if (!user) return; // Wait for user
+
+      setLoading(true);
+      const nowIso = new Date().toISOString();
+
+      let query = supabase
+        .from("gigs")
+        .select("*, applications(count), users:poster_id!inner(college)") // Join poster for college
+        .neq("poster_id", user.id)
+        .eq("status", "open")
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      // Apply Deadline Logic
+      query = query.or(`deadline.is.null,deadline.gt.${nowIso}`);
+
+      if (campusFilter === 'MY_CAMPUS' && user?.user_metadata?.college) {
+        query = query.eq("users.college", user.user_metadata.college);
+      }
+
+      const { data: gigsData, error } = await query;
+      if (error) console.error("Gig Fetch Error:", error);
+
+      setGigs(gigsData || []);
       setLoading(false);
     };
-    loadData();
-  }, [router, supabase]);
+
+    if (user) loadGigs();
+  }, [user, campusFilter, supabase]);
 
   // --- SEARCH & FILTER LOGIC ---
   const [feedType, setFeedType] = useState<'ALL' | 'HUSTLE' | 'MARKET'>('ALL');
@@ -116,8 +138,8 @@ export default function Dashboard() {
     <main className="min-h-[100dvh] bg-[#0B0B11] text-foreground pb-20 font-sans selection:bg-brand-purple selection:text-white overflow-x-hidden">
 
       {/* --- HEADER --- */}
-      <header className="sticky top-0 z-40 w-full">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-28 flex items-center justify-between">
+      <header className="sticky top-0 z-40 w-full bg-[#0B0B11]/80 backdrop-blur-md border-b border-white/5 md:border-none md:bg-transparent transition-all">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 md:h-28 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group active:scale-95 transition-transform touch-manipulation">
               <div className="relative w-20 h-20 md:w-28 md:h-28">
@@ -132,6 +154,16 @@ export default function Dashboard() {
                 <User size={12} /> Verify ID
               </Link>
             )}
+
+            {/* MESSAGES ICON (Header) */}
+            <button
+              onClick={() => router.push('/messages')}
+              className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
+            >
+              <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-purple animate-pulse"></div>
+              <MessageSquare size={20} />
+            </button>
+
             <div className="h-6 w-px bg-zinc-800 mx-2 hidden sm:block"></div>
             <Link href="/profile" className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors active:scale-95 touch-manipulation">
               <div className="w-8 h-8 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
@@ -161,7 +193,7 @@ export default function Dashboard() {
             <div className="relative z-10 flex flex-col justify-between h-full">
               <div>
                 <h1 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">Marketplace Overview</h1>
-                <p className="text-zinc-500 text-sm md:text-base max-w-md">Track your active gigs, manage applications, and find new opportunities.</p>
+                <p className="text-zinc-500 text-sm md:text-base max-w-md">Track active gigs {user?.user_metadata?.college && `at ${user.user_metadata.college}`}, manage applications, and find new opportunities.</p>
               </div>
               <div className="flex gap-6 md:gap-8 mt-8 border-t border-white/5 pt-6">
                 <div>
@@ -248,10 +280,37 @@ export default function Dashboard() {
                   className="pl-9 pr-4 py-2 bg-[#121217] border border-white/10 rounded-full text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-brand-purple/50 w-full sm:w-40 transition-all"
                 />
               </div>
-              {/* MESSAGES BUTTON */}
-              <Link href="/messages" className="relative p-2 px-4 rounded-full border border-white/10 hover:bg-white/5 text-white transition-colors text-[10px] font-black uppercase tracking-widest whitespace-nowrap active:scale-95 touch-manipulation flex items-center gap-2">
-                <MessageSquare size={14} /> Messages
-              </Link>
+              {/* FILTER DROPDOWN ICON */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className={`p-2 rounded-full border transition-all ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white'}`}
+                >
+                  <Filter size={16} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isFilterOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-[#18181b] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                    <div className="p-2 space-y-1">
+                      <button
+                        onClick={() => { setCampusFilter('ALL'); setIsFilterOpen(false); }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                      >
+                        All Campuses
+                        {campusFilter === 'ALL' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                      </button>
+                      <button
+                        onClick={() => { setCampusFilter('MY_CAMPUS'); setIsFilterOpen(false); }}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple/20 text-brand-purple' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                      >
+                        My Campus
+                        {campusFilter === 'MY_CAMPUS' && <div className="w-1.5 h-1.5 rounded-full bg-brand-purple"></div>}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* VIEW ALL BUTTON - Redirects to Feed */}
               <Link href="/feed" className="p-2 px-4 rounded-full border border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest whitespace-nowrap active:scale-95 touch-manipulation">
@@ -330,7 +389,7 @@ export default function Dashboard() {
                         {gig.title}
                       </h3>
                       <div className="flex items-center justify-between text-xs text-zinc-500 font-medium mt-auto">
-                        <span className="flex items-center gap-1"><MapPin size={10} /> {gig.location || "Online"}</span>
+                        <span className="flex items-center gap-1"><MapPin size={10} /> {gig.users?.college || gig.location || "Online"}</span>
                         <span className="flex items-center gap-1"><Clock size={10} /> {timeAgo(gig.created_at)}</span>
                       </div>
                     </div>
@@ -351,7 +410,7 @@ export default function Dashboard() {
                           {gig.title[0]}
                         </div>
                         <span className="px-2 py-1 rounded-md bg-zinc-900 border border-white/5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                          {gig.is_physical ? <><MapPin size={10} /> Campus</> : <><Zap size={10} /> Remote</>}
+                          {gig.is_physical ? <><MapPin size={10} /> {gig.users?.college || "Campus"}</> : <><Zap size={10} /> Remote</>}
                         </span>
                       </div>
 
@@ -418,7 +477,8 @@ export default function Dashboard() {
       {/* MOBILE FAB (Sweet Spot) */}
       <Link
         href="/post"
-        className="md:hidden fixed bottom-24 right-6 z-50 w-14 h-14 bg-white text-black rounded-full shadow-2xl shadow-white/20 flex items-center justify-center active:scale-90 transition-transform"
+        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-white text-black rounded-full shadow-2xl shadow-white/20 flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <Plus size={28} strokeWidth={2.5} />
       </Link>

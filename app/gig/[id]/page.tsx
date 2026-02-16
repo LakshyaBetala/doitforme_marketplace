@@ -595,7 +595,7 @@ export default function GigDetailPage() {
         </div>
       )}
 
-      <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-12">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-12 pb-28 md:pb-12">
 
         {/* HEADER: Back & Title */}
         <div className="mb-12">
@@ -1002,6 +1002,56 @@ export default function GigDetailPage() {
           </div>
         </div>
 
+      </div>
+
+      {/* MOBILE STICKY ACTION BAR */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0B0B11]/80 backdrop-blur-xl border-t border-white/10 z-50 md:hidden pb-[calc(1rem+env(safe-area-inset-bottom))] animate-in slide-in-from-bottom-full duration-500">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">
+              {isMarket ? (gig.market_type === "RENT" ? "Rental Fee" : "Price") : "Budget"}
+            </p>
+            <p className="text-xl font-mono font-bold text-white">₹{gig.price}</p>
+          </div>
+
+          <div className="flex-1">
+            {/* OWNER ACTIONS */}
+            {isOwner ? (
+              status === 'open' ? (
+                <button onClick={handleCancel} disabled={submitting} className="w-full py-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 font-bold text-sm">
+                  {submitting ? "..." : "Cancel"}
+                </button>
+              ) : (status === 'assigned' || status === 'delivered') ? (
+                <button onClick={handleComplete} disabled={submitting} className="w-full py-3 rounded-xl bg-green-500 text-black font-bold text-sm shadow-lg shadow-green-500/20">
+                  {submitting ? "..." : "Complete"}
+                </button>
+              ) : (
+                <button disabled className="w-full py-3 rounded-xl bg-white/5 text-white/40 font-bold text-sm">
+                  {status}
+                </button>
+              )
+            ) : (
+              /* WORKER / PUBLIC ACTIONS */
+              isWorker && status === 'assigned' ? (
+                <button onClick={handleDeliver} disabled={submitting} className="w-full py-3 rounded-xl bg-white text-black font-bold text-sm shadow-lg">
+                  {submitting ? "..." : (isMarket && gig.market_type === 'RENT' ? "Returned" : "Submit")}
+                </button>
+              ) : status === 'open' ? (
+                <button
+                  onClick={isMarket ? handleBuy : handleApplyNavigation}
+                  disabled={submitting || hasApplied}
+                  className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg ${hasApplied ? "bg-white/10 text-white/50" : "bg-white text-black"}`}
+                >
+                  {submitting ? "..." : (hasApplied ? "Applied" : (isMarket ? (gig.market_type === 'RENT' ? "Rent Now" : "Buy Now") : "Apply Now"))}
+                </button>
+              ) : (
+                <button disabled className="w-full py-3 rounded-xl bg-white/5 text-white/40 font-bold text-sm">
+                  {status === 'completed' ? "Completed" : "Assigned"}
+                </button>
+              )
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Lightbox */}

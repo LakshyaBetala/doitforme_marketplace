@@ -44,23 +44,41 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true);
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
   const [feedType, setFeedType] = useState<"MARKET" | "HUSTLE">("MARKET");
+  const [campusFilter, setCampusFilter] = useState<"ALL" | "MY_CAMPUS">("ALL");
 
   useEffect(() => {
     const loadGigs = async () => {
       try {
         setLoading(true);
 
+        const { data: { user } } = await supabase.auth.getUser();
+
+        let userCollege = null;
+        if (user) {
+          const { data: userData } = await supabase.from('users').select('college').eq('id', user.id).single();
+          userCollege = userData?.college;
+        }
+
         const nowIso = new Date().toISOString();
+
+        // Base Query with User Join to get poster's college
         let query = supabase
           .from("gigs")
-          .select("*")
+          .select("*, users:poster_id!inner(college)") // Select poster's college
           .eq("status", "open")
           .order("created_at", { ascending: false });
 
+        // Listing Type Filter
         if (feedType === "HUSTLE") {
           query = query.eq("listing_type", "HUSTLE").or(`deadline.is.null,deadline.gt.${nowIso}`);
         } else {
           query = query.eq("listing_type", "MARKET");
+        }
+
+        // Campus Filter
+        if (campusFilter === "MY_CAMPUS" && userCollege) {
+          // We need to use !inner join to filter by relation, which we did in .select()
+          query = query.eq("users.college", userCollege);
         }
 
         const { data, error: fetchError } = await query;
@@ -88,7 +106,7 @@ export default function FeedPage() {
     };
 
     loadGigs();
-  }, [supabase, feedType]);
+  }, [supabase, feedType, campusFilter]);
 
   const themeColor = feedType === "MARKET" ? "text-pink-400" : "text-brand-purple";
   const themeBorder = feedType === "MARKET" ? "border-pink-500/20" : "border-brand-purple/20";
@@ -136,6 +154,26 @@ export default function FeedPage() {
 
       {/* FEED GRID */}
       <div className="max-w-xl mx-auto space-y-4 pb-24 overflow-hidden">
+
+        {/* CAMPUS FILTER TOGGLE (Sweet Spot) */}
+        {!loading && (
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <button
+              onClick={() => setCampusFilter('ALL')}
+              className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all ${campusFilter === 'ALL' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+            >
+              All Campuses
+            </button>
+            <div className="w-px h-4 bg-white/10"></div>
+            <button
+              onClick={() => setCampusFilter('MY_CAMPUS')}
+              className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all flex items-center gap-2 ${campusFilter === 'MY_CAMPUS' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}
+            >
+              <MapPin size={12} /> My Campus
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="text-center py-20">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mb-4"></div>
@@ -150,8 +188,12 @@ export default function FeedPage() {
             <div className={`w-20 h-20 mx-auto rounded-full ${themeBg} flex items-center justify-center mb-4`}>
               <Search size={32} className={themeColor} />
             </div>
-            <h3 className="text-xl font-bold text-white">No {feedType === 'MARKET' ? 'items' : 'gigs'} found</h3>
-            <p className="text-white/40 text-sm max-w-xs mx-auto">Be the first to post! Students are waiting for something cool.</p>
+            <h3 className="text-xl font-bold text-white">No {feedType === 'MARKET' ? 'items' : 'gigs'} found {campusFilter === 'MY_CAMPUS' && 'at your campus'}</h3>
+            <p className="text-white/40 text-sm max-w-xs mx-auto">
+              {campusFilter === 'MY_CAMPUS'
+                ? "Be the first to post something for your college!"
+                : "Students are waiting for something cool."}
+            </p>
             <button
               onClick={() => router.push('/post')}
               className={`px-6 py-3 rounded-xl font-bold text-white ${feedType === 'MARKET' ? 'bg-pink-500 hover:bg-pink-400' : 'bg-brand-purple hover:bg-brand-purple/90'} transition-colors shadow-lg`}
@@ -170,7 +212,7 @@ export default function FeedPage() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 layout
                 onClick={() => router.push(`/gig/${gig.id}`)}
-                className="bg-[#1A1A24] border border-white/5 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-white/10 group relative overflow-hidden"
+                className="bg-[#1A1A24] border border-white/5 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-white/10 group relative overflow-hidden touch-manipulation select-none"
               >
                 {/* Card Glow */}
                 <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${feedType === 'MARKET' ? 'bg-gradient-to-tr from-pink-500/20 to-transparent' : 'bg-gradient-to-tr from-brand-purple/20 to-transparent'}`}></div>
@@ -197,7 +239,7 @@ export default function FeedPage() {
                       <div className="flex items-center gap-3 text-[11px] text-white/40">
                         <div className="flex items-center gap-1">
                           <MapPin size={10} />
-                          <span>Campus</span>
+                          <span>{gig.users?.college || "Campus"}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Clock size={10} />

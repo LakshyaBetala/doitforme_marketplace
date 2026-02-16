@@ -11,7 +11,11 @@ export const metadata: Metadata = {
   icons: { icon: "/sloth.png", shortcut: "/sloth.png", apple: "/sloth.png" },
   openGraph: { title: "DoItForMe", description: "Students Helping Students.", images: ["/sloth.png"], type: "website" },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in'),
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent" },
+  appleWebApp: {
+    capable: true,
+    title: "DoItForMe",
+    statusBarStyle: "black-translucent"
+  },
 };
 
 export const viewport: Viewport = {
@@ -20,6 +24,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: "#0B0B11",
+  interactiveWidget: "resizes-content", // Fix for Android keyboard covering inputs
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

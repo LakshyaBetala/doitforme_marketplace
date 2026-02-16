@@ -15,13 +15,19 @@
   --brand-blue: #0097FF;
   --glass-bg: rgba(5, 5, 5, 0.7);
   --glass-border: rgba(255, 255, 255, 0.08);
+  
+  /* Mobile Safe Areas */
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+  --sar: env(safe-area-inset-right);
 }
 
 html, body {
   background: var(--background);
   color: var(--foreground);
   scroll-behavior: smooth;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   
   /* --- MOBILE OPTIMIZATION 1: OVERFLOW CONTROL --- */
   overflow-x: hidden;
@@ -29,9 +35,11 @@ html, body {
   position: relative;
   
   /* --- MOBILE OPTIMIZATION 2: iOS FILL FIX --- */
-  min-height: -webkit-fill-available;
+  min-height: 100dvh; /* Modern dynamic viewport height */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
 
   /* --- MOBILE OPTIMIZATION 3: TOUCH UX --- */
   -webkit-tap-highlight-color: transparent;
