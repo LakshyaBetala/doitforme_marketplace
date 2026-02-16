@@ -28,22 +28,35 @@ export async function POST(req: Request) {
     if (gig.user_id !== posterId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-    if (gig.payment_status !== "ESCROW_HELD")
-      return NextResponse.json({ error: "Nothing to cancel" }, { status: 400 });
+    if (gig.payment_status !== "ESCROW_HELD" && gig.status !== "open")
+      return NextResponse.json({ error: "Cannot cancel at this stage" }, { status: 400 });
 
-    const amount = gig.escrow_amount;
-    const fee = amount * 0.10;
-    const refundAmount = amount - fee;
+    let refundAmount = 0;
+    let fee = 0;
 
-    // refund poster wallet
-    await supabase.from("wallets").upsert(
-      { user_id: posterId, balance: refundAmount },
-      { onConflict: "user_id" }
-    );
+    // SCENARIO 1: Funds are held -> Request Cancellation (No immediate refund)
+    if (gig.payment_status === "ESCROW_HELD") {
+      await supabase
+        .from("gigs")
+        .update({
+          status: "cancellation_requested", // New status
+          updated_at: new Date().toISOString(),
+          // We DO NOT change payment_status yet, as funds are still held
+        })
+        .eq("id", gigId);
 
+      return NextResponse.json({
+        success: true,
+        message: "Cancellation requested. Admin/User approval required.",
+        requestOnly: true
+      });
+    }
+
+    // SCENARIO 2: No funds held (Open) -> Immediate Cancel
     await supabase
       .from("gigs")
       .update({
+        status: "cancelled",
         payment_status: "CANCELLED",
         cancelled_at: new Date().toISOString(),
       })
@@ -51,8 +64,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
-      refundAmount,
-      platformFee: fee,
+      refundAmount: 0,
+      platformFee: 0,
     });
   } catch (err: any) {
     return NextResponse.json(

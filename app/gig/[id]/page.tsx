@@ -404,6 +404,36 @@ export default function GigDetailPage() {
     }
   };
 
+  const handleCancel = async () => {
+    if (!confirm("Are you sure you want to cancel this gig?")) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/escrow/cancel", { // Uses the logic updated to handle 'open' gigs
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gigId: id, posterId: user?.id }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        if (data.requestOnly) {
+          alert("Cancellation request submitted. Waiting for approval.");
+          window.location.reload();
+        } else {
+          alert("Gig cancelled successfully.");
+          router.push("/dashboard");
+        }
+      } else {
+        throw new Error(data.error || "Cancellation failed");
+      }
+    } catch (e: any) {
+      alert(e.message || "Network error.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleDispute = async () => {
     const reason = prompt("Describe the issue (min 50 chars):");
     if (!reason || reason.length < 50) return alert("Reason too short.");
@@ -815,22 +845,51 @@ export default function GigDetailPage() {
                       </div>
 
                       {(status === "assigned" || status === "delivered") && (
+                        <>
+                          <button
+                            onClick={handleComplete}
+                            disabled={submitting}
+                            className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3"
+                          >
+                            {submitting ? "Processing..." : (
+                              isMarket
+                                ? (gig.market_type === "RENT" ? "Confirm Return" : "Confirm Delivery")
+                                : "Mark as Completed"
+                            )}
+                          </button>
+
+                          <button
+                            onClick={handleCancel}
+                            disabled={submitting}
+                            className="w-full py-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-sm transition-all"
+                          >
+                            {submitting ? "Processing..." : "Request Cancellation"}
+                          </button>
+                        </>
+                      )}
+
+                      {status === "open" && (
                         <button
-                          onClick={handleComplete}
+                          onClick={handleCancel}
                           disabled={submitting}
-                          className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+                          className="w-full py-4 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-lg transition-all"
                         >
-                          {submitting ? "Processing..." : (
-                            isMarket
-                              ? (gig.market_type === "RENT" ? "Confirm Return" : "Confirm Delivery")
-                              : "Mark as Completed"
-                          )}
+                          {submitting ? "Cancelling..." : "Cancel Gig"}
                         </button>
                       )}
 
-                      <button className="w-full py-3 rounded-2xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 transition-colors font-medium">
-                        Edit Gig
-                      </button>
+                      {status === "cancellation_requested" && (
+                        <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-center">
+                          <p className="text-yellow-500 font-bold mb-1">Cancellation Pending</p>
+                          <p className="text-xs text-yellow-500/60">A request to cancel and refund has been sent. Waiting for approval.</p>
+                        </div>
+                      )}
+
+                      {status !== "cancellation_requested" && (
+                        <button className="w-full py-3 rounded-2xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 transition-colors font-medium mt-3">
+                          Edit Gig
+                        </button>
+                      )}
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -892,8 +951,8 @@ export default function GigDetailPage() {
               <div className="flex items-center gap-4">
                 {/* Avatar with Campus Pro Border */}
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${(posterDetails?.jobs_completed || 0) > 10
-                    ? "p-[2px] bg-gradient-to-r from-amber-500 to-yellow-600 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
-                    : "border border-white/5 bg-zinc-800"
+                  ? "p-[2px] bg-gradient-to-r from-amber-500 to-yellow-600 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                  : "border border-white/5 bg-zinc-800"
                   }`}>
                   <div className="w-full h-full rounded-full overflow-hidden bg-zinc-900 relative flex items-center justify-center">
                     {posterDetails?.avatar_url ? (

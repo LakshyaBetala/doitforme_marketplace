@@ -12,9 +12,11 @@ export async function POST(request: Request) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    console.error('Moderation route error:', err);
-    return new Response(JSON.stringify({ success: true, flagged: true }), {
-      status: 500,
+    console.error('Moderation route error (Fail Open):', err);
+    // FAIL OPEN: If moderation fails, we allow the message to proceed.
+    // Return success: true so the client doesn't block it.
+    return new Response(JSON.stringify({ success: true, flagged: false, reason: "Moderation Skipped" }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }

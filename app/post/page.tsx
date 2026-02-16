@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { containsSensitiveInfo } from "@/lib/moderation";
+import { containsSensitiveInfo } from "@/lib/moderation-rules";
 import Image from "next/image";
 import Link from "next/link";
 import {

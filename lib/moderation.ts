@@ -12,35 +12,8 @@ const getClassifier = async () => {
     return classifier;
 };
 
-export const containsSensitiveInfo = (text: string): { detected: boolean; reason?: string } => {
-    if (!text) return { detected: false };
-
-    // 1. Phone Numbers (India: 10 digits, usually starting with 6-9)
-    const phoneRegex = /(\+91[\-\s]?)?[6-9]\d{9}|[6-9]\d{2}[\-\s]?\d{3}[\-\s]?\d{4}/;
-    if (phoneRegex.test(text)) {
-        return { detected: true, reason: "Phone numbers are not allowed to prevent scams." };
-    }
-
-    // 2. Email Addresses
-    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
-    if (emailRegex.test(text)) {
-        return { detected: true, reason: "Email sharing is restricted for safety." };
-    }
-
-    // 3. Payment Keywords
-    const paymentKeywords = [
-        "paytm", "gpay", "phonepe", "upi", "google pay", "bank transfer", "qr code", "cash", "direct"
-    ];
-
-    const lowerText = text.toLowerCase();
-    const foundKeyword = paymentKeywords.find(keyword => lowerText.includes(keyword));
-
-    if (foundKeyword) {
-        return { detected: true, reason: `The keyword "${foundKeyword}" is restricted. Please use the secure Escrow system.` };
-    }
-
-    return { detected: false };
-};
+import { containsSensitiveInfo } from "./moderation-rules";
+export { containsSensitiveInfo };
 
 
 export const analyzeIntentAI = async (text: string) => {
@@ -70,8 +43,8 @@ export const analyzeIntentAI = async (text: string) => {
         }
     } catch (e) {
         // Fallback: Allow but mark for manual audit in logs
-        console.warn("AI Check Skipped/Failed:", e);
-        return { success: true, flagged: true };
+        console.warn("AI Check Skipped/Failed (Fail Open):", e);
+        return { success: true, flagged: true, reason: "AI Service Unavailable" };
     }
     return { success: true };
 };

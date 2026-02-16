@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, CheckCircle2, ShieldCheck, Zap, Lock,
   DollarSign, ChevronDown, Quote, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock,
-  Linkedin, Instagram
+  Linkedin, Instagram, Briefcase, ShoppingBag as ShoppingBagIcon
 } from "lucide-react";
 
 // -------------------------------------------------------
@@ -317,40 +317,40 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-purple opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-purple"></span>
             </span>
-            <span className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">Live: Verified Marketplace</span>
+            <span className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">Live: Verified Student Market</span>
           </div>
 
           <h1 className="text-4xl md:text-8xl font-black leading-[1.1] md:leading-[1.05] tracking-tighter text-white mb-6 md:mb-8 break-words w-full">
-            Outsource tasks.<br />
-            <span className="text-zinc-500">Buy & Sell Gear.</span>
+            Outsource Work.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-pink to-brand-purple">Buy & Sell Gear.</span>
           </h1>
 
           <p className="text-base md:text-lg text-zinc-400 leading-relaxed max-w-xl mb-8 md:mb-10 px-4 md:px-0">
-            The safest peer-to-peer marketplace for university students.
-            Get assignments and errands done, or monetize your free time securely.
+            The all-in-one student economy. Get gigs done, rent calculators, or sell old notes.
+            Safe, verified, and fee-free for marketplace deals.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto px-4 md:px-0">
-            <button onClick={handleLogin} className="w-full sm:w-auto px-8 py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95">
-              Start Now <ArrowRight size={16} />
+            <button onClick={handleLogin} className="w-full sm:w-auto px-8 py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+              Explore Campus <ArrowRight size={16} />
             </button>
             <button onClick={() => scrollToSection('how-it-works')} className="w-full sm:w-auto px-8 py-4 rounded-full text-sm font-bold border border-zinc-800 text-white hover:bg-zinc-900 transition-all active:scale-95">
-              See How It Works
+              How it works
             </button>
           </div>
 
           <div className="mt-12 md:mt-16 flex items-center gap-6 md:gap-12 border-t border-white/5 pt-8 w-full justify-center lg:justify-start">
             <div className="text-center lg:text-left">
               <div className="text-xl md:text-2xl font-bold text-white">100%</div>
-              <div className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest">Verified</div>
+              <div className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest">Verified Students</div>
+            </div>
+            <div className="text-center lg:text-left">
+              <div className="text-xl md:text-2xl font-bold text-white">0% Fee</div>
+              <div className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest">On Marketplace</div>
             </div>
             <div className="text-center lg:text-left">
               <div className="text-xl md:text-2xl font-bold text-white">Escrow</div>
-              <div className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest">Protected</div>
-            </div>
-            <div className="text-center lg:text-left">
-              <div className="text-xl md:text-2xl font-bold text-white">0%</div>
-              <div className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest">Post Fee</div>
+              <div className="text-[9px] md:text-[10px] text-zinc-500 uppercase tracking-widest">Payment Protection</div>
             </div>
           </div>
         </motion.div>
@@ -556,19 +556,17 @@ export default function LandingPage() {
       --------------------------------------------------------- */}
       <section id="transparency" className="max-w-7xl mx-auto px-6 mb-20 md:mb-32 relative z-10">
         <div className="mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 md:mb-6">Complete Transparency.</h2>
-          <p className="text-zinc-400 text-base md:text-lg max-w-xl">We've stripped away the complexity. No hidden wallets. No confusion.</p>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 md:mb-6">Unmatched Transparency.</h2>
+          <p className="text-zinc-400 text-base md:text-lg max-w-xl">We earn only when you earn from services. The marketplace is completely free.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           <div className="md:col-span-2 relative overflow-hidden rounded-3xl border border-white/10 bg-[#0A0A0A] p-6 md:p-8 group">
             <div className="relative z-10">
               <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 mb-6"><ShieldCheck size={24} /></div>
-              <h3 className="text-2xl font-bold text-white mb-3">Direct Escrow</h3>
+              <h3 className="text-2xl font-bold text-white mb-3">Direct Escrow Pattern</h3>
               <p className="text-zinc-400 leading-relaxed max-w-lg text-sm md:text-base">
-                Funds move directly. When you hire, you pay into Escrow.
-                When work is done, funds go directly to the worker's payout method.
-                No intermediate wallet storage.
+                Your money is never in limbo. For gigs, funds are held securely in Escrow and released directly to the worker upon completion. For marketplace items, you pay only when you receive the item.
               </p>
             </div>
             <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/5 rounded-full blur-[80px] group-hover:bg-blue-500/10 transition-colors duration-500" />
@@ -577,31 +575,52 @@ export default function LandingPage() {
           <div className="rounded-3xl border border-white/10 bg-[#0A0A0A] p-6 md:p-8 group hover:border-brand-purple/30 transition-colors active:scale-95 touch-manipulation">
             <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-brand-purple mb-6"><Zap size={24} /></div>
             <h3 className="text-2xl font-bold text-white mb-3">Instant Match</h3>
-            <p className="text-zinc-400 text-sm md:text-base">Post a gig and get applicants within minutes. Filter by rating.</p>
+            <p className="text-zinc-400 text-sm md:text-base">Post a task and get applicants from your campus within minutes. Speed is our currency.</p>
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-[#0A0A0A] p-6 md:p-8 group hover:border-brand-pink/30 transition-colors active:scale-95 touch-manipulation">
             <div className="w-12 h-12 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-500 mb-6"><Lock size={24} /></div>
-            <h3 className="text-2xl font-bold text-white mb-3">Verified IDs</h3>
-            <p className="text-zinc-400 text-sm md:text-base">No bots. Every user must upload a valid Student ID to participate.</p>
+            <h3 className="text-2xl font-bold text-white mb-3">Campus Verified</h3>
+            <p className="text-zinc-400 text-sm md:text-base">Safety first. Every user is verified with a valid Student ID. No strangers, just peers.</p>
           </div>
 
-          <div className="md:col-span-2 rounded-3xl border border-white/10 bg-[#0A0A0A] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="md:col-span-2 rounded-3xl border border-white/10 bg-[#0A0A0A] p-6 md:p-8 flex flex-col md:flex-row items-start justify-between gap-8">
             <div className="flex-1 w-full">
               <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 mb-6"><DollarSign size={24} /></div>
-              <h3 className="text-2xl font-bold text-white mb-3">The Economics</h3>
-              <ul className="space-y-3 text-zinc-400 text-sm md:text-base">
-                <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-green-500" /> Free to post gigs</li>
-                <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-green-500" /> Free to apply for gigs</li>
-                <li className="flex items-center gap-3"><CheckCircle2 size={18} className="text-zinc-500" /> 10% Platform fee on payout</li>
-              </ul>
+              <h3 className="text-2xl font-bold text-white mb-3">The Business Model</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                  <h4 className="font-bold text-white mb-1 flex items-center gap-2">
+                    <Briefcase size={16} className="text-brand-purple" /> Services (Hustle)
+                  </h4>
+                  <p className="text-xs text-zinc-400 mb-2">Freelance gigs & errands</p>
+                  <ul className="space-y-1 text-xs text-zinc-300">
+                    <li className="flex items-center gap-2"><CheckCircle2 size={12} className="text-green-500" /> Free to Post Tasks</li>
+                    <li className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white/20 text-[8px] flex items-center justify-center">i</div> 10% Fee (First 10 Completed Jobs)</li>
+                    <li className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-brand-purple/20 text-[8px] flex items-center justify-center text-brand-purple">★</div> 7.5% Fee (After 10+ Jobs)</li>
+                  </ul>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                  <h4 className="font-bold text-white mb-1 flex items-center gap-2">
+                    <ShoppingBagIcon size={16} className="text-brand-pink" /> Marketplace
+                  </h4>
+                  <p className="text-xs text-zinc-400 mb-2">Buy, Sell & Rent gear</p>
+                  <ul className="space-y-1 text-xs text-zinc-300">
+                    <li className="flex items-center gap-2"><CheckCircle2 size={12} className="text-green-500" /> Buy/Sell: 0% Fee</li>
+                    <li className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-white/20 text-[8px] flex items-center justify-center">i</div> Rent: 3% Escrow Fee</li>
+                    <li className="flex items-center gap-2"><CheckCircle2 size={12} className="text-green-500" /> Keep 100% on Sales</li>
+                  </ul>
+                </div>
+              </div>
             </div>
-            <div className="bg-black p-6 rounded-2xl border border-white/10 w-full md:w-64 text-center relative overflow-hidden">
+            <div className="bg-black p-5 rounded-2xl border border-white/10 w-full md:w-64 text-center relative overflow-hidden shrink-0">
               <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-purple to-brand-blue"></div>
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Payout Example</span>
-              <div className="mt-4 flex justify-between text-sm"><span className="text-zinc-400">Earned</span><span className="text-white">₹1000</span></div>
-              <div className="mt-2 flex justify-between text-sm"><span className="text-zinc-400">Fee (10%)</span><span className="text-red-400">-₹100</span></div>
-              <div className="mt-4 pt-4 border-t border-white/10 flex justify-between font-bold text-lg"><span className="text-white">You Get</span><span className="text-green-400">₹900</span></div>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Pricing Example</span>
+              <div className="mt-4 flex justify-between text-sm"><span className="text-zinc-400">Sell Book</span><span className="text-brand-pink font-bold">₹500</span></div>
+              <div className="mt-1 flex justify-between text-sm"><span className="text-zinc-500">Fee (0%)</span><span className="text-white">₹0</span></div>
+              <div className="my-2 border-t border-white/10"></div>
+              <div className="flex justify-between text-sm"><span className="text-zinc-400">Do Task</span><span className="text-brand-purple font-bold">₹500</span></div>
+              <div className="mt-1 flex justify-between text-sm"><span className="text-zinc-500">Fee (10%)</span><span className="text-red-400">-₹50</span></div>
             </div>
           </div>
         </div>
@@ -750,8 +769,8 @@ const studentFaq = [
 ];
 
 const posterFaq = [
-  { q: "Is my money safe?", a: "Yes. You deposit funds into Escrow. The worker cannot touch it until you verify their work and click 'Release'." },
-  { q: "What if the work is bad?", a: "You can raise a dispute. Since the money is in Escrow, it can be refunded to you if the work is unsatisfactory." },
-  { q: "Are there extra fees?", a: "Posting is free. You only pay the amount you set for the task." },
+  { q: "Is my money safe?", a: "Yes. Funds are held in Escrow. The worker cannot touch it until you verify their work and click 'Release'." },
+  { q: "What are the fees?", a: "Posting is FREE. For Services, we charge 10% (drops to 7.5% after 10 gigs). Market Sales are 0% fee. Rentals have a 3% escrow fee. Payment gateway charges (~2%) are extra." },
+  { q: "Can I sell my old books?", a: "Absolutely! List books, calculators, or lab coats in the Campus Market. It's free to list and you keep 100% of the sale price." },
   { q: "How do disputes work?", a: "If you are unhappy with the work, raise a dispute before releasing funds. We mediate to ensure a fair outcome or refund." },
 ];

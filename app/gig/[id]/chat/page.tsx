@@ -108,16 +108,20 @@ export default function GigChatPage() {
 
   // --- SMART CHAT PROTOCOL ---
   const isEscrowSecured = gig?.escrow_status === "HELD" || gig?.escrow_status === "RELEASED";
-  const messageCount = messages.filter(m => !m.pending).length;
-  // Hard Lock: After 4 combined messages, if not secured
-  const isChatLocked = !isEscrowSecured && messageCount >= 4;
-  const messagesRemaining = Math.max(0, 4 - messageCount);
+
+  // Dynamic Limit
+  const MESSAGE_LIMIT = gig?.listing_type === 'MARKET' ? 5 : 2;
+  const messageCount = messages.filter(m => !m.pending && m.sender_id === user?.id).length;
+
+  // Hard Lock: Limit Messages if not secured
+  const isChatLocked = !isEscrowSecured && messageCount >= MESSAGE_LIMIT;
+  const messagesRemaining = Math.max(0, MESSAGE_LIMIT - messageCount);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !user) return;
     if (isChatLocked) {
-      setWarning("🔒 Chat limit reached. Accept/Pay to unlock.");
+      setWarning(`🔒 Limit reached (${MESSAGE_LIMIT} msgs). Wait for acceptance.`);
       return;
     }
     setWarning(null);
@@ -126,7 +130,7 @@ export default function GigChatPage() {
 
     // Run Filter
     if (containsRestrictedInfo(text)) {
-      setWarning("⚠️ STRICT POLICY: Sharing Phone/Socials is blocked. Registration Numbers (RA...) are allowed.");
+      setWarning("⚠️ STRICT POLICY: Sharing Phone/Socials is blocked.");
       return;
     }
 
@@ -145,15 +149,28 @@ export default function GigChatPage() {
 
     setMessages((prev) => [...prev, optimisticMsg]);
 
-    const { error } = await supabase.from("messages").insert({
-      gig_id: id,
-      sender_id: user.id,
-      content: text
-    });
+    try {
+      const res = await fetch("/api/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gigId: id,
+          content: text
+          // applicantId: isPoster ? ... : user.id // API infers receiver for Applicant->Poster
+        })
+      });
 
-    if (error) {
-      console.error("Send error:", error);
-      alert("Failed to send message");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Failed to send");
+      }
+
+      // Success - Remove optimistic pending state if needed, or let Realtime replace it
+      // For now, we keep optimistic until realtime event arrives or just leave it
+    } catch (err: any) {
+      console.error("Send error:", err);
+      setWarning(err.message);
       setMessages((prev) => prev.filter(m => m.id !== tempId));
       setNewMessage(text);
     }
@@ -220,8 +237,8 @@ export default function GigChatPage() {
           return (
             <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
               <div className={`max-w-[75%] md:max-w-[60%] p-4 rounded-2xl shadow-lg relative group ${isMe
-                  ? "bg-brand-purple text-white rounded-tr-none"
-                  : "bg-[#1A1A24] border border-white/10 rounded-tl-none"
+                ? "bg-brand-purple text-white rounded-tr-none"
+                : "bg-[#1A1A24] border border-white/10 rounded-tl-none"
                 }`}>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                 <div className="flex items-center justify-end gap-1 mt-1.5">
