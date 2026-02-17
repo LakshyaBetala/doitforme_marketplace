@@ -24,19 +24,21 @@ export const analyzeIntentAI = async (text: string) => {
     // Client-side guard check (optional, but robust)
 
     try {
-        // 2. Semantic AI Guard with 2s Timeout
+        // 2. Semantic AI Guard with 1.5s Timeout
         // Use Singleton to prevent reloading model
         const classifierPromise = getClassifier();
-        const timeout = new Promise((_, reject) => setTimeout(() => reject('Timeout'), 2000));
 
-        // Race the LOADING/GETTING of the model? 
-        // If model is already loaded, getClassifier returns fast.
+        // Race the LOADING AND INFERENCE
+        const analysisPromise = (async () => {
+            const classifier = await classifierPromise;
+            const labels = ['contact info', 'outside payment', 'campus talk'];
+            const output = await classifier(text, labels);
+            return output;
+        })();
 
-        const classifier: any = await Promise.race([classifierPromise, timeout]);
+        const timeout = new Promise((_, reject) => setTimeout(() => reject('Timeout'), 3000));
 
-        // Run classification
-        const labels = ['contact info', 'outside payment', 'campus talk'];
-        const output = await classifier(text, labels);
+        const output: any = await Promise.race([analysisPromise, timeout]);
 
         if ((output.labels[0] === 'contact info' || output.labels[0] === 'outside payment') && output.scores[0] > 0.8) {
             return { success: false, reason: "AI: Please keep contact and payments on the platform." };
@@ -44,7 +46,7 @@ export const analyzeIntentAI = async (text: string) => {
     } catch (e) {
         // Fallback: Allow but mark for manual audit in logs
         console.warn("AI Check Skipped/Failed (Fail Open):", e);
-        return { success: true, flagged: true, reason: "AI Service Unavailable" };
+        return { success: true, flagged: true, reason: "AI Service Unavailable/Timeout" };
     }
     return { success: true };
 };

@@ -2,6 +2,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { analyzeIntentAI } from "@/lib/moderation";
 
 
 export async function POST(req: Request) {
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
     // 3. Fetch Gig to Derive Receiver
     const { data: gig, error: gigError } = await supabase
       .from('gigs')
-      .select('status, poster_id, assigned_worker_id, listing_type')
+      .select('status, poster_id, assigned_worker_id, listing_type, market_type')
       .eq('id', gigId)
       .single();
 
@@ -86,8 +87,17 @@ export async function POST(req: Request) {
 
       if (countError) throw countError;
 
-      // Dynamic Limits based on Listing Type
-      const limit = gig.listing_type === 'MARKET' ? 5 : 2;
+      // Dynamic Limits based on Listing Type and Market Type
+      let limit = 2; // Default for HUSTLE
+
+      if (gig.listing_type === 'MARKET') {
+        if (gig.market_type === 'RENT') {
+          limit = 5;
+        } else {
+          // SELL, FREE, BUY_REQUEST
+          limit = 10;
+        }
+      }
 
       if ((count || 0) >= limit) {
         return NextResponse.json({
@@ -95,6 +105,18 @@ export async function POST(req: Request) {
           message: `Limit Reached: ${limit} Messages. Wait for acceptance.`
         }, { status: 403 });
       }
+    }
+
+    // 5. Hard Limit Check (Already done above)
+    // 5.5 Hybrid AI Moderation
+    const modResult = await analyzeIntentAI(content);
+
+    if (!modResult.success) {
+      return NextResponse.json({
+        success: false,
+        error: "Message blocked",
+        reason: modResult.reason
+      }, { status: 400 });
     }
 
     // 6. Insert Message (With receiver_id!)
@@ -105,7 +127,8 @@ export async function POST(req: Request) {
         sender_id: user.id,
         receiver_id: receiverId, // CRITICAL FIX
         content: content.trim(),
-        is_pre_agreement: isPreAgreement
+        is_pre_agreement: isPreAgreement,
+        flagged_for_review: modResult.flagged || false // AI Timeout / Uncertainty Fallback
       })
       .select()
       .single();

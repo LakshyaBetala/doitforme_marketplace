@@ -45,6 +45,7 @@ export default function PostGigPage() {
   const [securityDeposit, setSecurityDeposit] = useState("");
   const [mode, setMode] = useState("Online");
   const [location, setLocation] = useState("");
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   // Deadline (date + time)
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
@@ -483,13 +484,64 @@ export default function PostGigPage() {
             <div className="space-y-6">
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-white/40 uppercase tracking-wider">Location</label>
-                <input
-                  className={`w-full bg-transparent border-b border-white/10 py-4 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-white/40 transition-colors ${listingType === "HUSTLE" && mode === "Online" ? "opacity-30 cursor-not-allowed" : ""}`}
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  disabled={listingType === "HUSTLE" && mode === "Online"}
-                  placeholder={listingType === "HUSTLE" && mode === "Online" ? "Remote (Online)" : "e.g. Block A, Campus"}
-                />
+                <div className="relative">
+                  <input
+                    className={`w-full bg-transparent border-b border-white/10 py-4 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-brand-purple transition-colors ${listingType === "HUSTLE" && mode === "Online" ? "opacity-30 cursor-not-allowed" : ""}`}
+                    value={location}
+                    onChange={(e) => {
+                      setLocation(e.target.value);
+                      setShowLocationSuggestions(true);
+                      setError("");
+                    }}
+                    onFocus={() => setShowLocationSuggestions(true)}
+                    // onBlur={() => setTimeout(() => setShowLocationSuggestions(false), 200)} // Delayed close to allow clicks
+                    disabled={listingType === "HUSTLE" && mode === "Online"}
+                    placeholder={listingType === "HUSTLE" && mode === "Online" ? "Remote (Online)" : "Search campus hotspot or type custom..."}
+                  />
+
+                  {/* Quick Pick Chips (Visible when focused or empty) */}
+                  {!(listingType === "HUSTLE" && mode === "Online") && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {["Tech Park", "Java", "Library", "Clock Tower"].map((spot) => (
+                        <button
+                          key={spot}
+                          type="button"
+                          onClick={() => { setLocation(spot); setShowLocationSuggestions(false); }}
+                          className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/60 hover:bg-brand-purple/20 hover:border-brand-purple/50 hover:text-white transition-all"
+                        >
+                          {spot}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Autocomplete Dropdown */}
+                  {showLocationSuggestions && location.length > 0 && !(listingType === "HUSTLE" && mode === "Online") && (
+                    <div className="absolute top-14 left-0 w-full bg-[#1A1A24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+                      {["Tech Park", "Java", "Library", "Clock Tower", "Main Building", "Annexure", "Food Court", "Dental College", "Medical College"]
+                        .filter(s => s.toLowerCase().includes(location.toLowerCase()) && s !== location)
+                        .map((match) => (
+                          <button
+                            key={match}
+                            type="button"
+                            onClick={() => { setLocation(match); setShowLocationSuggestions(false); }}
+                            className="w-full text-left px-4 py-3 text-sm text-white/80 hover:bg-white/5 flex items-center gap-2"
+                          >
+                            <MapPin size={14} className="text-white/40" /> {match}
+                          </button>
+                        ))}
+                      {/* Fallback Display */}
+                      <div className="px-4 py-2 text-[10px] text-white/30 border-t border-white/5 bg-black/20">
+                        Press Enter to use "{location}"
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Click outside listener could be added here or handled via blur with timeout */}
+                  {showLocationSuggestions && (
+                    <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowLocationSuggestions(false)} />
+                  )}
+                </div>
               </div>
 
               {listingType === "HUSTLE" && (

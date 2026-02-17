@@ -66,17 +66,22 @@ export async function POST(req: Request) {
     }
 
     // Platform Fee Logic
+    // Platform Fee Logic
     let platformFee = 0;
+    let discountApplied = false;
 
     if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
       // Rental Fee: 3% of (Price + Deposit)
       platformFee = Math.ceil((price + deposit) * 0.03);
     } else {
       // Hustle Tiered: 7.5% if jobs > 10, else 10%
-      // Note: "Hustle Reward Tier: If a worker has completed more than 10 jobs...". 
-      // V3 says "> 10". Previous V2 said ">= 10". I will use "> 10" as per latest prompt.
-      const rate = jobsCompleted > 10 ? 0.075 : 0.10;
-      platformFee = Math.ceil(price * rate);
+      // Veteran Discount for Experienced Workers
+      if (jobsCompleted > 10) {
+        platformFee = Math.ceil(price * 0.075);
+        discountApplied = true;
+      } else {
+        platformFee = Math.ceil(price * 0.10);
+      }
     }
 
     // Subtotal (Base charge before Gateway)
@@ -92,11 +97,13 @@ export async function POST(req: Request) {
 
     // [New] Create Transaction Record (PENDING) with Fee Breakdown
     const breakdown = {
-      base_price: price,
-      deposit: deposit,
-      platform_fee: platformFee,
-      gateway_fee: gatewayFee,
-      net_worker_pay: price // Surcharge Model: Worker gets full Price
+      subtotal: subtotal,
+      processingFee: gatewayFee,
+      discountApplied: discountApplied, // "Campus Pro Discount Applied" UI trigger
+      total: totalAmount,
+      platformFee: platformFee,
+      basePrice: price,
+      deposit: deposit
     };
 
     const { error: txnError } = await supabase.from('transactions').insert({
@@ -141,7 +148,7 @@ export async function POST(req: Request) {
     // Duplicate Transaction Insert Removed.
     // The "PENDING" transaction created earlier is the Single Source of Truth V3.
 
-    return NextResponse.json(response.data);
+    return NextResponse.json({ ...response.data, breakdown });
 
   } catch (error: any) {
     console.error("Order Creation Error:", error);

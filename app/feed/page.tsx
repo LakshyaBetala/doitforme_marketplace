@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
-import { MapPin, Clock, IndianRupee, Briefcase, Search, ShoppingBag as ShoppingBagIcon, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { MapPin, Clock, IndianRupee, Briefcase, Search, ShoppingBag as ShoppingBagIcon, Sparkles, Star, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // --- ROBUST TIME AGO ---
@@ -202,68 +203,79 @@ export default function FeedPage() {
             </button>
           </motion.div>
         ) : (
-          <AnimatePresence mode="popLayout">
-            {gigs.map((gig, index) => (
-              <motion.div
-                key={gig.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                layout
-                onClick={() => router.push(`/gig/${gig.id}`)}
-                className="bg-[#1A1A24] border border-white/5 rounded-3xl p-4 active:scale-[0.98] transition-transform cursor-pointer hover:border-white/10 group relative overflow-hidden touch-manipulation select-none"
-              >
-                {/* Card Glow */}
-                <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 ${feedType === 'MARKET' ? 'bg-gradient-to-tr from-pink-500/20 to-transparent' : 'bg-gradient-to-tr from-brand-purple/20 to-transparent'}`}></div>
-
-                <div className="flex gap-4">
-                  {/* Image Thumbnail */}
-                  <div className="w-24 h-24 rounded-2xl bg-zinc-800 flex-shrink-0 relative overflow-hidden">
-                    {imageUrls[gig.id] ? (
-                      <Image src={imageUrls[gig.id]} alt={gig.title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white/20">
-                        {feedType === 'MARKET' ? <ShoppingBagIcon size={24} /> : <Briefcase size={24} />}
-                      </div>
-                    )}
-                    {feedType === 'MARKET' && gig.market_type === 'RENT' && (
-                      <div className="absolute top-0 left-0 bg-blue-500 text-[9px] font-bold px-1.5 py-0.5 rounded-br-lg text-white">RENT</div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 flex flex-col justify-between py-0.5">
-                    <div>
-                      <h3 className="font-bold text-white leading-tight mb-1 line-clamp-2 group-hover:text-blue-200 transition-colors">{gig.title}</h3>
-                      <div className="flex items-center gap-3 text-[11px] text-white/40">
-                        <div className="flex items-center gap-1">
-                          <MapPin size={10} />
-                          <span>{gig.users?.college || "Campus"}</span>
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 mx-auto pb-20">
+            <AnimatePresence mode="popLayout">
+              {gigs.map((gig, index) => (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  key={gig.id}
+                  className={`break-inside-avoid relative group bg-[#1A1A24] border border-white/5 rounded-2xl overflow-hidden hover:border-${themeColor}/50 transition-colors cursor-pointer mb-4`}
+                >
+                  <Link href={`/gig/${gig.id}`} className="block">
+                    {/* Image Aspect Square */}
+                    <div className="w-full aspect-square bg-[#121217] relative overflow-hidden">
+                      {gig.images && gig.images[0] ? (
+                        <Image
+                          src={supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl}
+                          alt={gig.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          sizes="(max-width: 768px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/10">
+                          {gig.listing_type === "MARKET" ? <ShoppingBagIcon size={32} className="text-white/20" /> : <Briefcase size={32} className="text-white/20" />}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock size={10} />
-                          <span>{timeAgo(gig.created_at)}</span>
+                      )}
+
+                      {/* Overlay Badge (Bottom Left) */}
+                      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 z-10 max-w-[85%]">
+                        {gig.poster?.avatar_url ? (
+                          <Image src={gig.poster.avatar_url} alt="Poster" width={16} height={16} className="rounded-full" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-brand-purple flex items-center justify-center text-[8px] font-bold text-white">
+                            {gig.poster?.name?.[0] || "U"}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-0.5 text-[10px] font-bold text-white">
+                          <span className="truncate max-w-[50px]">{gig.poster?.name || "User"}</span>
+                          <span className="text-white/40">•</span>
+                          <Star size={8} className="text-yellow-500 fill-current" />
+                          <span>{gig.poster?.rating?.toFixed(1) || "New"}</span>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center justify-between mt-3">
-                      <div className={`text-lg font-mono font-bold flex items-center ${feedType === 'MARKET' ? 'text-pink-400' : 'text-brand-purple'}`}>
-                        <IndianRupee size={14} className="mt-0.5" />
+                      {/* Price Tag (Top Right) */}
+                      <div className="absolute top-2 right-2 bg-black/60 backdrop-blur px-2 py-1 rounded-lg border border-white/10 text-xs font-bold text-white shadow-lg">
+                        <IndianRupee size={10} className="inline mr-0.5" />
                         {gig.price}
-                        {feedType === 'MARKET' && gig.market_type === 'RENT' && <span className="text-[10px] text-white/40 ml-1 font-sans font-normal">/ day</span>}
-                      </div>
-
-                      <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors text-white/40 group-hover:text-white">
-                        <Sparkles size={14} />
                       </div>
                     </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+
+                    {/* Compact Content */}
+                    <div className="p-3">
+                      <h3 className="text-sm font-bold text-white mb-1 leading-tight line-clamp-2 group-hover:text-brand-purple transition-colors">
+                        {gig.title}
+                      </h3>
+                      <div className="flex items-center justify-between text-[10px] text-white/40 mt-2">
+                        <span className="flex items-center gap-1 truncate max-w-[60%]">
+                          <MapPin size={10} /> {gig.location || "Campus"}
+                        </span>
+                        <span className="font-mono">
+                          {new Date(gig.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
         )}
       </div>
 
