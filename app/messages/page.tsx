@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,6 +9,7 @@ import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangl
 
 export default function ChatPage() {
     const supabase = supabaseBrowser();
+    const router = useRouter();
     const [user, setUser] = useState<any>(null);
     const [conversations, setConversations] = useState<any[]>([]);
     const [activeChat, setActiveChat] = useState<string | null>(null);
@@ -302,8 +304,12 @@ export default function ChatPage() {
 
             {/* SIDEBAR */}
             <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] flex-col border-r border-white/5 bg-[#0B0B11]`}>
-                <div className="p-5 border-b border-white/5 flex justify-between items-center bg-[#121217]">
+                <div className="p-5 border-b border-white/5 flex gap-4 items-center bg-[#121217]">
+                    <button onClick={() => router.back()} className="p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white">
+                        <ArrowLeft size={20} />
+                    </button>
                     <h1 className="text-xl font-bold tracking-tight">Messages</h1>
+                    <div className="flex-1"></div>
                     <button className="p-2 hover:bg-white/10 rounded-full transition-colors"><MoreVertical size={18} /></button>
                 </div>
 
@@ -384,8 +390,7 @@ export default function ChatPage() {
                             </div>
 
                             <div className="flex gap-2">
-                                <button className="p-2 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors"><Phone size={18} /></button>
-                                <button className="p-2 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors"><Video size={18} /></button>
+                                {/* Actions removed as per user request */}
                             </div>
                         </div>
 
@@ -419,8 +424,8 @@ export default function ChatPage() {
                             {messageLimit && (
                                 <div className={`mb-3 flex justify-center ${isLimitReached ? 'animate-pulse' : ''}`}>
                                     <span className={`text-xs px-3 py-1 rounded-full border ${isLimitReached
-                                            ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                                            : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
                                         }`}>
                                         {isLimitReached
                                             ? "Limit Reached. Wait for the poster to accept your proposal."
