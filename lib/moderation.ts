@@ -3,11 +3,19 @@ import { pipeline } from '@xenova/transformers';
 
 // Singleton for lazy loading
 let classifier: any = null;
+let failed = false; // Circuit breaker to prevent endless retries/log spam
 
 const getClassifier = async () => {
+    if (failed) return null; // Stop trying if it failed once
     if (!classifier) {
-        // V3 Model: DistilBERT for better semantic understanding
-        classifier = await pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncensored-mnli');
+        try {
+            // V3 Model: DistilBERT (Standard) - More stable repo than uncensored
+            classifier = await pipeline('zero-shot-classification', 'Xenova/distilbert-base-uncased-mnli');
+        } catch (e) {
+            console.error("AI Model Failed to Load (Disabling AI Moderation):", e);
+            failed = true;
+            return null;
+        }
     }
     return classifier;
 };
@@ -25,12 +33,14 @@ export const analyzeIntentAI = async (text: string) => {
 
     try {
         // 2. Semantic AI Guard with 1.5s Timeout
-        // Use Singleton to prevent reloading model
+        // Use Singleton to prevent reloading model (Circuit breaker built-in)
         const classifierPromise = getClassifier();
 
         // Race the LOADING AND INFERENCE
         const analysisPromise = (async () => {
             const classifier = await classifierPromise;
+            if (!classifier) throw new Error("AI Model Unavailable"); // Trigger fail-open
+
             const labels = ['contact info', 'outside payment', 'campus talk'];
             const output = await classifier(text, labels);
             return output;

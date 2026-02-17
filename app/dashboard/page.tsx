@@ -143,7 +143,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group active:scale-95 transition-transform touch-manipulation">
               <div className="relative w-20 h-20 md:w-28 md:h-28">
-                <Image src="/sloth.png" alt="Logo" fill className="object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                <Image src="/logo1.png" alt="Logo" fill className="object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
               </div>
             </Link>
           </div>
@@ -501,14 +501,31 @@ function timeAgo(dateString: string) {
 
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8 max-w-6xl mx-auto space-y-8">
-      <div className="h-10 w-32 bg-white/5 rounded-full animate-pulse"></div>
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        <div className="col-span-1 md:col-span-8 h-64 bg-white/5 rounded-[32px] animate-pulse"></div>
-        <div className="col-span-1 md:col-span-4 h-64 bg-white/5 rounded-[32px] animate-pulse"></div>
+    <div className="fixed inset-0 z-50 bg-[#0B0B11] flex flex-col items-center justify-center overflow-hidden">
+      {/* Ambient Glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-purple/20 rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
+
+      {/* Floating Logo */}
+      <div className="relative w-32 h-32 md:w-40 md:h-40 mb-6 animate-float z-10">
+        <Image
+          src="/sloth.png"
+          alt="Loading..."
+          fill
+          className="object-contain drop-shadow-[0_0_40px_rgba(136,37,245,0.6)]"
+          priority
+        />
       </div>
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-white/5 rounded-[24px] animate-pulse"></div>)}
+
+      {/* Brand Text */}
+      <div className="text-center z-10 space-y-3">
+        <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
+          DoItForMe
+        </h2>
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-brand-purple animate-bounce" style={{ animationDelay: '0s' }}></div>
+          <div className="w-2 h-2 rounded-full bg-brand-purple animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-2 h-2 rounded-full bg-brand-purple animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+        </div>
       </div>
     </div>
   );

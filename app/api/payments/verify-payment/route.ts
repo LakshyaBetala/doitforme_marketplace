@@ -88,6 +88,9 @@ export async function POST(req: Request) {
     const amountHeld = basePrice + deposit;
     const gatewayFee = breakdown.gateway_fee || 0;
 
+    // Generate Handshake Code (4-digit)
+    const handshakeCode = Math.floor(1000 + Math.random() * 9000).toString();
+
     const { error: escrowError } = await supabaseAdmin.from("escrow").upsert({
       gig_id: gigId,
       poster_id: gig.poster_id,
@@ -99,7 +102,8 @@ export async function POST(req: Request) {
       net_amount: netWorkerPay,
       status: "HELD",
       release_condition: deposit > 0 ? "RENTAL_RETURN" : "GIG_COMPLETION",
-      release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      handshake_code: handshakeCode // V4 Requirement
     }, { onConflict: 'gig_id' });
 
     if (escrowError) {

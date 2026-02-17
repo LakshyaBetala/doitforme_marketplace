@@ -377,8 +377,8 @@ export default function PostGigPage() {
                 <span className={`text-sm ${marketType === 'SELL' ? 'text-white' : 'text-white/40'}`}>Sell Item</span>
               </label>
               <label className="flex items-center gap-3 cursor-pointer group">
-                <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${marketType === 'RENT' ? 'border-brand-orange' : 'border-white/20 group-hover:border-white/40'}`}>
-                  {marketType === 'RENT' && <div className="w-2 h-2 rounded-full bg-brand-orange" />}
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${marketType === 'RENT' ? 'border-brand-purple' : 'border-white/20 group-hover:border-white/40'}`}>
+                  {marketType === 'RENT' && <div className="w-2 h-2 rounded-full bg-brand-purple" />}
                 </div>
                 <input type="radio" name="marketType" className="hidden" onClick={() => setMarketType('RENT')} />
                 <span className={`text-sm ${marketType === 'RENT' ? 'text-white' : 'text-white/40'}`}>Rent Out</span>
@@ -450,7 +450,7 @@ export default function PostGigPage() {
                   <input
                     type="number"
                     inputMode="decimal"
-                    className="flex-1 bg-transparent border-b border-white/10 py-2 text-3xl font-light text-white placeholder:text-white/10 focus:outline-none focus:border-white/40 transition-colors"
+                    className="w-[80%] bg-transparent border-b border-white/10 py-2 text-3xl font-light text-white placeholder:text-white/10 focus:outline-none focus:border-white/40 transition-colors"
                     value={price}
                     onChange={(e) => { setPrice(e.target.value); setError(""); }}
                     placeholder="0"
@@ -486,7 +486,7 @@ export default function PostGigPage() {
                 <label className="block text-xs font-medium text-white/40 uppercase tracking-wider">Location</label>
                 <div className="relative">
                   <input
-                    className={`w-full bg-transparent border-b border-white/10 py-4 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-brand-purple transition-colors ${listingType === "HUSTLE" && mode === "Online" ? "opacity-30 cursor-not-allowed" : ""}`}
+                    className={`w-full bg-transparent border-b border-white/10 py-4 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-brand-purple transition-colors pr-10 truncate ${listingType === "HUSTLE" && mode === "Online" ? "opacity-30 cursor-not-allowed" : ""}`}
                     value={location}
                     onChange={(e) => {
                       setLocation(e.target.value);
@@ -499,10 +499,57 @@ export default function PostGigPage() {
                     placeholder={listingType === "HUSTLE" && mode === "Online" ? "Remote (Online)" : "Search campus hotspot or type custom..."}
                   />
 
+                  {/* PIN LOCATION BUTTON */}
+                  {!(listingType === "HUSTLE" && mode === "Online") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!navigator.geolocation) return alert("Geolocation not supported");
+
+                        // Show loading state (optional visual cue could be added here)
+                        setLocation("Locating...");
+
+                        navigator.geolocation.getCurrentPosition(
+                          async (pos) => {
+                            const { latitude, longitude } = pos.coords;
+                            try {
+                              // Reverse Geocoding via Nominatim (OpenStreetMap)
+                              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                              const data = await response.json();
+
+                              if (data && data.display_name) {
+                                // Try to construct a shorter, relevant address
+                                const addr = data.address;
+                                // Prioritize: building/amenity -> road -> suburb
+                                const shortName = addr.amenity || addr.building || addr.road || addr.suburb || data.display_name.split(',')[0];
+                                const secondary = addr.city || addr.state_district || "";
+                                setLocation(`${shortName}${secondary ? `, ${secondary}` : ''}`);
+                              } else {
+                                setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+                              }
+                            } catch (e) {
+                              // Fallback to coordinates if API fails
+                              setLocation(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+                            }
+                            setShowLocationSuggestions(false);
+                          },
+                          (err) => {
+                            alert("Location access denied. Please enable permissions.");
+                            setLocation("");
+                          }
+                        );
+                      }}
+                      className="absolute right-0 top-4 text-white/40 hover:text-brand-purple transition-colors"
+                      title="Pin My Location"
+                    >
+                      <MapPin className="w-5 h-5" />
+                    </button>
+                  )}
+
                   {/* Quick Pick Chips (Visible when focused or empty) */}
                   {!(listingType === "HUSTLE" && mode === "Online") && (
                     <div className="flex flex-wrap gap-2 mt-3">
-                      {["Tech Park", "Java", "Library", "Clock Tower"].map((spot) => (
+                      {["Tech Park Java", "Central Library", "Clock Tower", "Hostel Block A", "Food Court"].map((spot) => (
                         <button
                           key={spot}
                           type="button"
@@ -518,7 +565,13 @@ export default function PostGigPage() {
                   {/* Autocomplete Dropdown */}
                   {showLocationSuggestions && location.length > 0 && !(listingType === "HUSTLE" && mode === "Online") && (
                     <div className="absolute top-14 left-0 w-full bg-[#1A1A24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
-                      {["Tech Park", "Java", "Library", "Clock Tower", "Main Building", "Annexure", "Food Court", "Dental College", "Medical College"]
+                      {[
+                        "Tech Park Java", "Tech Park Main Entrance",
+                        "Central Library Gate 1", "Central Library Reading Room",
+                        "Main Building Allotment Section", "Main Building Clock Tower",
+                        "Hostel Block A Lobby", "Hostel Block B Mess", "Girls Hostel Gate",
+                        "Food Court", "Nescafe Kiosk", "Dental College", "Medical College"
+                      ]
                         .filter(s => s.toLowerCase().includes(location.toLowerCase()) && s !== location)
                         .map((match) => (
                           <button

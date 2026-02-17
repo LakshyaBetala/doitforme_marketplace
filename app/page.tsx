@@ -7,22 +7,22 @@ export const metadata: Metadata = {
   description: "Connect with ambitious university students for freelance gigs, errands, and micro-internships. Secure Escrow payments and instant UPI withdrawals.",
   // --- ADD THIS SECTION ---
   icons: {
-    icon: "/sloth.png",
-    apple: "/sloth.png",
+    icon: "/logo1.png",
+    apple: "/logo1.png",
   },
   // -----------------------
   keywords: [
-    "Student Freelance India", 
-    "Hire Students", 
-    "DoItForMe", 
-    "College Gigs", 
+    "Student Freelance India",
+    "Hire Students",
+    "DoItForMe",
+    "College Gigs",
     "Pocket Money App",
     "Outsource Tasks"
   ],
   openGraph: {
     title: "DoItForMe | Get It Done by Students",
     description: "The safest marketplace for student gigs. Verified IDs and secure payments.",
-    images: ["/sloth.png"], 
+    images: ["/logo1.png"],
   }
 };
 

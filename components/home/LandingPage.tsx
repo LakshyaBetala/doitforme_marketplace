@@ -163,7 +163,7 @@ export default function LandingPage() {
 
   // 2. Asset Preloading (Logo and Sloth)
   useEffect(() => {
-    const criticalImages = ["/sloth.png"];
+    const criticalImages = ["/sloth.png", "/logo1.png"];
     let loaded = 0;
 
     criticalImages.forEach((src) => {
@@ -284,7 +284,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 h-28 md:h-32 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 md:gap-3 group">
             <div className="relative w-20 h-20 md:w-28 md:h-28 transition-transform duration-500 group-hover:rotate-12">
-              <Image src="/sloth.png" alt="logo" fill className="object-contain" />
+              <Image src="/logo1.png" alt="logo" fill className="object-contain" />
             </div>
           </Link>
 
@@ -715,7 +715,7 @@ export default function LandingPage() {
 
           <div className="text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-              <div className="relative w-6 h-6 grayscale opacity-50"><Image src="/sloth.png" alt="logo" fill className="object-contain" /></div>
+              <div className="relative w-6 h-6 grayscale opacity-50"><Image src="/logo1.png" alt="logo" fill className="object-contain" /></div>
               <span className="font-bold text-lg text-white">DoItForMe</span>
             </div>
             <p className="text-[10px] md:text-xs text-zinc-600">© 2026 DoItForMe Inc.</p>

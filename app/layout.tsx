@@ -3,13 +3,14 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
-import RealtimeListener from "@/components/RealtimeListener"; // Helper component for client-side logic
+import RealtimeListener from "@/components/RealtimeListener";
+import NotificationManager from "@/components/NotificationManager"; // Request notification permission
 
 export const metadata: Metadata = {
   title: "DoItForMe - Students Helping Students",
   description: "India’s first Gen-Z student marketplace. Outsource tasks. Earn from free time.",
-  icons: { icon: "/sloth.png", shortcut: "/sloth.png", apple: "/sloth.png" },
-  openGraph: { title: "DoItForMe", description: "Students Helping Students.", images: ["/sloth.png"], type: "website" },
+  icons: { icon: "/logo1.png", shortcut: "/logo1.png", apple: "/logo1.png" },
+  openGraph: { title: "DoItForMe", description: "Students Helping Students.", images: ["/logo1.png"], type: "website" },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in'),
   appleWebApp: {
     capable: true,
@@ -33,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "@type": "Organization",
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
-    "logo": "https://www.doitforme.in/sloth.png",
+    "logo": "https://www.doitforme.in/logo1.png",
     "sameAs": ["https://www.instagram.com/doitforme.in/", "https://www.linkedin.com/company/doitforme1/"]
   };
 
@@ -55,6 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Realtime Notification Listener */}
         <RealtimeListener />
+
+        {/* Notification Manager */}
+        <NotificationManager />
 
         {/* Sonner Toaster */}
         <Toaster position="top-center" toastOptions={{

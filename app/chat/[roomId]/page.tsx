@@ -14,6 +14,8 @@ interface Message {
   sender_id: string;
   receiver_id: string;
   created_at: string;
+  type?: 'text' | 'offer';
+  offer_amount?: number;
 }
 
 interface UserProfile {
@@ -29,6 +31,7 @@ interface GigDetails {
   id: string;
   title: string;
   price: number;
+  negotiated_price?: number;
   poster_id: string;
   assigned_worker_id?: string;
   status: string;
@@ -60,6 +63,10 @@ export default function ChatRoomPage() {
   // Message Limits
   const [msgCount, setMsgCount] = useState(0);
   const [msgLimit, setMsgLimit] = useState(0);
+
+  // Offer State
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [offerAmount, setOfferAmount] = useState("");
 
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -161,8 +168,8 @@ export default function ChatRoomPage() {
           }
           setMsgLimit(limit);
 
-          // Calculate my count
-          const myMsgs = allMessages.filter((m: any) => m.sender_id === user.id);
+          // Calculate my count (exclude Offers from limit!)
+          const myMsgs = allMessages.filter((m: any) => m.sender_id === user.id && m.type !== 'offer');
           setMsgCount(myMsgs.length);
         }
 
@@ -175,7 +182,7 @@ export default function ChatRoomPage() {
               const newMessage = payload.new as Message;
               setMessages((prev) => [...prev, newMessage]);
 
-              if (!posterMode && newMessage.sender_id === user.id) {
+              if (!posterMode && newMessage.sender_id === user.id && newMessage.type !== 'offer') {
                 setMsgCount(prev => prev + 1);
               }
             }
@@ -205,18 +212,22 @@ export default function ChatRoomPage() {
   }, [messages, selectedApplicantId]);
 
 
-  const sendMessage = async (txt?: string) => {
+  const sendMessage = async (txt?: string, type: 'text' | 'offer' = 'text', amount?: number) => {
     const textToSend = txt || input;
-    if (!textToSend.trim() || !currentUser) return;
+    // For offes, text might be empty
+    if ((type === 'text' && !textToSend.trim()) || !currentUser) return;
 
     // Optimistic UI? No, wait for server to ensure limits.
-    setInput("");
+    if (type === 'text') setInput("");
+    if (type === 'offer') setIsOfferModalOpen(false);
 
     try {
       const payload: any = {
         gigId: roomId,
         senderId: currentUser.id,
         content: textToSend,
+        type,
+        offerAmount: amount,
         // If poster, define who I am talking to
         applicantId: isPoster ? selectedApplicantId : undefined
       };
@@ -238,6 +249,46 @@ export default function ChatRoomPage() {
       alert("Network error.");
     }
   };
+
+  const sendOffer = () => {
+    const amt = Number(offerAmount);
+    if (!amt || amt <= 0) return;
+    sendMessage("", 'offer', amt);
+  };
+
+  const acceptOffer = async (msg: Message) => {
+    if (!confirm(`Accept offer of ₹${msg.offer_amount}? This will lock the price for this applicant.`)) return;
+
+    try {
+      // Use new V4 endpoint that updates 'applications' table
+      const res = await fetch("/api/gig/accept-offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gigId: gig?.id,
+          workerId: msg.sender_id, // The applicant who made the offer
+          price: msg.offer_amount
+        }),
+      });
+
+      if (res.ok) {
+        // Optimistically update UI if needed, but the system message will trigger refresh
+        setGig(prev => prev ? ({ ...prev, negotiated_price: msg.offer_amount! }) : null); // Optional: store locally for UI
+        alert("Offer accepted! Worker has been notified.");
+      } else {
+        const json = await res.json();
+        alert(json.error || "Failed to accept offer");
+      }
+    } catch (e) {
+      alert("Network error");
+    }
+  };
+
+  const declineOffer = async (msg: Message) => {
+    if (!confirm("Decline this offer?")) return;
+    sendMessage(`I've declined the offer of ₹${msg.offer_amount}.`, 'text');
+  };
+
 
   // --- DERIVED STATE ---
   // Filter messages for the active conversation
@@ -369,6 +420,53 @@ export default function ChatRoomPage() {
           )}
         </div>
 
+        {/* OFFER MODAL */}
+        <AnimatePresence>
+          {isOfferModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
+                <button
+                  onClick={() => setIsOfferModalOpen(false)}
+                  className="absolute top-4 right-4 text-white/40 hover:text-white"
+                >
+                  <X size={20} />
+                </button>
+                <h3 className="text-xl font-bold mb-1">Make an Offer</h3>
+                <p className="text-white/50 text-xs mb-6">Propose a new price for this item.</p>
+
+                <div className="space-y-4">
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-lg">₹</span>
+                    <input
+                      type="number"
+                      value={offerAmount}
+                      onChange={(e) => setOfferAmount(e.target.value)}
+                      placeholder={String(gig.price)}
+                      className="w-full bg-[#0B0B11] border border-white/10 rounded-xl py-3 pl-8 pr-4 text-xl font-bold text-white focus:outline-none focus:border-brand-purple transition-colors"
+                    />
+                  </div>
+                  <div className="flex gap-2 text-xs text-white/30 justify-center">
+                    <span>Listing Price: ₹{gig.price}</span>
+                  </div>
+
+                  <button
+                    onClick={sendOffer}
+                    disabled={!offerAmount || Number(offerAmount) <= 0}
+                    className="w-full py-3 bg-brand-purple text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-brand-purple/20"
+                  >
+                    Send Offer
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* MESSAGES */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 relative bg-[#0B0B11]">
           {/* Wallpaper */}
@@ -387,14 +485,57 @@ export default function ChatRoomPage() {
           ) : (
             activeMessages.map((m) => {
               const isMe = m.sender_id === currentUser.id;
+              const isOffer = m.type === 'offer';
+
               return (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative z-10`}>
-                  <div className={`max-w-[85%] md:max-w-[60%] px-4 py-2 rounded-2xl text-sm shadow-sm break-words ${isMe ? "bg-brand-purple text-white rounded-tr-none" : "bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-none"}`}>
-                    {m.content}
-                    <div className="text-[9px] mt-1 text-right opacity-50 font-mono">
-                      {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {isOffer ? (
+                    // OFFER CARD UI
+                    <div className={`max-w-[85%] md:max-w-[300px] w-full rounded-2xl overflow-hidden border ${isMe ? 'border-brand-purple/50 bg-brand-purple/5' : 'border-white/10 bg-[#1A1A24]'}`}>
+                      <div className="p-4 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                        <span className="text-xs font-bold uppercase tracking-wider text-white/60">
+                          {isMe ? "You sent an offer" : "Received Offer"}
+                        </span>
+                        <IndianRupee size={14} className="text-brand-purple" />
+                      </div>
+                      <div className="p-6 flex flex-col items-center gap-2">
+                        <div className="text-3xl font-black text-white tracking-tighter">
+                          ₹{m.offer_amount}
+                        </div>
+                        <p className="text-[10px] text-white/40">
+                          {isMe ? "Waiting for response..." : "Proposed Price"}
+                        </p>
+                      </div>
+                      {/* Actions for Receiver (Poster) */}
+                      {!isMe && isPoster && gig.status === 'open' && (
+                        <div className="p-2 grid grid-cols-2 gap-2 bg-black/20">
+                          <button
+                            onClick={() => declineOffer(m)}
+                            className="py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20"
+                          >
+                            Decline
+                          </button>
+                          <button
+                            onClick={() => acceptOffer(m)}
+                            className="py-2 rounded-lg bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20"
+                          >
+                            Accept
+                          </button>
+                        </div>
+                      )}
+                      <div className="px-4 py-2 text-[9px] text-right opacity-30 font-mono">
+                        {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    // STANDARD MESSAGE UI
+                    <div className={`max-w-[85%] md:max-w-[60%] px-4 py-2 rounded-2xl text-sm shadow-sm break-words ${isMe ? "bg-brand-purple text-white rounded-tr-none" : "bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-none"}`}>
+                      {m.content}
+                      <div className="text-[9px] mt-1 text-right opacity-50 font-mono">
+                        {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               );
             })
@@ -433,11 +574,22 @@ export default function ChatRoomPage() {
           </div>
 
           <div className="px-4 pb-4 pt-1 max-w-4xl mx-auto relative flex gap-3 items-center">
+            {/* OFFER BUTTON (Marketplace Only, Applicant Only) */}
+            {!isPoster && gig.listing_type === 'MARKET' && gig.status === 'open' && (
+              <button
+                onClick={() => setIsOfferModalOpen(true)}
+                className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-green-400 border border-white/5 transition-all"
+                title="Make an Offer"
+              >
+                <IndianRupee size={20} />
+              </button>
+            )}
+
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              placeholder={(!isPoster && msgCount >= msgLimit && gig.status === 'open') ? "Limit reached. Wait for reply." : "Type a message..."}
+              placeholder={(!isPoster && msgCount >= msgLimit && gig.status === 'open') ? "Limit reached. Make an offer?" : "Type a message..."}
               disabled={(!isPoster && msgCount >= msgLimit && gig.status === 'open')}
               className="flex-1 bg-[#1A1A24] text-white px-5 py-3 rounded-full border border-white/10 focus:border-brand-purple outline-none transition-all placeholder:text-white/20 text-sm disabled:opacity-50"
             />

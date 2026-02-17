@@ -52,20 +52,52 @@ export async function POST(req: Request) {
       .eq('id', recipientId)
       .single();
 
+    // 4.5 Check for Negotiated Price (V4 Handshake)
+    // If the payer is the Poster (Marketplace Buy/Rent or Hustle Payout), 
+    // we need to check if there's an accepted application with a negotiated price.
+    // Logic: 
+    // - Market Buy: Payer = User (Worker/Buyer), Recipient = Poster. Application is by User.
+    // - Hustle Pay: Payer = Poster, Recipient = User (Worker). Application is by Recipient.
+
+    let finalPrice = Number(gig.price);
+
+    if (gig.listing_type === 'MARKET') {
+      // I am the Buyer (User). I have an application.
+      const { data: myApp } = await supabase
+        .from('applications')
+        .select('negotiated_price')
+        .eq('gig_id', gigId)
+        .eq('worker_id', user.id)
+        .maybeSingle();
+
+      if (myApp?.negotiated_price) {
+        finalPrice = Number(myApp.negotiated_price);
+      }
+    } else if (gig.listing_type === 'HUSTLE') {
+      // I am the Poster. Paying the Worker (Recipient).
+      const { data: workerApp } = await supabase
+        .from('applications')
+        .select('negotiated_price')
+        .eq('gig_id', gigId)
+        .eq('worker_id', recipientId)
+        .maybeSingle();
+
+      if (workerApp?.negotiated_price) {
+        finalPrice = Number(workerApp.negotiated_price);
+      }
+    }
+
     // 5. Calculate Fees
-    const price = Number(gig.price);
+    const price = finalPrice;
     const jobsCompleted = recipientProfile?.jobs_completed || 0;
 
     // Security Deposit (Only for Market Rent)
     let deposit = 0;
-    let escrowCategory = 'PROJECT';
 
     if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
       deposit = Number(gig.security_deposit) || 0;
-      escrowCategory = 'RENTAL_DEPOSIT';
     }
 
-    // Platform Fee Logic
     // Platform Fee Logic
     let platformFee = 0;
     let discountApplied = false;
@@ -74,8 +106,8 @@ export async function POST(req: Request) {
       // Rental Fee: 3% of (Price + Deposit)
       platformFee = Math.ceil((price + deposit) * 0.03);
     } else {
-      // Hustle Tiered: 7.5% if jobs > 10, else 10%
-      // Veteran Discount for Experienced Workers
+      // Hustle/Sell Tiered: 7.5% if jobs > 10, else 10%
+      // Veteran Discount for Experienced Workers (or Sellers)
       if (jobsCompleted > 10) {
         platformFee = Math.ceil(price * 0.075);
         discountApplied = true;

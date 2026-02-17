@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   try {
     // 1. Single Body Parse (Fixes "Double JSON" crash)
-    const { gigId, applicantId, content, receiverId: inputReceiverId } = await req.json();
+    const { gigId, applicantId, content, receiverId: inputReceiverId, type = 'text', offerAmount } = await req.json();
 
     // 2. Auth Check
     const { data: { user } } = await supabase.auth.getUser();
@@ -74,16 +74,21 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // 5. Check Limits (Strict Applicant Lock)
+    // 5. Check Limits (Strict Applicant Lock) - BYPASS FOR OFFERS
     const isApplicant = !isPoster;
     const isPreAgreement = gig.status === 'open';
 
-    if (isApplicant && isPreAgreement) {
+    // Only enforce limit if:
+    // 1. User is Applicant
+    // 2. Gig is Open (Pre-agreement)
+    // 3. Message Type is NOT 'offer'
+    if (isApplicant && isPreAgreement && type !== 'offer') {
       const { count, error: countError } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('gig_id', gigId)
-        .eq('sender_id', user.id); // Valid count for THIS applicant
+        .eq('sender_id', user.id)
+        .neq('type', 'offer'); // Don't count offers
 
       if (countError) throw countError;
 
@@ -102,21 +107,24 @@ export async function POST(req: Request) {
       if ((count || 0) >= limit) {
         return NextResponse.json({
           error: "Limit Reached",
-          message: `Limit Reached: ${limit} Messages. Wait for acceptance.`
+          message: `Limit Reached: ${limit} Messages. Wait for acceptance or make an offer.`
         }, { status: 403 });
       }
     }
 
     // 5. Hard Limit Check (Already done above)
-    // 5.5 Hybrid AI Moderation
-    const modResult = await analyzeIntentAI(content);
-
-    if (!modResult.success) {
-      return NextResponse.json({
-        success: false,
-        error: "Message blocked",
-        reason: modResult.reason
-      }, { status: 400 });
+    // 5.5 Hybrid AI Moderation (Skip for pure offers with no content?)
+    let flagged = false;
+    if (type === 'text' && content.trim()) {
+      const modResult = await analyzeIntentAI(content);
+      if (!modResult.success) {
+        return NextResponse.json({
+          success: false,
+          error: "Message blocked",
+          reason: modResult.reason
+        }, { status: 400 });
+      }
+      flagged = modResult.flagged || false;
     }
 
     // 6. Insert Message (With receiver_id!)
@@ -126,9 +134,11 @@ export async function POST(req: Request) {
         gig_id: gigId,
         sender_id: user.id,
         receiver_id: receiverId, // CRITICAL FIX
-        content: content.trim(),
+        content: content?.trim() || (type === 'offer' ? `Offer: ₹${offerAmount}` : ''),
+        type: type,
+        offer_amount: type === 'offer' ? offerAmount : null,
         is_pre_agreement: isPreAgreement,
-        flagged_for_review: modResult.flagged || false // AI Timeout / Uncertainty Fallback
+        flagged_for_review: flagged
       })
       .select()
       .single();

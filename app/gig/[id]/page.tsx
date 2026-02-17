@@ -107,6 +107,11 @@ export default function GigDetailPage() {
   const [reviewText, setReviewText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+  // Handshake State
+  const [handshakeCode, setHandshakeCode] = useState<string | null>(null);
+  const [inputCode, setInputCode] = useState(["", "", "", ""]); // Array for 4 inputs
+  const [verifyingHandshake, setVerifyingHandshake] = useState(false);
+
   // Cashfree SDK
   const [cashfree, setCashfree] = useState<any>(null);
   useEffect(() => {
@@ -225,7 +230,21 @@ export default function GigDetailPage() {
             .eq("gig_id", id);
           setApplications(apps || []);
           setApplicantCount(apps?.length || 0);
+
+          // Fetch Handshake Code (Only if Assigned/Held)
+          if (gigData.status === 'assigned' || gigData.escrow_status === 'HELD') {
+            const { data: escrowData } = await supabase
+              .from('escrow')
+              .select('handshake_code')
+              .eq('gig_id', id)
+              .maybeSingle();
+
+            if (escrowData?.handshake_code) {
+              setHandshakeCode(escrowData.handshake_code);
+            }
+          }
         }
+
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -449,6 +468,60 @@ export default function GigDetailPage() {
       alert("Error raising dispute.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onVerifyHandshake = async () => {
+    const code = inputCode.join("");
+    if (code.length !== 4) return alert("Please enter the full 4-digit code.");
+
+    setVerifyingHandshake(true);
+    try {
+      const res = await fetch("/api/gig/verify-handshake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gigId: id, code })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // VIBRATION EFFECT
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate([50, 30, 50, 30, 100]);
+        }
+        alert("Handshake Confirmed! Funds Released.");
+        window.location.reload();
+      } else {
+        alert(data.error || "Verification Failed");
+        // Shake animation could go here
+      }
+    } catch (e) {
+      alert("Network error");
+    } finally {
+      setVerifyingHandshake(false);
+    }
+  };
+
+  const handleDigitChange = (index: number, value: string) => {
+    if (value.length > 1) value = value[value.length - 1]; // Take last char
+    if (!/^\d*$/.test(value)) return; // Numbers only
+
+    const newCode = [...inputCode];
+    newCode[index] = value;
+    setInputCode(newCode);
+
+    // Auto-focus next
+    if (value && index < 3) {
+      const nextInput = document.getElementById(`digit-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleDigitKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !inputCode[index] && index > 0) {
+      const prevInput = document.getElementById(`digit-${index - 1}`);
+      prevInput?.focus();
     }
   };
 
@@ -679,6 +752,76 @@ export default function GigDetailPage() {
           </div>
         )}
 
+        {/* --- HANDSHAKE SECTION (V4) --- */}
+        {gig.escrow_status === 'HELD' && (status === 'assigned' || status === 'delivered') && (
+          <div className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
+
+            {/* Background Effects */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+
+            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+
+              <div className="text-center md:text-left max-w-lg">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-bold uppercase tracking-wider mb-4 border border-yellow-500/20">
+                  <ShieldCheck size={12} /> Secure Handover Active
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">
+                  {isOwner ? "Provide this code to the worker" : "Enter code from the seller"}
+                </h3>
+                <p className="text-white/60 text-sm leading-relaxed">
+                  {isOwner
+                    ? "To ensure safety, only share this code when you physically meet the worker and verify the service/item. Once they enter it, funds are released to them."
+                    : "Ask the seller for the 4-digit code when you meet. Entering this code confirms you have received the item/service and releases the payment."}
+                </p>
+              </div>
+
+              <div className="bg-black/40 p-6 rounded-2xl border border-white/10 backdrop-blur-sm min-w-[280px]">
+                {isOwner ? (
+                  // SELLER VIEW (DISPLAY CODE)
+                  <div className="text-center">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">Your Secret Code</p>
+                    <div className="flex justify-center gap-3">
+                      {handshakeCode?.split('').map((digit, i) => (
+                        <div key={i} className="w-12 h-16 flex items-center justify-center bg-[#1A1A24] border border-yellow-500/50 rounded-xl text-3xl font-mono font-bold text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
+                          {digit}
+                        </div>
+                      )) || <Loader2 className="animate-spin text-yellow-500" />}
+                    </div>
+                    <p className="mt-4 text-[10px] text-white/30">Don't share online.</p>
+                  </div>
+                ) : (
+                  // BUYER VIEW (INPUT CODE)
+                  <div className="text-center">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">Enter Handshake Code</p>
+                    <div className="flex justify-center gap-3 mb-6">
+                      {inputCode.map((digit, i) => (
+                        <input
+                          key={i}
+                          id={`digit-${i}`}
+                          type="text"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleDigitChange(i, e.target.value)}
+                          onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                          className="w-12 h-16 bg-[#0B0B11] border border-white/20 rounded-xl text-center text-3xl font-mono font-bold text-white focus:border-brand-purple focus:outline-none focus:shadow-[0_0_15px_rgba(136,37,245,0.4)] transition-all caret-transparent"
+                        />
+                      ))}
+                    </div>
+                    <button
+                      onClick={onVerifyHandshake}
+                      disabled={verifyingHandshake || inputCode.some(d => !d)}
+                      className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-lg shadow-yellow-500/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      {verifyingHandshake ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                      Verify & Release
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* MAIN CONTENT GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
@@ -735,11 +878,10 @@ export default function GigDetailPage() {
                       <ShieldCheck className="w-5 h-5" />
                     </div>
                     <div>
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-white/40 uppercase font-bold">Location</p>
-                      <p className="text-base font-medium">{gig.location || "Remote"}</p>
+                      <p className="text-xs text-white/40 uppercase font-bold">Condition</p>
+                      <p className="text-base font-medium capitalize">
+                        {gig.item_condition ? gig.item_condition.replace(/_/g, " ").toLowerCase() : "Not specified"}
+                      </p>
                     </div>
                   </div>
                 ) : (

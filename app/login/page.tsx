@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Eye, EyeOff, Wallet } from "lucide-react"; 
+import { Eye, EyeOff, Wallet } from "lucide-react";
 
 // --- COLLEGES LIST ---
 const COLLEGES = [
@@ -35,7 +35,7 @@ const COLLEGES = [
   "DG Vaishnav",
   "Loyola College",
   "Madras Christian College (MCC)",
-  "Other" 
+  "Other"
 ];
 
 // --- BACKGROUND COMPONENT ---
@@ -60,16 +60,16 @@ export default function AuthPage() {
   // Form State
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [showPassword, setShowPassword] = useState(false); 
-  
+  const [showPassword, setShowPassword] = useState(false);
+
   // Fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [college, setCollege] = useState(COLLEGES[0]);
-  const [customCollege, setCustomCollege] = useState(""); 
-  
+  const [customCollege, setCustomCollege] = useState("");
+
   // NEW: UPI ID State
   const [upiId, setUpiId] = useState("");
 
@@ -109,7 +109,7 @@ export default function AuthPage() {
     if (!userExists) {
       setLoading(false);
       setMessage("Account not found. Please Sign Up below.");
-      return; 
+      return;
     }
 
     let error = null;
@@ -130,7 +130,7 @@ export default function AuthPage() {
         password,
       });
       error = res.error;
-      
+
       if (!error) {
         await syncUser(res.data.user?.id!, email);
         router.push("/dashboard");
@@ -149,7 +149,7 @@ export default function AuthPage() {
       setLoading(false);
       return setMessage("Please fill in all required fields. UPI is optional and can be added later in your profile.");
     }
-    
+
     if (college === "Other" && !finalCollege) {
       setLoading(false);
       return setMessage("Please enter your university name.");
@@ -157,8 +157,8 @@ export default function AuthPage() {
 
     const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
     if (upiId && !upiRegex.test(upiId)) {
-        setLoading(false);
-        return setMessage("Invalid UPI ID format. (e.g., name@oksbi)");
+      setLoading(false);
+      return setMessage("Invalid UPI ID format. (e.g., name@oksbi)");
     }
 
     const { data, error } = await supabase.auth.signUp({
@@ -169,7 +169,7 @@ export default function AuthPage() {
           full_name: name,
           phone: phone,
           college: finalCollege,
-          upi_id: upiId || undefined 
+          upi_id: upiId || undefined
         },
       },
     });
@@ -198,40 +198,38 @@ export default function AuthPage() {
       <BackgroundBlobs />
 
       <div className="w-full max-w-md bg-[#121217]/80 backdrop-blur-xl border border-white/10 shadow-2xl rounded-3xl p-6 md:p-8 relative z-10">
-        
+
         <div className="flex justify-center mb-6">
           <div className="relative w-12 h-12 md:w-14 md:h-14">
-             <Image src="/sloth.png" alt="Logo" fill className="object-contain" />
+            <Image src="/logo1.png" alt="Logo" fill className="object-contain" />
           </div>
         </div>
-        
+
         <h1 className="text-2xl md:text-3xl font-black mb-2 text-center text-white tracking-tight">
-            {view === "LOGIN" ? "Welcome Back" : "Join the Squad"}
+          {view === "LOGIN" ? "Welcome Back" : "Join the Squad"}
         </h1>
         <p className="text-center text-white/50 text-xs md:text-sm mb-8">
-            {view === "LOGIN" ? "Login to continue your hustle." : "Sign up to start earning or outsourcing."}
+          {view === "LOGIN" ? "Login to continue your hustle." : "Sign up to start earning or outsourcing."}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          
+
           {view === "LOGIN" && (
             <div className="space-y-4">
-               <div className="flex bg-white/5 p-1 rounded-xl mb-6 border border-white/5">
+              <div className="flex bg-white/5 p-1 rounded-xl mb-6 border border-white/5">
                 <button
                   type="button"
                   onClick={() => setLoginMethod("PASSWORD")}
-                  className={`flex-1 text-[10px] md:text-xs py-2.5 rounded-lg font-bold transition-all active:scale-95 touch-manipulation ${
-                    loginMethod === "PASSWORD" ? "bg-[#8825F5] text-white shadow-lg" : "text-white/50 hover:text-white"
-                  }`}
+                  className={`flex-1 text-[10px] md:text-xs py-2.5 rounded-lg font-bold transition-all active:scale-95 touch-manipulation ${loginMethod === "PASSWORD" ? "bg-[#8825F5] text-white shadow-lg" : "text-white/50 hover:text-white"
+                    }`}
                 >
                   Password
                 </button>
                 <button
                   type="button"
                   onClick={() => setLoginMethod("OTP")}
-                  className={`flex-1 text-[10px] md:text-xs py-2.5 rounded-lg font-bold transition-all active:scale-95 touch-manipulation ${
-                    loginMethod === "OTP" ? "bg-[#8825F5] text-white shadow-lg" : "text-white/50 hover:text-white"
-                  }`}
+                  className={`flex-1 text-[10px] md:text-xs py-2.5 rounded-lg font-bold transition-all active:scale-95 touch-manipulation ${loginMethod === "OTP" ? "bg-[#8825F5] text-white shadow-lg" : "text-white/50 hover:text-white"
+                    }`}
                 >
                   OTP / Magic Link
                 </button>
@@ -302,16 +300,16 @@ export default function AuthPage() {
 
               <div className="relative">
                 <input
-                    type="text"
-                    inputMode="text"
-                    autoComplete="off"
-                    placeholder="UPI ID (e.g. name@oksbi)"
-                    className={inputStyle}
-                    value={upiId}
-                    onChange={(e) => setUpiId(e.target.value)}
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  placeholder="UPI ID (e.g. name@oksbi)"
+                  className={inputStyle}
+                  value={upiId}
+                  onChange={(e) => setUpiId(e.target.value)}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
-                    <Wallet size={18} />
+                  <Wallet size={18} />
                 </div>
               </div>
               <p className="text-[10px] text-white/40 px-1 leading-tight">Optional — add later in Profile. Required to post/apply.</p>
@@ -384,29 +382,29 @@ export default function AuthPage() {
         </form>
 
         <div className="mt-8 text-center text-xs md:text-sm">
-            {view === "LOGIN" ? (
-                <p className="text-white/40">
-                    Don't have an account?{" "}
-                    <button 
-                        type="button"
-                        onClick={() => { setView("SIGNUP"); setMessage(""); }}
-                        className="text-[#8825F5] font-bold hover:text-white transition-colors active:scale-95 touch-manipulation ml-1"
-                    >
-                        Sign Up
-                    </button>
-                </p>
-            ) : (
-                <p className="text-white/40">
-                    Already have an account?{" "}
-                    <button 
-                         type="button"
-                         onClick={() => { setView("LOGIN"); setMessage(""); }}
-                         className="text-[#8825F5] font-bold hover:text-white transition-colors active:scale-95 touch-manipulation ml-1"
-                    >
-                        Login
-                    </button>
-                </p>
-            )}
+          {view === "LOGIN" ? (
+            <p className="text-white/40">
+              Don't have an account?{" "}
+              <button
+                type="button"
+                onClick={() => { setView("SIGNUP"); setMessage(""); }}
+                className="text-[#8825F5] font-bold hover:text-white transition-colors active:scale-95 touch-manipulation ml-1"
+              >
+                Sign Up
+              </button>
+            </p>
+          ) : (
+            <p className="text-white/40">
+              Already have an account?{" "}
+              <button
+                type="button"
+                onClick={() => { setView("LOGIN"); setMessage(""); }}
+                className="text-[#8825F5] font-bold hover:text-white transition-colors active:scale-95 touch-manipulation ml-1"
+              >
+                Login
+              </button>
+            </p>
+          )}
         </div>
 
       </div>
@@ -416,6 +414,6 @@ export default function AuthPage() {
 
 function ChevronDown({ size = 20 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
   );
 }
