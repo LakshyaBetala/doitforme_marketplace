@@ -7,6 +7,7 @@ import { Send, ArrowLeft, Loader2, AlertCircle, Shield, User, Star, Menu, X, Sho
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { useModeration } from "@/app/hooks/useModeration";
 
 interface Message {
   id: string;
@@ -67,6 +68,9 @@ export default function ChatRoomPage() {
   // Offer State
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [offerAmount, setOfferAmount] = useState("");
+
+  // AI Hook
+  const { analyze, loadModel } = useModeration();
 
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -216,6 +220,15 @@ export default function ChatRoomPage() {
     const textToSend = txt || input;
     // For offes, text might be empty
     if ((type === 'text' && !textToSend.trim()) || !currentUser) return;
+
+    // AI Safety Check (Client-Side)
+    if (type === 'text') {
+      const aiResult = await analyze(textToSend, 'CHAT');
+      if (!aiResult.isSafe) {
+        alert(`⚠️ Safety Alert: ${aiResult.reason || "Content flagged by AI."}`);
+        return;
+      }
+    }
 
     // Optimistic UI? No, wait for server to ensure limits.
     if (type === 'text') setInput("");
@@ -589,6 +602,7 @@ export default function ChatRoomPage() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onFocus={loadModel} // Lazy load AI model
               placeholder={(!isPoster && msgCount >= msgLimit && gig.status === 'open') ? "Limit reached. Make an offer?" : "Type a message..."}
               disabled={(!isPoster && msgCount >= msgLimit && gig.status === 'open')}
               className="flex-1 bg-[#1A1A24] text-white px-5 py-3 rounded-full border border-white/10 focus:border-brand-purple outline-none transition-all placeholder:text-white/20 text-sm disabled:opacity-50"

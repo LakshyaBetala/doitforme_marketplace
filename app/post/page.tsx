@@ -27,11 +27,16 @@ import {
   Maximize2
 } from "lucide-react";
 
+import { useModeration } from "@/app/hooks/useModeration";
+
 export default function PostGigPage() {
   const supabase = supabaseBrowser();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  // AI Moderation Hook
+  const { analyze } = useModeration();
 
   // --- STATE MANAGEMENT ---
   const [user, setUser] = useState<any | null>(null);
@@ -172,6 +177,15 @@ export default function PostGigPage() {
     if (validationError) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return setError(validationError);
+    }
+
+    // AI CONTENT MODERATION (Client-Side)
+    setLoading(true); // Show loading while AI analyzes
+    const aiResult = await analyze(description, 'POST');
+    if (!aiResult.isSafe) {
+      setLoading(false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return setError(`Safety Alert: ${aiResult.reason || "Content flagged by AI."}`);
     }
 
     if (!user) return setError("Session expired. Please login again.");

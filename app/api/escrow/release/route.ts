@@ -21,8 +21,8 @@ export async function POST(req: Request) {
     const user = userData?.user ?? null;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // Call transactional RPC to perform release atomically
-    const { data: rpcData, error: rpcErr } = await supabase.rpc("release_escrow_transactional", {
+    // Call transactional RPC to perform manual release (Queued)
+    const { data: rpcData, error: rpcErr } = await supabase.rpc("manual_release_escrow", {
       p_gig_id: gigId,
     });
 
