@@ -215,8 +215,12 @@ export default function FeedPage() {
                             {gig.listing_type === "MARKET" ? <ShoppingBagIcon size={32} className="text-white/20" /> : <Briefcase size={32} className="text-white/20" />}
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur px-2 py-1 rounded-lg border border-white/10 text-xs font-bold text-white shadow-lg">
-                          <IndianRupee size={10} className="inline mr-0.5" />{gig.price}
+                        <div className={`absolute top-2 right-2 backdrop-blur px-2 py-1 rounded-lg border border-white/10 text-xs font-bold text-white shadow-lg ${gig.market_type === 'REQUEST' ? 'bg-blue-500/80' : 'bg-black/60'}`}>
+                          {gig.market_type === 'REQUEST' ? (
+                            <span>🙏 LOOKING FOR</span>
+                          ) : (
+                            <><IndianRupee size={10} className="inline mr-0.5" />{gig.price}</>
+                          )}
                         </div>
                       </div>
                       <div className="p-3">
@@ -225,6 +229,11 @@ export default function FeedPage() {
                           <span className="flex items-center gap-1 truncate max-w-[60%]"><MapPin size={10} /> {gig.location || "Campus"}</span>
                           <span>{timeAgo(gig.created_at)}</span>
                         </div>
+                        {gig.market_type === 'REQUEST' && (
+                          <div className="mt-3 w-full py-2 bg-blue-500/20 border border-blue-500/40 rounded-xl text-center text-xs font-bold text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                            I Have This!
+                          </div>
+                        )}
                       </div>
                     </Link>
                   </motion.div>

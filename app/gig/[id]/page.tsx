@@ -19,9 +19,17 @@ import {
   ArrowLeft,
   ChevronLeft,
   Sparkles,
-  RefreshCcw, // Included for verification retry
+  RefreshCcw,
   Send,
-  MessageSquare
+  MessageSquare,
+  User,
+  Zap,
+  ShoppingBag,
+  Briefcase,
+  ArrowUpRight, // Added ArrowUpRight
+  FileText, // Added FileText
+  Download, // Added Download
+  Github // Added Github Icon
 } from "lucide-react";
 
 // --- UTILITY ---
@@ -53,9 +61,10 @@ interface GigData {
   images?: string[];
   dispute_reason?: string;
   deadline?: string;
+  github_link?: string; // Added optional github_link
   escrow_status?: string;
   listing_type?: "HUSTLE" | "MARKET";
-  market_type?: "SELL" | "RENT";
+  market_type?: "SELL" | "RENT" | "REQUEST"; // Added REQUEST
   security_deposit?: number;
   item_condition?: string;
   poster_email?: string;
@@ -99,9 +108,9 @@ export default function GigDetailPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [showReturnModal, setShowReturnModal] = useState(false); // New: For Rental Return
-  const [deductionAmount, setDeductionAmount] = useState(0); // New: For Rental Return
-  const [applications, setApplications] = useState<any[]>([]); // New: Full list for poster
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [deductionAmount, setDeductionAmount] = useState(0);
+  const [applications, setApplications] = useState<any[]>([]);
 
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
@@ -109,8 +118,12 @@ export default function GigDetailPage() {
 
   // Handshake State
   const [handshakeCode, setHandshakeCode] = useState<string | null>(null);
-  const [inputCode, setInputCode] = useState(["", "", "", ""]); // Array for 4 inputs
+  const [inputCode, setInputCode] = useState(["", "", "", ""]);
   const [verifyingHandshake, setVerifyingHandshake] = useState(false);
+
+  // V6 P2P Contact Reveal State
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [contactRevealed, setContactRevealed] = useState(false);
 
   // Cashfree SDK
   const [cashfree, setCashfree] = useState<any>(null);
@@ -203,7 +216,7 @@ export default function GigDetailPage() {
         if (posterId) {
           const { data: posterData } = await supabase
             .from("users")
-            .select("email, kyc_verified, name, avatar_url, rating, rating_count, jobs_completed")
+            .select("email, kyc_verified, name, avatar_url, rating, rating_count, jobs_completed, phone, upi_id")
             .eq("id", posterId)
             .maybeSingle();
           setPosterDetails(posterData);
@@ -220,7 +233,6 @@ export default function GigDetailPage() {
         }
 
         if (currentUser?.id === posterId) {
-          // Fetch full applicant details for the poster
           const { data: apps } = await supabase
             .from("applications")
             .select(`
@@ -231,7 +243,6 @@ export default function GigDetailPage() {
           setApplications(apps || []);
           setApplicantCount(apps?.length || 0);
 
-          // Fetch Handshake Code (Only if Assigned/Held)
           if (gigData.status === 'assigned' || gigData.escrow_status === 'HELD') {
             const { data: escrowData } = await supabase
               .from('escrow')
@@ -260,6 +271,12 @@ export default function GigDetailPage() {
     return () => { supabase.removeChannel(channel); };
   }, [id, supabase]);
 
+  useEffect(() => {
+    if (gig?.status === 'assigned' && gig.assigned_worker_id === user?.id && gig.listing_type === 'MARKET' && gig.market_type !== 'RENT') {
+      setContactRevealed(true);
+    }
+  }, [gig, user]);
+
   // --- HANDLERS ---
   const handleApplyNavigation = () => {
     if (!user) return alert("Please login to apply.");
@@ -268,13 +285,29 @@ export default function GigDetailPage() {
 
   const handleBuy = async () => {
     if (!user) return alert("Please login to purchase.");
-    // Confirm action
+
+    // V6 P2P FLOW (No Gateway)
+    if (gig?.listing_type === 'MARKET' && gig.market_type !== 'RENT') {
+      const action = gig.market_type === 'REQUEST' ? "Fulfill Request" : "Buy";
+      if (!confirm(`Connect with the poster to ${action}? This involves no online payment.`)) return;
+
+      setSubmitting(true);
+      try {
+        await handleInstantBuy();
+      } catch (e: any) {
+        alert(e.message);
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // RENTAL / ESCROW FLOW
     const action = gig?.market_type === 'RENT' ? "Rent" : "Buy";
     if (!confirm(`Are you sure you want to ${action} this item? You will be redirected to payment.`)) return;
 
     setSubmitting(true);
     try {
-      // 1. Create Order
       const res = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -284,7 +317,6 @@ export default function GigDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to initiate payment");
 
-      // 2. Redirect to Cashfree
       if (data.payment_link) {
         window.location.href = data.payment_link;
       } else {
@@ -296,8 +328,22 @@ export default function GigDetailPage() {
     }
   };
 
+  const handleInstantBuy = async () => {
+    const res = await fetch("/api/gig/hire", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gigId: id, workerId: user?.id })
+    });
+
+    if (!res.ok) throw new Error("Failed to connect.");
+
+    setContactRevealed(true);
+    setShowContactModal(true);
+    setGig((prev: any) => ({ ...prev, status: 'assigned', assigned_worker_id: user?.id }));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleDeliver = async () => {
-    // RENTAL RETURN LOGIC
     if (gig?.listing_type === "MARKET" && gig.market_type === "RENT") {
       if (!confirm("Confirm you have returned the item? This will notify the owner.")) return;
       setSubmitting(true);
@@ -314,7 +360,6 @@ export default function GigDetailPage() {
       return;
     }
 
-    // HUSTLE LOGIC
     if (!gig?.is_physical && !deliveryLink.trim()) return alert("Please enter a submission link.");
     if (!confirm("Notify the poster that the work is finished?")) return;
     setSubmitting(true);
@@ -337,26 +382,19 @@ export default function GigDetailPage() {
     if (!confirm("Are you sure you want to assign this gig to this worker?")) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('gigs')
-        .update({
-          status: 'assigned',
-          assigned_worker_id: workerId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+      const res = await fetch("/api/gig/hire", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gigId: id, workerId })
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Failed to assign.");
 
-      // Update local state to reflect change immediately
       setGig((prev: any) => {
         if (!prev) return null;
         return { ...prev, status: 'assigned', assigned_worker_id: workerId };
       });
       setIsWorker(user?.id === workerId);
-
-      // Optional: Send notification (Phase 12+ extension)
-
       window.location.reload();
     } catch (err: any) {
       alert(err.message);
@@ -405,29 +443,11 @@ export default function GigDetailPage() {
     finally { setSubmitting(false); }
   }
 
-  const handleRefund = async () => {
-    if (!confirm("Cancel gig and refund budget?")) return;
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/escrow/refund", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gigId: id, posterId: user?.id }),
-      });
-      if (res.ok) router.push("/dashboard");
-      else alert("Refund failed");
-    } catch (e) {
-      alert("Network error.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleCancel = async () => {
     if (!confirm("Are you sure you want to cancel this gig?")) return;
     setSubmitting(true);
     try {
-      const res = await fetch("/api/escrow/cancel", { // Uses the logic updated to handle 'open' gigs
+      const res = await fetch("/api/escrow/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ gigId: id, posterId: user?.id }),
@@ -441,7 +461,6 @@ export default function GigDetailPage() {
           window.location.reload();
         } else {
           alert("Gig cancelled successfully.");
-          // Force redirect to dashboard to ensure state is cleared
           window.location.href = "/dashboard";
         }
       } else {
@@ -449,24 +468,6 @@ export default function GigDetailPage() {
       }
     } catch (e: any) {
       alert(e.message || "Network error.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDispute = async () => {
-    const reason = prompt("Describe the issue (min 50 chars):");
-    if (!reason || reason.length < 50) return alert("Reason too short.");
-    setSubmitting(true);
-    try {
-      const res = await fetch("/api/gig/dispute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gigId: id, reason }),
-      });
-      if (res.ok) window.location.reload();
-    } catch (e) {
-      alert("Error raising dispute.");
     } finally {
       setSubmitting(false);
     }
@@ -487,7 +488,6 @@ export default function GigDetailPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // VIBRATION EFFECT
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([50, 30, 50, 30, 100]);
         }
@@ -495,7 +495,6 @@ export default function GigDetailPage() {
         window.location.reload();
       } else {
         alert(data.error || "Verification Failed");
-        // Shake animation could go here
       }
     } catch (e) {
       alert("Network error");
@@ -505,14 +504,13 @@ export default function GigDetailPage() {
   };
 
   const handleDigitChange = (index: number, value: string) => {
-    if (value.length > 1) value = value[value.length - 1]; // Take last char
-    if (!/^\d*$/.test(value)) return; // Numbers only
+    if (value.length > 1) value = value[value.length - 1];
+    if (!/^\d*$/.test(value)) return;
 
     const newCode = [...inputCode];
     newCode[index] = value;
     setInputCode(newCode);
 
-    // Auto-focus next
     if (value && index < 3) {
       const nextInput = document.getElementById(`digit-${index + 1}`);
       nextInput?.focus();
@@ -526,19 +524,9 @@ export default function GigDetailPage() {
     }
   };
 
-  // --- MESSAGING ---
   const handleMessage = async () => {
-    if (!user || !gig) return router.push("/login"); // Check gig existence
-
-    // Check if conversation already exists
-    // (In a real app, we'd query first, but for now we can just send a "Hi" or navigate)
-    // To make it distinct, we'll navigate to /messages but we can also pre-seed a message
-
-    // 2. Navigate to Chat Room
-    // We don't need to pre-create a message. The Chat Room handles empty states.
-    // Just redirect to the dynamic chat page for this gig.
-    router.push(`/chat/${id}?chat=${id}_${user.id}`); // Adjusted to match ChatPage expecting roomId
-
+    if (!user || !gig) return router.push("/login");
+    router.push(`/chat/${id}?chat=${id}_${user.id}`);
   };
 
   // --- RENDER ---
@@ -566,7 +554,6 @@ export default function GigDetailPage() {
     );
   }
 
-  // Derive "Market" status
   const isMarket = gig.listing_type === "MARKET";
   const marketAction = gig.market_type === "RENT" ? "Rent" : "Buy";
   const status = gig.status.toLowerCase();
@@ -584,6 +571,57 @@ export default function GigDetailPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-brand-blue/10 blur-[150px] rounded-full opacity-40"></div>
       </div>
 
+      {/* CONTACT REVEAL MODAL (P2P) */}
+      {showContactModal && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1A24] border border-brand-pink/30 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-[0_0_50px_rgba(236,72,153,0.2)]">
+            <button onClick={() => setShowContactModal(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 bg-brand-pink/10 rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
+                <CheckCircle className="w-8 h-8 text-brand-pink" />
+              </div>
+
+              <h2 className="text-2xl font-bold text-white">Contact Revealed!</h2>
+              <p className="text-white/50 text-sm">
+                Connect directly with the poster to finalize the deal.
+                <br /><span className="text-brand-pink font-bold">Meet in a safe public place.</span>
+              </p>
+
+              <div className="bg-black/40 rounded-xl p-6 border border-white/5 space-y-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Name</label>
+                  <p className="text-lg font-bold text-white">{posterDetails?.name || "Poster"}</p>
+                </div>
+
+                {posterDetails?.phone && (
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Phone</label>
+                    <p className="text-xl font-mono text-brand-pink tracking-wider select-all">{posterDetails.phone}</p>
+                  </div>
+                )}
+
+                {posterDetails?.upi_id && (
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">UPI ID</label>
+                    <p className="text-base font-mono text-white/80 select-all">{posterDetails.upi_id}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => setShowContactModal(false)}
+                  className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all"
+                >
+                  Close & Chat
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* RETURN MODAL (Owner) */}
       {showReturnModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
@@ -593,7 +631,6 @@ export default function GigDetailPage() {
             <p className="text-center text-white/50 text-sm mb-6">Verify the item condition and release deposit.</p>
 
             <div className="space-y-4">
-              {/* Deduction Input */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-widest text-white/60">Deduction Amount (₹)</label>
                 <input
@@ -606,13 +643,11 @@ export default function GigDetailPage() {
                 <p className="text-xs text-white/40">Max Deduction: ₹{gig.security_deposit || 0}</p>
               </div>
 
-              {/* Refund Calculation */}
               <div className="p-4 bg-white/5 rounded-xl flex justify-between items-center text-sm">
                 <span>Refund to Renter:</span>
                 <span className="font-bold text-green-400 font-mono">₹{(gig.security_deposit || 0) - deductionAmount}</span>
               </div>
 
-              {/* Review */}
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
@@ -666,7 +701,7 @@ export default function GigDetailPage() {
                   ? "border-brand-pink/20 bg-brand-pink/10 text-brand-pink shadow-[0_0_15px_rgba(236,72,153,0.2)]"
                   : "border-brand-purple/20 bg-brand-purple/10 text-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.2)]"
                   }`}>
-                  {isMarket ? (gig.market_type === "SELL" ? "For Sale" : "For Rent") : "Hustle Request"}
+                  {isMarket ? (gig.market_type === "SELL" ? "For Sale" : gig.market_type === "REQUEST" ? "Requested" : "For Rent") : "Hustle Request"}
                 </span>
 
                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${status === 'open' ? 'border-green-500/20 bg-green-500/10 text-green-400' :
@@ -718,7 +753,27 @@ export default function GigDetailPage() {
           </div>
         </div>
 
-        {/* Status Banners */}
+        {/* STATUS BANNERS */}
+        {contactRevealed && (
+          <div className="mb-8 bg-brand-pink/10 border border-brand-pink/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink shrink-0">
+                <User size={20} />
+              </div>
+              <div>
+                <h4 className="font-bold text-brand-pink">Deal in Progress</h4>
+                <p className="text-sm text-brand-pink/70">You have exchanged contact info. Finish the deal offline.</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowContactModal(true)}
+              className="px-6 py-2 bg-brand-pink text-white font-bold rounded-full text-sm hover:bg-brand-pink/90 transition-all shadow-lg shadow-brand-pink/20 whitespace-nowrap"
+            >
+              View Contact
+            </button>
+          </div>
+        )}
+
         {isDelivered && !isCompleted && !isDisputed && (
           <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 flex items-center gap-4 text-blue-400 animate-in slide-in-from-top-4">
             <CheckCircle2 className="w-6 h-6" />
@@ -731,15 +786,11 @@ export default function GigDetailPage() {
           </div>
         )}
 
-        {/* --- HANDSHAKE SECTION (V4) --- */}
+        {/* HANDSHAKE SECTION */}
         {gig.escrow_status === 'HELD' && (status === 'assigned' || status === 'delivered') && (
           <div className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
-
-            {/* Background Effects */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-
               <div className="text-center md:text-left max-w-lg">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-400 text-xs font-bold uppercase tracking-wider mb-4 border border-yellow-500/20">
                   <ShieldCheck size={12} /> Secure Handover Active
@@ -756,7 +807,6 @@ export default function GigDetailPage() {
 
               <div className="bg-black/40 p-6 rounded-2xl border border-white/10 backdrop-blur-sm min-w-[280px]">
                 {isOwner ? (
-                  // SELLER VIEW (DISPLAY CODE)
                   <div className="text-center">
                     <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">Your Secret Code</p>
                     <div className="flex justify-center gap-3">
@@ -769,7 +819,6 @@ export default function GigDetailPage() {
                     <p className="mt-4 text-[10px] text-white/30">Don't share online.</p>
                   </div>
                 ) : (
-                  // BUYER VIEW (INPUT CODE)
                   <div className="text-center">
                     <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">Enter Handshake Code</p>
                     <div className="flex justify-center gap-3 mb-6">
@@ -813,6 +862,26 @@ export default function GigDetailPage() {
                 <div className="flex overflow-x-auto snap-x snap-mandatory h-full w-full no-scrollbar">
                   {gig.images.map((path, i) => {
                     const url = supabase.storage.from("gig-images").getPublicUrl(path).data.publicUrl;
+                    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(path);
+
+                    if (!isImage) {
+                      return (
+                        <div key={i} className="min-w-full h-full relative snap-center flex items-center justify-center bg-[#1A1A24] cursor-pointer group/file" onClick={() => window.open(url, '_blank')}>
+                          <div className="text-center space-y-4">
+                            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto group-hover/file:scale-110 transition-transform">
+                              <FileText size={32} className="text-white/60" />
+                            </div>
+                            <div>
+                              <p className="text-white font-bold text-sm truncate max-w-[200px] mx-auto px-4">{path.split('/').pop()}</p>
+                              <p className="text-brand-purple text-xs font-bold mt-2 flex items-center justify-center gap-1">
+                                <Download size={12} /> Download File
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     return (
                       <div key={i} className="min-w-full h-full relative snap-center" onClick={() => setSelectedImage(url)}>
                         <Image src={url} alt={`Image ${i + 1}`} fill className="object-cover" />
@@ -832,6 +901,33 @@ export default function GigDetailPage() {
 
             {/* Description Box */}
             <div className="bg-[#121217] border border-white/5 rounded-[32px] p-8 space-y-6">
+
+              {/* GitHub Link Display */}
+              {gig.github_link && (
+                <div className="mb-6 pb-6 border-b border-white/5">
+                  <h3 className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                    Reference Repo
+                  </h3>
+                  <a
+                    href={gig.github_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-[#1A1A24] border border-white/10 hover:border-brand-purple/50 hover:bg-brand-purple/5 transition-all group"
+                  >
+                    <div className="p-2 bg-white/5 rounded-lg text-white group-hover:text-brand-purple transition-colors">
+                      <Github size={20} />
+                    </div>
+                    <div className="overflow-hidden">
+                      <p className="text-sm font-bold text-white truncate group-hover:text-brand-purple transition-colors">
+                        {gig.github_link.replace(/^https?:\/\//, '')}
+                      </p>
+                      <p className="text-[10px] text-white/40">Open Repository</p>
+                    </div>
+                    <ArrowUpRight size={16} className="ml-auto text-white/20 group-hover:text-brand-purple" />
+                  </a>
+                </div>
+              )}
+
               <div>
                 <h3 className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
                   <span className="w-6 h-[1px] bg-white/20"></span> Description
@@ -872,7 +968,7 @@ export default function GigDetailPage() {
                       <div>
                         <p className="text-xs text-white/40 uppercase font-bold">Deadline</p>
                         <p className="text-base font-medium">
-                          {gig.deadline ? new Date(gig.deadline).toLocaleDateString() : "Flexible"}
+                          {gig.deadline ? new Date(gig.deadline as string).toLocaleDateString() : "Flexible"}
                         </p>
                       </div>
                     </div>
@@ -920,7 +1016,7 @@ export default function GigDetailPage() {
                                   </button>
                                   {status === 'open' && (
                                     <button
-                                      onClick={() => handleAssign(app.worker_id)} // Need to ensure handleAssign exists and accepts ID
+                                      onClick={() => handleAssign(app.worker_id)}
                                       className="px-4 py-2 bg-brand-purple text-white text-xs font-bold rounded-xl hover:bg-brand-purple/90 transition-colors"
                                     >
                                       Assign
@@ -937,7 +1033,6 @@ export default function GigDetailPage() {
                 )}
               </div>
             </div>
-
           </div>
 
           {/* RIGHT COLUMN: Actions */}
@@ -1070,7 +1165,6 @@ export default function GigDetailPage() {
               <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Posted By</h3>
 
               <div className="flex items-center gap-4">
-                {/* Avatar with Campus Pro Border */}
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${(posterDetails?.jobs_completed || 0) > 10
                   ? "p-[2px] bg-gradient-to-r from-amber-500 to-yellow-600 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
                   : "border border-white/5 bg-zinc-800"
@@ -1090,7 +1184,6 @@ export default function GigDetailPage() {
                     {(posterDetails?.jobs_completed || 0) > 10 && (
                       <div className="group relative">
                         <Sparkles size={14} className="text-yellow-500 text-fill-yellow-500 animate-pulse" fill="currentColor" />
-                        {/* Tooltip */}
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-yellow-500 text-black text-[10px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
                           Campus Pro: 10+ Successful Deals
                           <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-yellow-500"></div>
@@ -1119,10 +1212,8 @@ export default function GigDetailPage() {
                 </button>
               )}
             </div>
-
           </div>
         </div>
-
       </div>
 
       {/* MOBILE STICKY ACTION BAR */}
@@ -1136,7 +1227,6 @@ export default function GigDetailPage() {
           </div>
 
           <div className="flex-1">
-            {/* OWNER ACTIONS */}
             {isOwner ? (
               status === 'open' ? (
                 <button onClick={handleCancel} disabled={submitting} className="w-full py-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 font-bold text-sm">
@@ -1152,7 +1242,6 @@ export default function GigDetailPage() {
                 </button>
               )
             ) : (
-              /* WORKER / PUBLIC ACTIONS */
               isWorker && status === 'assigned' ? (
                 <button onClick={handleDeliver} disabled={submitting} className="w-full py-3 rounded-xl bg-white text-black font-bold text-sm shadow-lg">
                   {submitting ? "..." : (isMarket && gig.market_type === 'RENT' ? "Returned" : "Submit")}
@@ -1176,17 +1265,15 @@ export default function GigDetailPage() {
       </div>
 
       {/* Lightbox */}
-      {
-        selectedImage && (
-          <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
-            <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
-            <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
-              <Image src={selectedImage} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
-            </div>
+      {selectedImage && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
+          <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
+          <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
+            <Image src={selectedImage} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
           </div>
-        )
-      }
+        </div>
+      )}
 
-    </div >
+    </div>
   );
 }

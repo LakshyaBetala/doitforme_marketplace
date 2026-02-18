@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Send, ArrowLeft, Loader2, AlertCircle, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles } from "lucide-react";
+import { Send, ArrowLeft, Loader2, AlertCircle, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles, Paperclip } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,7 @@ interface Message {
   sender_id: string;
   receiver_id: string;
   created_at: string;
-  message_type?: 'text' | 'offer';
+  message_type?: 'text' | 'offer' | 'image';
   offer_amount?: number;
 }
 
@@ -75,6 +75,8 @@ export default function ChatRoomPage() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const channelRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // 1. Load Data
   useEffect(() => {
@@ -230,7 +232,7 @@ export default function ChatRoomPage() {
   }, [messages, selectedApplicantId]);
 
 
-  const sendMessage = async (txt?: string, type: 'text' | 'offer' = 'text', amount?: number) => {
+  const sendMessage = async (txt?: string, type: 'text' | 'offer' | 'image' = 'text', amount?: number) => {
     const textToSend = txt || input;
     // For offes, text might be empty
     if ((type === 'text' && !textToSend.trim()) || !currentUser) return;
@@ -274,6 +276,43 @@ export default function ChatRoomPage() {
 
     } catch (e) {
       alert("Network error.");
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) return alert("File size must be less than 5MB");
+    // Validate type (Client side check)
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return alert("Only JPG, PNG, WEBP allowed");
+
+    setIsUploading(true);
+    try {
+      // 1. Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${roomId}/${Date.now()}.${fileExt}`;
+
+      const { data, error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-attachments')
+        .getPublicUrl(fileName);
+
+      // 3. Send Message as 'image'
+      await sendMessage(publicUrl, 'image');
+
+    } catch (err: any) {
+      console.error(err);
+      alert("Upload failed: " + err.message);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -513,6 +552,7 @@ export default function ChatRoomPage() {
             activeMessages.map((m) => {
               const isMe = m.sender_id === currentUser.id;
               const isOffer = m.message_type === 'offer';
+              const isImage = m.message_type === 'image';
 
               return (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative z-10`}>
@@ -551,6 +591,22 @@ export default function ChatRoomPage() {
                         </div>
                       )}
                       <div className="px-4 py-2 text-[9px] text-right opacity-30 font-mono">
+                        {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  ) : isImage ? (
+                    // IMAGE MESSAGE UI
+                    <div className={`max-w-[85%] md:max-w-[300px] rounded-2xl overflow-hidden border ${isMe ? 'border-brand-purple/50' : 'border-white/10'}`}>
+                      <div className="relative aspect-video bg-black/50">
+                        <Image
+                          src={m.content}
+                          alt="Attachment"
+                          fill
+                          className="object-cover"
+                          onClick={() => window.open(m.content, '_blank')}
+                        />
+                      </div>
+                      <div className="px-2 py-1 bg-[#1A1A24] text-[9px] text-right text-white/30 font-mono">
                         {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
-import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee } from "lucide-react";
 
 export default function ChatPage() {
     const supabase = supabaseBrowser();
@@ -369,7 +369,10 @@ export default function ChatPage() {
                                             {new Date(chat.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-white/50 truncate pr-4">{chat.lastMessage.content}</p>
+                                    <p className="text-sm text-white/50 truncate pr-4 flex items-center gap-1">
+                                        {chat.lastMessage.message_type === 'offer' && <IndianRupee size={12} className="text-brand-purple" />}
+                                        {chat.lastMessage.content}
+                                    </p>
                                 </div>
                             </div>
                         ))
