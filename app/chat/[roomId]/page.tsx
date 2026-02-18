@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Send, ArrowLeft, Loader2, AlertCircle, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles, Paperclip } from "lucide-react";
+import { Send, ArrowLeft, Loader2, AlertCircle, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles, Paperclip, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,6 +60,7 @@ export default function ChatRoomPage() {
   const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(null);
   const [applicantProfile, setApplicantProfile] = useState<UserProfile | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null); // Lightbox State
 
   // Message Limits
   const [msgCount, setMsgCount] = useState(0);
@@ -590,13 +591,16 @@ export default function ChatRoomPage() {
                           </button>
                         </div>
                       )}
+                      <div className="px-4 pb-1 flex items-center justify-center gap-1 text-[10px] text-red-400/80 font-bold tracking-wide">
+                        <Clock size={10} /> Offer expires in 24h
+                      </div>
                       <div className="px-4 py-2 text-[9px] text-right opacity-30 font-mono">
                         {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   ) : isImage ? (
                     // IMAGE MESSAGE UI
-                    <div className={`max-w-[85%] md:max-w-[300px] rounded-2xl overflow-hidden border ${isMe ? 'border-brand-purple/50' : 'border-white/10'}`}>
+                    <div className={`max-w-[85%] md:max-w-[300px] rounded-2xl overflow-hidden border cursor-zoom-in ${isMe ? 'border-brand-purple/50' : 'border-white/10'}`} onClick={() => setSelectedImage(m.content)}>
                       <div className="relative aspect-video bg-black/50">
                         <Image
                           src={m.content}
@@ -694,6 +698,16 @@ export default function ChatRoomPage() {
           </div>
         </div>
       </div>
+
+      {/* Lightbox */}
+      {selectedImage && (
+        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
+          <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
+          <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
+            <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -29,7 +29,8 @@ import {
   ArrowUpRight, // Added ArrowUpRight
   FileText, // Added FileText
   Download, // Added Download
-  Github // Added Github Icon
+  Github, // Added Github Icon
+  HelpCircle // Added HelpCircle
 } from "lucide-react";
 
 // --- UTILITY ---
@@ -742,6 +743,14 @@ export default function GigDetailPage() {
                 <p className="text-4xl font-mono font-bold text-white tracking-tighter">
                   ₹{gig.price}
                 </p>
+                <div className="mt-2 flex items-center gap-1 text-xs text-white/40 group relative cursor-help w-fit">
+                  <span>+ ₹{Math.floor(gig.price * 0.02)} Platform Fee</span>
+                  <HelpCircle size={12} className="text-white/20" />
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 border border-white/10 rounded-lg text-[10px] text-white/80 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+                    Includes 2% Gateway Security & Escrow Protection. <br /> (7.5% Rate for Campus Pros).
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/90"></div>
+                  </div>
+                </div>
                 {isMarket && gig.market_type === "RENT" && (
                   <div className="mt-2 pt-2 border-t border-white/10">
                     <p className="text-xs text-white/40 uppercase">Deposit</p>
