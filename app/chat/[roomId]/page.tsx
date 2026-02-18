@@ -15,7 +15,7 @@ interface Message {
   sender_id: string;
   receiver_id: string;
   created_at: string;
-  type?: 'text' | 'offer';
+  message_type?: 'text' | 'offer';
   offer_amount?: number;
 }
 
@@ -172,8 +172,17 @@ export default function ChatRoomPage() {
           }
           setMsgLimit(limit);
 
-          // Calculate my count (exclude Offers from limit!)
-          const myMsgs = allMessages.filter((m: any) => m.sender_id === user.id && m.type !== 'offer');
+          // Calculate my count (exclude Offers AND Magic Chips from limit!)
+          const allMagicChips = [
+            "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
+            "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
+          ];
+
+          const myMsgs = allMessages.filter((m: any) =>
+            m.sender_id === user.id &&
+            m.message_type !== 'offer' &&
+            !allMagicChips.includes(m.content)
+          );
           setMsgCount(myMsgs.length);
         }
 
@@ -186,7 +195,12 @@ export default function ChatRoomPage() {
               const newMessage = payload.new as Message;
               setMessages((prev) => [...prev, newMessage]);
 
-              if (!posterMode && newMessage.sender_id === user.id && newMessage.type !== 'offer') {
+              const allMagicChips = [
+                "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
+                "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
+              ];
+
+              if (!posterMode && newMessage.sender_id === user.id && newMessage.message_type !== 'offer' && !allMagicChips.includes(newMessage.content)) {
                 setMsgCount(prev => prev + 1);
               }
             }
@@ -498,7 +512,7 @@ export default function ChatRoomPage() {
           ) : (
             activeMessages.map((m) => {
               const isMe = m.sender_id === currentUser.id;
-              const isOffer = m.type === 'offer';
+              const isOffer = m.message_type === 'offer';
 
               return (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative z-10`}>
@@ -603,8 +617,15 @@ export default function ChatRoomPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               onFocus={loadModel} // Lazy load AI model
-              placeholder={(!isPoster && msgCount >= msgLimit && gig.status === 'open') ? "Limit reached. Make an offer?" : "Type a message..."}
-              disabled={(!isPoster && msgCount >= msgLimit && gig.status === 'open')}
+              placeholder={
+                ['completed', 'cancelled'].includes(gig.status) ? "Conversation Closed" :
+                  (!isPoster && msgCount >= msgLimit && gig.status === 'open') ? `Limit of ${msgLimit} messages reached` :
+                    `Type a message... (${msgLimit - msgCount} left)`
+              }
+              disabled={
+                ['completed', 'cancelled'].includes(gig.status) ||
+                (!isPoster && msgCount >= msgLimit && gig.status === 'open')
+              }
               className="flex-1 bg-[#1A1A24] text-white px-5 py-3 rounded-full border border-white/10 focus:border-brand-purple outline-none transition-all placeholder:text-white/20 text-sm disabled:opacity-50"
             />
             <button

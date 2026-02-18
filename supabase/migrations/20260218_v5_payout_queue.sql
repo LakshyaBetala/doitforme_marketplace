@@ -17,8 +17,8 @@ alter table public.payout_queue enable row level security;
 -- Policies
 create policy "Admins can view all payouts"
     on public.payout_queue for select
-    using (auth.jwt() ->> 'email' = 'betala911@gmail.com' OR auth.jwt() ->> 'role' = 'service_role');
+    using (auth.jwt() ->> 'email' IN ('lakshya.betala@gmail.com', 'betala911@gmail.com') OR auth.jwt() ->> 'role' = 'service_role');
 
 create policy "Admins can update payouts"
     on public.payout_queue for update
-    using (auth.jwt() ->> 'email' = 'betala911@gmail.com' OR auth.jwt() ->> 'role' = 'service_role');
+    using (auth.jwt() ->> 'email' IN ('lakshya.betala@gmail.com', 'betala911@gmail.com') OR auth.jwt() ->> 'role' = 'service_role');

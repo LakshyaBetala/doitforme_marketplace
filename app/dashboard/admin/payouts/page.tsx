@@ -23,7 +23,8 @@ export default function AdminPayoutsPage() {
         if (!user) return router.push("/login");
 
         // Simple Admin Check (Matches RLS policy)
-        if (user.email === "lakshya.betala@gmail.com") {
+        const ADMINS = ["lakshya.betala@gmail.com", "betala911@gmail.com"];
+        if (ADMINS.includes(user.email || "")) {
             setIsAdmin(true);
             fetchPayouts();
         } else {
@@ -39,7 +40,12 @@ export default function AdminPayoutsPage() {
             .eq("status", "PENDING")
             .order("created_at", { ascending: true });
 
-        if (error) console.error("Error fetching payouts:", error);
+        if (error) {
+            console.error("Error fetching payouts RAW:", error);
+            console.error("Error message:", error.message);
+            console.error("Error details:", error.details);
+            console.error("Error hint:", error.hint);
+        }
         setPayouts(data || []);
         setLoading(false);
     };

@@ -441,7 +441,8 @@ export default function GigDetailPage() {
           window.location.reload();
         } else {
           alert("Gig cancelled successfully.");
-          router.push("/dashboard");
+          // Force redirect to dashboard to ensure state is cleared
+          window.location.href = "/dashboard";
         }
       } else {
         throw new Error(data.error || "Cancellation failed");
@@ -533,33 +534,11 @@ export default function GigDetailPage() {
     // (In a real app, we'd query first, but for now we can just send a "Hi" or navigate)
     // To make it distinct, we'll navigate to /messages but we can also pre-seed a message
 
-    // 1. Check for existing chat
-    const { data: existingMsgs } = await supabase
-      .from('messages')
-      .select('id')
-      .eq('gig_id', id)
-      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${gig.poster_id}),and(sender_id.eq.${gig.poster_id},receiver_id.eq.${user.id})`)
-      .limit(1);
+    // 2. Navigate to Chat Room
+    // We don't need to pre-create a message. The Chat Room handles empty states.
+    // Just redirect to the dynamic chat page for this gig.
+    router.push(`/chat/${id}?chat=${id}_${user.id}`); // Adjusted to match ChatPage expecting roomId
 
-    if (!existingMsgs || existingMsgs.length === 0) {
-      // Create initial message to open the channel
-      const { error } = await supabase.from('messages').insert({
-        gig_id: id,
-        sender_id: user.id,
-        receiver_id: gig.poster_id,
-        content: `Hi, I'm interested in "${gig.title}"`,
-        is_pre_agreement: true
-      });
-
-      if (error) {
-        console.error("Error creating chat:", error);
-        alert("Could not start chat. Please try again.");
-        return;
-      }
-    }
-
-    // Navigate to messages
-    router.push('/messages');
   };
 
   // --- RENDER ---
@@ -672,13 +651,13 @@ export default function GigDetailPage() {
 
         {/* HEADER: Back & Title */}
         <div className="mb-12">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-6 group"
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-6 group w-fit"
           >
             <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-            <span className="text-sm font-medium">Back to Feed</span>
-          </button>
+            <span className="text-sm font-medium">Back to Dashboard</span>
+          </Link>
 
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="space-y-4 flex-1">

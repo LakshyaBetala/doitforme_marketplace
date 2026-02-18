@@ -11,6 +11,14 @@ const nextConfig = {
     ],
   },
   serverExternalPackages: ['@xenova/transformers'],
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "sharptools": false,
+      "onnxruntime-node": false,
+    };
+    return config;
+  },
 };
 
 module.exports = nextConfig;

@@ -152,6 +152,11 @@ export default function ChatPage() {
             });
         }
 
+        const magicChips = [
+            "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
+            "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
+        ];
+
         // Load Messages & Limits
         const loadMessagesAndLimits = async () => {
             // A. Load Messages
@@ -164,8 +169,12 @@ export default function ChatPage() {
 
             if (data) {
                 setMessages(data);
-                // Count MY messages in this chat
-                const myCount = data.filter((m: any) => m.sender_id === user.id).length;
+                // Count MY messages in this chat (Exclude Offers AND Magic Chips)
+                const myCount = data.filter((m: any) =>
+                    m.sender_id === user.id &&
+                    m.message_type !== 'offer' &&
+                    !magicChips.includes(m.content)
+                ).length;
                 setMessageCount(myCount);
             }
 
@@ -184,7 +193,15 @@ export default function ChatPage() {
                     // Applicant Logic
                     const limit = gig.listing_type === 'MARKET' ? 5 : 2;
                     setMessageLimit(limit);
-                    setIsLimitReached((data?.filter((m: any) => m.sender_id === user.id).length || 0) >= limit);
+
+                    // Recalculate isLimitReached with the correct count
+                    const myCount = data?.filter((m: any) =>
+                        m.sender_id === user.id &&
+                        m.message_type !== 'offer' &&
+                        !magicChips.includes(m.content)
+                    ).length || 0;
+
+                    setIsLimitReached(myCount >= limit);
                 } else {
                     // Poster or Hired -> No Limit
                     setMessageLimit(null);
@@ -212,7 +229,11 @@ export default function ChatPage() {
                         const updated = [...prev, newMsg];
                         // Update Count & Limit if I sent it
                         if (newMsg.sender_id === user.id && messageLimit) {
-                            const newCount = updated.filter(m => m.sender_id === user.id).length;
+                            const newCount = updated.filter(m =>
+                                m.sender_id === user.id &&
+                                m.message_type !== 'offer' &&
+                                !magicChips.includes(m.content)
+                            ).length;
                             setMessageCount(newCount);
                             setIsLimitReached(newCount >= messageLimit);
                         }

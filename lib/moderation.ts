@@ -11,5 +11,5 @@ export const analyzeIntentAI = async (text: string) => {
 
     // 2. Client-side AI has already run. Server trusts the regex + client validation.
     // If needed, we could add a DB log here, but for now, we pass.
-    return { success: true };
+    return { success: true, flagged: false };
 };

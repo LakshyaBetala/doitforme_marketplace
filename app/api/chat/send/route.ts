@@ -37,6 +37,13 @@ export async function POST(req: Request) {
 
     if (gigError || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
+    // 3.5 Check if Chat is Locked (Completed/Cancelled)
+    if (['completed', 'cancelled'].includes(gig.status)) {
+      return NextResponse.json({
+        error: "This conversation is closed as the gig is completed or cancelled."
+      }, { status: 403 });
+    }
+
     const isPoster = user.id === gig.poster_id;
 
     // 4. Determine Receiver
@@ -74,21 +81,28 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // 5. Check Limits (Strict Applicant Lock) - BYPASS FOR OFFERS
+    // 5. Check Limits (Strict Applicant Lock) - BYPASS FOR OFFERS & MAGIC CHIPS
     const isApplicant = !isPoster;
     const isPreAgreement = gig.status === 'open';
+
+    const MAGIC_CHIPS = [
+      "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
+      "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
+    ];
 
     // Only enforce limit if:
     // 1. User is Applicant
     // 2. Gig is Open (Pre-agreement)
     // 3. Message Type is NOT 'offer'
-    if (isApplicant && isPreAgreement && type !== 'offer') {
+    // 4. Content is NOT a Magic Chip
+    if (isApplicant && isPreAgreement && type !== 'offer' && !MAGIC_CHIPS.includes(content)) {
       const { count, error: countError } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('gig_id', gigId)
         .eq('sender_id', user.id)
-        .neq('type', 'offer'); // Don't count offers
+        .neq('message_type', 'offer') // Don't count offers
+        .not('content', 'in', `(${MAGIC_CHIPS.map(c => `"${c}"`).join(',')})`); // Don't count chips
 
       if (countError) throw countError;
 
@@ -135,7 +149,7 @@ export async function POST(req: Request) {
         sender_id: user.id,
         receiver_id: receiverId, // CRITICAL FIX
         content: content?.trim() || (type === 'offer' ? `Offer: ₹${offerAmount}` : ''),
-        type: type,
+        message_type: type, // FIXED: Mapped 'type' from payload to 'message_type' column
         offer_amount: type === 'offer' ? offerAmount : null,
         is_pre_agreement: isPreAgreement,
         flagged_for_review: flagged

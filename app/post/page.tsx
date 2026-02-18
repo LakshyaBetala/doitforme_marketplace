@@ -181,7 +181,8 @@ export default function PostGigPage() {
 
     // AI CONTENT MODERATION (Client-Side)
     setLoading(true); // Show loading while AI analyzes
-    const aiResult = await analyze(description, 'POST');
+    const textToAnalyze = `${title} ${description}`;
+    const aiResult = await analyze(textToAnalyze, 'POST');
     if (!aiResult.isSafe) {
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });

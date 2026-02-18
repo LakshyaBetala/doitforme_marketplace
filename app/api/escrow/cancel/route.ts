@@ -25,7 +25,7 @@ export async function POST(req: Request) {
 
     if (!gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    if (gig.user_id !== posterId)
+    if (gig.poster_id !== posterId)
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
     if (gig.payment_status !== "ESCROW_HELD" && gig.status !== "open")
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     }
 
     // SCENARIO 2: No funds held (Open) -> Immediate Cancel
-    await supabase
+    const { error: updateError } = await supabase
       .from("gigs")
       .update({
         status: "cancelled",
@@ -61,6 +61,8 @@ export async function POST(req: Request) {
         cancelled_at: new Date().toISOString(),
       })
       .eq("id", gigId);
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({
       success: true,
