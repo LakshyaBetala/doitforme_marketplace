@@ -758,39 +758,52 @@ export default function ChatRoomPage() {
           </div>
 
           <div className="px-4 pb-4 pt-1 max-w-4xl mx-auto relative flex gap-3 items-center">
-            {/* OFFER BUTTON (Marketplace Only, Applicant Only) */}
+
+            {/* OFFER BUTTON */}
             {!isPoster && gig.listing_type === 'MARKET' && gig.status === 'open' && (
               <button
                 onClick={() => setIsOfferModalOpen(true)}
-                className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-green-400 border border-white/5 transition-all"
+                className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-green-400 border border-white/5 transition-all shrink-0"
                 title="Make an Offer"
               >
                 <IndianRupee size={20} />
               </button>
             )}
 
+            {/* 🚀 THE FIX: HIDDEN INPUT AND CLIP BUTTON */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || ['completed', 'cancelled'].includes(gig.status)}
+              className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-white/70 border border-white/5 transition-all shrink-0 disabled:opacity-50"
+              title="Attach Image"
+            >
+              {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
+            </button>
+
+            {/* TEXT INPUT */}
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-              onFocus={loadModel} // Lazy load AI model
-              placeholder={
-                ['completed', 'cancelled'].includes(gig.status) ? "Conversation Closed" :
-                  (!isPoster && msgCount >= msgLimit && gig.status === 'open') ? `Limit of ${msgLimit} messages reached` :
-                    `Type a message... (${msgLimit - msgCount} left)`
-              }
-              disabled={
-                ['completed', 'cancelled'].includes(gig.status) ||
-                (!isPoster && msgCount >= msgLimit && gig.status === 'open')
-              }
-              className="flex-1 bg-[#1A1A24] text-white px-5 py-3 rounded-full border border-white/10 focus:border-brand-purple outline-none transition-all placeholder:text-white/20 text-sm disabled:opacity-50"
+              onFocus={loadModel}
+              placeholder={isUploading ? "Uploading image..." : "Type a message..."}
+              disabled={isUploading || ['completed', 'cancelled'].includes(gig.status)}
+              className="flex-1 bg-[#1A1A24] border border-white/10 rounded-full px-6 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all disabled:opacity-50"
             />
+
             <button
               onClick={() => sendMessage()}
-              disabled={!input.trim()}
-              className="p-3 bg-brand-purple hover:bg-[#7b1dd1] disabled:opacity-50 disabled:scale-95 rounded-full text-white transition-all shadow-lg flex items-center justify-center shrink-0"
+              disabled={!input.trim() || isUploading || ['completed', 'cancelled'].includes(gig.status)}
+              className="w-12 h-12 rounded-full bg-brand-purple hover:bg-brand-purple/90 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:hover:bg-brand-purple shrink-0 shadow-[0_0_20px_rgba(136,37,245,0.3)]"
             >
-              <Send className="w-5 h-5 ml-0.5" />
+              <Send size={18} className="ml-1" />
             </button>
           </div>
         </div>

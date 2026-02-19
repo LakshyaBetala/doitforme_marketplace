@@ -396,8 +396,16 @@ export default function GigDetailPage() {
         body: JSON.stringify({ gigId: id, workerId })
       });
 
-      if (!res.ok) throw new Error("Failed to assign.");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to assign.");
 
+      // 🚀 THE FIX: Open the Cashfree checkout modal if a session was created
+      if (data.paymentSessionId && cashfree) {
+        cashfree.checkout({ paymentSessionId: data.paymentSessionId });
+        return; // Stop execution; Cashfree handles the redirect
+      }
+
+      // Fallback for zero-fee/bypass scenarios
       setGig((prev: any) => {
         if (!prev) return null;
         return { ...prev, status: 'assigned', assigned_worker_id: workerId };
@@ -406,8 +414,7 @@ export default function GigDetailPage() {
       window.location.reload();
     } catch (err: any) {
       alert(err.message);
-    } finally {
-      setSubmitting(false);
+      setSubmitting(false); // Only clear loading state on error
     }
   };
 
