@@ -25,7 +25,8 @@ import {
   ShieldCheck,
   Camera,
   Maximize2,
-  FileText // Added for file icon
+  FileText, // Added for file icon
+  Plus
 } from "lucide-react";
 
 import { useModeration } from "@/app/hooks/useModeration";
@@ -62,6 +63,13 @@ export default function PostGigPage() {
   // Lightbox State
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Hydration Fix: minDate for deadline
+  const [minDate, setMinDate] = useState("");
+
+  useEffect(() => {
+    setMinDate(new Date().toISOString().split("T")[0]);
+  }, []);
 
   // UI States
   const [loading, setLoading] = useState(false);
@@ -676,7 +684,7 @@ export default function PostGigPage() {
                         style={{ colorScheme: "dark" }} // Fix for black text on dark bg
                         className="bg-transparent border-b border-white/10 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition-colors"
                         value={deadlineDate}
-                        min={new Date().toISOString().split("T")[0]}
+                        min={minDate}
                         onChange={(e) => setDeadlineDate(e.target.value)}
                       />
                       <input
@@ -813,12 +821,3 @@ export default function PostGigPage() {
   );
 }
 
-// Icon for add button
-function Plus({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
-  )
-}

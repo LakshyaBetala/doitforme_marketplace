@@ -127,8 +127,6 @@ export async function POST(req: Request) {
     }
 
     // 5. Hard Limit Check (Already done above)
-    // 5.5 Hybrid AI Moderation (Skip for pure offers with no content?)
-    let flagged = false;
     // 5.5 Hybrid AI Moderation
     // Skip moderation for images and offers
     let flagged = false;
