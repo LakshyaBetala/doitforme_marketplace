@@ -167,3 +167,28 @@ body::before {
   background-clip: text;
   color: transparent;
 }
+
+/* Sloth Mascot Breathing Animation */
+@keyframes breathe {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Sloth Responsive Behavior */
+@media (max-width: 768px) {
+  .sloth-hero {
+    position: relative !important;
+    right: auto !important;
+    bottom: auto !important;
+    margin-top: 20px;
+    height: 180px !important;
+    display: block;
+  }
+}

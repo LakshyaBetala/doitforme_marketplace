@@ -102,9 +102,30 @@ const Preloader = ({
 // UTILITIES & DATA
 // -------------------------------------------------------
 const gigsMock = [
-  { id: 1, user: "Aarav P.", role: "Engineering", title: "Fix Next.js Hydration Error", price: "₹500", icon: Code2, color: "bg-blue-600" },
-  { id: 2, user: "Sneha K.", role: "Design", title: "Logo for Tech Fest Startup", price: "₹1,200", icon: PenTool, color: "bg-[#8825F5]" },
-  { id: 3, user: "Rohan M.", role: "Errand", title: "Drop Lab Record to Block 4", price: "₹150", icon: Bike, color: "bg-emerald-500" }
+  {
+    id: 1,
+    user: "Aarav P.",
+    role: "Engineering",
+    title: "Fix Next.js Hydration Error",
+    price: "₹500",
+    gender: "male",
+  },
+  {
+    id: 2,
+    user: "Sneha K.",
+    role: "Design",
+    title: "Logo for Tech Fest Startup",
+    price: "₹1,200",
+    gender: "female",
+  },
+  {
+    id: 3,
+    user: "Rohan M.",
+    role: "Errand",
+    title: "Drop Lab Record to Block 4",
+    price: "₹150",
+    gender: "male",
+  },
 ];
 
 const testimonials = [
@@ -182,7 +203,7 @@ export default function LandingPage() {
     });
   }, []);
 
-  const ActiveGigIcon = gigsMock[activeGigIndex].icon;
+  const activeGig = gigsMock[activeGigIndex];
 
   // Cycle Gigs
   useEffect(() => {
@@ -320,22 +341,20 @@ export default function LandingPage() {
             <span className="text-[10px] font-bold tracking-widest text-zinc-400 uppercase">Live: Verified Student Market</span>
           </div>
 
-          <h1 className="text-4xl md:text-8xl font-black leading-[1.1] md:leading-[1.05] tracking-tighter text-white mb-6 md:mb-8 break-words w-full">
-            Outsource Work.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-pink to-brand-purple">Buy & Sell Gear.</span>
+          <h1 className="text-2.5xl md:text-5xl font-black leading-[1.1] md:leading-[1.05] tracking-tighter text-white mb-4 break-words w-full">
+            Earn. Outsource. Trade.
           </h1>
 
-          <p className="text-base md:text-lg text-zinc-400 leading-relaxed max-w-xl mb-8 md:mb-10 px-4 md:px-0">
-            The all-in-one student economy. Get gigs done, rent calculators, or sell old notes.
-            Safe, verified, and fee-free for marketplace deals.
+          <p className="text-base md:text-lg text-zinc-300 leading-relaxed max-w-xl mb-8 md:mb-10 px-4 md:px-0">
+            Turn your campus into income.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto px-4 md:px-0">
             <button onClick={handleLogin} className="w-full sm:w-auto px-8 py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
-              Explore Campus <ArrowRight size={16} />
+              Start Earning <ArrowRight size={16} />
             </button>
             <button onClick={() => scrollToSection('how-it-works')} className="w-full sm:w-auto px-8 py-4 rounded-full text-sm font-bold border border-zinc-800 text-white hover:bg-zinc-900 transition-all active:scale-95">
-              How it works
+              Browse Marketplace
             </button>
           </div>
 
@@ -361,6 +380,7 @@ export default function LandingPage() {
           animate={loadingComplete ? { opacity: 1, scale: 1 } : {}}
           transition={{ duration: 0.8, delay: 0.4 }}
           className="relative hidden lg:block h-[500px] w-full perspective-[1000px]"
+          style={{ position: "relative" }}
         >
           {/* The Revolving Card */}
           <div className="absolute top-10 left-10 z-20 hover:z-50 transition-all">
@@ -376,21 +396,25 @@ export default function LandingPage() {
               >
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${gigsMock[activeGigIndex].color} flex items-center justify-center text-white shadow-lg`}>
-                      <ActiveGigIcon size={18} />
+                    <div className="w-10 h-10 rounded-full overflow-hidden shadow-lg">
+                      <img
+                        src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(activeGig.user + (activeGig.gender === 'male' ? ' boy' : ' girl'))}`}
+                        alt={activeGig.user}
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-white">{gigsMock[activeGigIndex].user}</div>
-                      <div className="text-xs text-zinc-500">{gigsMock[activeGigIndex].role}</div>
+                      <div className="text-sm font-bold text-white">{activeGig.user}</div>
+                      <div className="text-xs text-zinc-500">{activeGig.role}</div>
                     </div>
                   </div>
                   <div className="bg-white/10 text-white px-2 py-1 rounded text-xs font-bold font-mono">
-                    {gigsMock[activeGigIndex].price}
+                    {activeGig.price}
                   </div>
                 </div>
                 <div className="h-14 flex items-center">
                   <div className="text-lg text-white font-bold leading-tight">
-                    {gigsMock[activeGigIndex].title}
+                    {activeGig.title}
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-2 text-xs text-zinc-500 font-bold uppercase tracking-wider group-hover:text-brand-purple transition-colors">
@@ -418,12 +442,37 @@ export default function LandingPage() {
           <motion.div
             animate={{ rotate: [0, 3, 0] }}
             transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute bottom-20 left-20 w-72 bg-[#0A0A0A] border border-white/5 p-6 rounded-3xl -z-10 opacity-60 grayscale blur-[1px] will-change-transform"
+            className="absolute bottom-20 left-20 w-72 bg-[#0A0A0A] border border-white/5 p-6 rounded-3xl z-10 will-change-transform"
           >
             <div className="flex items-center gap-2 text-zinc-500 mb-6">
               <Wallet size={16} /> <span className="text-xs uppercase tracking-widest">Total Earnings</span>
             </div>
             <div className="text-4xl font-bold text-white">₹12,450</div>
+          </motion.div>
+
+          {/* Sloth Mascot */}
+          <motion.div
+            className="absolute pointer-events-none"
+            style={{
+              left: "-110px",
+              bottom: "65px",
+              height: "300px",
+              width: "auto",
+              zIndex: 50,
+              animation: "breathe 4s ease-in-out infinite"
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.8, delay: 0.6 }}
+          >
+            <Image
+              src="/hero.png"
+              alt="Sloth mascot"
+              width={300}
+              height={300}
+              className="w-full h-full object-contain"
+              priority
+            />
           </motion.div>
         </motion.div>
       </section>
