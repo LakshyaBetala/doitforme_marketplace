@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
-import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee } from "lucide-react";
+import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X } from "lucide-react";
 
 export default function ChatPage() {
     const supabase = supabaseBrowser();
@@ -21,6 +21,11 @@ export default function ChatPage() {
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Attachment State
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // 1. Initialize User
     useEffect(() => {
@@ -191,7 +196,7 @@ export default function ChatPage() {
 
                 if (!isPoster && isPreAgreement) {
                     // Applicant Logic
-                    const limit = gig.listing_type === 'MARKET' ? 5 : 2;
+                    const limit = gig.listing_type === 'MARKET' ? 10 : 2;
                     setMessageLimit(limit);
 
                     // Recalculate isLimitReached with the correct count
@@ -254,33 +259,35 @@ export default function ChatPage() {
 
 
     // 4. Send Message Logic
-    const sendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newMessage.trim() || !user || !activeChat || isLimitReached) return;
+    // 4. Send Message Logic
+    const sendMessage = async (e?: React.FormEvent, type: 'text' | 'image' = 'text', contentUrl?: string) => {
+        if (e) e.preventDefault();
+
+        const text = contentUrl || newMessage.trim();
+        if ((!text && type === 'text') || !user || !activeChat || (isLimitReached && type !== 'image')) return;
 
         const [gigId, otherUserId] = activeChat.split('_');
-        const text = newMessage.trim();
-        setNewMessage(""); // Optimistic clear
+        if (type === 'text') setNewMessage(""); // Optimistic clear
 
-        // A. Moderation (Fail-Open)
-        try {
-            const modRes = await fetch('/api/moderation', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
+        // A. Moderation (Fail-Open) - Skip for Images
+        if (type === 'text') {
+            try {
+                const modRes = await fetch('/api/moderation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
 
-            if (modRes.ok) {
-                const aiCheck = await modRes.json();
-                if (!aiCheck.success) {
-                    alert(`Message Blocked: ${aiCheck.reason}`);
-                    return; // Stop here
+                if (modRes.ok) {
+                    const aiCheck = await modRes.json();
+                    if (!aiCheck.success) {
+                        alert(`Message Blocked: ${aiCheck.reason}`);
+                        return; // Stop here
+                    }
                 }
-            } else {
-                console.warn("Moderation API failed (500). Allowing message.");
+            } catch (warn) {
+                console.warn("Moderation Network Error. Allowing message.", warn);
             }
-        } catch (warn) {
-            console.warn("Moderation Network Error. Allowing message.", warn);
         }
 
         // B. Send API
@@ -290,10 +297,10 @@ export default function ChatPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     gigId,
-                    // Fix: Send BOTH receiverId and applicantId to be safe
                     receiverId: otherUserId,
                     applicantId: otherUserId, // API key requirement if I am Poster
-                    content: text
+                    content: text,
+                    type
                 })
             });
 
@@ -316,6 +323,40 @@ export default function ChatPage() {
         } catch (err: any) {
             console.error("Send Error:", err);
             alert("Failed to send message. Please try again.");
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) return alert("File size must be less than 5MB");
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return alert("Only JPG, PNG, WEBP allowed");
+
+        setIsUploading(true);
+        try {
+            const gigId = activeChat ? activeChat.split('_')[0] : 'general';
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${gigId}/${Date.now()}.${fileExt}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('chat-attachments')
+                .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('chat-attachments')
+                .getPublicUrl(fileName);
+
+            await sendMessage(undefined, 'image', publicUrl);
+
+        } catch (err: any) {
+            console.error(err);
+            alert("Upload failed: " + err.message);
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
 
@@ -431,7 +472,20 @@ export default function ChatPage() {
                                             ? 'bg-[#8825F5] text-white rounded-tr-sm'
                                             : 'bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-sm'
                                             }`}>
-                                            {msg.content}
+                                            {msg.message_type === 'image' ? (
+                                                <div className="relative cursor-zoom-in" onClick={() => setSelectedImage(msg.content)}>
+                                                    <div className="relative w-full aspect-video bg-black/20 rounded-lg overflow-hidden mb-1">
+                                                        <Image
+                                                            src={msg.content}
+                                                            alt="Attachment"
+                                                            fill
+                                                            className="object-cover"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                msg.content
+                                            )}
                                             <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-white/30'}`}>
                                                 {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </div>
@@ -459,7 +513,22 @@ export default function ChatPage() {
                                 </div>
                             )}
 
-                            <form onSubmit={sendMessage} className="flex gap-3 max-w-4xl mx-auto relative">
+                            <form onSubmit={(e) => sendMessage(e)} className="flex gap-3 max-w-4xl mx-auto relative items-center">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    onChange={handleFileUpload}
+                                    accept="image/jpeg,image/png,image/webp"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isLimitReached || isUploading}
+                                    className="p-3 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-white/50 hover:text-white transition-colors border border-white/10 disabled:opacity-50"
+                                >
+                                    {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
+                                </button>
                                 {isLimitReached && (
                                     <div className="absolute inset-0 bg-[#121217]/60 z-10 flex items-center justify-center backdrop-blur-[1px] rounded-full cursor-not-allowed">
                                         <span className="text-xs font-bold text-white/50 bg-black/40 px-3 py-1 rounded-full">
@@ -494,6 +563,16 @@ export default function ChatPage() {
                     </div>
                 )}
             </div>
+
+            {/* Lightbox */}
+            {selectedImage && (
+                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
+                    <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
+                    <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
+                        <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
+                    </div>
+                </div>
+            )}
 
         </div>
     );

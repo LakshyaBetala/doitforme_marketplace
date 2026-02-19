@@ -110,12 +110,7 @@ export async function POST(req: Request) {
       let limit = 2; // Default for HUSTLE
 
       if (gig.listing_type === 'MARKET') {
-        if (gig.market_type === 'RENT') {
-          limit = 10; // RENT Limit
-        } else {
-          // SELL, FREE, BUY_REQUEST, REQUEST
-          limit = 10; // Market Standard Limit (V6 Pivot)
-        }
+        limit = 10; // Unified Limit for V6 (Sell, Rent, Request)
       }
 
       if ((count || 0) >= limit) {

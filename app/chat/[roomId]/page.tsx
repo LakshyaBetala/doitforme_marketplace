@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Send, ArrowLeft, Loader2, AlertCircle, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles, Paperclip, Clock } from "lucide-react";
+import { Send, ArrowLeft, Loader2, AlertCircle, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles, Paperclip, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +28,11 @@ interface UserProfile {
   jobs_completed?: number;
 }
 
+interface CurrentUserProfile {
+  id: string;
+  jobs_completed: number;
+}
+
 interface GigDetails {
   id: string;
   title: string;
@@ -49,6 +54,7 @@ export default function ChatRoomPage() {
   const supabase = supabaseBrowser();
 
   const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<CurrentUserProfile | null>(null);
   const [gig, setGig] = useState<GigDetails | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +75,11 @@ export default function ChatRoomPage() {
   // Offer State
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [offerAmount, setOfferAmount] = useState("");
+
+  // Accept Modal State
+  const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
+  const [offerToAccept, setOfferToAccept] = useState<Message | null>(null);
+  const [isAccepting, setIsAccepting] = useState(false);
 
   // AI Hook
   const { analyze, loadModel } = useModeration();
@@ -91,6 +102,10 @@ export default function ChatRoomPage() {
           return;
         }
         setCurrentUser(user);
+
+        // Fetch My Profile (for Fee Calc)
+        const { data: myProfile } = await supabase.from('users').select('jobs_completed').eq('id', user.id).single();
+        if (myProfile) setCurrentUserProfile({ id: user.id, jobs_completed: myProfile.jobs_completed || 0 });
 
         // Fetch Gig
         const { data: gigData, error: gigError } = await supabase
@@ -171,7 +186,7 @@ export default function ChatRoomPage() {
           // Set Limit Logic
           let limit = 2; // Default
           if (gigData.listing_type === 'MARKET') {
-            limit = gigData.market_type === 'RENT' ? 5 : 10;
+            limit = 10; // Unified V6 Limit
           }
           setMsgLimit(limit);
 
@@ -323,8 +338,14 @@ export default function ChatRoomPage() {
     sendMessage("", 'offer', amt);
   };
 
-  const acceptOffer = async (msg: Message) => {
-    if (!confirm(`Accept offer of ₹${msg.offer_amount}? This will lock the price for this applicant.`)) return;
+  const acceptOffer = (msg: Message) => {
+    setOfferToAccept(msg);
+    setIsAcceptModalOpen(true);
+  };
+
+  const confirmAcceptOffer = async () => {
+    if (!offerToAccept) return;
+    setIsAccepting(true);
 
     try {
       // Use new V4 endpoint that updates 'applications' table
@@ -333,14 +354,16 @@ export default function ChatRoomPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gigId: gig?.id,
-          workerId: msg.sender_id, // The applicant who made the offer
-          price: msg.offer_amount
+          workerId: offerToAccept.sender_id, // The applicant who made the offer
+          price: offerToAccept.offer_amount
         }),
       });
 
       if (res.ok) {
         // Optimistically update UI if needed, but the system message will trigger refresh
-        setGig(prev => prev ? ({ ...prev, negotiated_price: msg.offer_amount! }) : null); // Optional: store locally for UI
+        setGig(prev => prev ? ({ ...prev, negotiated_price: offerToAccept.offer_amount! }) : null); // Optional: store locally for UI
+        setIsAcceptModalOpen(false);
+        setOfferToAccept(null);
         alert("Offer accepted! Worker has been notified.");
       } else {
         const json = await res.json();
@@ -348,6 +371,8 @@ export default function ChatRoomPage() {
       }
     } catch (e) {
       alert("Network error");
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -507,19 +532,23 @@ export default function ChatRoomPage() {
                 <p className="text-white/50 text-xs mb-6">Propose a new price for this item.</p>
 
                 <div className="space-y-4">
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-lg">₹</span>
-                    <input
-                      type="number"
-                      value={offerAmount}
-                      onChange={(e) => setOfferAmount(e.target.value)}
-                      placeholder={String(gig.price)}
-                      className="w-full bg-[#0B0B11] border border-white/10 rounded-xl py-3 pl-8 pr-4 text-xl font-bold text-white focus:outline-none focus:border-brand-purple transition-colors"
-                    />
-                  </div>
-                  <div className="flex gap-2 text-xs text-white/30 justify-center">
-                    <span>Listing Price: ₹{gig.price}</span>
-                  </div>
+                  {/* Fee Logic Display for Worker (Hustle) */}
+                  {!isPoster && gig.listing_type === 'HUSTLE' && (
+                    <div className="bg-white/5 rounded-lg p-3 text-xs space-y-1 my-4">
+                      <div className="flex justify-between text-white/50">
+                        <span>Gross Amount:</span>
+                        <span>₹{offerAmount || 0}</span>
+                      </div>
+                      <div className="flex justify-between text-white/50">
+                        <span>Platform Fee ({(currentUserProfile?.jobs_completed || 0) > 10 ? '7.5%' : '10%'}):</span>
+                        <span className="text-red-400">- ₹{Math.ceil(Number(offerAmount || 0) * ((currentUserProfile?.jobs_completed || 0) > 10 ? 0.075 : 0.10))}</span>
+                      </div>
+                      <div className="border-t border-white/10 pt-2 flex justify-between font-bold text-green-400">
+                        <span>Estimated Earnings:</span>
+                        <span>₹{Math.floor(Number(offerAmount || 0) * (1 - ((currentUserProfile?.jobs_completed || 0) > 10 ? 0.075 : 0.10)))}</span>
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     onClick={sendOffer}
@@ -527,6 +556,67 @@ export default function ChatRoomPage() {
                     className="w-full py-3 bg-brand-purple text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-brand-purple/20"
                   >
                     Send Offer
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ACCEPT OFFER MODAL */}
+        <AnimatePresence>
+          {isAcceptModalOpen && offerToAccept && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-purple to-pink-500"></div>
+
+                <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                  <CheckCircle className="text-green-500" size={24} /> Accept Offer?
+                </h3>
+
+                <div className="py-6 flex flex-col items-center">
+                  <div className="text-4xl font-black text-white tracking-tighter mb-1">
+                    ₹{offerToAccept.offer_amount}
+                  </div>
+                  <p className="text-xs text-white/40 uppercase tracking-widest font-bold">New Agreed Price</p>
+                </div>
+
+                <div className="bg-white/5 rounded-xl p-4 mb-6 text-xs text-white/70 leading-relaxed border border-white/5">
+                  {gig.listing_type === 'MARKET' ? (
+                    gig.market_type === 'RENT' ? (
+                      <p>
+                        Note: At checkout, the <strong className="text-white">Renter</strong> will pay a <strong className="text-brand-purple">3% Escrow + 2% Gateway Fee</strong> on top of this price.
+                      </p>
+                    ) : (
+                      <p>
+                        <strong className="text-green-400">Zero Fees!</strong> This is a direct P2P transaction. Ensure you verify the item before payment.
+                      </p>
+                    )
+                  ) : (
+                    <p>
+                      You are accepting this budget. The worker will receive this amount minus platform fees.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setIsAcceptModalOpen(false)}
+                    className="py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-bold text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmAcceptOffer}
+                    disabled={isAccepting}
+                    className="py-3 bg-green-500 hover:bg-green-600 rounded-xl text-white font-bold text-sm transition-colors shadow-lg shadow-green-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isAccepting ? <Loader2 className="animate-spin" size={16} /> : "Confirm Acceptance"}
                   </button>
                 </div>
               </div>
