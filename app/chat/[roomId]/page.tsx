@@ -262,8 +262,7 @@ export default function ChatRoomPage() {
       }
     }
 
-    // Optimistic UI? No, wait for server to ensure limits.
-    if (type === 'text') setInput("");
+    // Don't clear immediately. Wait for success.
     if (type === 'offer') setIsOfferModalOpen(false);
 
     try {
@@ -289,6 +288,9 @@ export default function ChatRoomPage() {
         alert(json.message || json.error || "Failed");
         return;
       }
+
+      // Success! Clear input now.
+      if (type === 'text' && !txt) setInput("");
 
     } catch (e) {
       alert("Network error.");
@@ -665,7 +667,7 @@ export default function ChatRoomPage() {
                         </p>
                       </div>
                       {/* Actions for Receiver (Poster) */}
-                      {!isMe && isPoster && gig.status === 'open' && (
+                      {!isMe && isPoster && gig.status === 'open' && !gig.negotiated_price && (
                         <div className="p-2 grid grid-cols-2 gap-2 bg-black/20">
                           <button
                             onClick={() => declineOffer(m)}
@@ -679,6 +681,11 @@ export default function ChatRoomPage() {
                           >
                             Accept
                           </button>
+                        </div>
+                      )}
+                      {gig.negotiated_price === m.offer_amount && (
+                        <div className="px-4 py-2 bg-green-500/20 text-green-400 text-[10px] font-bold text-center uppercase tracking-widest flex items-center justify-center gap-1">
+                          <CheckCircle size={12} /> Offer Accepted
                         </div>
                       )}
                       <div className="px-4 pb-1 flex items-center justify-center gap-1 text-[10px] text-red-400/80 font-bold tracking-wide">

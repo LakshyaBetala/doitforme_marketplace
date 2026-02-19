@@ -106,7 +106,10 @@ export default function GigDetailPage() {
   const [applicantCount, setApplicantCount] = useState(0);
 
   const [deliveryLink, setDeliveryLink] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [isBuying, setIsBuying] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // Kept for backward compatibility if needed
 
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -292,13 +295,13 @@ export default function GigDetailPage() {
       const action = gig.market_type === 'REQUEST' ? "Fulfill Request" : "Buy";
       if (!confirm(`Connect with the poster to ${action}? This involves no online payment.`)) return;
 
-      setSubmitting(true);
+      setIsBuying(true);
       try {
         await handleInstantBuy();
       } catch (e: any) {
         alert(e.message);
       } finally {
-        setSubmitting(false);
+        setIsBuying(false);
       }
       return;
     }
@@ -307,7 +310,7 @@ export default function GigDetailPage() {
     const action = gig?.market_type === 'RENT' ? "Rent" : "Buy";
     if (!confirm(`Are you sure you want to ${action} this item? You will be redirected to payment.`)) return;
 
-    setSubmitting(true);
+    setIsBuying(true);
     try {
       const res = await fetch("/api/payments/create-order", {
         method: "POST",
@@ -325,18 +328,22 @@ export default function GigDetailPage() {
       }
     } catch (err: any) {
       alert(err.message);
-      setSubmitting(false);
+      setIsBuying(false);
     }
   };
 
   const handleInstantBuy = async () => {
-    const res = await fetch("/api/gig/hire", {
+    // FIX: Use dedicated P2P route
+    const res = await fetch("/api/gig/buy-p2p", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gigId: id, workerId: user?.id })
     });
 
-    if (!res.ok) throw new Error("Failed to connect.");
+    if (!res.ok) {
+      const json = await res.json();
+      throw new Error(json.error || "Failed to connect.");
+    }
 
     setContactRevealed(true);
     setShowContactModal(true);
@@ -347,7 +354,7 @@ export default function GigDetailPage() {
   const handleDeliver = async () => {
     if (gig?.listing_type === "MARKET" && gig.market_type === "RENT") {
       if (!confirm("Confirm you have returned the item? This will notify the owner.")) return;
-      setSubmitting(true);
+      setIsCompleting(true);
       try {
         const res = await fetch("/api/rental/return", {
           method: "POST",
@@ -357,13 +364,13 @@ export default function GigDetailPage() {
         if (res.ok) window.location.reload();
         else throw new Error("Failed to mark as returned");
       } catch (e: any) { alert(e.message); }
-      finally { setSubmitting(false); }
+      finally { setIsCompleting(false); }
       return;
     }
 
     if (!gig?.is_physical && !deliveryLink.trim()) return alert("Please enter a submission link.");
     if (!confirm("Notify the poster that the work is finished?")) return;
-    setSubmitting(true);
+    setIsCompleting(true);
     try {
       const res = await fetch("/api/gig/deliver", {
         method: "POST",
@@ -375,7 +382,7 @@ export default function GigDetailPage() {
     } catch (e: any) {
       alert(e.message);
     } finally {
-      setSubmitting(false);
+      setIsCompleting(false);
     }
   };
 
@@ -414,7 +421,7 @@ export default function GigDetailPage() {
 
   const submitReview = async () => {
     if (!rating) return alert("Select a rating.");
-    setSubmitting(true);
+    setIsCompleting(true);
     try {
       const res = await fetch("/api/gig/complete", {
         method: "POST",
@@ -426,12 +433,12 @@ export default function GigDetailPage() {
     } catch (e: any) {
       alert(e.message);
     } finally {
-      setSubmitting(false);
+      setIsCompleting(false);
     }
   };
 
   const confirmReturn = async () => {
-    setSubmitting(true);
+    setIsCompleting(true);
     try {
       const res = await fetch("/api/rental/confirm-return", {
         method: "POST",
@@ -441,12 +448,12 @@ export default function GigDetailPage() {
       if (res.ok) window.location.reload();
       else throw new Error("Confirmation failed");
     } catch (e: any) { alert(e.message); }
-    finally { setSubmitting(false); }
+    finally { setIsCompleting(false); }
   }
 
   const handleCancel = async () => {
     if (!confirm("Are you sure you want to cancel this gig?")) return;
-    setSubmitting(true);
+    setIsCancelling(true);
     try {
       const res = await fetch("/api/escrow/cancel", {
         method: "POST",
@@ -470,7 +477,7 @@ export default function GigDetailPage() {
     } catch (e: any) {
       alert(e.message || "Network error.");
     } finally {
-      setSubmitting(false);
+      setIsCancelling(false);
     }
   };
 

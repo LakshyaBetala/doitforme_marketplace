@@ -42,6 +42,23 @@ export async function POST(req: Request) {
 
         if (escrowError || !escrow) return NextResponse.json({ error: "Escrow record not found" }, { status: 404 });
 
+        // NEW: Verify User is the Assigned Worker
+        // Determine who is allowed to verify. Usually the person RECEIVING the item/service verifies.
+        // For HUSTLE: Poster verifies? No, Worker completes, Poster approves.
+        // For RENT: Renter verifies receipt?
+        // Current Flow: "Handshake Code Brute-Force Vulnerability... ensure only the assigned worker or involved parties"
+        // The most secure is checking against the gig's assigned_worker_id (if worker is picking up)
+        // or poster_id (if poster is receiving return).
+        // Let's check the GIG directly.
+
+        const { data: gig } = await supabaseAdmin.from('gigs').select('assigned_worker_id, poster_id').eq('id', gigId).single();
+
+        // Allow Assigned Worker OR Poster (cover both pickup and return scenarios if handshake used there)
+        // But specifically for the brute force fix requested: "Only the assigned worker can verify this code"
+        if (gig?.assigned_worker_id !== user.id) {
+            return NextResponse.json({ error: "Only the assigned worker can verify this code" }, { status: 403 });
+        }
+
         // 3. Verify Code
         if (escrow.handshake_code !== code) {
             return NextResponse.json({ error: "Invalid Handshake Code" }, { status: 400 });
