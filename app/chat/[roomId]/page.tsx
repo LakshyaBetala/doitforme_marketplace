@@ -146,10 +146,17 @@ export default function ChatRoomPage() {
             `)
             .eq("gig_id", roomId);
 
-          // 2. Implicit "Chatters" (people who messaged but maybe didn't apply yet - rare but possible)
-          // For V3, let's stick to Applications + Assigned Worker
-
           let applicantList = apps?.map((a: any) => ({ ...a.worker, id: a.worker_id })) || [];
+
+          // 1.5 Ensure Assigned Worker is in the list (Critical for P2P/Instant Buy)
+          if (gigData.assigned_worker_id) {
+            const assignedInList = applicantList.find((a: any) => a.id === gigData.assigned_worker_id);
+            if (!assignedInList) {
+              // Fetch them explicitly
+              const { data: assignedWorker } = await supabase.from('users').select('id, name, avatar_url, rating').eq('id', gigData.assigned_worker_id).single();
+              if (assignedWorker) applicantList.push(assignedWorker);
+            }
+          }
 
           // 3. Deduplicate
           const uniqueApps = Array.from(new Map(applicantList.map((item: any) => [item.id, item])).values());
@@ -534,6 +541,13 @@ export default function ChatRoomPage() {
                 <p className="text-white/50 text-xs mb-6">Propose a new price for this item.</p>
 
                 <div className="space-y-4">
+                  <input
+                    type="number"
+                    value={offerAmount}
+                    onChange={(e) => setOfferAmount(e.target.value)}
+                    placeholder="Enter amount (₹)"
+                    className="w-full bg-black/20 text-white p-4 rounded-xl border border-white/10 focus:border-brand-purple outline-none text-lg font-bold"
+                  />
                   {/* Fee Logic Display for Worker (Hustle) */}
                   {!isPoster && gig.listing_type === 'HUSTLE' && (
                     <div className="bg-white/5 rounded-lg p-3 text-xs space-y-1 my-4">
@@ -667,7 +681,7 @@ export default function ChatRoomPage() {
                         </p>
                       </div>
                       {/* Actions for Receiver (Poster) */}
-                      {!isMe && isPoster && gig.status === 'open' && !gig.negotiated_price && (
+                      {!isMe && isPoster && gig.status === 'open' && (
                         <div className="p-2 grid grid-cols-2 gap-2 bg-black/20">
                           <button
                             onClick={() => declineOffer(m)}

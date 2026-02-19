@@ -109,7 +109,14 @@ export default function GigDetailPage() {
   const [isBuying, setIsBuying] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isAccepting, setIsAccepting] = useState<string | null>(null);
+  const [isRejecting, setIsRejecting] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // New Negotiation State
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerPrice, setOfferPrice] = useState("");
+  const [offerPitch, setOfferPitch] = useState("");
 
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -248,6 +255,8 @@ export default function GigDetailPage() {
           setApplicantCount(apps?.length || 0);
 
           if (gigData.status === 'assigned' || gigData.escrow_status === 'HELD') {
+            // Use API to fetch secure data if RLS fails, or just rely on RLS if set up correctly.
+            // For now, let's assuming RLS allows poster to see escrow.
             const { data: escrowData } = await supabase
               .from('escrow')
               .select('handshake_code')
@@ -292,17 +301,9 @@ export default function GigDetailPage() {
 
     // V6 P2P FLOW (No Gateway)
     if (gig?.listing_type === 'MARKET' && gig.market_type !== 'RENT') {
-      const action = gig.market_type === 'REQUEST' ? "Fulfill Request" : "Buy";
-      if (!confirm(`Connect with the poster to ${action}? This involves no online payment.`)) return;
-
-      setIsBuying(true);
-      try {
-        await handleInstantBuy();
-      } catch (e: any) {
-        alert(e.message);
-      } finally {
-        setIsBuying(false);
-      }
+      const action = gig.market_type === 'REQUEST' ? "Fulfill Request" : "Make Offer";
+      // Open Modal instead of confirm
+      setShowOfferModal(true);
       return;
     }
 
@@ -332,23 +333,89 @@ export default function GigDetailPage() {
     }
   };
 
-  const handleInstantBuy = async () => {
-    // FIX: Use dedicated P2P route
-    const res = await fetch("/api/gig/buy-p2p", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ gigId: id, workerId: user?.id })
-    });
+  const handleMakeOffer = async () => {
+    if (!offerPrice || Number(offerPrice) <= 0) return alert("Please enter a valid price.");
 
-    if (!res.ok) {
-      const json = await res.json();
-      throw new Error(json.error || "Failed to connect.");
+    setSubmitting(true);
+    try {
+      // FIX: Use dedicated Apply route
+      const res = await fetch("/api/gig/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gigId: id,
+          offerPitch: offerPitch || "I'm interested in this item!",
+          offerPrice: Number(offerPrice) // Send the negotiated price
+        })
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "Failed to submit offer.");
+      }
+
+      alert("Offer submitted! Waiting for poster approval.");
+      setShowOfferModal(false);
+      setHasApplied(true);
+      // Refresh to show pending state
+      window.location.reload();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setSubmitting(false);
     }
+  };
 
-    setContactRevealed(true);
-    setShowContactModal(true);
-    setGig((prev: any) => ({ ...prev, status: 'assigned', assigned_worker_id: user?.id }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleAcceptOffer = async (applicationId: string) => {
+    if (!confirm("Accept this offer? This will close the gig and reveal contact info.")) return;
+    setIsAccepting(applicationId);
+    try {
+      const res = await fetch("/api/gig/accept-offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicationId })
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || "Failed to accept offer.");
+      }
+
+      const data = await res.json();
+      alert("Offer Accepted! Redirecting to chat...");
+
+      // Redirect to chat with the worker
+      const chatId = `${id}_${data.workerId}`;
+      router.push(`/chat/${id}?chat=${chatId}`);
+
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setIsAccepting(null);
+    }
+  };
+
+  const handleRejectOffer = async (applicationId: string) => {
+    if (!confirm("Reject this offer?")) return;
+    setIsRejecting(applicationId);
+    try {
+      const res = await fetch("/api/gig/reject-offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicationId })
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to reject offer.");
+      }
+
+      // Remove from list or update status
+      setApplications(prev => prev.map(a => a.id === applicationId ? { ...a, status: 'rejected' } : a));
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setIsRejecting(null);
+    }
   };
 
   const handleDeliver = async () => {
@@ -626,7 +693,7 @@ export default function GigDetailPage() {
 
               <div className="pt-2">
                 <button
-                  onClick={() => setShowContactModal(false)}
+                  onClick={() => router.push(`/chat/${id}`)}
                   className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all"
                 >
                   Close & Chat
@@ -1038,12 +1105,22 @@ export default function GigDetailPage() {
                                     <MessageSquare size={16} />
                                   </button>
                                   {status === 'open' && (
-                                    <button
-                                      onClick={() => handleAssign(app.worker_id)}
-                                      className="px-4 py-2 bg-brand-purple text-white text-xs font-bold rounded-xl hover:bg-brand-purple/90 transition-colors"
-                                    >
-                                      Assign
-                                    </button>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => handleAcceptOffer(app.id)}
+                                        disabled={isAccepting === app.id}
+                                        className="px-4 py-2 bg-green-500 text-black text-xs font-bold rounded-xl hover:bg-green-400 transition-colors"
+                                      >
+                                        {isAccepting === app.id ? "..." : "Accept"}
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectOffer(app.id)}
+                                        disabled={isRejecting === app.id}
+                                        className="px-4 py-2 bg-white/5 text-white/60 text-xs font-bold rounded-xl hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                                      >
+                                        {isRejecting === app.id ? "..." : "Reject"}
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -1137,12 +1214,12 @@ export default function GigDetailPage() {
                           onClick={isMarket ? handleBuy : handleApplyNavigation}
                           disabled={isBuying || hasApplied}
                           className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg active:scale-[0.98] ${hasApplied
-                            ? "bg-white/10 text-white/50 cursor-not-allowed"
+                            ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 cursor-not-allowed"
                             : "bg-white text-black hover:bg-white/90 shadow-white/10"
                             }`}
                         >
                           {isBuying ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
-                            hasApplied ? "Applied" : (isMarket ? `${marketAction} Now` : "Apply for Gig")
+                            hasApplied ? "Offer Pending" : (isMarket ? `${marketAction} Now` : "Apply for Gig")
                           )}
                         </button>
                       ) : (
@@ -1273,9 +1350,9 @@ export default function GigDetailPage() {
                 <button
                   onClick={isMarket ? handleBuy : handleApplyNavigation}
                   disabled={isBuying || hasApplied}
-                  className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg ${hasApplied ? "bg-white/10 text-white/50" : "bg-white text-black"}`}
+                  className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg ${hasApplied ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20" : "bg-white text-black"}`}
                 >
-                  {isBuying ? "..." : (hasApplied ? "Applied" : (isMarket ? (gig.market_type === 'RENT' ? "Rent Now" : "Buy Now") : "Apply Now"))}
+                  {isBuying ? "..." : (hasApplied ? "Pending" : (isMarket ? (gig.market_type === 'RENT' ? "Rent Now" : "Buy Now") : "Apply Now"))}
                 </button>
               ) : (
                 <button disabled className="w-full py-3 rounded-xl bg-white/5 text-white/40 font-bold text-sm">

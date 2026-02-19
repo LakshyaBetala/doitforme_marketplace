@@ -27,6 +27,15 @@ export default function ChatPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+    // Offer State
+    const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+    const [offerAmount, setOfferAmount] = useState("");
+
+    // Accept Offer State
+    const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
+    const [offerToAccept, setOfferToAccept] = useState<any>(null);
+    const [isAccepting, setIsAccepting] = useState(false);
+
     // 1. Initialize User
     useEffect(() => {
         supabase.auth.getUser().then(({ data }) => {
@@ -47,7 +56,7 @@ export default function ChatPage() {
                 .from('messages')
                 .select(`
                   *,
-                  gig:gigs!gig_id(title, listing_type, poster_id, assigned_worker_id)
+                  gig:gigs!gig_id(title, listing_type, poster_id, assigned_worker_id, status, price)
                 `)
                 .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
                 .order('created_at', { ascending: false });
@@ -260,7 +269,7 @@ export default function ChatPage() {
 
     // 4. Send Message Logic
     // 4. Send Message Logic
-    const sendMessage = async (e?: React.FormEvent, type: 'text' | 'image' = 'text', contentUrl?: string) => {
+    const sendMessage = async (e?: React.FormEvent, type: 'text' | 'image' | 'offer' = 'text', contentUrl?: string, amount?: number) => {
         if (e) e.preventDefault();
 
         const text = contentUrl || newMessage.trim();
@@ -300,7 +309,8 @@ export default function ChatPage() {
                     receiverId: otherUserId,
                     applicantId: otherUserId, // API key requirement if I am Poster
                     content: text,
-                    type
+                    type,
+                    offerAmount: amount
                 })
             });
 
@@ -319,10 +329,50 @@ export default function ChatPage() {
             }
 
             // Success (Realtime will update UI)
+            if (type === 'offer') {
+                setIsOfferModalOpen(false);
+                setOfferAmount("");
+            }
 
         } catch (err: any) {
             console.error("Send Error:", err);
             alert("Failed to send message. Please try again.");
+        }
+    };
+
+    const sendOffer = () => {
+        const amt = Number(offerAmount);
+        if (!amt || amt <= 0) return;
+        sendMessage(undefined, 'offer', '', amt);
+    };
+
+    const acceptOffer = async (msg: any) => {
+        if (!confirm("Accept this offer? This will close the deal.")) return;
+
+        try {
+            const [gigId, otherUserId] = activeChat ? activeChat.split('_') : [null, null];
+
+            const res = await fetch("/api/gig/accept-offer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    gigId: msg.gig_id || gigId,
+                    workerId: msg.sender_id, // The applicant who made the offer
+                    price: msg.offer_amount
+                })
+            });
+
+            if (res.ok) {
+                alert("Offer accepted! This gig is now assigned.");
+                // Force refresh or optimistic update
+                window.location.reload();
+            } else {
+                const json = await res.json();
+                alert(json.error || "Failed to accept offer");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Network error");
         }
     };
 
@@ -459,6 +509,39 @@ export default function ChatPage() {
                             </div>
                         </div>
 
+                        {/* OFFER MODAL */}
+                        {isOfferModalOpen && (
+                            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                                <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
+                                    <button
+                                        onClick={() => setIsOfferModalOpen(false)}
+                                        className="absolute top-4 right-4 text-white/40 hover:text-white"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                    <h3 className="text-xl font-bold mb-1">Make an Offer</h3>
+                                    <p className="text-white/50 text-xs mb-6">Propose a new price for this item.</p>
+
+                                    <div className="space-y-4">
+                                        <input
+                                            type="number"
+                                            value={offerAmount}
+                                            onChange={(e) => setOfferAmount(e.target.value)}
+                                            placeholder="Enter amount (₹)"
+                                            className="w-full bg-black/20 text-white p-4 rounded-xl border border-white/10 focus:border-brand-purple outline-none text-lg font-bold"
+                                        />
+                                        <button
+                                            onClick={sendOffer}
+                                            disabled={!offerAmount || Number(offerAmount) <= 0}
+                                            className="w-full py-3 bg-brand-purple text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-brand-purple/20"
+                                        >
+                                            Send Offer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Messages Feed */}
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 bg-[#050505] relative">
                             {/* Chat Wallpaper Dots */}
@@ -468,28 +551,68 @@ export default function ChatPage() {
                                 const isMe = msg.sender_id === user?.id;
                                 return (
                                     <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} relative z-10`}>
-                                        <div className={`max-w-[85%] md:max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${isMe
-                                            ? 'bg-[#8825F5] text-white rounded-tr-sm'
-                                            : 'bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-sm'
-                                            }`}>
-                                            {msg.message_type === 'image' ? (
-                                                <div className="relative cursor-zoom-in" onClick={() => setSelectedImage(msg.content)}>
-                                                    <div className="relative w-full aspect-video bg-black/20 rounded-lg overflow-hidden mb-1">
-                                                        <Image
-                                                            src={msg.content}
-                                                            alt="Attachment"
-                                                            fill
-                                                            className="object-cover"
-                                                        />
-                                                    </div>
+                                        {msg.message_type === 'offer' ? (
+                                            // OFFER CARD UI
+                                            <div className={`max-w-[85%] md:max-w-[300px] w-full rounded-2xl overflow-hidden border ${isMe ? 'border-[#8825F5]/50 bg-[#8825F5]/5' : 'border-white/10 bg-[#1A1A24]'}`}>
+                                                <div className="p-4 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                                                    <span className="text-xs font-bold uppercase tracking-wider text-white/60">
+                                                        {isMe ? "You sent an offer" : "Received Offer"}
+                                                    </span>
+                                                    <IndianRupee size={14} className="text-[#8825F5]" />
                                                 </div>
-                                            ) : (
-                                                msg.content
-                                            )}
-                                            <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-white/30'}`}>
-                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                <div className="p-6 flex flex-col items-center gap-2">
+                                                    <div className="text-3xl font-black text-white tracking-tighter">
+                                                        ₹{msg.offer_amount}
+                                                    </div>
+                                                    <p className="text-[10px] text-white/40">
+                                                        {isMe ? "Waiting for response..." : "Proposed Price"}
+                                                    </p>
+                                                </div>
+                                                {/* Actions for Receiver (Poster) */}
+                                                {!isMe && activeConversation?.gig?.poster_id === user.id && activeConversation.gig.status === 'open' && (
+                                                    <div className="p-2 grid grid-cols-2 gap-2 bg-black/20">
+                                                        <button
+                                                            onClick={() => sendMessage(undefined, 'text', `I've declined the offer of ₹${msg.offer_amount}.`)}
+                                                            className="py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20"
+                                                        >
+                                                            Decline
+                                                        </button>
+                                                        <button
+                                                            onClick={() => acceptOffer(msg)}
+                                                            className="py-2 rounded-lg bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20"
+                                                        >
+                                                            Accept
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                <div className="px-4 py-2 text-[9px] text-right opacity-30 font-mono">
+                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div className={`max-w-[85%] md:max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${isMe
+                                                ? 'bg-[#8825F5] text-white rounded-tr-sm'
+                                                : 'bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-sm'
+                                                }`}>
+                                                {msg.message_type === 'image' ? (
+                                                    <div className="relative cursor-zoom-in" onClick={() => setSelectedImage(msg.content)}>
+                                                        <div className="relative w-full aspect-video bg-black/20 rounded-lg overflow-hidden mb-1">
+                                                            <Image
+                                                                src={msg.content}
+                                                                alt="Attachment"
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    msg.content
+                                                )}
+                                                <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-white/30'}`}>
+                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -521,6 +644,20 @@ export default function ChatPage() {
                                     onChange={handleFileUpload}
                                     accept="image/jpeg,image/png,image/webp"
                                 />
+
+                                {/* OFFER BUTTON - Only for Market Gigs & Non-Posters */}
+                                {activeConversation?.gig?.listing_type === 'MARKET' && activeConversation.gig.poster_id !== user.id && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsOfferModalOpen(true)}
+                                        disabled={isLimitReached}
+                                        className="p-3 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-green-400 hover:text-green-300 transition-colors border border-white/10 disabled:opacity-50"
+                                        title="Make an Offer"
+                                    >
+                                        <IndianRupee size={18} />
+                                    </button>
+                                )}
+
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
