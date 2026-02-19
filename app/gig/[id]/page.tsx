@@ -26,11 +26,11 @@ import {
   Zap,
   ShoppingBag,
   Briefcase,
-  ArrowUpRight, // Added ArrowUpRight
-  FileText, // Added FileText
-  Download, // Added Download
-  Github, // Added Github Icon
-  HelpCircle // Added HelpCircle
+  ArrowUpRight,
+  FileText,
+  Download,
+  Github,
+  HelpCircle
 } from "lucide-react";
 
 // --- UTILITY ---
@@ -62,10 +62,10 @@ interface GigData {
   images?: string[];
   dispute_reason?: string;
   deadline?: string;
-  github_link?: string; // Added optional github_link
+  github_link?: string;
   escrow_status?: string;
   listing_type?: "HUSTLE" | "MARKET";
-  market_type?: "SELL" | "RENT" | "REQUEST"; // Added REQUEST
+  market_type?: "SELL" | "RENT" | "REQUEST";
   security_deposit?: number;
   item_condition?: string;
   poster_email?: string;
@@ -109,7 +109,7 @@ export default function GigDetailPage() {
   const [isBuying, setIsBuying] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [submitting, setSubmitting] = useState(false); // Kept for backward compatibility if needed
+  const [submitting, setSubmitting] = useState(false);
 
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -663,8 +663,8 @@ export default function GigDetailPage() {
                 className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 h-24 outline-none text-white resize-none"
               />
 
-              <button onClick={confirmReturn} disabled={submitting} className="w-full py-4 bg-brand-purple text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-                {submitting ? <Loader2 className="animate-spin" /> : <CheckCircle className="w-5 h-5" />} Process Return
+              <button onClick={confirmReturn} disabled={isCompleting} className="w-full py-4 bg-brand-purple text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+                {isCompleting ? <Loader2 className="animate-spin" /> : <CheckCircle className="w-5 h-5" />} Process Return
               </button>
             </div>
           </div>
@@ -683,8 +683,8 @@ export default function GigDetailPage() {
               ))}
             </div>
             <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Review the work..." className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 mb-6 h-32 outline-none text-white" />
-            <button onClick={submitReview} disabled={submitting} className="w-full py-4 bg-brand-purple text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-              {submitting ? <Loader2 className="animate-spin" /> : <CheckCircle className="w-5 h-5" />} Approve & Release Funds
+            <button onClick={submitReview} disabled={isCompleting} className="w-full py-4 bg-brand-purple text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
+              {isCompleting ? <Loader2 className="animate-spin" /> : <CheckCircle className="w-5 h-5" />} Approve & Release Funds
             </button>
           </div>
         </div>
@@ -1080,10 +1080,10 @@ export default function GigDetailPage() {
                         <>
                           <button
                             onClick={handleComplete}
-                            disabled={submitting}
+                            disabled={isCompleting}
                             className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3"
                           >
-                            {submitting ? "Processing..." : (
+                            {isCompleting ? "Processing..." : (
                               isMarket
                                 ? (gig.market_type === "RENT" ? "Confirm Return" : "Confirm Delivery")
                                 : "Mark as Completed"
@@ -1092,10 +1092,10 @@ export default function GigDetailPage() {
 
                           <button
                             onClick={handleCancel}
-                            disabled={submitting}
+                            disabled={isCancelling}
                             className="w-full py-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-sm transition-all"
                           >
-                            {submitting ? "Processing..." : "Request Cancellation"}
+                            {isCancelling ? "Processing..." : "Request Cancellation"}
                           </button>
                         </>
                       )}
@@ -1103,10 +1103,10 @@ export default function GigDetailPage() {
                       {status === "open" && (
                         <button
                           onClick={handleCancel}
-                          disabled={submitting}
+                          disabled={isCancelling}
                           className="w-full py-4 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-lg transition-all"
                         >
-                          {submitting ? "Cancelling..." : "Cancel Gig"}
+                          {isCancelling ? "Cancelling..." : "Cancel Gig"}
                         </button>
                       )}
 
@@ -1128,13 +1128,13 @@ export default function GigDetailPage() {
                       {status === "open" ? (
                         <button
                           onClick={isMarket ? handleBuy : handleApplyNavigation}
-                          disabled={submitting || hasApplied}
+                          disabled={isBuying || hasApplied}
                           className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg active:scale-[0.98] ${hasApplied
                             ? "bg-white/10 text-white/50 cursor-not-allowed"
                             : "bg-white text-black hover:bg-white/90 shadow-white/10"
                             }`}
                         >
-                          {submitting ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
+                          {isBuying ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
                             hasApplied ? "Applied" : (isMarket ? `${marketAction} Now` : "Apply for Gig")
                           )}
                         </button>
@@ -1154,10 +1154,10 @@ export default function GigDetailPage() {
                           </div>
                           <button
                             onClick={handleDeliver}
-                            disabled={submitting}
+                            disabled={isCompleting}
                             className="w-full py-4 rounded-2xl bg-white text-black font-bold text-lg transition-all shadow-lg hover:bg-gray-200"
                           >
-                            {submitting ? "Processing..." : (
+                            {isCompleting ? "Processing..." : (
                               isMarket && gig.market_type === 'RENT' ? "Mark Returned" : "Submit Work"
                             )}
                           </button>
@@ -1245,12 +1245,12 @@ export default function GigDetailPage() {
           <div className="flex-1">
             {isOwner ? (
               status === 'open' ? (
-                <button onClick={handleCancel} disabled={submitting} className="w-full py-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 font-bold text-sm">
-                  {submitting ? "..." : "Cancel"}
+                <button onClick={handleCancel} disabled={isCancelling} className="w-full py-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 font-bold text-sm">
+                  {isCancelling ? "..." : "Cancel"}
                 </button>
               ) : (status === 'assigned' || status === 'delivered') ? (
-                <button onClick={handleComplete} disabled={submitting} className="w-full py-3 rounded-xl bg-green-500 text-black font-bold text-sm shadow-lg shadow-green-500/20">
-                  {submitting ? "..." : "Complete"}
+                <button onClick={handleComplete} disabled={isCompleting} className="w-full py-3 rounded-xl bg-green-500 text-black font-bold text-sm shadow-lg shadow-green-500/20">
+                  {isCompleting ? "..." : "Complete"}
                 </button>
               ) : (
                 <button disabled className="w-full py-3 rounded-xl bg-white/5 text-white/40 font-bold text-sm">
@@ -1259,16 +1259,16 @@ export default function GigDetailPage() {
               )
             ) : (
               isWorker && status === 'assigned' ? (
-                <button onClick={handleDeliver} disabled={submitting} className="w-full py-3 rounded-xl bg-white text-black font-bold text-sm shadow-lg">
-                  {submitting ? "..." : (isMarket && gig.market_type === 'RENT' ? "Returned" : "Submit")}
+                <button onClick={handleDeliver} disabled={isCompleting} className="w-full py-3 rounded-xl bg-white text-black font-bold text-sm shadow-lg">
+                  {isCompleting ? "..." : (isMarket && gig.market_type === 'RENT' ? "Returned" : "Submit")}
                 </button>
               ) : status === 'open' ? (
                 <button
                   onClick={isMarket ? handleBuy : handleApplyNavigation}
-                  disabled={submitting || hasApplied}
+                  disabled={isBuying || hasApplied}
                   className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg ${hasApplied ? "bg-white/10 text-white/50" : "bg-white text-black"}`}
                 >
-                  {submitting ? "..." : (hasApplied ? "Applied" : (isMarket ? (gig.market_type === 'RENT' ? "Rent Now" : "Buy Now") : "Apply Now"))}
+                  {isBuying ? "..." : (hasApplied ? "Applied" : (isMarket ? (gig.market_type === 'RENT' ? "Rent Now" : "Buy Now") : "Apply Now"))}
                 </button>
               ) : (
                 <button disabled className="w-full py-3 rounded-xl bg-white/5 text-white/40 font-bold text-sm">
