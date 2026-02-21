@@ -110,12 +110,7 @@ export async function POST(req: Request) {
       let limit = 2; // Default for HUSTLE
 
       if (gig.listing_type === 'MARKET') {
-        if (gig.market_type === 'RENT') {
-          limit = 5;
-        } else {
-          // SELL, FREE, BUY_REQUEST
-          limit = 10;
-        }
+        limit = 10; // Unified Limit for V6 (Sell, Rent, Request)
       }
 
       if ((count || 0) >= limit) {
@@ -127,9 +122,10 @@ export async function POST(req: Request) {
     }
 
     // 5. Hard Limit Check (Already done above)
-    // 5.5 Hybrid AI Moderation (Skip for pure offers with no content?)
+    // 5.5 Hybrid AI Moderation
+    // Skip moderation for images and offers
     let flagged = false;
-    if (type === 'text' && content.trim()) {
+    if (type === 'text' && content?.trim()) {
       const modResult = await analyzeIntentAI(content);
       if (!modResult.success) {
         return NextResponse.json({
@@ -148,8 +144,8 @@ export async function POST(req: Request) {
         gig_id: gigId,
         sender_id: user.id,
         receiver_id: receiverId, // CRITICAL FIX
-        content: content?.trim() || (type === 'offer' ? `Offer: ₹${offerAmount}` : ''),
-        message_type: type, // FIXED: Mapped 'type' from payload to 'message_type' column
+        content: type === 'image' ? content : (content?.trim() || (type === 'offer' ? `Offer: ₹${offerAmount}` : '')),
+        message_type: type, // Matches 'text', 'image', 'offer'
         offer_amount: type === 'offer' ? offerAmount : null,
         is_pre_agreement: isPreAgreement,
         flagged_for_review: flagged

@@ -44,8 +44,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Gig not found or invalid" }, { status: 404 });
     }
 
+    // NEW: Check for Negotiated Price in Applications
+    const { data: application } = await supabase
+      .from("applications")
+      .select("negotiated_price")
+      .eq("gig_id", gigId)
+      .eq("worker_id", workerId)
+      .single();
+
     // 3. Calculate Total Amount (Including 2% Gateway Fee)
-    const basePrice = Number(gig.price);
+    // Use negotiated price if available, otherwise base gig price
+    const basePrice = application?.negotiated_price ? Number(application.negotiated_price) : Number(gig.price);
     const deposit = Number(gig.security_deposit) || 0;
     const subtotal = basePrice + deposit;
 
@@ -57,7 +66,8 @@ export async function POST(req: Request) {
 
     // FIX: Return URL must point to the FRONTEND page, not the API
     // We add query params so the frontend knows to verify the payment on load
-    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/gig/${gigId}?payment=verify&order_id={order_id}&worker_id=${workerId}`;
+    // FIX: Encode workerId to prevent URL breakage
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL}/gig/${gigId}?payment=verify&order_id={order_id}&worker_id=${encodeURIComponent(workerId)}`;
 
     const payload = {
       order_amount: totalAmountToCharge,

@@ -24,7 +24,9 @@ import {
   ShoppingBag as ShoppingBagIcon,
   ShieldCheck,
   Camera,
-  Maximize2
+  Maximize2,
+  FileText, // Added for file icon
+  Plus
 } from "lucide-react";
 
 import { useModeration } from "@/app/hooks/useModeration";
@@ -56,10 +58,18 @@ export default function PostGigPage() {
   const [deadlineTime, setDeadlineTime] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [githubLink, setGithubLink] = useState(""); // Added GitHub Link State
 
   // Lightbox State
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Hydration Fix: minDate for deadline
+  const [minDate, setMinDate] = useState("");
+
+  useEffect(() => {
+    setMinDate(new Date().toISOString().split("T")[0]);
+  }, []);
 
   // UI States
   const [loading, setLoading] = useState(false);
@@ -68,7 +78,7 @@ export default function PostGigPage() {
 
   // --- NEW STATES FOR CTO PLAN ---
   const [listingType, setListingType] = useState<"HUSTLE" | "MARKET" | null>(null);
-  const [marketType, setMarketType] = useState<"SELL" | "RENT">("SELL");
+  const [marketType, setMarketType] = useState<"SELL" | "RENT" | "REQUEST">("SELL");
   const [itemCondition, setItemCondition] = useState<"NEW" | "LIKE_NEW" | "GOOD" | "FAIR">("GOOD");
 
   // --- AUTH CHECK ---
@@ -99,7 +109,13 @@ export default function PostGigPage() {
       return;
     }
 
-    const newFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const newFiles = Array.from(files).filter((f) => {
+      // Allow images and documents for HUSTLE
+      if (listingType === "HUSTLE") {
+        return f.type.startsWith("image/") || f.type === "application/pdf" || f.type.includes("word") || f.type.includes("document");
+      }
+      return f.type.startsWith("image/");
+    });
 
     // Create local previews for immediate UI feedback
     const newPreviews = newFiles.map(file => URL.createObjectURL(file));
@@ -140,7 +156,9 @@ export default function PostGigPage() {
 
     // Specific validation for MARKET
     if (listingType === "MARKET") {
-      if (images.length === 0) return "Please upload at least one image for your item.";
+      // Images optional for REQUEST
+      if (marketType !== "REQUEST" && images.length === 0) return "Please upload at least one image for your item.";
+
       if (marketType === "RENT" && (!securityDeposit || Number(securityDeposit) < 0)) {
         return "Please enter a valid security deposit (can be 0).";
       }
@@ -242,6 +260,7 @@ export default function PostGigPage() {
         location: (listingType === "MARKET" || mode !== "Online") ? (location.trim() || "Campus") : null, // Default location for market items
         images: uploadedPaths,
         deadline: listingType === "HUSTLE" ? deadlineISO : null, // Only for hustles
+        github_link: (listingType === "HUSTLE" && githubLink.trim()) ? githubLink.trim() : null, // Added GitHub Link
         status: "open",
         created_at: new Date().toISOString()
       };
@@ -383,20 +402,27 @@ export default function PostGigPage() {
 
           {/* MARKET TOGGLE */}
           {listingType === "MARKET" && (
-            <div className="flex gap-4 border-b border-white/5 pb-8">
-              <label className="flex items-center gap-3 cursor-pointer group">
+            <div className="flex gap-4 border-b border-white/5 pb-8 overflow-x-auto">
+              <label className="flex items-center gap-3 cursor-pointer group shrink-0">
                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${marketType === 'SELL' ? 'border-brand-pink' : 'border-white/20 group-hover:border-white/40'}`}>
                   {marketType === 'SELL' && <div className="w-2 h-2 rounded-full bg-brand-pink" />}
                 </div>
                 <input type="radio" name="marketType" className="hidden" onClick={() => setMarketType('SELL')} />
                 <span className={`text-sm ${marketType === 'SELL' ? 'text-white' : 'text-white/40'}`}>Sell Item</span>
               </label>
-              <label className="flex items-center gap-3 cursor-pointer group">
+              <label className="flex items-center gap-3 cursor-pointer group shrink-0">
                 <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${marketType === 'RENT' ? 'border-brand-purple' : 'border-white/20 group-hover:border-white/40'}`}>
                   {marketType === 'RENT' && <div className="w-2 h-2 rounded-full bg-brand-purple" />}
                 </div>
                 <input type="radio" name="marketType" className="hidden" onClick={() => setMarketType('RENT')} />
                 <span className={`text-sm ${marketType === 'RENT' ? 'text-white' : 'text-white/40'}`}>Rent Out</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer group shrink-0">
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${marketType === 'REQUEST' ? 'border-blue-400' : 'border-white/20 group-hover:border-white/40'}`}>
+                  {marketType === 'REQUEST' && <div className="w-2 h-2 rounded-full bg-blue-400" />}
+                </div>
+                <input type="radio" name="marketType" className="hidden" onClick={() => setMarketType('REQUEST')} />
+                <span className={`text-sm ${marketType === 'REQUEST' ? 'text-white' : 'text-white/40'}`}>Request Item</span>
               </label>
             </div>
           )}
@@ -410,7 +436,7 @@ export default function PostGigPage() {
                 value={title}
                 onChange={(e) => { setTitle(e.target.value); setError(""); }}
                 maxLength={80}
-                placeholder={listingType === "MARKET" ? "e.g. Engineering Mathematics Book" : "e.g. Need help moving boxes"}
+                placeholder={listingType === "MARKET" ? (marketType === "REQUEST" ? "e.g. Need a Scientific Calculator" : "e.g. Engineering Mathematics Book") : "e.g. Need help moving boxes"}
               />
             </div>
 
@@ -424,6 +450,22 @@ export default function PostGigPage() {
                 placeholder="Provide clear details about what you need or what you're listing..."
               />
             </div>
+
+            {/* GitHub Link (Optional) - Only for HUSTLE */}
+            {listingType === "HUSTLE" && (
+              <div className="space-y-1">
+                <label className="block text-xs font-medium text-white/40 uppercase tracking-wider flex items-center gap-2">
+                  GitHub Repository <span className="text-[10px] text-white/20 normal-case">(Optional)</span>
+                </label>
+                <input
+                  type="url"
+                  className="w-full bg-transparent border-b border-white/10 py-2 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-white/40 transition-colors"
+                  value={githubLink}
+                  onChange={(e) => setGithubLink(e.target.value)}
+                  placeholder="https://github.com/username/repo"
+                />
+              </div>
+            )}
 
             {/* MARKET: Condition */}
             {listingType === "MARKET" && (
@@ -458,7 +500,9 @@ export default function PostGigPage() {
             <div className="space-y-6">
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-white/40 uppercase tracking-wider">
-                  {listingType === "MARKET" ? (marketType === "RENT" ? "Rental Fee (Per Day)" : "Price") : "Budget"}
+                  {listingType === "MARKET"
+                    ? (marketType === "RENT" ? "Rental Fee (Per Day)" : marketType === "REQUEST" ? "My Budget" : "Price")
+                    : "Budget"}
                 </label>
                 <div className="flex items-center gap-1">
                   <span className="text-xl text-white/40">₹</span>
@@ -640,7 +684,7 @@ export default function PostGigPage() {
                         style={{ colorScheme: "dark" }} // Fix for black text on dark bg
                         className="bg-transparent border-b border-white/10 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition-colors"
                         value={deadlineDate}
-                        min={new Date().toISOString().split("T")[0]}
+                        min={minDate}
                         onChange={(e) => setDeadlineDate(e.target.value)}
                       />
                       <input
@@ -677,7 +721,7 @@ export default function PostGigPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept={listingType === 'HUSTLE' ? "image/*, .pdf, .doc, .docx" : "image/*"}
               multiple
               className="hidden"
               onChange={onFilesChange}
@@ -694,29 +738,45 @@ export default function PostGigPage() {
 
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {/* Image Previews */}
-              {imagePreviews.map((src, i) => (
-                <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/10 shrink-0 group">
-                  <Image src={src} alt="Preview" fill className="object-cover" />
+              {imagePreviews.map((src, i) => {
+                const file = images[i];
+                const isImage = file?.type.startsWith("image/");
 
-                  {/* Remove Button */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); removeImage(i); }}
-                    className="absolute top-1 right-1 bg-black/50 p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                return (
+                  <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-white/10 shrink-0 group bg-[#1A1A24] flex items-center justify-center">
+                    {isImage ? (
+                      <Image src={src} alt="Preview" fill className="object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-2 text-center">
+                        <FileText className="w-8 h-8 text-white/60 mb-1" />
+                        <span className="text-[8px] text-white/40 leading-tight line-clamp-2 px-1 break-all">
+                          {file?.name}
+                        </span>
+                      </div>
+                    )}
 
-                  {/* View Button overlay */}
-                  <button
-                    type="button"
-                    onClick={() => openLightbox(i)}
-                    className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Maximize2 className="w-5 h-5 text-white drop-shadow-md" />
-                  </button>
-                </div>
-              ))}
+                    {/* Remove Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeImage(i); }}
+                      className="absolute top-1 right-1 bg-black/50 p-1 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+
+                    {/* View Button overlay (only checks, no lightbox for docs yet or just generic open?) */}
+                    {isImage && (
+                      <button
+                        type="button"
+                        onClick={() => openLightbox(i)}
+                        className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Maximize2 className="w-5 h-5 text-white drop-shadow-md" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
 
               {/* Add More Placeholder (if < 5) */}
               {images.length < 5 && (
@@ -761,12 +821,3 @@ export default function PostGigPage() {
   );
 }
 
-// Icon for add button
-function Plus({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M5 12h14" />
-      <path d="M12 5v14" />
-    </svg>
-  )
-}

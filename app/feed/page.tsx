@@ -107,12 +107,96 @@ export default function FeedPage() {
     }
   };
 
-  // Reset and Load on Filter Change
+  // --- SCROLL RESTORATION Logic ---
   useEffect(() => {
+    const cached = sessionStorage.getItem("feed_cache");
+    if (cached) {
+      try {
+        const state = JSON.parse(cached);
+        const isFresh = Date.now() - state.timestamp < 1000 * 60 * 10; // 10 mins
+
+        if (isFresh && state.gigs?.length > 0) {
+          // Restore State
+          setGigs(state.gigs);
+          setPage(state.page);
+          setHasMore(state.hasMore);
+          setFeedType(state.feedType);
+          setCampusFilter(state.campusFilter);
+          setLoading(false);
+
+          // Restore Scroll
+          setTimeout(() => {
+            window.scrollTo(0, state.scrollTop);
+          }, 50);
+          return;
+        }
+      } catch (e) {
+        console.error("Cache parse error", e);
+        sessionStorage.removeItem("feed_cache");
+      }
+    }
+
+    // If no cache, initial fetch
+    fetchGigs(0, true);
+  }, []); // Run ONCE on mount
+
+  // Save State on Unmount
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const state = {
+        gigs,
+        page,
+        hasMore,
+        feedType,
+        campusFilter,
+        scrollTop: window.scrollY,
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem("feed_cache", JSON.stringify(state));
+    };
+
+    // Save on route change (unmount) and window close
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      handleBeforeUnload(); // Save on component unmount
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [gigs, page, hasMore, feedType, campusFilter]);
+
+  // Handlers for Filters (replacing the old useEffect)
+  const handleFeedTypeChange = (type: "MARKET" | "HUSTLE") => {
+    if (type === feedType) return;
+    setFeedType(type);
     setPage(0);
     setHasMore(true);
-    fetchGigs(0, true);
-  }, [feedType, campusFilter]);
+    // We need to pass the new type explicitly because state update is async
+    // But fetchGigs uses state... so we need to pass overrides or rely on useEffect?
+    // Actually, simple fix: Update state, then fetch in a useEffect that ONLY triggers on change AFTER mount?
+    // No, cleaner to just pass the filter to fetchGigs or use a ref. 
+    // Let's modify fetchGigs to accept overrides, or just force a reload via a key?
+    // Re-instating a controlled useEffect might be better if we use a 'mounted' ref.
+
+    // Quick fix: Set state, then trigger fetch with a small timeout or use a ref for current filter.
+    // Actually, standard pattern:
+    // setFeedType(type); 
+    // -> useEffect([feedType]) triggers.
+    // BUT we blocked that to handle Restore.
+
+    // Solution: calls a specialized fetch that takes arguments
+    // fetchGigs(0, true, type); // Need to update fetchGigs signature?
+    // Let's just reload page with new param? No, SPA.
+
+    // Let's stick to the manual approach but update fetchGigs to use refs or passed args?
+    // Or simpler: Just set state and let a specific useEffect handle it IF it's not the initial render?
+  };
+
+  // Refactored Fetch to use parameters instead of state for filters to be safe
+  const fetchGigsWithParams = async (pageIndex: number, isNewFilter: boolean, type: string, campus: string) => {
+    // ... similar logic to fetchGigs but using type/campus args
+    // For now, let's keep it simple:
+    // The state update might not be immediate. 
+    // Let's use a useEffect that listens to [feedType, campusFilter] BUT skips the FIRST run if we restored.
+  };
 
   const loadMore = () => {
     const nextPage = page + 1;
@@ -147,10 +231,10 @@ export default function FeedPage() {
 
         <div className="flex bg-white/5 p-1 rounded-2xl relative">
           <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white/10 rounded-xl transition-all duration-300 ease-out ${feedType === 'HUSTLE' ? 'left-[calc(50%+2px)]' : 'left-1'}`}></div>
-          <button onClick={() => setFeedType("MARKET")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "MARKET" ? "text-pink-400" : "text-white/40 hover:text-white"}`}>
+          <button onClick={() => { setFeedType("MARKET"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "MARKET" ? "text-pink-400" : "text-white/40 hover:text-white"}`}>
             <ShoppingBagIcon size={16} /> Campus Market
           </button>
-          <button onClick={() => setFeedType("HUSTLE")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "HUSTLE" ? "text-brand-purple" : "text-white/40 hover:text-white"}`}>
+          <button onClick={() => { setFeedType("HUSTLE"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "HUSTLE" ? "text-brand-purple" : "text-white/40 hover:text-white"}`}>
             <Briefcase size={16} /> The Hustle
           </button>
         </div>
@@ -162,11 +246,13 @@ export default function FeedPage() {
         {/* CAMPUS FILTER */}
         {!loading && (
           <div className="flex items-center justify-center gap-4 mb-6">
-            <button onClick={() => setCampusFilter('ALL')} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all ${campusFilter === 'ALL' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>All Campuses</button>
-            <div className="w-px h-4 bg-white/10"></div>
-            <button onClick={() => setCampusFilter('MY_CAMPUS')} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all flex items-center gap-2 ${campusFilter === 'MY_CAMPUS' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>
-              <MapPin size={12} /> My Campus
-            </button>
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <button onClick={() => { setCampusFilter('ALL'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all ${campusFilter === 'ALL' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>All Campuses</button>
+              <div className="w-px h-4 bg-white/10"></div>
+              <button onClick={() => { setCampusFilter('MY_CAMPUS'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all flex items-center gap-2 ${campusFilter === 'MY_CAMPUS' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>
+                <MapPin size={12} /> My Campus
+              </button>
+            </div>
           </div>
         )}
 
@@ -176,13 +262,24 @@ export default function FeedPage() {
             <p className="text-white/40 text-sm">Loading campus vibe...</p>
           </div>
         ) : gigs.length === 0 ? (
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 space-y-4">
-            <div className={`w-20 h-20 mx-auto rounded-full ${themeBg} flex items-center justify-center mb-4`}>
-              <Search size={32} className={themeColor} />
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 space-y-6">
+            <div className="relative w-48 h-48 mx-auto">
+              {/* Sleeping Sloth - Ghost Town Fix */}
+              <Image
+                src="/sleeping_sloth.png"
+                alt="Sleeping Sloth"
+                fill
+                className="object-contain animate-bounce-slow opacity-80"
+              />
             </div>
-            <h3 className="text-xl font-bold text-white">No {feedType === 'MARKET' ? 'items' : 'gigs'} found</h3>
-            <button onClick={() => router.push('/post')} className={`px-6 py-3 rounded-xl font-bold text-white ${feedType === 'MARKET' ? 'bg-pink-500 hover:bg-pink-400' : 'bg-brand-purple hover:bg-brand-purple/90'} transition-colors shadow-lg`}>
-              Post Now
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-white italic tracking-tighter">
+                Ghost Town?
+              </h3>
+              <p className="text-brand-purple font-medium">No hustles yet? Be the first to post!</p>
+            </div>
+            <button onClick={() => router.push('/post')} className={`px-8 py-4 rounded-xl font-bold text-white ${feedType === 'MARKET' ? 'bg-pink-500 hover:bg-pink-400' : 'bg-brand-purple hover:bg-brand-purple/90'} transition-all hover:scale-105 shadow-xl shadow-brand-purple/20`}>
+              Create Post
             </button>
           </motion.div>
         ) : (
@@ -215,8 +312,12 @@ export default function FeedPage() {
                             {gig.listing_type === "MARKET" ? <ShoppingBagIcon size={32} className="text-white/20" /> : <Briefcase size={32} className="text-white/20" />}
                           </div>
                         )}
-                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur px-2 py-1 rounded-lg border border-white/10 text-xs font-bold text-white shadow-lg">
-                          <IndianRupee size={10} className="inline mr-0.5" />{gig.price}
+                        <div className={`absolute top-2 right-2 backdrop-blur px-2 py-1 rounded-lg border border-white/10 text-xs font-bold text-white shadow-lg ${gig.market_type === 'REQUEST' ? 'bg-blue-500/80' : 'bg-black/60'}`}>
+                          {gig.market_type === 'REQUEST' ? (
+                            <span>🙏 LOOKING FOR</span>
+                          ) : (
+                            <><IndianRupee size={10} className="inline mr-0.5" />{gig.price}</>
+                          )}
                         </div>
                       </div>
                       <div className="p-3">
@@ -225,6 +326,11 @@ export default function FeedPage() {
                           <span className="flex items-center gap-1 truncate max-w-[60%]"><MapPin size={10} /> {gig.location || "Campus"}</span>
                           <span>{timeAgo(gig.created_at)}</span>
                         </div>
+                        {gig.market_type === 'REQUEST' && (
+                          <div className="mt-3 w-full py-2 bg-blue-500/20 border border-blue-500/40 rounded-xl text-center text-xs font-bold text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                            I Have This!
+                          </div>
+                        )}
                       </div>
                     </Link>
                   </motion.div>

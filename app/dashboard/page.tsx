@@ -506,7 +506,7 @@ function DashboardSkeleton() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-purple/20 rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
 
       {/* Floating Logo */}
-      <div className="relative w-32 h-32 md:w-40 md:h-40 mb-6 animate-float z-10">
+      <div className="relative w-28 h-28 md:w-36 md:h-36 mb-6 animate-float z-10">
         <Image
           src="/sloth.png"
           alt="Loading..."

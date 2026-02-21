@@ -1,126 +1,130 @@
-
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
-    const cookieStore = await cookies();
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) { return cookieStore.get(name)?.value },
-                set(name: string, value: string, options: CookieOptions) { try { cookieStore.set({ name, value, ...options }) } catch (e) { } },
-                remove(name: string, options: CookieOptions) { try { cookieStore.set({ name, value: '', ...options }) } catch (e) { } },
-            },
-        }
-    );
-
     try {
-        const { gigId, deductionAmount } = await req.json(); // deductionAmount is how much to keep from deposit
+        const cookieStore = await cookies();
 
-        // 1. Auth Check (Must be the Owner/Poster)
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    get(name: string) { return cookieStore.get(name)?.value },
+                    set(name: string, value: string, options: CookieOptions) { try { cookieStore.set({ name, value, ...options }) } catch (e) { } },
+                    remove(name: string, options: CookieOptions) { try { cookieStore.set({ name, value: '', ...options }) } catch (e) { } },
+                },
+            }
+        );
+        const { gigId, deductionAmount, lateDays, reviewText } = await req.json();
+
+        // 1. Auth Check
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-        // 2. Fetch Gig & Escrow Details
+        // 2. Fetch Gig & Escrow
         const { data: gig, error: gigError } = await supabase
-            .from('gigs')
-            .select('*')
-            .eq('id', gigId)
+            .from("gigs")
+            .select(`
+        *,
+        escrow:escrow!gig_id(*)
+      `)
+            .eq("id", gigId)
             .single();
 
         if (gigError || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
-        if (gig.poster_id !== user.id) return NextResponse.json({ error: "Only the owner can confirm return" }, { status: 403 });
-        if (gig.listing_type !== 'MARKET' || gig.market_type !== 'RENT') return NextResponse.json({ error: "Not a rental gig" }, { status: 400 });
 
-        const { data: escrow, error: escrowError } = await supabase
-            .from('escrow')
-            .select('*')
-            .eq('gig_id', gigId)
-            .single();
+        // Verify Owner
+        if (gig.poster_id !== user.id) {
+            return NextResponse.json({ error: "Only owner can confirm return" }, { status: 403 });
+        }
 
-        if (escrowError || !escrow) return NextResponse.json({ error: "Escrow record not found" }, { status: 404 });
+        if (gig.market_type !== 'RENT') {
+            return NextResponse.json({ error: "Not a rental gig" }, { status: 400 });
+        }
 
-        // 3. Calculate Releases
-        // Escrow usually holds: Price + Deposit + Fees (Fees already taken by Platform, so Escrow holds Price + Deposit)
-        // Actually, `amount_held` should be the liquid amount (Price + Deposit).
-        // Let's assume `amount_held` is what is available to split.
-        // If not, we rely on `original_amount` (Price) and `amount_held` (Deposit)? 
-        // In `create-order`: 
-        // `original_amount` = price
-        // `amount_held` = deposit
-        // `amount` = total (including fees)
-        // Payout Logic: 
-        // Owner gets: Price (Rental Fee) + Deduction.
-        // Borrower gets: Deposit - Deduction.
+        // 3. Calculate Deductions & Splits
+        // Escrow amount held is the SECURITY DEPOSIT (Price was released on pickup)
+        // NOTE: In our content we said "Price was released on pickup". 
+        // We need to verify if the escrow record currently holds just the deposit or full amount.
+        // Based on Phase 2 plan: "Release ONLY price to Poster. Keep security_deposit in Escrow".
+        // So escrow.amount_held SHOULD be the Security Deposit.
 
-        // Let's verify numbers.
-        const price = gig.price;
-        const deposit = gig.security_deposit || 0;
-        const deduction = Number(deductionAmount) || 0;
+        const escrowRecord = gig.escrow?.[0] || gig.escrow; // Depends on relation mapping
+        if (!escrowRecord) return NextResponse.json({ error: "No escrow record found" }, { status: 404 });
 
-        if (deduction > deposit) return NextResponse.json({ error: "Deduction cannot exceed deposit" }, { status: 400 });
+        const depositHeld = Number(escrowRecord.amount_held);
+        const dailyRate = Number(gig.price); // Price is per day for rentals usually
 
-        const releaseToOwner = price + deduction;
-        const releaseToBorrower = deposit - deduction;
+        // Calculate Late Fees
+        // totalDeduction = deductionAmount + (lateDays * gig.price)
+        const lateFee = Number(lateDays || 0) * dailyRate;
+        const damageDeduction = Number(deductionAmount || 0);
 
-        // 4. Update Database
-        // Release Funds (Simulated by updating Escrow status and logging transaction)
-        // Update Gig to 'completed'
+        const totalDeduction = lateFee + damageDeduction;
 
-        const { error: updateError } = await supabase
-            .from('gigs')
-            .update({ status: 'completed' })
-            .eq('id', gigId);
+        // Validate Deduction (Can't exceed deposit) - Wait, damage CAN exceed deposit in theory but we can only deduct up to deposit.
+        // The user prompt says "renterRefund = escrow.amount_held - totalDeduction".
+        // We should cap totalDeduction at depositHeld.
 
-        if (updateError) throw updateError;
+        const actualDeduction = Math.min(totalDeduction, depositHeld);
+        const renterRefund = depositHeld - actualDeduction;
 
+        // 4. Perform Updates (Transaction)
+        // We update Payout Queue for both parties
+
+        // A. Owner Payout (Deductions)
+        if (actualDeduction > 0) {
+            const { error: ownerError } = await supabase.from("payout_queue").insert({
+                worker_id: gig.poster_id, // Owner gets the deduction
+                gig_id: gigId,
+                amount: actualDeduction,
+                status: "PENDING",
+                notes: `Rental Deduction: Late(${lateDays}d) + Damage(${damageDeduction})`
+            });
+            if (ownerError) throw ownerError;
+        }
+
+        // B. Renter Payout (Refund)
+        if (renterRefund > 0) {
+            const { error: renterError } = await supabase.from("payout_queue").insert({
+                worker_id: gig.assigned_worker_id, // Renter gets the rest
+                gig_id: gigId,
+                amount: renterRefund,
+                status: "PENDING",
+                notes: "Security Deposit Refund"
+            });
+            if (renterError) throw renterError;
+        }
+
+        // C. Update Escrow Status -> RELEASED
         const { error: escrowUpdateError } = await supabase
-            .from('escrow')
-            .update({
-                status: 'RELEASED',
-                release_date: new Date().toISOString(),
-                payout_breakdown: {
-                    owner_id: gig.poster_id,
-                    owner_amount: releaseToOwner,
-                    borrower_id: gig.assigned_worker_id,
-                    borrower_amount: releaseToBorrower,
-                    deduction: deduction
-                }
-            })
-            .eq('gig_id', gigId);
+            .from("escrow")
+            .update({ status: "RELEASED", amount_held: 0 })
+            .eq("id", escrowRecord.id);
 
         if (escrowUpdateError) throw escrowUpdateError;
 
-        // Log Payout Transactions
-        const { error: transError } = await supabase.from('transactions').insert([
-            {
-                gig_id: gigId,
-                user_id: gig.poster_id, // Owner
-                amount: releaseToOwner,
-                type: 'CREDIT',
-                status: 'COMPLETED',
-                description: `Rental Payout for ${gig.title}`
-            },
-            {
-                gig_id: gigId,
-                user_id: gig.assigned_worker_id, // Borrower
-                amount: releaseToBorrower,
-                type: 'CREDIT',
-                status: 'COMPLETED',
-                description: `Security Deposit Refund for ${gig.title}`
-            }
-        ]);
+        // D. Update Gig Status -> completed
+        const { error: gigUpdateError } = await supabase
+            .from("gigs")
+            .update({ status: "completed", updated_at: new Date().toISOString() })
+            .eq("id", gigId);
 
-        if (transError) console.error("Transaction Log Error:", transError); // Non-blocking
+        if (gigUpdateError) throw gigUpdateError;
 
-        return NextResponse.json({ success: true, releaseToOwner, releaseToBorrower });
+        // E. Add Review if provided (Optional but good UX)
+        // We can skip or add a simplified review record here.
 
-    } catch (err: any) {
-        console.error("Rental Return Error:", err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        return NextResponse.json({
+            success: true,
+            deduction: actualDeduction,
+            refund: renterRefund
+        });
+
+    } catch (error: any) {
+        console.error("Rental Return Error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

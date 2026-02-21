@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
-import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2 } from "lucide-react";
+import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X } from "lucide-react";
 
 export default function ChatPage() {
     const supabase = supabaseBrowser();
@@ -21,6 +21,20 @@ export default function ChatPage() {
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Attachment State
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+    // Offer State
+    const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+    const [offerAmount, setOfferAmount] = useState("");
+
+    // Accept Offer State
+    const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
+    const [offerToAccept, setOfferToAccept] = useState<any>(null);
+    const [isAccepting, setIsAccepting] = useState(false);
 
     // 1. Initialize User
     useEffect(() => {
@@ -42,7 +56,7 @@ export default function ChatPage() {
                 .from('messages')
                 .select(`
                   *,
-                  gig:gigs!gig_id(title, listing_type, poster_id, assigned_worker_id)
+                  gig:gigs!gig_id(title, listing_type, poster_id, assigned_worker_id, status, price)
                 `)
                 .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
                 .order('created_at', { ascending: false });
@@ -191,7 +205,7 @@ export default function ChatPage() {
 
                 if (!isPoster && isPreAgreement) {
                     // Applicant Logic
-                    const limit = gig.listing_type === 'MARKET' ? 5 : 2;
+                    const limit = gig.listing_type === 'MARKET' ? 10 : 2;
                     setMessageLimit(limit);
 
                     // Recalculate isLimitReached with the correct count
@@ -254,33 +268,35 @@ export default function ChatPage() {
 
 
     // 4. Send Message Logic
-    const sendMessage = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newMessage.trim() || !user || !activeChat || isLimitReached) return;
+    // 4. Send Message Logic
+    const sendMessage = async (e?: React.FormEvent, type: 'text' | 'image' | 'offer' = 'text', contentUrl?: string, amount?: number) => {
+        if (e) e.preventDefault();
+
+        const text = contentUrl || newMessage.trim();
+        if ((!text && type === 'text') || !user || !activeChat || (isLimitReached && type !== 'image')) return;
 
         const [gigId, otherUserId] = activeChat.split('_');
-        const text = newMessage.trim();
-        setNewMessage(""); // Optimistic clear
+        if (type === 'text') setNewMessage(""); // Optimistic clear
 
-        // A. Moderation (Fail-Open)
-        try {
-            const modRes = await fetch('/api/moderation', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
+        // A. Moderation (Fail-Open) - Skip for Images
+        if (type === 'text') {
+            try {
+                const modRes = await fetch('/api/moderation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
 
-            if (modRes.ok) {
-                const aiCheck = await modRes.json();
-                if (!aiCheck.success) {
-                    alert(`Message Blocked: ${aiCheck.reason}`);
-                    return; // Stop here
+                if (modRes.ok) {
+                    const aiCheck = await modRes.json();
+                    if (!aiCheck.success) {
+                        alert(`Message Blocked: ${aiCheck.reason}`);
+                        return; // Stop here
+                    }
                 }
-            } else {
-                console.warn("Moderation API failed (500). Allowing message.");
+            } catch (warn) {
+                console.warn("Moderation Network Error. Allowing message.", warn);
             }
-        } catch (warn) {
-            console.warn("Moderation Network Error. Allowing message.", warn);
         }
 
         // B. Send API
@@ -290,10 +306,11 @@ export default function ChatPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     gigId,
-                    // Fix: Send BOTH receiverId and applicantId to be safe
                     receiverId: otherUserId,
                     applicantId: otherUserId, // API key requirement if I am Poster
-                    content: text
+                    content: text,
+                    type,
+                    offerAmount: amount
                 })
             });
 
@@ -312,10 +329,84 @@ export default function ChatPage() {
             }
 
             // Success (Realtime will update UI)
+            if (type === 'offer') {
+                setIsOfferModalOpen(false);
+                setOfferAmount("");
+            }
 
         } catch (err: any) {
             console.error("Send Error:", err);
             alert("Failed to send message. Please try again.");
+        }
+    };
+
+    const sendOffer = () => {
+        const amt = Number(offerAmount);
+        if (!amt || amt <= 0) return;
+        sendMessage(undefined, 'offer', '', amt);
+    };
+
+    const acceptOffer = async (msg: any) => {
+        if (!confirm("Accept this offer? This will close the deal.")) return;
+
+        try {
+            const [gigId, otherUserId] = activeChat ? activeChat.split('_') : [null, null];
+
+            const res = await fetch("/api/gig/accept-offer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    gigId: msg.gig_id || gigId,
+                    workerId: msg.sender_id, // The applicant who made the offer
+                    price: msg.offer_amount
+                })
+            });
+
+            if (res.ok) {
+                alert("Offer accepted! This gig is now assigned.");
+                // Force refresh or optimistic update
+                window.location.reload();
+            } else {
+                const json = await res.json();
+                alert(json.error || "Failed to accept offer");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Network error");
+        }
+    };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) return alert("File size must be less than 5MB");
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return alert("Only JPG, PNG, WEBP allowed");
+
+        setIsUploading(true);
+        try {
+            const gigId = activeChat ? activeChat.split('_')[0] : 'general';
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${gigId}/${Date.now()}.${fileExt}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('chat-attachments')
+                .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('chat-attachments')
+                .getPublicUrl(fileName);
+
+            await sendMessage(undefined, 'image', publicUrl);
+
+        } catch (err: any) {
+            console.error(err);
+            alert("Upload failed: " + err.message);
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
 
@@ -369,7 +460,10 @@ export default function ChatPage() {
                                             {new Date(chat.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-white/50 truncate pr-4">{chat.lastMessage.content}</p>
+                                    <p className="text-sm text-white/50 truncate pr-4 flex items-center gap-1">
+                                        {chat.lastMessage.message_type === 'offer' && <IndianRupee size={12} className="text-brand-purple" />}
+                                        {chat.lastMessage.content}
+                                    </p>
                                 </div>
                             </div>
                         ))
@@ -415,6 +509,39 @@ export default function ChatPage() {
                             </div>
                         </div>
 
+                        {/* OFFER MODAL */}
+                        {isOfferModalOpen && (
+                            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                                <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
+                                    <button
+                                        onClick={() => setIsOfferModalOpen(false)}
+                                        className="absolute top-4 right-4 text-white/40 hover:text-white"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                    <h3 className="text-xl font-bold mb-1">Make an Offer</h3>
+                                    <p className="text-white/50 text-xs mb-6">Propose a new price for this item.</p>
+
+                                    <div className="space-y-4">
+                                        <input
+                                            type="number"
+                                            value={offerAmount}
+                                            onChange={(e) => setOfferAmount(e.target.value)}
+                                            placeholder="Enter amount (₹)"
+                                            className="w-full bg-black/20 text-white p-4 rounded-xl border border-white/10 focus:border-brand-purple outline-none text-lg font-bold"
+                                        />
+                                        <button
+                                            onClick={sendOffer}
+                                            disabled={!offerAmount || Number(offerAmount) <= 0}
+                                            className="w-full py-3 bg-brand-purple text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-brand-purple/20"
+                                        >
+                                            Send Offer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Messages Feed */}
                         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 bg-[#050505] relative">
                             {/* Chat Wallpaper Dots */}
@@ -424,15 +551,68 @@ export default function ChatPage() {
                                 const isMe = msg.sender_id === user?.id;
                                 return (
                                     <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'} relative z-10`}>
-                                        <div className={`max-w-[85%] md:max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${isMe
-                                            ? 'bg-[#8825F5] text-white rounded-tr-sm'
-                                            : 'bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-sm'
-                                            }`}>
-                                            {msg.content}
-                                            <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-white/30'}`}>
-                                                {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {msg.message_type === 'offer' ? (
+                                            // OFFER CARD UI
+                                            <div className={`max-w-[85%] md:max-w-[300px] w-full rounded-2xl overflow-hidden border ${isMe ? 'border-[#8825F5]/50 bg-[#8825F5]/5' : 'border-white/10 bg-[#1A1A24]'}`}>
+                                                <div className="p-4 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                                                    <span className="text-xs font-bold uppercase tracking-wider text-white/60">
+                                                        {isMe ? "You sent an offer" : "Received Offer"}
+                                                    </span>
+                                                    <IndianRupee size={14} className="text-[#8825F5]" />
+                                                </div>
+                                                <div className="p-6 flex flex-col items-center gap-2">
+                                                    <div className="text-3xl font-black text-white tracking-tighter">
+                                                        ₹{msg.offer_amount}
+                                                    </div>
+                                                    <p className="text-[10px] text-white/40">
+                                                        {isMe ? "Waiting for response..." : "Proposed Price"}
+                                                    </p>
+                                                </div>
+                                                {/* Actions for Receiver (Poster) */}
+                                                {!isMe && activeConversation?.gig?.poster_id === user.id && activeConversation.gig.status === 'open' && (
+                                                    <div className="p-2 grid grid-cols-2 gap-2 bg-black/20">
+                                                        <button
+                                                            onClick={() => sendMessage(undefined, 'text', `I've declined the offer of ₹${msg.offer_amount}.`)}
+                                                            className="py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20"
+                                                        >
+                                                            Decline
+                                                        </button>
+                                                        <button
+                                                            onClick={() => acceptOffer(msg)}
+                                                            className="py-2 rounded-lg bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20"
+                                                        >
+                                                            Accept
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                <div className="px-4 py-2 text-[9px] text-right opacity-30 font-mono">
+                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
                                             </div>
-                                        </div>
+                                        ) : (
+                                            <div className={`max-w-[85%] md:max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${isMe
+                                                ? 'bg-[#8825F5] text-white rounded-tr-sm'
+                                                : 'bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-sm'
+                                                }`}>
+                                                {msg.message_type === 'image' ? (
+                                                    <div className="relative cursor-zoom-in" onClick={() => setSelectedImage(msg.content)}>
+                                                        <div className="relative w-full aspect-video bg-black/20 rounded-lg overflow-hidden mb-1">
+                                                            <Image
+                                                                src={msg.content}
+                                                                alt="Attachment"
+                                                                fill
+                                                                className="object-cover"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    msg.content
+                                                )}
+                                                <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-white/30'}`}>
+                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -456,7 +636,36 @@ export default function ChatPage() {
                                 </div>
                             )}
 
-                            <form onSubmit={sendMessage} className="flex gap-3 max-w-4xl mx-auto relative">
+                            <form onSubmit={(e) => sendMessage(e)} className="flex gap-3 max-w-4xl mx-auto relative items-center">
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className="hidden"
+                                    onChange={handleFileUpload}
+                                    accept="image/jpeg,image/png,image/webp"
+                                />
+
+                                {/* OFFER BUTTON - Only for Market Gigs & Non-Posters */}
+                                {activeConversation?.gig?.listing_type === 'MARKET' && activeConversation.gig.poster_id !== user.id && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsOfferModalOpen(true)}
+                                        disabled={isLimitReached}
+                                        className="p-3 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-green-400 hover:text-green-300 transition-colors border border-white/10 disabled:opacity-50"
+                                        title="Make an Offer"
+                                    >
+                                        <IndianRupee size={18} />
+                                    </button>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isLimitReached || isUploading}
+                                    className="p-3 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-white/50 hover:text-white transition-colors border border-white/10 disabled:opacity-50"
+                                >
+                                    {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
+                                </button>
                                 {isLimitReached && (
                                     <div className="absolute inset-0 bg-[#121217]/60 z-10 flex items-center justify-center backdrop-blur-[1px] rounded-full cursor-not-allowed">
                                         <span className="text-xs font-bold text-white/50 bg-black/40 px-3 py-1 rounded-full">
@@ -491,6 +700,16 @@ export default function ChatPage() {
                     </div>
                 )}
             </div>
+
+            {/* Lightbox */}
+            {selectedImage && (
+                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
+                    <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
+                    <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
+                        <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
+                    </div>
+                </div>
+            )}
 
         </div>
     );

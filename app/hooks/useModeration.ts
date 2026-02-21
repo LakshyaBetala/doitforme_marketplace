@@ -88,7 +88,7 @@ export function useModeration() {
         try {
             const labels = context === 'CHAT'
                 ? ["exchange phone number", "pay via upi", "pay outside", "illegal content", "prohibited items", "hidden contact info", "social media handle", "username", "social media link"]
-                : ["illegal item", "contraband", "academic cheating", "contact info", "safe listing", "selling product", "hiring service"];
+                : ["illegal item", "contraband", "academic cheating", "contact info", "safe listing", "selling product", "hiring service", "electronics", "stationery", "educational tool", "calculator", "clothing"];
 
             const output = await classifierRef.current(text, labels);
 
@@ -97,7 +97,10 @@ export function useModeration() {
 
             console.log(`AI Analysis (${context}):`, topLabel, score);
 
-            if (score > 0.77) {
+            // V6 Smart Threshold: Only block if 'bad' label > 0.90
+            const BAD_LABELS = ['exchange phone number', 'pay via upi', 'pay outside', 'illegal item', 'contraband', 'academic cheating', 'illegal content', 'prohibited items', 'hidden contact info', 'social media handle', 'username', 'social media link'];
+
+            if (BAD_LABELS.includes(topLabel) && score > 0.90) {
                 if (['exchange phone number', 'contact info', 'hidden contact info', 'social media handle', 'username', 'social media link'].includes(topLabel)) {
                     return { isSafe: false, reason: "AI detected contact sharing. Please keep it on-platform." };
                 }
