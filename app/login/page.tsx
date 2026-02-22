@@ -201,7 +201,7 @@ export default function AuthPage() {
 
         <div className="flex justify-center mb-6">
           <div className="relative w-12 h-12 md:w-14 md:h-14">
-            <Image src="/logo1.png" alt="Logo" fill className="object-contain" />
+            <Image src="/Doitforme_logo.png" alt="Logo" fill className="object-contain" />
           </div>
         </div>
 

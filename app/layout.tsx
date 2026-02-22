@@ -9,8 +9,8 @@ import NotificationManager from "@/components/NotificationManager"; // Request n
 export const metadata: Metadata = {
   title: "DoItForMe - Students Helping Students",
   description: "India’s first Gen-Z student marketplace. Outsource tasks. Earn from free time.",
-  icons: { icon: "/logo1.png", shortcut: "/logo1.png", apple: "/logo1.png" },
-  openGraph: { title: "DoItForMe", description: "Students Helping Students.", images: ["/logo1.png"], type: "website" },
+  icons: { icon: "/Doitforme_logo.png", shortcut: "/Doitforme_logo.png", apple: "/Doitforme_logo.png" },
+  openGraph: { title: "DoItForMe", description: "Students Helping Students.", images: ["/Doitforme_logo.png"], type: "website" },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in'),
   appleWebApp: {
     capable: true,
@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "@type": "Organization",
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
-    "logo": "https://www.doitforme.in/logo1.png",
+    "logo": "https://www.doitforme.in/Doitforme_logo.png",
     "sameAs": ["https://www.instagram.com/doitforme.in/", "https://www.linkedin.com/company/doitforme1/"]
   };
 

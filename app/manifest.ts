@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
         theme_color: '#0B0B11',
         icons: [
             {
-                src: '/logo1.png',
+                src: '/Doitforme_logo.png',
                 sizes: 'any',
                 type: 'image/png',
             },

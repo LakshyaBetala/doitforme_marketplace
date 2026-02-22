@@ -143,7 +143,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group active:scale-95 transition-transform touch-manipulation">
               <div className="relative w-20 h-20 md:w-28 md:h-28">
-                <Image src="/logo1.png" alt="Logo" fill className="object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
+                <Image src="/Doitforme_logo.png" alt="Logo" fill className="object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
               </div>
             </Link>
           </div>
