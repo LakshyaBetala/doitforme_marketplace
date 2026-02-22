@@ -6,19 +6,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Plus,
-  Briefcase,
-  ArrowUpRight,
-  Search,
-  Zap,
-  MapPin,
-  ShieldCheck,
-  MessageSquare,
-  X,
-  User,
-  Filter,
-  SlidersHorizontal,
-  Clock
+  Plus, Briefcase, Search, MapPin, MessageSquare, User,
+  Home, ShoppingBag, Inbox, Star, Settings, LogOut, Bell, ChevronDown, CheckCircle2,
+  DollarSign, ArrowRight, Zap, ShieldCheck
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -27,463 +17,419 @@ export default function Dashboard() {
 
   const [user, setUser] = useState<any>(null);
   const [gigs, setGigs] = useState<any[]>([]);
-  const [activeChats, setActiveChats] = useState<any[]>([]);
-  const [campusFilter, setCampusFilter] = useState<'ALL' | 'MY_CAMPUS'>('ALL');
   const [loading, setLoading] = useState(true);
-  const [isChatListOpen, setIsChatListOpen] = useState(false);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  // --- SEARCH STATE ---
   const [searchQuery, setSearchQuery] = useState("");
+  const [feedType, setFeedType] = useState<'ALL' | 'HUSTLE' | 'MARKET'>('ALL');
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   useEffect(() => {
-    const loadUserAndChats = async () => {
-      // OPTIMIZATION: Check session directly to prevent race conditions on redirect
+    const loadUserAndGigs = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        setLoading(false);
-        return router.push("/login");
-      }
+      if (!session) return router.push("/login");
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
-
       if (authUser) {
-        const { data: dbUser } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", authUser.id)
-          .single();
-
+        const { data: dbUser } = await supabase.from("users").select("*").eq("id", authUser.id).single();
         setUser({ ...authUser, user_metadata: { ...authUser.user_metadata, ...dbUser } });
 
-        // Fetch Chats
-        const { data: activeGigs } = await supabase
+        // Load Feed
+        const nowIso = new Date().toISOString();
+        let query = supabase
           .from("gigs")
-          .select("*")
-          .eq("status", "ASSIGNED")
-          .or(`poster_id.eq.${authUser.id},assigned_worker_id.eq.${authUser.id}`)
-          .order("created_at", { ascending: false });
-        setActiveChats(activeGigs || []);
+          .select("*, users:poster_id(college)")
+          .neq("poster_id", authUser.id)
+          .eq("status", "open")
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        query = query.or(`deadline.is.null,deadline.gt.${nowIso}`);
+        const { data: gigsData } = await query;
+        setGigs(gigsData || []);
       }
-      // Note: We don't set loading false here, we wait for gigs
-    };
-    loadUserAndChats();
-  }, [router, supabase]);
-
-  // Separate Effect for Gigs to support Campus Filter Re-fetching
-  useEffect(() => {
-    const loadGigs = async () => {
-      if (!user) return; // Wait for user
-
-      setLoading(true);
-      const nowIso = new Date().toISOString();
-
-      let query = supabase
-        .from("gigs")
-        .select("*, applications(count), users:poster_id!inner(college)") // Join poster for college
-        .neq("poster_id", user.id)
-        .eq("status", "open")
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      // Apply Deadline Logic
-      query = query.or(`deadline.is.null,deadline.gt.${nowIso}`);
-
-      if (campusFilter === 'MY_CAMPUS' && user?.user_metadata?.college) {
-        query = query.eq("users.college", user.user_metadata.college);
-      }
-
-      const { data: gigsData, error } = await query;
-      if (error) console.error("Gig Fetch Error:", error);
-
-      setGigs(gigsData || []);
       setLoading(false);
     };
+    loadUserAndGigs();
+  }, [router, supabase]);
 
-    if (user) loadGigs();
-  }, [user, campusFilter, supabase]);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
+  };
 
-  // --- SEARCH & FILTER LOGIC ---
-  const [feedType, setFeedType] = useState<'ALL' | 'HUSTLE' | 'MARKET'>('ALL');
-
-  // --- FILTERING LOGIC ---
   const filteredGigs = gigs.filter(gig => {
-    // 1. Search Query
     const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gig.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    // 2. Tab Filter
-    let matchesType = true;
-    if (feedType === 'HUSTLE') {
-      matchesType = gig.listing_type === 'HUSTLE';
-    } else if (feedType === 'MARKET') {
-      matchesType = gig.listing_type === 'MARKET'; // Includes RENT, SELL, etc.
-    }
-
+    const matchesType = feedType === 'ALL' || gig.listing_type === feedType;
     return matchesSearch && matchesType;
   });
 
-  const handleSearchEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      // router.push(`/feed?search=${searchQuery}`);
-    }
-  }
+  const username = user?.user_metadata?.name || user?.email?.split("@")[0] || "Partner";
 
   if (loading) return <DashboardSkeleton />;
 
-  const username = user?.user_metadata?.name || user?.email?.split("@")[0] || "Partner";
-  const isKycVerified = user?.user_metadata?.kyc_verified === true;
-
   return (
-    <main className="min-h-[100dvh] bg-[#0B0B11] text-foreground pb-20 font-sans selection:bg-brand-purple selection:text-white overflow-x-hidden">
+    <div className="h-[100dvh] bg-[#070B1A] text-white flex flex-col font-sans overflow-hidden">
+      {/* --------------------------------------------------
+          1. TOP BAR (Global Navigation)
+      -------------------------------------------------- */}
+      <header className="h-[70px] md:h-[80px] bg-gradient-to-r from-[#0B1021] to-[#070B1A] border-b border-[#1E293B] flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
+        <div className="flex items-center gap-6">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg overflow-hidden flex items-center justify-center">
+              <Image src="/Doitforme_logo.png" alt="DoItForMe" fill className="object-contain" />
+            </div>
+            <span className="font-black text-xl italic tracking-tighter hidden md:block group-hover:text-brand-purple transition-colors">DoItForMe</span>
+          </Link>
 
-      {/* --- HEADER --- */}
-      <header className="sticky top-0 z-40 w-full bg-[#0B0B11]/80 backdrop-blur-md border-b border-white/5 md:border-none md:bg-transparent transition-all">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 h-16 md:h-28 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="flex items-center gap-2 group active:scale-95 transition-transform touch-manipulation">
-              <div className="relative w-20 h-20 md:w-28 md:h-28">
-                <Image src="/Doitforme_logo.png" alt="Logo" fill className="object-contain opacity-80 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </Link>
+          {/* Search Bar */}
+          <div className="hidden lg:flex relative w-80">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search tasks, items, or students"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-[#0F172A] border border-[#1E293B] rounded-full py-2 pl-9 pr-4 text-sm text-white placeholder:text-zinc-500 focus:border-brand-purple/50 focus:outline-none transition-colors shadow-inner"
+            />
           </div>
+        </div>
 
-          <div className="flex items-center gap-3">
-            {!isKycVerified && (
-              <Link href="/verify-id" className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] font-bold uppercase tracking-wider hover:bg-yellow-500/20 transition-all active:scale-95 touch-manipulation">
-                <User size={12} /> Verify ID
-              </Link>
-            )}
+        {/* Global Actions */}
+        <div className="flex items-center gap-3 md:gap-4 relative">
+          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors relative group">
+            <Bell size={18} />
+            <div className="absolute top-2 right-2 w-2 h-2 bg-pink-500 rounded-full"></div>
+          </button>
+          <button onClick={() => router.push('/messages')} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors relative group">
+            <MessageSquare size={18} />
+            <div className="absolute top-2 right-2 w-2 h-2 bg-brand-purple rounded-full"></div>
+          </button>
 
-            {/* MESSAGES ICON (Header) */}
-            <button
-              onClick={() => router.push('/messages')}
-              className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
-            >
-              <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-purple animate-pulse"></div>
-              <MessageSquare size={20} />
+          <div className="h-6 w-px bg-[#1E293B] mx-1 md:mx-2"></div>
+
+          {/* Profile Dropdown */}
+          <div className="relative">
+            <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-[#1E293B] bg-white/5 hover:bg-white/10 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#8825F5] to-[#EC4899] flex items-center justify-center text-sm font-bold shadow-inner">
+                {username[0]?.toUpperCase()}
+              </div>
+              <span className="text-sm font-medium hidden md:block">{username}</span>
+              <ChevronDown size={14} className="text-zinc-500" />
             </button>
 
-            <div className="h-6 w-px bg-zinc-800 mx-2 hidden sm:block"></div>
-            <Link href="/profile" className="flex items-center gap-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors active:scale-95 touch-manipulation">
-              <div className="w-8 h-8 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center">
-                <User size={14} />
+            {isProfileDropdownOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden py-1 z-50">
+                <Link href="/profile" className="flex items-center px-4 py-2 hover:bg-white/5 text-sm text-zinc-300 hover:text-white"><User size={14} className="mr-3" /> Profile</Link>
+                <Link href="/earnings" className="flex items-center px-4 py-2 hover:bg-white/5 text-sm text-zinc-300 hover:text-white"><DollarSign size={14} className="mr-3" /> Earnings</Link>
+                <Link href="/settings" className="flex items-center px-4 py-2 hover:bg-white/5 text-sm text-zinc-300 hover:text-white"><Settings size={14} className="mr-3" /> Settings</Link>
+                <div className="h-px bg-[#1E293B] my-1"></div>
+                <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 hover:bg-red-500/10 text-sm text-red-400 transition-colors">
+                  <LogOut size={14} className="mr-3" /> Logout
+                </button>
               </div>
-              <span className="hidden sm:inline-block">{username}</span>
-            </Link>
+            )}
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-6 md:pt-10">
-        {/* UPI MISSING BANNER */}
-        {!user?.user_metadata?.upi_id && (
-          <div className="mb-6 animate-in fade-in slide-in-from-top-2">
-            <div className="px-4 py-3 rounded-xl bg-red-600/90 text-white text-xs md:text-sm font-bold text-center shadow-lg">
-              Please add your UPI ID in your <Link href="/profile" className="underline">Profile</Link> to start receiving work. You won't be able to post or apply for gigs without it.
-            </div>
-          </div>
-        )}
+      <div className="flex flex-1 overflow-hidden">
 
-        {/* --- CONTROL DECK (Stats & Actions) --- */}
-        <section className="mb-8 md:mb-12 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
-
-          {/* Welcome & Stats */}
-          <div className="md:col-span-8 p-6 md:p-8 rounded-[32px] bg-[#121217] border border-white/5 relative overflow-hidden group">
-            <div className="relative z-10 flex flex-col justify-between h-full">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">Marketplace Overview</h1>
-                <p className="text-zinc-500 text-sm md:text-base max-w-md">Track active gigs {user?.user_metadata?.college && `at ${user.user_metadata.college}`}, manage applications, and find new opportunities.</p>
-              </div>
-              <div className="flex gap-6 md:gap-8 mt-8 border-t border-white/5 pt-6">
-                <div>
-                  <div className="text-xl md:text-2xl font-bold text-white">{user?.user_metadata?.jobs_completed || 0}</div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Jobs Done</div>
-                </div>
-                <div>
-                  <div className="text-xl md:text-2xl font-bold text-white">{Number(user?.user_metadata?.rating || 5).toFixed(1)}</div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Rating</div>
-                </div>
-                <div>
-                  <div className="text-xl md:text-2xl font-bold text-white">₹{user?.user_metadata?.total_earned || 0}</div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-black">Earned</div>
-                </div>
-              </div>
-            </div>
-            <div className="absolute right-0 top-0 w-64 h-64 bg-brand-purple/5 rounded-full blur-[80px] group-hover:bg-brand-purple/10 transition-colors duration-500 will-change-transform" />
+        {/* --------------------------------------------------
+            2. LEFT SIDEBAR (Navigation Spine)
+        -------------------------------------------------- */}
+        <aside className="hidden lg:flex flex-col w-[240px] bg-[#070B1A] border-r border-[#1E293B] overflow-y-auto shrink-0 pt-6 px-4">
+          <div className="mb-8">
+            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-3 mb-3">Primary</h4>
+            <nav className="flex flex-col gap-1">
+              <SidebarLink href="/dashboard" icon={Home} label="Dashboard" active />
+              <SidebarLink href="/gig/my-gigs" icon={Briefcase} label="My Hustles" />
+              <SidebarLink href="/feed" icon={ShoppingBag} label="Marketplace" />
+              <SidebarLink href="/gig/applied" icon={Inbox} label="Applications" badge={3} />
+              <SidebarLink href="/messages" icon={MessageSquare} label="Messages" />
+            </nav>
           </div>
 
-          {/* Quick Actions */}
-          <div className="md:col-span-4 flex flex-col gap-3">
-            <Link href="/post" className="flex-1 flex items-center justify-between p-6 rounded-[24px] bg-white text-black hover:bg-zinc-200 active:scale-[0.98] transition-all touch-manipulation group">
-              <span className="font-black text-lg">Post Hustle / Item</span>
-              <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center group-hover:scale-110 transition-transform"><Plus size={20} /></div>
-            </Link>
-            <div className="flex-1 grid grid-cols-2 gap-3">
-              <Link href="/gig/my-gigs" className="flex flex-col justify-center p-5 rounded-[24px] bg-[#121217] border border-white/5 hover:border-zinc-700 active:scale-[0.95] transition-all touch-manipulation group">
-                <Briefcase size={20} className="text-zinc-500 group-hover:text-white mb-2 transition-colors" />
-                <span className="text-xs font-black text-zinc-400 uppercase tracking-wider">My Hustles</span>
+          <div className="mb-8">
+            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-3 mb-3">Secondary</h4>
+            <nav className="flex flex-col gap-1">
+              <SidebarLink href="/earnings" icon={DollarSign} label="Earnings" />
+              <SidebarLink href="/ratings" icon={Star} label="Ratings" />
+              <SidebarLink href="/profile" icon={User} label="Profile" />
+            </nav>
+          </div>
+
+          <div className="mb-8">
+            <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest pl-3 mb-3">System</h4>
+            <nav className="flex flex-col gap-1">
+              <SidebarLink href="/settings" icon={Settings} label="Settings" />
+              <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-zinc-400 hover:text-red-400 hover:bg-white/5 transition-colors w-full text-left text-sm font-bold group">
+                <LogOut size={18} className="text-zinc-500 group-hover:text-red-400 transition-colors" /> Logout
+              </button>
+            </nav>
+          </div>
+        </aside>
+
+        {/* --------------------------------------------------
+            3. MAIN CONTENT AREA (Core Zone)
+        -------------------------------------------------- */}
+        <main className="flex-1 overflow-y-auto bg-[#070B1A] scrollbar-hide relative">
+          <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-24 md:pb-8">
+
+            {/* Layer 1: Welcome + Identity */}
+            <section className="bg-[#0F172A] border border-[#1E293B] rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-purple/10 blur-[100px] rounded-full pointer-events-none"></div>
+              <div className="relative z-10 w-full md:w-1/2 mb-6 md:mb-0">
+                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">Good afternoon, {username.split(' ')[0]}.</h1>
+                <p className="text-zinc-400 text-sm">Here’s what’s happening on your campus today.</p>
+              </div>
+              <div className="hidden md:flex relative z-10 w-full md:w-1/2 justify-end items-center gap-6">
+                <div className="bg-[#1E293B]/30 border border-[#334155] rounded-2xl p-4 text-right backdrop-blur-md">
+                  <p className="text-[10px] text-brand-purple font-black uppercase tracking-widest mb-1.5 flex justify-end items-center gap-1.5"><Zap size={10} className="fill-brand-purple" /> Today's Opportunities</p>
+                  <p className="text-xl font-black text-white">12 <span className="text-xs font-bold text-zinc-500 uppercase">new hustles</span></p>
+                  <p className="text-xl font-black text-white mt-0.5">4 <span className="text-xs font-bold text-zinc-500 uppercase">marketplace items</span></p>
+                </div>
+              </div>
+            </section>
+
+            {/* Layer 2: Financial Status Cards */}
+            <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                title="Total Earned"
+                value={`₹${user?.user_metadata?.total_earned || 0}`}
+                icon={DollarSign} color="text-green-400" bg="bg-green-500/10"
+                subtext={(user?.user_metadata?.total_earned || 0) > 0 ? "Great progress this week" : "Start earning today"}
+                progress={{ current: user?.user_metadata?.total_earned || 0, target: 10000 }}
+              />
+              <StatCard
+                title="Escrow Balance"
+                value="₹0"
+                icon={ShieldCheck} color="text-brand-purple" bg="bg-brand-purple/10"
+                subtext="Secured holding"
+              />
+              <StatCard
+                title="Active Apps"
+                value="3"
+                icon={Inbox} color="text-blue-400" bg="bg-blue-500/10"
+                subtext="Awaiting response"
+              />
+              <StatCard
+                title="Rating"
+                value={`${Number(user?.user_metadata?.rating || 5).toFixed(1)} ⭐`}
+                icon={Star} color="text-yellow-400" bg="bg-yellow-500/10"
+                subtext="Top 10% on campus"
+              />
+            </section>
+
+            {/* Layer 3: Quick Action Bar (Refined for Focus) */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Link href="/post" className="flex flex-col items-center justify-center py-6 px-4 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-2xl hover:opacity-95 active:scale-95 group hover:-translate-y-1 transition-all shadow-[0_0_20px_rgba(136,37,245,0.2)] hover:shadow-[0_0_30px_rgba(136,37,245,0.6)]">
+                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><Plus size={24} /></div>
+                <span className="font-black tracking-wide">Post Hustle</span>
               </Link>
-              <Link href="/gig/applied" className="flex flex-col justify-center p-5 rounded-[24px] bg-[#121217] border border-white/5 hover:border-zinc-700 active:scale-[0.95] transition-all touch-manipulation group">
-                <ShieldCheck size={20} className="text-zinc-500 group-hover:text-white mb-2 transition-colors" />
-                <span className="text-xs font-black text-zinc-400 uppercase tracking-wider">Applications</span>
+              <Link href="/post?type=market" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all">
+                  <ShoppingBag size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
+                </div>
+                <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Sell Item</span>
               </Link>
-            </div>
-          </div>
-        </section>
+            </section>
 
-        {/* --- MARKETPLACE FEED --- */}
-        <section className="relative">
-          {/* Feed Header & Filters */}
-          <div className="sticky top-[64px] z-20 bg-background/95 backdrop-blur-xl py-4 mb-4 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Layer 4: Live Feed Section */}
+            <section>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sticky top-0 bg-[#070B1A]/90 backdrop-blur-md py-4 z-20">
+                <div>
+                  <h2 className="text-xl font-black text-white flex items-center gap-2 mb-1">
+                    Live Campus Feed <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse hidden sm:inline-block"></span>
+                  </h2>
+                  <p className="text-xs text-zinc-400 font-medium">See what students need right now</p>
+                </div>
 
-            <div className="flex items-center gap-4">
-              <h2 className="text-lg md:text-xl font-black text-white flex items-center gap-2">
-                active feed <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-              </h2>
-
-              {/* TABS */}
-              <div className="flex items-center bg-[#121217] rounded-full p-1 border border-white/5">
-                <button
-                  onClick={() => setFeedType('ALL')}
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${feedType === 'ALL' ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-white'
-                    }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setFeedType('HUSTLE')}
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${feedType === 'HUSTLE' ? 'bg-brand-purple text-white shadow-lg' : 'text-zinc-500 hover:text-white'
-                    }`}
-                >
-                  Hustle
-                </button>
-                <button
-                  onClick={() => setFeedType('MARKET')}
-                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${feedType === 'MARKET' ? 'bg-brand-pink text-white shadow-lg' : 'text-zinc-500 hover:text-white'
-                    }`}
-                >
-                  Market
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <div className="relative group w-full sm:w-auto">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-white transition-colors" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={handleSearchEnter}
-                  className="pl-9 pr-4 py-2 bg-[#121217] border border-white/10 rounded-full text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-brand-purple/50 w-full sm:w-40 transition-all"
-                />
-              </div>
-              {/* FILTER DROPDOWN ICON */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className={`p-2 rounded-full border transition-all ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white'}`}
-                >
-                  <Filter size={16} />
-                </button>
-
-                {/* Dropdown Menu */}
-                {isFilterOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-[#18181b] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                    <div className="p-2 space-y-1">
-                      <button
-                        onClick={() => { setCampusFilter('ALL'); setIsFilterOpen(false); }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
-                      >
-                        All Campuses
-                        {campusFilter === 'ALL' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                      </button>
-                      <button
-                        onClick={() => { setCampusFilter('MY_CAMPUS'); setIsFilterOpen(false); }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple/20 text-brand-purple' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
-                      >
-                        My Campus
-                        {campusFilter === 'MY_CAMPUS' && <div className="w-1.5 h-1.5 rounded-full bg-brand-purple"></div>}
-                      </button>
-                    </div>
+                <div className="flex items-center gap-4">
+                  {/* Filters */}
+                  <div className="flex items-center bg-[#0F172A] rounded-full p-1 border border-[#1E293B]">
+                    <FeedTab label="All" active={feedType === 'ALL'} onClick={() => setFeedType('ALL')} />
+                    <FeedTab label="Hustles" active={feedType === 'HUSTLE'} onClick={() => setFeedType('HUSTLE')} />
+                    <FeedTab label="Marketplace" active={feedType === 'MARKET'} onClick={() => setFeedType('MARKET')} />
                   </div>
-                )}
-              </div>
-
-              {/* VIEW ALL BUTTON - Redirects to Feed */}
-              <Link href="/feed" className="p-2 px-4 rounded-full border border-white/10 hover:bg-white/5 text-zinc-400 hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest whitespace-nowrap active:scale-95 touch-manipulation">
-                View Full Feed
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* --- FEED CONTENT --- */}
-        <div className="mb-12">
-
-          {/* EMPTY STATE */}
-          {filteredGigs.length === 0 && (
-            <div className="py-20 md:py-32 text-center border border-dashed border-zinc-800 rounded-[32px] bg-white/5 px-4 animate-in fade-in zoom-in-95 duration-500">
-              <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Filter className="w-6 h-6 text-zinc-600" />
-              </div>
-              <h3 className="text-white font-bold text-lg mb-1">No items found</h3>
-              <p className="text-zinc-500 text-sm max-w-xs mx-auto mb-6">
-                {searchQuery ? `No results for "${searchQuery}"` : "The marketplace is for the bold."}
-              </p>
-              <Link href="/post" className="px-6 py-2.5 bg-white text-black text-xs font-black rounded-full hover:scale-105 transition-transform uppercase tracking-widest active:scale-95 touch-manipulation">
-                Post Opportunity
-              </Link>
-            </div>
-          )}
-
-          {/* UNIFIED FEED GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filteredGigs.map((gig: any) => {
-              const isMarket = gig.listing_type === 'MARKET';
-              const isRent = gig.market_type === 'RENT';
-
-              if (isMarket) {
-                // --- MARKET CARD (Visual, Gallery Style) ---
-                return (
-                  <Link key={gig.id} href={`/gig/${gig.id}`} className="group block relative bg-[#121217] rounded-[28px] overflow-hidden border border-white/5 hover:border-white/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl flex flex-col h-full">
-                    {/* Image Area */}
-                    <div className="relative w-full aspect-[4/3] overflow-hidden bg-zinc-900">
-                      {gig.images && gig.images.length > 0 ? (
-                        <Image
-                          src={supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl}
-                          alt={gig.title}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-700"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center relative bg-zinc-900">
-                          <span className="text-4xl">📦</span>
-                        </div>
-                      )}
-
-                      {/* Badges */}
-                      <div className="absolute top-4 left-4 flex gap-2 z-20">
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider backdrop-blur-md border shadow-lg ${isRent
-                          ? 'bg-brand-purple/90 text-white border-brand-purple/20'
-                          : 'bg-green-500/90 text-black border-green-500/20'
-                          }`}>
-                          {isRent ? 'RENT' : 'BUY'}
-                        </span>
-                      </div>
-
-                      {/* Floating Price */}
-                      <div className="absolute bottom-4 right-4 z-20">
-                        <div className="bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-full border border-white/10 shadow-xl flex items-center gap-1">
-                          <span className="text-sm font-black font-mono">₹{gig.price}</span>
-                          {isRent && <span className="text-[10px] text-zinc-400 font-medium">/day</span>}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="p-5 flex flex-col flex-1">
-                      <h3 className="text-white font-bold text-lg leading-tight group-hover:text-brand-purple transition-colors line-clamp-1 mb-1">
-                        {gig.title}
-                      </h3>
-                      <div className="flex items-center justify-between text-xs text-zinc-500 font-medium mt-auto">
-                        <span className="flex items-center gap-1"><MapPin size={10} /> {gig.users?.college || gig.location || "Online"}</span>
-                        <span className="flex items-center gap-1"><Clock size={10} /> {timeAgo(gig.created_at)}</span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              } else {
-                // --- HUSTLE CARD (Compact, Tech Style) ---
-                return (
-                  <Link key={gig.id} href={`/gig/${gig.id}`} className="group block relative bg-[#121217] rounded-[20px] overflow-hidden border border-white/5 hover:border-brand-purple/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(136,37,245,0.1)] flex flex-col h-full">
-                    <div className="p-5 flex flex-col h-full relative overflow-hidden">
-
-                      {/* Decorative Gradient Blob */}
-                      <div className="absolute -right-4 -top-4 w-24 h-24 bg-brand-purple/5 rounded-full blur-2xl group-hover:bg-brand-purple/10 transition-colors"></div>
-
-                      {/* Top Row: Icon & Badge */}
-                      <div className="flex justify-between items-start mb-4 relative z-10">
-                        <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center text-lg font-black text-brand-purple group-hover:scale-110 transition-transform shadow-inner">
-                          {gig.title[0]}
-                        </div>
-                        <span className="px-2 py-1 rounded-md bg-zinc-900 border border-white/5 text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                          {gig.is_physical ? <><MapPin size={10} /> {gig.users?.college || "Campus"}</> : <><Zap size={10} /> Remote</>}
-                        </span>
-                      </div>
-
-                      {/* Title & Price */}
-                      <div className="mb-4 relative z-10">
-                        <h3 className="text-white font-bold text-lg leading-tight mb-2 group-hover:text-brand-purple transition-colors line-clamp-2">
-                          {gig.title}
-                        </h3>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-2xl font-black text-white tracking-tight">₹{gig.price}</span>
-                          <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Budget</span>
-                        </div>
-                      </div>
-
-                      {/* Footer */}
-                      <div className="mt-auto pt-4 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-bold uppercase tracking-wider relative z-10">
-                        <span>{timeAgo(gig.created_at)}</span>
-                        <span className="group-hover:translate-x-1 transition-transform text-zinc-400 group-hover:text-white flex items-center gap-1">
-                          Apply Now <ArrowUpRight size={10} />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              }
-            })}
-          </div>
-
-        </div>
-
-      </div >
-
-      {/* --- FLOATING CHAT --- */}
-      {
-        activeChats.length > 0 && (
-          <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-col items-end gap-4">
-            {isChatListOpen && (
-              <div className="bg-[#121217] border border-zinc-800 rounded-2xl shadow-2xl p-4 w-[calc(100vw-48px)] max-w-[320px] mb-2 animate-in slide-in-from-bottom-5 fade-in duration-200">
-                <div className="flex items-center justify-between mb-3 pb-3 border-b border-white/5">
-                  <h3 className="font-black text-white text-xs uppercase tracking-widest">Active Chats</h3>
-                  <button onClick={() => setIsChatListOpen(false)} className="text-zinc-500 hover:text-white p-1 touch-manipulation"><X size={14} /></button>
                 </div>
-                <div className="space-y-1 max-h-64 overflow-y-auto">
-                  {activeChats.map(gig => (
-                    <Link key={gig.id} href={`/gig/${gig.id}/chat`} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/5 active:bg-white/5 transition-colors group">
-                      <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-xs font-black text-zinc-300">{gig.title[0]}</div>
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-zinc-200 text-sm font-bold truncate">{gig.title}</p>
-                        <p className="text-zinc-500 text-[10px] font-black uppercase tracking-tighter">Tap to chat</p>
-                      </div>
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                    </Link>
+              </div>
+
+              {filteredGigs.length === 0 ? (
+                <div className="text-center py-20 bg-[#0F172A] border border-[#1E293B] rounded-3xl">
+                  <Search size={32} className="mx-auto text-zinc-600 mb-4" />
+                  <p className="text-zinc-400 font-medium">No live items found right now.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredGigs.map((gig: any, index: number) => (
+                    <FeedCard key={gig.id} gig={gig} index={index} />
                   ))}
                 </div>
-              </div>
-            )}
-            <button onClick={() => setIsChatListOpen(!isChatListOpen)} className="flex items-center justify-center w-14 h-14 bg-brand-purple text-white rounded-full shadow-lg shadow-brand-purple/20 hover:scale-110 active:scale-90 transition-all touch-manipulation">
-              {isChatListOpen ? <X size={24} /> : <MessageSquare size={24} />}
-            </button>
+              )}
+            </section>
           </div>
-        )
-      }
+        </main>
 
-      {/* MOBILE FAB (Sweet Spot) */}
-      <Link
-        href="/post"
-        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-white text-black rounded-full shadow-2xl shadow-white/20 flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <Plus size={28} strokeWidth={2.5} />
-      </Link>
+        {/* --------------------------------------------------
+            4. RIGHT PANEL (High-Value Panel)
+        -------------------------------------------------- */}
+        <aside className="hidden xl:flex flex-col w-[300px] shrink-0 bg-[#0A0F1A] border-l border-[#1E293B] overflow-y-auto p-6">
 
-    </main >
+          {/* Section A: Earnings & Escrow Summary */}
+          <div className="mb-8">
+            <h3 className="text-[10px] font-black tracking-widest text-zinc-500 uppercase mb-3 px-1">Vault</h3>
+            <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 hover:border-brand-purple/30 transition-colors mb-3 group hover:-translate-y-1 hover:shadow-xl transition-all">
+              <span className="text-xs text-zinc-400 font-bold block mb-1">Total Earned</span>
+              <div className="text-3xl font-black text-white mb-4 tracking-tight">₹{user?.user_metadata?.total_earned || 0}</div>
+              <button className="w-full py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl transition-all active:scale-95 border border-white/10 flex items-center justify-center gap-2 group-hover:bg-brand-purple/10 group-hover:text-brand-purple group-hover:border-brand-purple/30">
+                Withdraw <ArrowRight size={14} />
+              </button>
+            </div>
+
+            {/* Added Escrow to Right panel to maximize trust */}
+            <div className="bg-gradient-to-r from-brand-purple/10 to-transparent border border-brand-purple/20 rounded-2xl p-4 flex items-center justify-between group hover:-translate-y-0.5 transition-all cursor-default">
+              <div>
+                <span className="text-[10px] text-brand-purple font-black uppercase tracking-widest block mb-0.5">Escrow Balance</span>
+                <div className="text-xl font-black text-white">₹0</div>
+              </div>
+              <ShieldCheck size={24} className="text-brand-purple opacity-50 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </div>
+
+          {/* Section B: Active Tasks */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h3 className="text-[10px] font-black tracking-widest text-zinc-500 uppercase">Active Tasks</h3>
+              <Link href="/gig/my-gigs" className="text-[10px] text-brand-purple uppercase font-bold hover:underline">View All</Link>
+            </div>
+            <div className="space-y-2">
+              <div className="bg-[#0F172A] border border-[#1E293B] rounded-xl p-3 flex justify-between items-center group cursor-pointer hover:border-brand-purple/50 transition-colors hover:-translate-y-0.5">
+                <div className="flex-1 overflow-hidden pr-2">
+                  <h4 className="text-sm text-white font-bold truncate">Logo design</h4>
+                  <span className="text-[9px] text-zinc-400 uppercase tracking-widest font-bold flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> In progress
+                  </span>
+                </div>
+              </div>
+              <div className="bg-[#0F172A] border border-[#1E293B] rounded-xl p-3 flex justify-between items-center group cursor-pointer hover:border-brand-purple/50 transition-colors hover:-translate-y-0.5">
+                <div className="flex-1 overflow-hidden pr-2">
+                  <h4 className="text-sm text-white font-bold truncate">Engineering Math Tutor</h4>
+                  <span className="text-[9px] text-zinc-400 uppercase tracking-widest font-bold flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-purple"></span> Assigned
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section C: Latest Notification */}
+          <div className="mt-auto">
+            <h3 className="text-[10px] font-black tracking-widest text-zinc-500 uppercase mb-3 px-1">Notifications</h3>
+            <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-4 relative overflow-hidden group hover:border-blue-500/50 transition-all hover:shadow-lg hover:-translate-y-1">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bell size={14} className="text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-white mb-0.5 leading-tight group-hover:text-blue-400 transition-colors">KYC Verification pending</p>
+                  <p className="text-xs text-zinc-400">Complete verification via Settings to withdraw your safe earnings.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// HELPER COMPONENTS
+// ----------------------------------------------------------------------
+
+function SidebarLink({ href, icon: Icon, label, active, badge }: any) {
+  return (
+    <Link href={href} className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group ${active ? 'bg-brand-purple/10 text-brand-purple' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}>
+      <div className="flex items-center gap-3 text-sm font-bold">
+        <Icon size={18} className={active ? 'text-brand-purple' : 'text-zinc-500 group-hover:text-white transition-colors'} />
+        {label}
+      </div>
+      {badge && (
+        <span className="px-2 py-0.5 rounded-md bg-brand-purple text-white text-[10px] font-black">{badge}</span>
+      )}
+    </Link>
+  );
+}
+
+function StatCard({ title, value, icon: Icon, color, bg, subtext, progress }: any) {
+  return (
+    <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl transition-all h-[150px] flex flex-col justify-between">
+      <div className="flex justify-between items-start relative z-10 mb-2">
+        <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center ${color} shadow-inner group-hover:scale-110 transition-transform`}>
+          <Icon size={20} />
+        </div>
+      </div>
+      <div className="relative z-10 flex-1 flex flex-col justify-end">
+        <div className="text-2xl md:text-3xl font-black text-white tracking-tight mb-0.5">{value}</div>
+        <div className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1.5">{title}</div>
+
+        {progress ? (
+          <div className="w-full mt-1">
+            <div className="flex justify-between items-end mb-1">
+              <span className="text-[9px] text-zinc-500 font-medium">Goal: ₹{progress.target.toLocaleString()}</span>
+              <span className="text-[9px] text-brand-purple font-bold">₹{progress.current.toLocaleString()} / ₹{progress.target.toLocaleString()}</span>
+            </div>
+            <div className="w-full h-1.5 bg-[#1E293B] rounded-full overflow-hidden">
+              <div className="h-full bg-brand-purple rounded-full" style={{ width: `${Math.min(100, Math.max(0, (progress.current / progress.target) * 100))}%` }}></div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-[10px] text-zinc-500 font-medium group-hover:text-zinc-300 transition-colors">
+            {subtext}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FeedTab({ label, active, onClick }: any) {
+  return (
+    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${active ? 'bg-[#1E293B] text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}>
+      {label}
+    </button>
+  );
+}
+
+function FeedCard({ gig, index }: { gig: any, index?: number }) {
+  const isMarket = gig.listing_type === 'MARKET';
+  const delay = index !== undefined ? `${index * 50}ms` : '0ms';
+  return (
+    <div
+      className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 flex flex-col group hover:border-[#334155] hover:-translate-y-1 hover:shadow-xl transition-all h-[150px] relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both"
+      style={{ animationDelay: delay }}
+    >
+      <div className="flex justify-between items-start mb-2 relative z-10">
+        <h3 className="font-bold text-white text-[15px] leading-snug group-hover:text-brand-purple transition-colors line-clamp-2 pr-4">{gig.title}</h3>
+      </div>
+
+      <div className="flex items-center gap-2 mb-auto relative z-10">
+        <span className="text-xs font-black text-brand-purple">₹{gig.price}</span>
+        {isMarket && gig.market_type === 'RENT' && <span className="text-[10px] text-zinc-500">/day</span>}
+      </div>
+
+      <div className="mt-auto pt-3 border-t border-[#1E293B] flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-3 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+          <span className="flex items-center gap-1"><MapPin size={10} className="text-zinc-600" /> {gig.users?.college || "Campus"}</span>
+          <span>{timeAgo(gig.created_at)}</span>
+        </div>
+        <Link href={`/gig/${gig.id}`} className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg text-[10px] font-bold text-white uppercase tracking-wider hover:bg-brand-purple hover:border-brand-purple transition-colors">
+          Apply
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -501,32 +447,8 @@ function timeAgo(dateString: string) {
 
 function DashboardSkeleton() {
   return (
-    <div className="fixed inset-0 z-50 bg-[#0B0B11] flex flex-col items-center justify-center overflow-hidden">
-      {/* Ambient Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-brand-purple/20 rounded-full blur-[120px] animate-pulse pointer-events-none"></div>
-
-      {/* Floating Logo */}
-      <div className="relative w-28 h-28 md:w-36 md:h-36 mb-6 animate-float z-10">
-        <Image
-          src="/sloth.png"
-          alt="Loading..."
-          fill
-          className="object-contain drop-shadow-[0_0_40px_rgba(136,37,245,0.6)]"
-          priority
-        />
-      </div>
-
-      {/* Brand Text */}
-      <div className="text-center z-10 space-y-3">
-        <h2 className="text-3xl md:text-5xl font-black text-white tracking-tighter">
-          DoItForMe
-        </h2>
-        <div className="flex items-center justify-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-brand-purple animate-bounce" style={{ animationDelay: '0s' }}></div>
-          <div className="w-2 h-2 rounded-full bg-brand-purple animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-          <div className="w-2 h-2 rounded-full bg-brand-purple animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#070B1A] flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 }

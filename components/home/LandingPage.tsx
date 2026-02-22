@@ -355,7 +355,7 @@ export default function LandingPage() {
           <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#8825F5]/30 to-transparent" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 md:pt-28 pb-16 md:pb-20 grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-16 md:pt-20 pb-16 md:pb-20 grid lg:grid-cols-2 gap-8 md:gap-12 items-center min-h-[85vh]">
 
           {/* LEFT: CONTENT */}
           <motion.div
@@ -364,45 +364,37 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-center lg:text-left flex flex-col items-center lg:items-start relative z-20"
           >
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 w-fit mb-8 md:mb-10 backdrop-blur-md">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#EC4899] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#EC4899]"></span>
-              </span>
-              <span className="text-[10px] font-bold tracking-[0.2em] text-zinc-300 uppercase">Live • Verified Student Marketplace</span>
-            </div>
 
             {/* Heading */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-2 w-full">
+            <h1 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-2 w-full">
               Earn. Outsource.
             </h1>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full">
+            <h1 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full">
               Trade.
             </h1>
 
             {/* Subheading */}
-            <p className="text-xl md:text-2xl text-white/90 leading-snug mb-4 w-full">
+            <p className="text-2xl md:text-2xl text-white/90 leading-snug mb-4 w-full">
               All in One <span className="font-bold">Campus Marketplace</span>
             </p>
 
             {/* Description */}
-            <p className="text-sm md:text-base text-zinc-400 leading-relaxed max-w-md mb-8 md:mb-10 px-2 md:px-0">
+            <p className="text-base md:text-base text-zinc-400 leading-relaxed max-w-md mb-8 md:mb-10 lg:pr-4">
               The student economy, built for campus life.<br />
               Earn money, outsource tasks, and trade items securely.
             </p>
 
             {/* Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto px-2 md:px-0">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
               <button
                 onClick={handleLogin}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm"
+                className="w-full sm:w-auto px-7 py-4 sm:py-3.5 rounded-xl text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
               >
                 Explore Campus <ArrowRight size={16} />
               </button>
               <button
                 onClick={() => scrollToSection('how-it-works')}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl text-sm font-bold border-2 border-white/10 text-white/80 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2.5 active:scale-95"
+                className="w-full sm:w-auto px-7 py-4 sm:py-3.5 rounded-xl text-sm font-bold border-2 border-white/10 text-white/80 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2.5 active:scale-95"
               >
                 <div className="w-6 h-6 rounded-full border border-white/30 flex items-center justify-center">
                   <div className="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[7px] border-l-white/80 ml-0.5" />
@@ -777,7 +769,7 @@ export default function LandingPage() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#8825F5]/15 rounded-full blur-[100px] pointer-events-none"></div>
 
             {/* Sloth beside feed */}
-            <div className="absolute top-[60%] lg:top-[50%] -left-10 lg:-left-20 -translate-y-1/2 z-30 hidden md:block">
+            <div className="absolute top-[60%] lg:top-[50%] -left-40 lg:-left-20 -translate-y-1/2 z-30 hidden md:block">
               <Image
                 src="/sloth_v2.png"
                 alt="Confident Sloth"
