@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Eye, EyeOff, Wallet } from "lucide-react";
+import { Eye, EyeOff, Wallet, Gift } from "lucide-react";
 
 // --- COLLEGES LIST ---
 const COLLEGES = [
@@ -72,6 +72,19 @@ export default function AuthPage() {
 
   // NEW: UPI ID State
   const [upiId, setUpiId] = useState("");
+
+  // Referral Code State
+  const [referralCode, setReferralCode] = useState("");
+
+  // Auto-fill referral code from URL (?ref=CODE)
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      setReferralCode(refCode.toUpperCase());
+      setView('SIGNUP'); // Auto-switch to sign-up when coming via referral
+    }
+  }, [searchParams]);
 
   // --- HELPER: SYNC USER TO DB ---
   const syncUser = async (id: string, email: string) => {
@@ -180,6 +193,19 @@ export default function AuthPage() {
     }
 
     if (data.user) {
+      // Apply referral code if provided
+      if (referralCode.trim()) {
+        try {
+          await fetch("/api/referral/apply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: data.user.id, referralCode: referralCode.trim() }),
+          });
+        } catch (e) {
+          console.error("Referral apply failed:", e);
+        }
+      }
+
       await supabase.auth.signInWithOtp({
         email,
         options: { shouldCreateUser: false },
@@ -192,6 +218,22 @@ export default function AuthPage() {
   // --- STYLES ---
   const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all appearance-none";
   const buttonStyle = "w-full bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] active:scale-[0.98] hover:opacity-90 text-white p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation";
+
+  // --- GOOGLE OAUTH ---
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setMessage("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+    if (error) {
+      setMessage(error.message);
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-[100dvh] p-4 md:p-6 bg-[#0B0B11] text-white relative overflow-hidden">
@@ -211,6 +253,29 @@ export default function AuthPage() {
         <p className="text-center text-white/50 text-xs md:text-sm mb-8">
           {view === "LOGIN" ? "Login to continue your hustle." : "Sign up to start earning or outsourcing."}
         </p>
+
+        {/* Google Sign-In Button */}
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-white hover:bg-zinc-100 active:scale-[0.98] transition-all font-bold text-black text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mb-6"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+          </svg>
+          Continue with Google
+        </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex-1 h-px bg-white/10"></div>
+          <span className="text-[10px] text-white/30 uppercase tracking-widest font-bold">or</span>
+          <div className="flex-1 h-px bg-white/10"></div>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
@@ -360,6 +425,24 @@ export default function AuthPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
+
+              {/* Referral Code */}
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  placeholder="Referral Code (optional)"
+                  className={inputStyle}
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                  maxLength={8}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
+                  <Gift size={18} />
+                </div>
+              </div>
+              <p className="text-[10px] text-white/40 px-1 leading-tight">Got a code from a friend? Enter it to give them reward points!</p>
             </div>
           )}
 

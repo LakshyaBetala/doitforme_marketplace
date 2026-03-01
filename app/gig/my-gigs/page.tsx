@@ -8,7 +8,6 @@ import {
   Plus,
   Loader2,
   MapPin,
-  IndianRupee,
   Briefcase,
   AlertCircle,
   Clock
@@ -35,7 +34,6 @@ export default function MyGigsPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Fetch Gigs by Poster ID
         const { data, error: fetchError } = await supabase
           .from("gigs")
           .select("*")
@@ -56,45 +54,46 @@ export default function MyGigsPage() {
     loadGigs();
   }, [supabase]);
 
-  // Helper for Status Colors
-  const getStatusColor = (status: string) => {
+  const getStatusDot = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'open': return 'bg-green-500/10 border-green-500/20 text-green-400';
-      case 'assigned': return 'bg-blue-500/10 border-blue-500/20 text-blue-400';
-      case 'completed': return 'bg-teal-500/10 border-teal-500/20 text-teal-400';
-      case 'cancelled': return 'bg-red-500/10 border-red-500/20 text-red-400';
-      default: return 'bg-white/5 border-white/10 text-white/50';
+      case 'open': return 'bg-green-500';
+      case 'assigned': return 'bg-blue-500';
+      case 'completed': return 'bg-teal-500';
+      case 'cancelled': return 'bg-red-500';
+      default: return 'bg-zinc-500';
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center">
+      <div className="min-h-screen bg-[#070B1A] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-brand-purple animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0B11] p-6 lg:p-12 pb-24 text-white selection:bg-brand-purple selection:text-white">
+    <div className="min-h-screen bg-[#070B1A] text-white selection:bg-brand-purple selection:text-white">
 
+      {/* Background glow */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-20%] right-[20%] w-[500px] h-[500px] bg-brand-purple/5 blur-[150px] rounded-full"></div>
       </div>
 
-      <div className="max-w-6xl mx-auto relative z-10 space-y-8">
+      <div className="max-w-6xl mx-auto relative z-10 p-6 lg:p-12 pb-24 space-y-8">
 
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <Link href="/dashboard" className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-2 group">
+            <Link href="/dashboard" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-3 group text-sm font-medium">
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
             </Link>
-            <h1 className="text-4xl font-black text-white tracking-tight">My Posted Gigs</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">My Hustles</h1>
+            <p className="text-sm text-zinc-400 mt-1">Manage your posted gigs and marketplace listings</p>
           </div>
           <Link
             href="/post"
-            className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+            className="px-6 py-3 bg-gradient-to-r from-brand-purple to-brand-pink text-white font-bold rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(136,37,245,0.3)]"
           >
             <Plus className="w-5 h-5" /> Post Hustle / Item
           </Link>
@@ -108,120 +107,107 @@ export default function MyGigsPage() {
           </div>
         )}
 
-        {/* Content */}
-        <div>
-          {/* TABS */}
-          <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
-            <button
-              onClick={() => setFilter('ALL')}
-              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${filter === 'ALL' ? 'bg-white text-black' : 'bg-white/5 text-zinc-500 hover:bg-white/10 hover:text-white'
-                }`}
-            >
-              All Posts
-            </button>
-            <button
-              onClick={() => setFilter('HUSTLE')}
-              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${filter === 'HUSTLE' ? 'bg-brand-purple text-white' : 'bg-white/5 text-zinc-500 hover:bg-white/10 hover:text-white'
-                }`}
-            >
-              Hustle Gigs
-            </button>
-            <button
-              onClick={() => setFilter('MARKET')}
-              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${filter === 'MARKET' ? 'bg-brand-pink text-white' : 'bg-white/5 text-zinc-500 hover:bg-white/10 hover:text-white'
-                }`}
-            >
-              Marketplace
-            </button>
+        {/* Feed Section */}
+        <section>
+          {/* Sticky Header + Filters */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sticky top-0 bg-[#070B1A]/90 backdrop-blur-md py-4 z-20">
+            <div>
+              <h2 className="text-xl font-black text-white flex items-center gap-2 mb-1">
+                Your Listings <span className="text-sm font-bold text-zinc-500">({filteredGigs.length})</span>
+              </h2>
+              <p className="text-xs text-zinc-400 font-medium">All your posted hustles and marketplace items</p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <FilterTab label="All" active={filter === 'ALL'} onClick={() => setFilter('ALL')} />
+              <FilterTab label="Hustles" active={filter === 'HUSTLE'} onClick={() => setFilter('HUSTLE')} />
+              <FilterTab label="Marketplace" active={filter === 'MARKET'} onClick={() => setFilter('MARKET')} />
+            </div>
           </div>
 
           {filteredGigs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredGigs.map((gig: any) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredGigs.map((gig: any, index: number) => {
                 const isMarket = gig.listing_type === 'MARKET';
                 const isRent = gig.market_type === 'RENT';
+                const delay = `${index * 50}ms`;
 
                 return (
-                  <Link
+                  <div
                     key={gig.id}
-                    href={`/gig/${gig.id}`}
-                    className="group relative bg-[#121217] border border-white/10 rounded-3xl p-6 hover:border-brand-purple/30 transition-all hover:-translate-y-1 overflow-hidden"
+                    className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 flex flex-col group hover:border-[#334155] hover:-translate-y-1 hover:shadow-xl transition-all h-[170px] relative overflow-hidden"
+                    style={{ animationDelay: delay }}
                   >
-                    <div className={`absolute inset-0 bg-gradient-to-br from-brand-purple/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity ${isMarket ? 'from-brand-pink/5' : ''}`}></div>
-
-                    <div className="relative z-10 flex flex-col h-full justify-between gap-6">
-                      <div>
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex gap-2">
-                            {isMarket && (
-                              <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider border ${isRent ? 'bg-brand-purple/10 border-brand-purple/20 text-brand-purple' : 'bg-green-500/10 border-green-500/20 text-green-500'
-                                }`}>
-                                {isRent ? 'RENT' : 'SELL'}
-                              </span>
-                            )}
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${getStatusColor(gig.status)}`}>
-                              {gig.status}
-                            </span>
-                          </div>
-                          <span className="text-white/40 text-xs font-mono flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {timeAgo(gig.created_at)}
-                          </span>
-                        </div>
-
-                        <h3 className="text-xl font-bold text-white mb-2 line-clamp-2 group-hover:text-brand-purple transition-colors">
-                          {gig.title}
-                        </h3>
-
-                        <div className="flex flex-col gap-2 text-sm text-white/60">
-                          <div className="flex items-center gap-1.5">
-                            <IndianRupee className="w-4 h-4 text-white/40" />
-                            <span className="text-white font-bold">{Number(gig.price).toLocaleString()}</span>
-                            {isRent && <span className="text-[10px] uppercase tracking-widest text-white/40">/ Rental Fee</span>}
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="w-4 h-4 text-white/40" />
-                            <span>{gig.location || "Remote"}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs font-medium text-white/40">
-                        <span className="flex items-center gap-1 group-hover:text-white transition-colors">
-                          <Briefcase className="w-3 h-3" /> Manage {isMarket ? 'Item' : 'Gig'}
-                        </span>
+                    {/* Title + Status */}
+                    <div className="flex justify-between items-start mb-2 relative z-10">
+                      <h3 className="font-bold text-white text-[15px] leading-snug group-hover:text-brand-purple transition-colors line-clamp-2 pr-4">{gig.title}</h3>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className={`w-2 h-2 rounded-full ${getStatusDot(gig.status)}`}></span>
+                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest font-bold">{gig.status}</span>
                       </div>
                     </div>
-                  </Link>
-                )
+
+                    {/* Price + Type */}
+                    <div className="flex items-center gap-2 mb-auto relative z-10">
+                      <span className="text-xs font-black text-brand-purple">₹{Number(gig.price).toLocaleString()}</span>
+                      {isMarket && isRent && <span className="text-[10px] text-zinc-500">/rental</span>}
+                      {isMarket && (
+                        <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md border ${isRent ? 'text-brand-purple border-brand-purple/20 bg-brand-purple/10' : 'text-green-400 border-green-500/20 bg-green-500/10'}`}>
+                          {isRent ? 'RENT' : 'SELL'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="mt-auto pt-3 border-t border-[#1E293B] flex items-center justify-between relative z-10">
+                      <div className="flex items-center gap-3 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                        <span className="flex items-center gap-1"><MapPin size={10} className="text-zinc-600" /> {gig.location || "Campus"}</span>
+                        <span className="flex items-center gap-1"><Clock size={10} className="text-zinc-600" /> {timeAgo(gig.created_at)}</span>
+                      </div>
+                      <Link href={`/gig/${gig.id}`} className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg text-[10px] font-bold text-white uppercase tracking-wider hover:bg-brand-purple hover:border-brand-purple transition-colors">
+                        Manage
+                      </Link>
+                    </div>
+                  </div>
+                );
               })}
             </div>
           ) : (
             /* EMPTY STATE */
-            <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-[#121217] border border-white/10 rounded-[40px]">
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-[#0F172A] border border-[#1E293B] rounded-3xl">
               <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                <Briefcase className="w-10 h-10 text-white/20" />
+                <Briefcase className="w-10 h-10 text-zinc-600" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">No active items found</h2>
-              <p className="text-white/50 max-w-md mb-8">
+              <h2 className="text-2xl font-black text-white mb-2">No active items found</h2>
+              <p className="text-zinc-400 max-w-md mb-8 text-sm">
                 Start by posting your first gig or listing an item.
               </p>
               <Link
                 href="/post"
-                className="px-8 py-4 bg-brand-purple text-white font-bold rounded-xl hover:bg-brand-purple/80 transition-colors shadow-lg shadow-brand-purple/20"
+                className="px-8 py-4 bg-gradient-to-r from-brand-purple to-brand-pink text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-[0_0_20px_rgba(136,37,245,0.3)] active:scale-95"
               >
                 Post New
               </Link>
             </div>
           )}
-        </div>
+        </section>
       </div>
+
       {/* MOBILE FAB */}
       <Link
         href="/post"
-        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-white text-black rounded-full shadow-2xl shadow-white/20 flex items-center justify-center active:scale-90 transition-transform"
+        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-full shadow-2xl shadow-brand-purple/30 flex items-center justify-center active:scale-90 transition-transform"
       >
         <Plus size={28} strokeWidth={2.5} />
       </Link>
     </div>
+  );
+}
+
+function FilterTab({ label, active, onClick }: any) {
+  return (
+    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${active ? 'bg-[#1E293B] text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}>
+      {label}
+    </button>
   );
 }

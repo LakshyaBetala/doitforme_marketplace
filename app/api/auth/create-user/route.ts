@@ -71,9 +71,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: userError.message }, { status: 500 });
     }
 
-    // --- 6. WALLET REMOVED ---
-    // Wallets table is deprecated in favor of direct payouts.
-    // Stats are now tracked directly on the users table (jobs_completed, total_earned).
+    // --- 6. AUTO-GENERATE REFERRAL CODE ---
+    // If user doesn't have a referral code yet, generate one
+    if (!existingUser?.referral_code) {
+      const { data: codeData } = await supabase.rpc("generate_referral_code");
+      if (codeData) {
+        await supabase
+          .from("users")
+          .update({ referral_code: codeData })
+          .eq("id", id);
+      }
+    }
 
     return NextResponse.json({ success: true });
 
