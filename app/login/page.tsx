@@ -196,23 +196,14 @@ function AuthPage() {
     }
 
     if (data.user) {
-      // Apply referral code if provided
-      if (referralCode.trim()) {
-        try {
-          await fetch("/api/referral/apply", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: data.user.id, referralCode: referralCode.trim() }),
-          });
-        } catch (e) {
-          console.error("Referral apply failed:", e);
-        }
-      }
-
       // signUp() already sends a signup OTP — do NOT call signInWithOtp() again
       // (that was causing double emails and tangled OTP states)
       setLoading(false);
-      router.push(`/verify?email=${encodeURIComponent(email)}&mode=signup`);
+      let redirectUrl = `/verify?email=${encodeURIComponent(email)}&mode=signup`;
+      if (referralCode.trim()) {
+        redirectUrl += `&ref=${encodeURIComponent(referralCode.trim())}`;
+      }
+      router.push(redirectUrl);
     }
   };
 

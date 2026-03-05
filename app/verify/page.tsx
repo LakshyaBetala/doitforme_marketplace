@@ -16,6 +16,7 @@ function VerifyContent() {
 
   const email = params.get("email") || "";
   const mode = params.get("mode") || "login";
+  const refCode = params.get("ref") || "";
 
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState("");
@@ -151,6 +152,20 @@ function VerifyContent() {
           upi_id: meta.upi_id // Ensure UPI provided at signup is saved
         }),
       });
+
+      // Apply referral code if exists
+      if (refCode && mode === "signup") {
+        try {
+          await fetch("/api/referral/apply", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: data.user.id, referralCode: refCode }),
+          });
+        } catch (e) {
+          console.error("Referral apply failed:", e);
+        }
+      }
+
     } catch (e) {
       console.error("Sync error (non-fatal):", e);
     }

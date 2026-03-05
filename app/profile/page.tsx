@@ -650,27 +650,17 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {activePoints.length > 0 && (
-                <>
-                  <div className="w-px h-8 bg-white/5 shrink-0"></div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
-                      <Clock size={16} className="text-red-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-red-400 mb-0.5">
-                        {(() => {
-                          const earliest = activePoints[0]?.expires_at;
-                          if (!earliest) return 'N/A';
-                          const hoursLeft = Math.max(0, Math.round((new Date(earliest).getTime() - Date.now()) / (1000 * 60 * 60)));
-                          return `${hoursLeft}h left`;
-                        })()}
-                      </div>
-                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Points Expiry</div>
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Rewards Coming Soon Display */}
+              <div className="w-px h-8 bg-white/5 shrink-0"></div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-pink/10 border border-brand-pink/20 flex items-center justify-center shrink-0">
+                  <Gift size={16} className="text-brand-pink" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-brand-pink mb-0.5">Coming Soon!</div>
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Redeem Rewards</div>
+                </div>
+              </div>
             </div>
           </section>
         )}

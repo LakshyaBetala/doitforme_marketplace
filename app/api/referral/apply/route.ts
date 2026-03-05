@@ -63,8 +63,8 @@ export async function POST(req: Request) {
             .update({ referred_by: referralCode.toUpperCase().trim() })
             .eq("id", userId);
 
-        // 6. Credit 25 RP to the referrer (expires in 48h)
-        const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+        // 6. Credit 25 RP to the referrer (expires in 100 years)
+        const expiresAt = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
 
         await supabase.from("points_transactions").insert({
             user_id: referrer.id,
