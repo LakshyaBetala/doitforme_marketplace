@@ -10,7 +10,7 @@ import {
   User, Mail, ShieldCheck, ShieldAlert, Star, Briefcase,
   Loader2, Wallet, Calendar, CheckCircle2,
   Phone, GraduationCap, ArrowLeft, Edit2, Check, X,
-  Zap, Save, AlertTriangle
+  Zap, Save, AlertTriangle, Lock
 } from "lucide-react";
 
 // --- COLLEGES LIST ---
@@ -58,12 +58,9 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // Editable fields
+  // Editable fields (ONLY name and phone)
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
-  const [editCollege, setEditCollege] = useState("");
-  const [editCustomCollege, setEditCustomCollege] = useState("");
-  const [editUpi, setEditUpi] = useState("");
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -171,19 +168,9 @@ export default function ProfilePage() {
         setProfile(userData);
         setStats({ completed: completedCount, earnings: totalEarned, isLightningResponder: isLightning, avgResponseTime: Math.round(avgTime) });
 
-        // Initialize edit fields
+        // Initialize edit fields (only name & phone are editable)
         setEditName(userData.name || "");
         setEditPhone(userData.phone || "");
-        setEditUpi(userData.upi_id || "");
-        const collegeVal = userData.college || "";
-        if (COLLEGES.includes(collegeVal)) {
-          setEditCollege(collegeVal);
-        } else if (collegeVal) {
-          setEditCollege("Other");
-          setEditCustomCollege(collegeVal);
-        } else {
-          setEditCollege(COLLEGES[0]);
-        }
 
       } catch (err) {
         console.error("Profile Load Error:", err);
@@ -201,19 +188,8 @@ export default function ProfilePage() {
   };
 
   const cancelEditing = () => {
-    // Reset to current profile values
     setEditName(profile.name || "");
     setEditPhone(profile.phone || "");
-    setEditUpi(profile.upi_id || "");
-    const collegeVal = profile.college || "";
-    if (COLLEGES.includes(collegeVal)) {
-      setEditCollege(collegeVal);
-    } else if (collegeVal) {
-      setEditCollege("Other");
-      setEditCustomCollege(collegeVal);
-    } else {
-      setEditCollege(COLLEGES[0]);
-    }
     setIsEditing(false);
     setSaveMessage(null);
   };
@@ -222,59 +198,47 @@ export default function ProfilePage() {
     setSaving(true);
     setSaveMessage(null);
 
-    const finalCollege = editCollege === "Other" ? editCustomCollege.trim() : editCollege;
-
-    // Validate UPI if provided
-    if (editUpi) {
-      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
-      if (!upiRegex.test(editUpi)) {
-        setSaveMessage({ type: 'error', text: 'Invalid UPI ID format. Example: name@oksbi' });
-        setSaving(false);
-        return;
-      }
+    if (!editName.trim()) {
+      setSaveMessage({ type: 'error', text: 'Name cannot be empty.' });
+      setSaving(false);
+      return;
     }
 
     try {
-      // 1. Update users table
+      // Only update name and phone — college, UPI, email are locked
       const { error: dbError } = await supabase
         .from("users")
         .update({
           name: editName.trim(),
           phone: editPhone.trim(),
-          college: finalCollege,
-          upi_id: editUpi.trim() || null,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id);
 
       if (dbError) throw dbError;
 
-      // 2. Update auth metadata (so dashboard picks it up too)
+      // Update auth metadata
       const { error: authError } = await supabase.auth.updateUser({
         data: {
           full_name: editName.trim(),
           name: editName.trim(),
           phone: editPhone.trim(),
-          college: finalCollege,
-          upi_id: editUpi.trim() || undefined,
         },
       });
 
       if (authError) throw authError;
 
-      // 3. Update local state
+      // Update local state
       setProfile({
         ...profile,
         name: editName.trim(),
         phone: editPhone.trim(),
-        college: finalCollege,
-        upi_id: editUpi.trim() || null,
+        updated_at: new Date().toISOString(),
       });
 
       setIsEditing(false);
-      setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
-
-      // Auto-dismiss success message
-      setTimeout(() => setSaveMessage(null), 3000);
+      setSaveMessage({ type: 'success', text: 'Profile updated! Next edit available in 14 days.' });
+      setTimeout(() => setSaveMessage(null), 4000);
 
     } catch (err: any) {
       console.error("Save error:", err);
@@ -297,6 +261,14 @@ export default function ProfilePage() {
   const joinDate = new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const avatarLetter = profile.email ? profile.email[0].toUpperCase() : "U";
   const displayName = profile.name || profile.email.split("@")[0];
+
+  // 14-day edit cooldown logic
+  const EDIT_COOLDOWN_DAYS = 14;
+  const lastEditedAt = profile.updated_at ? new Date(profile.updated_at) : null;
+  const now = new Date();
+  const cooldownMs = EDIT_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+  const canEdit = !lastEditedAt || (now.getTime() - lastEditedAt.getTime()) >= cooldownMs;
+  const nextEditDate = lastEditedAt ? new Date(lastEditedAt.getTime() + cooldownMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
 
   // Check missing fields for alert
   const missingFields: string[] = [];
@@ -332,8 +304,8 @@ export default function ProfilePage() {
         {/* Save Message Toast */}
         {saveMessage && (
           <div className={`rounded-2xl p-4 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-300 ${saveMessage.type === 'success'
-              ? 'bg-green-500/10 border border-green-500/30 text-green-400'
-              : 'bg-red-500/10 border border-red-500/30 text-red-400'
+            ? 'bg-green-500/10 border border-green-500/30 text-green-400'
+            : 'bg-red-500/10 border border-red-500/30 text-red-400'
             }`}>
             {saveMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
             <span className="text-sm font-bold">{saveMessage.text}</span>
@@ -449,12 +421,20 @@ export default function ProfilePage() {
               <Edit2 className="w-5 h-5 text-brand-purple" /> Edit Profile
             </h3>
             {!isEditing ? (
-              <button
-                onClick={startEditing}
-                className="px-5 py-2.5 bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl hover:bg-brand-purple/10 hover:border-brand-purple/30 hover:text-brand-purple transition-all active:scale-95"
-              >
-                Edit
-              </button>
+              <div className="flex items-center gap-3">
+                {!canEdit && (
+                  <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                    <Lock size={10} /> Next edit: {nextEditDate}
+                  </span>
+                )}
+                <button
+                  onClick={startEditing}
+                  disabled={!canEdit}
+                  className="px-5 py-2.5 bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl hover:bg-brand-purple/10 hover:border-brand-purple/30 hover:text-brand-purple transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/5 disabled:hover:border-white/10 disabled:hover:text-white"
+                >
+                  {canEdit ? 'Edit' : 'Locked'}
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button
@@ -515,59 +495,22 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* College */}
+            {/* College (read-only always) */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">University / College</label>
-              {isEditing ? (
-                <div className="space-y-2">
-                  <select
-                    value={editCollege}
-                    onChange={(e) => setEditCollege(e.target.value)}
-                    className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm focus:outline-none focus:border-brand-purple appearance-none cursor-pointer"
-                  >
-                    {COLLEGES.map((col) => (
-                      <option key={col} value={col} className="bg-[#0B0B11]">{col}</option>
-                    ))}
-                  </select>
-                  {editCollege === "Other" && (
-                    <input
-                      type="text"
-                      value={editCustomCollege}
-                      onChange={(e) => setEditCustomCollege(e.target.value)}
-                      placeholder="Enter university name"
-                      className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all animate-in fade-in slide-in-from-top-2 duration-300"
-                      autoFocus
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                  <GraduationCap size={16} className="text-zinc-500 shrink-0" />
-                  <span className={profile.college ? "text-white" : "text-zinc-600 italic"}>{profile.college || "Not set"}</span>
-                </div>
-              )}
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1">University / College <Lock size={8} className="text-zinc-600" /></label>
+              <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
+                <GraduationCap size={16} className="text-zinc-500 shrink-0" />
+                <span className={profile.college ? "text-white" : "text-zinc-600 italic"}>{profile.college || "Not set"}</span>
+              </div>
             </div>
 
-            {/* UPI ID */}
+            {/* UPI ID (read-only always) */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">UPI ID</label>
-              {isEditing ? (
-                <div>
-                  <input
-                    type="text"
-                    value={editUpi}
-                    onChange={(e) => setEditUpi(e.target.value)}
-                    placeholder="e.g. name@oksbi"
-                    className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
-                  />
-                  <p className="text-[10px] text-zinc-600 mt-1 ml-1">Required to post gigs and receive payments</p>
-                </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                  <Wallet size={16} className="text-zinc-500 shrink-0" />
-                  <span className={profile.upi_id ? "text-white" : "text-zinc-600 italic"}>{profile.upi_id || "Not set"}</span>
-                </div>
-              )}
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1">UPI ID <Lock size={8} className="text-zinc-600" /></label>
+              <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
+                <Wallet size={16} className="text-zinc-500 shrink-0" />
+                <span className={profile.upi_id ? "text-white" : "text-zinc-600 italic"}>{profile.upi_id || "Not set"}</span>
+              </div>
             </div>
 
             {/* Email (read-only) */}

@@ -8,7 +8,7 @@ import Image from "next/image";
 import {
   Plus, Briefcase, Search, MapPin, MessageSquare, User,
   Home, ShoppingBag, Inbox, Star, Settings, LogOut, Bell, ChevronDown, CheckCircle2,
-  DollarSign, ArrowRight, Zap, ShieldCheck, AlertTriangle, X, Gift, Copy, Clock
+  DollarSign, ArrowRight, Zap, ShieldCheck, AlertTriangle, X, Gift, Copy, Clock, Filter
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -20,6 +20,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [feedType, setFeedType] = useState<'ALL' | 'HUSTLE' | 'MARKET'>('ALL');
+  const [campusFilter, setCampusFilter] = useState<'ALL' | 'MY_CAMPUS'>('ALL');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
 
   // Referral state
@@ -91,15 +93,19 @@ export default function Dashboard() {
     const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gig.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = feedType === 'ALL' || gig.listing_type === feedType;
-    return matchesSearch && matchesType;
+    const matchesCampus = campusFilter === 'ALL' || gig.users?.college === user?.user_metadata?.college;
+    return matchesSearch && matchesType && matchesCampus;
   }).sort((a, b) => {
-    // Highlighted gigs appear first
     const aHighlighted = a.is_highlighted && a.highlight_expires_at && new Date(a.highlight_expires_at) > new Date();
     const bHighlighted = b.is_highlighted && b.highlight_expires_at && new Date(b.highlight_expires_at) > new Date();
     if (aHighlighted && !bHighlighted) return -1;
     if (!aHighlighted && bHighlighted) return 1;
     return 0;
   });
+
+  // Dynamic opportunity counts (computed from ALL gigs, ignoring search/type filters)
+  const hustleCount = gigs.filter(g => g.listing_type === 'HUSTLE').length;
+  const marketCount = gigs.filter(g => g.listing_type === 'MARKET').length;
 
   const username = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Partner";
   const [profileAlertDismissed, setProfileAlertDismissed] = useState(false);
@@ -214,8 +220,8 @@ export default function Dashboard() {
               <div className="hidden md:flex relative z-10 items-center gap-4">
                 <div className="bg-[#1E293B]/30 border border-[#334155] rounded-2xl p-4 text-right backdrop-blur-md">
                   <p className="text-[10px] text-brand-purple font-black uppercase tracking-widest mb-1.5 flex justify-end items-center gap-1.5"><Zap size={10} className="fill-brand-purple" /> Today's Opportunities</p>
-                  <p className="text-xl font-black text-white">12 <span className="text-xs font-bold text-zinc-500 uppercase">new hustles</span></p>
-                  <p className="text-xl font-black text-white mt-0.5">4 <span className="text-xs font-bold text-zinc-500 uppercase">marketplace items</span></p>
+                  <p className="text-xl font-black text-white">{hustleCount} <span className="text-xs font-bold text-zinc-500 uppercase">new hustles</span></p>
+                  <p className="text-xl font-black text-white mt-0.5">{marketCount} <span className="text-xs font-bold text-zinc-500 uppercase">marketplace items</span></p>
                 </div>
               </div>
             </section>
@@ -330,12 +336,42 @@ export default function Dashboard() {
                   <p className="text-xs text-zinc-400 font-medium">See what students need right now</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  {/* Filters */}
+                <div className="flex items-center gap-3">
+                  {/* Type Filters */}
                   <div className="flex items-center bg-[#0F172A] rounded-full p-1 border border-[#1E293B]">
                     <FeedTab label="All" active={feedType === 'ALL'} onClick={() => setFeedType('ALL')} />
                     <FeedTab label="Hustles" active={feedType === 'HUSTLE'} onClick={() => setFeedType('HUSTLE')} />
                     <FeedTab label="Marketplace" active={feedType === 'MARKET'} onClick={() => setFeedType('MARKET')} />
+                  </div>
+
+                  {/* Campus Filter */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsFilterOpen(!isFilterOpen)}
+                      className={`p-2 rounded-full border transition-all ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-[#1E293B] hover:bg-white/5 text-zinc-400 hover:text-white'}`}
+                    >
+                      <Filter size={16} />
+                    </button>
+                    {isFilterOpen && (
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                        <div className="p-2 space-y-1">
+                          <button
+                            onClick={() => { setCampusFilter('ALL'); setIsFilterOpen(false); }}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                          >
+                            All Campuses
+                            {campusFilter === 'ALL' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                          </button>
+                          <button
+                            onClick={() => { setCampusFilter('MY_CAMPUS'); setIsFilterOpen(false); }}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple/20 text-brand-purple' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                          >
+                            My Campus
+                            {campusFilter === 'MY_CAMPUS' && <div className="w-1.5 h-1.5 rounded-full bg-brand-purple"></div>}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

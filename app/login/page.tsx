@@ -49,7 +49,9 @@ function BackgroundBlobs() {
   );
 }
 
-export default function AuthPage() {
+import { Suspense } from "react";
+
+function AuthPage() {
   const supabase = supabaseBrowser();
   const router = useRouter();
 
@@ -497,5 +499,17 @@ export default function AuthPage() {
 function ChevronDown({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+  );
+}
+
+export default function AuthPageWrapper() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[100dvh] bg-[#0B0B11] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <AuthPage />
+    </Suspense>
   );
 }
