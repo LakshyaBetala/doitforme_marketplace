@@ -440,7 +440,7 @@ function AuthPage() {
                   <Gift size={18} />
                 </div>
               </div>
-              <p className="text-[10px] text-white/40 px-1 leading-tight">Got a code from a friend? Enter it to give them reward points!</p>
+              <p className="text-[10px] text-white/40 px-1 leading-tight">Got a code from a friend? Enter it, and you BOTH get 25 Reward Points!</p>
             </div>
           )}
 

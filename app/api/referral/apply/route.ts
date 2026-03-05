@@ -79,7 +79,21 @@ export async function POST(req: Request) {
         // 7. Update referrer's points balance
         await supabase.rpc("increment_points", { uid: referrer.id, pts: 25 });
 
-        return NextResponse.json({ success: true, message: "Referral applied! Referrer earned 25 RP." });
+        // 8. Credit 25 RP to the referred user (expires in 100 years)
+        await supabase.from("points_transactions").insert({
+            user_id: userId,
+            amount: 25,
+            type: "EARN",
+            reason: "Signed up with a referral code",
+            reference_id: referrer.id,
+            expires_at: expiresAt,
+            redeemed: false,
+        });
+
+        // 9. Update referred user's points balance
+        await supabase.rpc("increment_points", { uid: userId, pts: 25 });
+
+        return NextResponse.json({ success: true, message: "Referral applied! Both users earned 25 RP." });
 
     } catch (err: any) {
         console.error("Referral apply error:", err);
