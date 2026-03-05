@@ -30,3 +30,6 @@ export async function supabaseServer() {
     }
   );
 }
+
+// Alias for backward-compatible import in dashboard/layout.tsx
+export const createServer = supabaseServer;

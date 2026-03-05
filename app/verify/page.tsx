@@ -13,9 +13,9 @@ function VerifyContent() {
   const supabase = supabaseBrowser();
   const router = useRouter();
   const params = useSearchParams();
-  
+
   const email = params.get("email") || "";
-  const mode = params.get("mode") || "login"; 
+  const mode = params.get("mode") || "login";
 
   const [digits, setDigits] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState("");
@@ -118,15 +118,15 @@ function VerifyContent() {
     });
 
     if (verifyError && mode === 'signup') {
-         const retry = await supabase.auth.verifyOtp({
-            email,
-            token: otp,
-            type: 'email',
-         });
-         if (!retry.error) {
-             data = retry.data;
-             verifyError = null;
-         }
+      const retry = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'email',
+      });
+      if (!retry.error) {
+        data = retry.data;
+        verifyError = null;
+      }
     }
 
     if (verifyError || !data.user) {
@@ -136,23 +136,23 @@ function VerifyContent() {
 
     // 2. ACCOUNT CREATION (Only happens AFTER Verification)
     try {
-        // Extract metadata saved during signup
-        const meta = data.user.user_metadata || {};
-        
-        await fetch("/api/auth/create-user", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: data.user.id,
-                email: data.user.email,
-                name: meta.full_name, // Extracted from metadata
-                phone: meta.phone,
-                college: meta.college,
-                upi_id: meta.upi_id // Ensure UPI provided at signup is saved
-            }),
-        });
+      // Extract metadata saved during signup
+      const meta = data.user.user_metadata || {};
+
+      await fetch("/api/auth/create-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: data.user.id,
+          email: data.user.email,
+          name: meta.full_name, // Extracted from metadata
+          phone: meta.phone,
+          college: meta.college,
+          upi_id: meta.upi_id // Ensure UPI provided at signup is saved
+        }),
+      });
     } catch (e) {
-        console.error("Sync error (non-fatal):", e);
+      console.error("Sync error (non-fatal):", e);
     }
 
     // 3. Redirect to Dashboard
@@ -164,10 +164,23 @@ function VerifyContent() {
     setError("");
     setLoading(true);
 
-    const { error: resendError } = await supabase.auth.signInWithOtp({
-      email,
-      options: { shouldCreateUser: false },
-    });
+    let resendError = null;
+
+    if (mode === "signup") {
+      // Resend a SIGNUP OTP (different token type than login)
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+      resendError = error;
+    } else {
+      // Resend a LOGIN OTP
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      });
+      resendError = error;
+    }
 
     setLoading(false);
 
@@ -183,7 +196,7 @@ function VerifyContent() {
   return (
     <div className="flex items-center justify-center min-h-screen p-6 bg-[#0B0B11] text-white cursor-default">
       <div className="w-full max-w-md bg-[#1A1A24] border border-white/10 shadow-2xl rounded-3xl p-8 relative">
-        
+
         <Link href="/login" className="absolute top-6 left-6 text-white/40 hover:text-white transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
@@ -191,7 +204,7 @@ function VerifyContent() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black mb-2 tracking-tight text-white">Verify Email</h1>
           <p className="text-sm text-white/50">
-            Enter the 6-digit code sent to <br/>
+            Enter the 6-digit code sent to <br />
             <span className="text-white font-bold">{email || "your email"}</span>
           </p>
         </div>

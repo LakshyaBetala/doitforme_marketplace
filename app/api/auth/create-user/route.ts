@@ -83,6 +83,18 @@ export async function POST(req: Request) {
       }
     }
 
+    // --- 7. ENSURE WALLET EXISTS ---
+    // Wallets table is actively used by escrow release/refund RPCs,
+    // freeze/unfreeze operations, and the auto-release cron job.
+    const { error: walletError } = await supabase
+      .from("wallets")
+      .upsert(
+        { user_id: id, balance: 0, frozen: 0 },
+        { onConflict: "user_id", ignoreDuplicates: true }
+      );
+
+    if (walletError) console.error("API: Wallet Upsert Error:", walletError);
+
     return NextResponse.json({ success: true });
 
   } catch (err: any) {

@@ -113,18 +113,11 @@ export default function AuthPage() {
   };
 
   const handleLogin = async () => {
-    const { data: userExists } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email)
-      .single();
+    // Clear any corrupted/stale sessions from previous setups
+    await supabase.auth.signOut();
 
-    if (!userExists) {
-      setLoading(false);
-      setMessage("Account not found. Please Sign Up below.");
-      return;
-    }
-
+    // DO NOT query public.users here — RLS blocks unauthenticated reads.
+    // Let Supabase Auth handle "user not found" natively.
     let error = null;
 
     if (loginMethod === "OTP") {
@@ -152,7 +145,15 @@ export default function AuthPage() {
     }
 
     setLoading(false);
-    if (error) setMessage(error.message);
+
+    // Map native Supabase errors to friendly messages
+    if (error) {
+      if (error.message.includes("Invalid login credentials") || error.message.includes("Signups not allowed")) {
+        setMessage("Account not found or incorrect password. Please Sign Up below.");
+      } else {
+        setMessage(error.message);
+      }
+    }
   };
 
   const handleSignup = async () => {
@@ -206,10 +207,8 @@ export default function AuthPage() {
         }
       }
 
-      await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: false },
-      });
+      // signUp() already sends a signup OTP — do NOT call signInWithOtp() again
+      // (that was causing double emails and tangled OTP states)
       setLoading(false);
       router.push(`/verify?email=${encodeURIComponent(email)}&mode=signup`);
     }

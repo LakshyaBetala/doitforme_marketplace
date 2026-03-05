@@ -39,16 +39,17 @@ export async function middleware(request: NextRequest) {
   // 1. DEFINE PROTECTED ROUTES
   // These routes require the user to be logged in
   const protectedRoutes = [
-    '/dashboard', 
-    '/profile', 
-    '/post', 
-    '/feed', 
-    '/gig', 
+    '/dashboard',
+    '/profile',
+    '/post',
+    '/feed',
+    '/gig',
+    '/onboarding',
     '/verify-id' // KYC page should be protected
   ]
 
   // Check if current path is protected
-  const isProtected = protectedRoutes.some(route => 
+  const isProtected = protectedRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   )
 

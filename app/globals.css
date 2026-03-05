@@ -104,6 +104,47 @@ input:-webkit-autofill:active {
 }
 
 /* ---------------------------------------
+    MOBILE OPTIMIZATION 5: iOS INPUT ZOOM FIX
+    Prevents Safari from zooming when tapping inputs
+--------------------------------------- */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* ---------------------------------------
+    MOBILE OPTIMIZATION 6: TOUCH TARGETS
+    Minimum 44px for all interactive elements
+--------------------------------------- */
+@media (max-width: 768px) {
+
+  button,
+  a,
+  [role="button"] {
+    min-height: 44px;
+  }
+}
+
+/* ---------------------------------------
+    MOBILE OPTIMIZATION 7: SAFE AREAS
+    Prevents content from hiding behind notch/Dynamic Island
+--------------------------------------- */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ---------------------------------------
     ANIMATIONS (STAY THE SAME)
 --------------------------------------- */
 @keyframes float {
@@ -212,9 +253,11 @@ body::before {
   0% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-4px);
   }
+
   100% {
     transform: translateY(0px);
   }
