@@ -283,7 +283,7 @@ export default function LandingPage() {
         >
           <div className="relative w-16 h-16 origin-[top_center] animate-[spin_0.4s_linear_infinite]">
             <Image
-              src="/sloth.png"
+              src="/sloth (1).png"
               alt="Loading..."
               fill
               className="object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]"
