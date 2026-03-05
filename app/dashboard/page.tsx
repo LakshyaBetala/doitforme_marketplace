@@ -218,6 +218,22 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* KYC Verification Prompt */}
+            {user && !user.user_metadata?.kyc_verified && (
+              <Link href="/verify-id" className="block bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 flex items-center gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500 group hover:bg-yellow-500/15 transition-all active:scale-[0.99]">
+                <div className="p-2 bg-yellow-500/20 rounded-xl shrink-0">
+                  <ShieldCheck size={20} className="text-yellow-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-yellow-300 mb-0.5">Verify your Student ID</p>
+                  <p className="text-xs text-yellow-300/60">Upload your college ID to unlock all features and build trust.</p>
+                </div>
+                <span className="shrink-0 px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 text-xs font-bold rounded-xl group-hover:bg-yellow-500/30 transition-all">
+                  Verify Now
+                </span>
+              </Link>
+            )}
+
             {/* Layer 1: Welcome + Identity */}
             <section className="bg-[#0F172A] border border-[#1E293B] rounded-3xl p-5 md:p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group mb-4">
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-purple/10 blur-[100px] rounded-full pointer-events-none"></div>

@@ -10,7 +10,6 @@ import {
   DollarSign, ChevronDown, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock,
   Linkedin, Instagram, Briefcase, ShoppingBag as ShoppingBagIcon
 } from "lucide-react";
-import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 // -------------------------------------------------------
 // 1. "VOGUE" PRELOADER (Updated with Asset Awareness)
@@ -178,23 +177,6 @@ export default function LandingPage() {
   const [clickPos, setClickPos] = useState({ x: 0, y: 0 });
   const [activeGigIndex, setActiveGigIndex] = useState(0);
 
-  // Auth State for Conditional Buttons
-  const [userState, setUserState] = useState<{ loggedIn: boolean; verified: boolean } | null>(null);
-  const supabase = supabaseBrowser();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data } = await supabase.from("users").select("kyc_verified").eq("id", session.user.id).single();
-        setUserState({ loggedIn: true, verified: !!data?.kyc_verified });
-      } else {
-        setUserState({ loggedIn: false, verified: false });
-      }
-    };
-    checkAuth();
-  }, [supabase]);
-
   // --- NEW: Preloader and Cooldown Logic ---
   const [isAssetReady, setIsAssetReady] = useState(false);
   const [shouldShowPreloader, setShouldShowPreloader] = useState(true);
@@ -273,16 +255,7 @@ export default function LandingPage() {
     e.preventDefault();
     setClickPos({ x: e.clientX, y: e.clientY });
     setIsSlothLoading(true);
-
-    if (userState?.loggedIn) {
-      if (!userState.verified) {
-        setTimeout(() => router.push("/verify-id"), 1200);
-      } else {
-        setTimeout(() => router.push("/dashboard"), 1200);
-      }
-    } else {
-      setTimeout(() => router.push("/login"), 1200);
-    }
+    setTimeout(() => router.push("/login"), 1200);
   };
 
   return (
@@ -359,8 +332,7 @@ export default function LandingPage() {
           </nav>
 
           <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95">
-            {!userState ? "Login" :
-              userState.loggedIn ? (userState.verified ? "Dashboard" : "Verify Now") : "Login"}
+            Login
           </button>
         </div>
       </header>
@@ -410,8 +382,7 @@ export default function LandingPage() {
                 onClick={handleLogin}
                 className="w-full sm:w-auto px-7 py-4 sm:py-3.5 rounded-xl text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
               >
-                {!userState ? "Explore Campus" :
-                  userState.loggedIn ? (userState.verified ? "Enter Marketplace" : "Verify ID Now") : "Explore Campus"} <ArrowRight size={16} />
+                Explore Campus <ArrowRight size={16} />
               </button>
               <button
                 onClick={() => scrollToSection('how-it-works')}
@@ -779,8 +750,7 @@ export default function LandingPage() {
               onClick={handleLogin}
               className="w-full sm:w-auto px-8 py-4 rounded-xl text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
-              {!userState ? "Explore Campus" :
-                userState.loggedIn ? (userState.verified ? "Dashboard" : "Verify ID Now") : "Explore Campus"} <ArrowRight size={18} />
+              Explore Campus <ArrowRight size={18} />
             </button>
           </div>
 
