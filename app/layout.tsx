@@ -9,14 +9,42 @@ import NotificationManager from "@/components/NotificationManager"; // Request n
 export const metadata: Metadata = {
   title: "DoItForMe - Students Helping Students",
   description: "India’s first Gen-Z student marketplace. Outsource tasks. Earn from free time.",
+  keywords: [
+    "student freelance", "gig economy", "university jobs", "campus tasks", "student marketplace",
+    "college community", "freelance for students", "peer-to-peer services", "find freelance work"
+  ],
+  authors: [{ name: "DoItForMe Team", url: "https://www.doitforme.in" }],
+  creator: "DoItForMe",
+  publisher: "DoItForMe",
+  formatDetection: { email: false, address: false, telephone: false },
   icons: { icon: "/Doitforme_logo.png", shortcut: "/Doitforme_logo.png", apple: "/Doitforme_logo.png" },
-  openGraph: { title: "DoItForMe", description: "Students Helping Students.", images: ["/Doitforme_logo.png"], type: "website" },
+  openGraph: {
+    title: "DoItForMe - Students Helping Students",
+    description: "India’s first Gen-Z student marketplace. Outsource tasks. Earn from free time.",
+    url: "https://www.doitforme.in",
+    siteName: "DoItForMe",
+    images: [{ url: "/Doitforme_logo.png", width: 800, height: 600, alt: "DoItForMe Logo" }],
+    type: "website",
+    locale: "en_IN"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DoItForMe - Students Helping Students",
+    description: "India’s first Gen-Z student marketplace. Outsource tasks. Earn from free time.",
+    images: ["/Doitforme_logo.png"],
+    creator: "@doitforme" // Optional, adjust if real handle exists
+  },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in'),
   appleWebApp: {
     capable: true,
     title: "DoItForMe",
     statusBarStyle: "black-translucent"
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 }
+  }
 };
 
 export const viewport: Viewport = {
