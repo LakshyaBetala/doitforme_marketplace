@@ -10,6 +10,7 @@ import {
   DollarSign, ChevronDown, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock,
   Linkedin, Instagram, Briefcase, ShoppingBag as ShoppingBagIcon
 } from "lucide-react";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 // -------------------------------------------------------
 // 1. "VOGUE" PRELOADER (Updated with Asset Awareness)
@@ -177,6 +178,23 @@ export default function LandingPage() {
   const [clickPos, setClickPos] = useState({ x: 0, y: 0 });
   const [activeGigIndex, setActiveGigIndex] = useState(0);
 
+  // Auth State for Conditional Buttons
+  const [userState, setUserState] = useState<{ loggedIn: boolean; verified: boolean } | null>(null);
+  const supabase = supabaseBrowser();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data } = await supabase.from("users").select("kyc_verified").eq("id", session.user.id).single();
+        setUserState({ loggedIn: true, verified: !!data?.kyc_verified });
+      } else {
+        setUserState({ loggedIn: false, verified: false });
+      }
+    };
+    checkAuth();
+  }, [supabase]);
+
   // --- NEW: Preloader and Cooldown Logic ---
   const [isAssetReady, setIsAssetReady] = useState(false);
   const [shouldShowPreloader, setShouldShowPreloader] = useState(true);
@@ -255,7 +273,16 @@ export default function LandingPage() {
     e.preventDefault();
     setClickPos({ x: e.clientX, y: e.clientY });
     setIsSlothLoading(true);
-    setTimeout(() => router.push("/login"), 1200);
+
+    if (userState?.loggedIn) {
+      if (!userState.verified) {
+        setTimeout(() => router.push("/verify-id"), 1200);
+      } else {
+        setTimeout(() => router.push("/dashboard"), 1200);
+      }
+    } else {
+      setTimeout(() => router.push("/login"), 1200);
+    }
   };
 
   return (
@@ -332,7 +359,8 @@ export default function LandingPage() {
           </nav>
 
           <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95">
-            Login
+            {!userState ? "Login" :
+              userState.loggedIn ? (userState.verified ? "Dashboard" : "Verify Now") : "Login"}
           </button>
         </div>
       </header>
@@ -358,10 +386,10 @@ export default function LandingPage() {
           >
 
             {/* Heading */}
-            <h1 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-2 w-full">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-2 w-full">
               Earn. Outsource.
             </h1>
-            <h1 className="text-5xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full">
               Trade.
             </h1>
 
@@ -382,7 +410,8 @@ export default function LandingPage() {
                 onClick={handleLogin}
                 className="w-full sm:w-auto px-7 py-4 sm:py-3.5 rounded-xl text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
               >
-                Explore Campus <ArrowRight size={16} />
+                {!userState ? "Explore Campus" :
+                  userState.loggedIn ? (userState.verified ? "Enter Marketplace" : "Verify ID Now") : "Explore Campus"} <ArrowRight size={16} />
               </button>
               <button
                 onClick={() => scrollToSection('how-it-works')}
@@ -736,7 +765,7 @@ export default function LandingPage() {
             </div>
 
             {/* Headline */}
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight text-white mb-6">
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight text-white mb-6">
               See what’s happening right now.
             </h2>
 
@@ -750,7 +779,8 @@ export default function LandingPage() {
               onClick={handleLogin}
               className="w-full sm:w-auto px-8 py-4 rounded-xl text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
-              Explore Campus <ArrowRight size={18} />
+              {!userState ? "Explore Campus" :
+                userState.loggedIn ? (userState.verified ? "Dashboard" : "Verify ID Now") : "Explore Campus"} <ArrowRight size={18} />
             </button>
           </div>
 
@@ -772,7 +802,7 @@ export default function LandingPage() {
             </div>
 
             {/* Feed Container */}
-            <div className="relative w-full max-w-[420px] h-[500px] rounded-3xl border border-white/10 bg-[#0A0A0E]/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col z-20">
+            <div className="relative w-full max-w-[420px] h-[400px] md:h-[500px] rounded-3xl border border-white/10 bg-[#0A0A0E]/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col z-20">
 
               {/* Header */}
               <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between z-20 relative">
