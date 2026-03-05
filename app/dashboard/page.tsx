@@ -45,7 +45,7 @@ export default function Dashboard() {
         const nowIso = new Date().toISOString();
         let query = supabase
           .from("gigs")
-          .select("*, users:poster_id(college)")
+          .select("*, users:poster_id(college, name, rating, rating_count)")
           .neq("poster_id", authUser.id)
           .eq("status", "open")
           .order("created_at", { ascending: false })
@@ -93,7 +93,9 @@ export default function Dashboard() {
     const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gig.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesType = feedType === 'ALL' || gig.listing_type === feedType;
-    const matchesCampus = campusFilter === 'ALL' || gig.users?.college === user?.user_metadata?.college;
+    const matchesCampus = campusFilter === 'ALL'
+      ? true
+      : (!gig.is_physical || gig.users?.college === user?.user_metadata?.college);
     return matchesSearch && matchesType && matchesCampus;
   }).sort((a, b) => {
     const aHighlighted = a.is_highlighted && a.highlight_expires_at && new Date(a.highlight_expires_at) > new Date();
@@ -153,6 +155,12 @@ export default function Dashboard() {
 
         {/* Global Actions */}
         <div className="flex items-center gap-3 md:gap-4 relative">
+
+          <Link href="/profile#refer" className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-brand-purple/20 border border-brand-purple/30 rounded-lg shadow-sm hover:bg-brand-purple/30 transition-colors">
+            <Gift size={14} className="text-brand-purple" />
+            <span className="text-xs font-bold text-brand-purple uppercase tracking-widest mt-0.5">Refer & Earn</span>
+          </Link>
+
           <button onClick={() => router.push('/messages')} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors relative group">
             <MessageSquare size={18} />
             <div className="absolute top-2 right-2 w-2 h-2 bg-brand-purple rounded-full"></div>
@@ -211,17 +219,28 @@ export default function Dashboard() {
             )}
 
             {/* Layer 1: Welcome + Identity */}
-            <section className="bg-[#0F172A] border border-[#1E293B] rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group">
+            <section className="bg-[#0F172A] border border-[#1E293B] rounded-3xl p-5 md:p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group mb-4">
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-purple/10 blur-[100px] rounded-full pointer-events-none"></div>
-              <div className="relative z-10 w-full md:w-auto mb-6 md:mb-0">
-                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">Good afternoon, {username.split(' ')[0]}.</h1>
-                <p className="text-zinc-400 text-sm">Here’s what’s happening on your campus today.</p>
+              <div className="relative z-10 w-full md:w-auto mb-4 md:mb-0">
+                <h1 className="text-xl md:text-2xl font-black text-white tracking-tight mb-1">Good afternoon, {username.split(' ')[0]}.</h1>
+                <p className="text-zinc-400 text-xs md:text-sm">Here’s what’s happening on your campus today.</p>
               </div>
-              <div className="hidden md:flex relative z-10 items-center gap-4">
-                <div className="bg-[#1E293B]/30 border border-[#334155] rounded-2xl p-4 text-right backdrop-blur-md">
-                  <p className="text-[10px] text-brand-purple font-black uppercase tracking-widest mb-1.5 flex justify-end items-center gap-1.5"><Zap size={10} className="fill-brand-purple" /> Today's Opportunities</p>
-                  <p className="text-xl font-black text-white">{hustleCount} <span className="text-xs font-bold text-zinc-500 uppercase">new hustles</span></p>
-                  <p className="text-xl font-black text-white mt-0.5">{marketCount} <span className="text-xs font-bold text-zinc-500 uppercase">marketplace items</span></p>
+              <div className="hidden md:flex relative z-10 items-center justify-end">
+                <div className="bg-[#1E293B]/30 border border-[#334155] rounded-2xl px-5 py-3 backdrop-blur-md flex items-center gap-6">
+                  <div>
+                    <p className="text-[10px] text-brand-purple font-black uppercase tracking-widest mb-1 shadow-sm flex items-center gap-1.5"><Zap size={10} className="fill-brand-purple" /> Opportunities</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div>
+                      <span className="text-xl font-black text-white">{hustleCount}</span>
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase ml-1.5">Hustles</span>
+                    </div>
+                    <div className="w-px h-6 bg-[#334155] self-center"></div>
+                    <div>
+                      <span className="text-xl font-black text-white">{marketCount}</span>
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase ml-1.5">Items</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -246,85 +265,7 @@ export default function Dashboard() {
               </Link>
             </section>
 
-            {/* Layer 3: Refer & Earn Card */}
-            {referralCode && (
-              <section className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 md:p-6">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  {/* Left: Referral Info */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center shrink-0">
-                      <Gift size={22} className="text-amber-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-black text-white mb-0.5">Refer & Earn</h3>
-                      <p className="text-[11px] text-zinc-500">Share your code. Earn 25 RP per referral. Redeem within 48h!</p>
-                    </div>
-                  </div>
-
-                  {/* Center: Code + Copy */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center bg-[#070B1A] border border-[#334155] rounded-xl px-4 py-2.5 gap-3">
-                      <span className="text-sm font-mono font-black text-amber-400 tracking-[0.2em]">{referralCode}</span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(referralCode);
-                          setCodeCopied(true);
-                          setTimeout(() => setCodeCopied(false), 2000);
-                        }}
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-amber-500/20 text-zinc-400 hover:text-amber-400 transition-all active:scale-90"
-                      >
-                        {codeCopied ? <CheckCircle2 size={14} className="text-green-400" /> : <Copy size={14} />}
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => {
-                        const shareUrl = `${window.location.origin}/login?ref=${referralCode}`;
-                        if (navigator.share) {
-                          navigator.share({ title: 'Join DoItForMe!', text: `Use my referral code ${referralCode} to sign up!`, url: shareUrl });
-                        } else {
-                          navigator.clipboard.writeText(shareUrl);
-                          setCodeCopied(true);
-                          setTimeout(() => setCodeCopied(false), 2000);
-                        }
-                      }}
-                      className="px-4 py-2.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold rounded-xl hover:bg-amber-500/20 transition-all active:scale-95"
-                    >
-                      Share
-                    </button>
-                  </div>
-
-                  {/* Right: Stats */}
-                  <div className="flex items-center gap-4">
-                    <div className="text-center">
-                      <div className="text-lg font-black text-white">{referralCount}</div>
-                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Referred</div>
-                    </div>
-                    <div className="w-px h-8 bg-[#1E293B]"></div>
-                    <div className="text-center">
-                      <div className="text-lg font-black text-amber-400">{pointsBalance}<span className="text-[10px] text-amber-400/60 ml-1">RP</span></div>
-                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Points</div>
-                    </div>
-                    {activePoints.length > 0 && (
-                      <>
-                        <div className="w-px h-8 bg-[#1E293B]"></div>
-                        <div className="text-center">
-                          <div className="text-xs font-bold text-red-400 flex items-center gap-1">
-                            <Clock size={10} />
-                            {(() => {
-                              const earliest = activePoints[0]?.expires_at;
-                              if (!earliest) return 'N/A';
-                              const hoursLeft = Math.max(0, Math.round((new Date(earliest).getTime() - Date.now()) / (1000 * 60 * 60)));
-                              return `${hoursLeft}h left`;
-                            })()}
-                          </div>
-                          <div className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Expiry</div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
+            {/* Layer 3 removed. Refer & Earn relocated to Profile Page. */}
 
             {/* Layer 4: Live Feed Section */}
             <section>
@@ -529,37 +470,36 @@ function FeedCard({ gig, index }: { gig: any, index?: number }) {
   const isHighlighted = gig.is_highlighted && gig.highlight_expires_at && new Date(gig.highlight_expires_at) > new Date();
   const delay = index !== undefined ? `${index * 50}ms` : '0ms';
   return (
-    <div
-      className={`bg-[#0F172A] border rounded-2xl p-5 flex flex-col group hover:-translate-y-1 hover:shadow-xl transition-all h-[150px] relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both ${isHighlighted
-        ? 'border-brand-purple/50 shadow-[0_0_25px_rgba(136,37,245,0.15)] hover:shadow-[0_0_35px_rgba(136,37,245,0.3)]'
-        : 'border-[#1E293B] hover:border-[#334155]'
-        }`}
-      style={{ animationDelay: delay }}
-    >
-      {isHighlighted && (
-        <div className="absolute top-3 right-3 px-2 py-0.5 bg-brand-purple/20 border border-brand-purple/30 rounded-md text-[8px] font-bold text-brand-purple uppercase tracking-widest z-20">
-          Featured
+    <Link href={`/gig/${gig.id}`} className="block">
+      <div
+        className={`bg-[#0F172A] border rounded-2xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-xl transition-all min-h-[170px] h-full relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both ${isHighlighted
+          ? 'border-brand-purple/50 shadow-[0_0_25px_rgba(136,37,245,0.15)] hover:shadow-[0_0_35px_rgba(136,37,245,0.3)]'
+          : 'border-[#1E293B] hover:border-[#334155]'
+          }`}
+        style={{ animationDelay: delay }}
+      >
+        {isHighlighted && (
+          <div className="absolute top-3 right-3 px-2 py-0.5 bg-brand-purple/20 border border-brand-purple/30 rounded-md text-[8px] font-bold text-brand-purple uppercase tracking-widest z-20">
+            Featured
+          </div>
+        )}
+        <div className="flex justify-between items-start mb-3 relative z-10">
+          <h3 className="font-bold text-white text-[17px] leading-snug group-hover:text-brand-purple transition-colors line-clamp-2 pr-4">{gig.title}</h3>
         </div>
-      )}
-      <div className="flex justify-between items-start mb-2 relative z-10">
-        <h3 className="font-bold text-white text-[15px] leading-snug group-hover:text-brand-purple transition-colors line-clamp-2 pr-4">{gig.title}</h3>
-      </div>
 
-      <div className="flex items-center gap-2 mb-auto relative z-10">
-        <span className="text-xs font-black text-brand-purple">₹{gig.price}</span>
-        {isMarket && gig.market_type === 'RENT' && <span className="text-[10px] text-zinc-500">/day</span>}
-      </div>
-
-      <div className="mt-auto pt-3 border-t border-[#1E293B] flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
-          <span className="flex items-center gap-1"><MapPin size={10} className="text-zinc-600" /> {gig.users?.college || "Campus"}</span>
-          <span>{timeAgo(gig.created_at)}</span>
+        <div className="flex items-center gap-2 mb-auto relative z-10">
+          <span className="text-lg font-black text-brand-purple">₹{gig.price}</span>
+          {isMarket && gig.market_type === 'RENT' && <span className="text-[11px] text-zinc-500">/day</span>}
         </div>
-        <Link href={`/gig/${gig.id}`} className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg text-[10px] font-bold text-white uppercase tracking-wider hover:bg-brand-purple hover:border-brand-purple transition-colors">
-          Apply
-        </Link>
+
+        <div className="mt-6 pt-4 border-t border-[#1E293B] flex items-center justify-between relative z-10">
+          <div className="flex flex-col gap-1 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+            <span className="flex items-center gap-1"><MapPin size={10} className="text-zinc-600" /> {gig.is_physical ? "Physical" : "Online"} • {gig.users?.college || "Global"}</span>
+          </div>
+          <span className="text-[9px] text-zinc-400 font-bold uppercase">{timeAgo(gig.created_at)}</span>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
 

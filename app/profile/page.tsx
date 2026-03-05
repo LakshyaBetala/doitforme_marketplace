@@ -10,7 +10,7 @@ import {
   User, Mail, ShieldCheck, ShieldAlert, Star, Briefcase,
   Loader2, Wallet, Calendar, CheckCircle2,
   Phone, GraduationCap, ArrowLeft, Edit2, Check, X,
-  Zap, Save, AlertTriangle, Lock
+  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock
 } from "lucide-react";
 
 // --- COLLEGES LIST ---
@@ -61,6 +61,13 @@ export default function ProfilePage() {
   // Editable fields (ONLY name and phone)
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+
+  // Referral state
+  const [referralCode, setReferralCode] = useState("");
+  const [pointsBalance, setPointsBalance] = useState(0);
+  const [referralCount, setReferralCount] = useState(0);
+  const [activePoints, setActivePoints] = useState<any[]>([]);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -171,6 +178,28 @@ export default function ProfilePage() {
         // Initialize edit fields (only name & phone are editable)
         setEditName(userData.name || "");
         setEditPhone(userData.phone || "");
+
+        // 5. Fetch Referral data
+        if (userData.referral_code) {
+          setReferralCode(userData.referral_code);
+        }
+        setPointsBalance(userData.points_balance || 0);
+
+        const { data: refs } = await supabase
+          .from("referrals")
+          .select("id")
+          .eq("referrer_id", user.id);
+        setReferralCount(refs?.length || 0);
+
+        const { data: pts } = await supabase
+          .from("points_transactions")
+          .select("amount, expires_at, reason")
+          .eq("user_id", user.id)
+          .eq("type", "EARN")
+          .eq("redeemed", false)
+          .gt("expires_at", new Date().toISOString())
+          .order("expires_at", { ascending: true });
+        setActivePoints(pts || []);
 
       } catch (err) {
         console.error("Profile Load Error:", err);
@@ -541,6 +570,109 @@ export default function ProfilePage() {
               Verify Now
             </Link>
           </div>
+        )}
+
+        {/* Refer & Earn Section */}
+        {referralCode && (
+          <section id="refer" className="scroll-mt-24 rounded-[28px] md:rounded-[32px] border border-brand-purple/20 bg-[#121217] p-6 md:p-8 space-y-6 relative overflow-hidden group hover:border-brand-purple/40 transition-colors">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-purple/5 blur-[100px] rounded-full pointer-events-none group-hover:bg-brand-purple/10 transition-all"></div>
+
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+              {/* Left: Referral Info */}
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-purple/20 to-brand-pink/20 flex items-center justify-center shrink-0 border border-brand-purple/30">
+                  <Gift size={26} className="text-brand-purple drop-shadow-[0_0_15px_rgba(136,37,245,0.8)]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white flex gap-2 items-center">
+                    Refer & Earn
+                    <span className="px-2 py-0.5 rounded-full bg-brand-pink/20 text-brand-pink text-[10px] uppercase font-bold tracking-widest border border-brand-pink/30">Hot</span>
+                  </h3>
+                  <p className="text-[12px] text-zinc-400 max-w-sm mt-1">Share your code with friends. You both get 25 Reward Points when they join!</p>
+                </div>
+              </div>
+
+              {/* Center: Code Share */}
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="flex-1 md:flex-none flex items-center justify-between bg-[#0B0B11] border border-white/5 rounded-xl px-4 py-3 gap-4">
+                  <span className="text-base font-mono font-black text-white tracking-[0.2em]">{referralCode}</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(referralCode);
+                      setCodeCopied(true);
+                      setTimeout(() => setCodeCopied(false), 2000);
+                    }}
+                    className="p-1.5 rounded-lg bg-white/5 hover:bg-brand-purple/20 text-zinc-400 hover:text-brand-purple transition-all active:scale-90"
+                    title="Copy Code"
+                  >
+                    {codeCopied ? <CheckCircle2 size={16} className="text-green-400" /> : <Copy size={16} />}
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    const shareUrl = `${window.location.origin}/login?ref=${referralCode}`;
+                    if (navigator.share) {
+                      navigator.share({ title: 'Join DoItForMe!', text: `Use my referral code ${referralCode} to sign up!`, url: shareUrl });
+                    } else {
+                      navigator.clipboard.writeText(shareUrl);
+                      setCodeCopied(true);
+                      setTimeout(() => setCodeCopied(false), 2000);
+                    }
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-brand-purple to-brand-pink text-white text-sm font-bold rounded-xl hover:opacity-90 transition-all active:scale-95 shadow-[0_0_15px_rgba(136,37,245,0.3)] whitespace-nowrap"
+                >
+                  Share Code
+                </button>
+              </div>
+            </div>
+
+            {/* Right: Stats Footer */}
+            <div className="pt-4 border-t border-white/5 flex items-center gap-8 overflow-x-auto scrollbar-hide relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                  <User size={16} className="text-zinc-400" />
+                </div>
+                <div>
+                  <div className="text-lg font-black text-white">{referralCount}</div>
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Friends Joined</div>
+                </div>
+              </div>
+
+              <div className="w-px h-8 bg-white/5 shrink-0"></div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                  <Zap size={16} className="text-amber-400 fill-amber-400" />
+                </div>
+                <div>
+                  <div className="text-lg font-black text-amber-400 flex items-baseline gap-1">{pointsBalance}<span className="text-[10px] opacity-60">RP</span></div>
+                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Reward Points</div>
+                </div>
+              </div>
+
+              {activePoints.length > 0 && (
+                <>
+                  <div className="w-px h-8 bg-white/5 shrink-0"></div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0">
+                      <Clock size={16} className="text-red-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-red-400 mb-0.5">
+                        {(() => {
+                          const earliest = activePoints[0]?.expires_at;
+                          if (!earliest) return 'N/A';
+                          const hoursLeft = Math.max(0, Math.round((new Date(earliest).getTime() - Date.now()) / (1000 * 60 * 60)));
+                          return `${hoursLeft}h left`;
+                        })()}
+                      </div>
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Points Expiry</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
         )}
 
         {/* Financials & Reviews Grid */}

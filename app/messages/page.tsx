@@ -123,7 +123,7 @@ export default function ChatPage() {
                         ...conv,
                         otherUser: profile || {
                             id: conv.otherUserId,
-                            name: "Unknown User",
+                            name: "User",
                             rating: 0
                         } // Fallback
                     };

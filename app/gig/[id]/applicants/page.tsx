@@ -6,13 +6,13 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
 import { load } from '@cashfreepayments/cashfree-js'; // Import Cashfree Frontend SDK
-import { 
-  ArrowLeft, 
-  User, 
-  Clock, 
-  CheckCircle2, 
-  MessageSquare, 
-  Loader2, 
+import {
+  ArrowLeft,
+  User,
+  Clock,
+  CheckCircle2,
+  MessageSquare,
+  Loader2,
   ShieldCheck,
   Briefcase,
   Star,
@@ -36,18 +36,18 @@ export default function ApplicantsPage() {
   // Initialize Cashfree SDK
   // ... inside app/gig/[id]/applicants/page.tsx ...
 
-// Initialize Cashfree SDK
-const [cashfree, setCashfree] = useState<any>(null);
-useEffect(() => {
-  // FIX: Check if we are in production or dev
-  const mode = process.env.NODE_ENV === "production" ? "production" : "sandbox"; 
-  
-  load({
-    mode: mode // <--- Use the variable here
-  }).then((sdk: any) => {
-    setCashfree(sdk);
-  });
-}, []);
+  // Initialize Cashfree SDK
+  const [cashfree, setCashfree] = useState<any>(null);
+  useEffect(() => {
+    // FIX: Check if we are in production or dev
+    const mode = process.env.NODE_ENV === "production" ? "production" : "sandbox";
+
+    load({
+      mode: mode // <--- Use the variable here
+    }).then((sdk: any) => {
+      setCashfree(sdk);
+    });
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -107,11 +107,11 @@ useEffect(() => {
   // --- HIRE WORKER (DIRECT PAYMENT FLOW) ---
   const handleAccept = async (workerId: string) => {
     if (!gig || !cashfree) return;
-    
+
     // 1. Confirmation
     const confirmMsg = `HIRING CONFIRMATION:\n\nYou are about to hire this worker.\nYou will be redirected to pay ₹${gig.price} securely.`;
     if (!confirm(confirmMsg)) return;
-    
+
     setAssigning(workerId);
 
     try {
@@ -119,10 +119,10 @@ useEffect(() => {
       const res = await fetch("/api/gig/hire", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          gigId: id, 
-          workerId: workerId, 
-          price: gig.price 
+        body: JSON.stringify({
+          gigId: id,
+          workerId: workerId,
+          price: gig.price
         }),
       });
 
@@ -133,13 +133,13 @@ useEffect(() => {
       }
 
       if (json.paymentSessionId) {
-          // 3. Open Cashfree Checkout
-          cashfree.checkout({
-              paymentSessionId: json.paymentSessionId,
-              redirectTarget: "_self", // Redirects back to your website after payment
-          });
+        // 3. Open Cashfree Checkout
+        cashfree.checkout({
+          paymentSessionId: json.paymentSessionId,
+          redirectTarget: "_self", // Redirects back to your website after payment
+        });
       } else {
-          throw new Error("Invalid payment session");
+        throw new Error("Invalid payment session");
       }
 
     } catch (err: any) {
@@ -173,13 +173,13 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white p-6 lg:p-12 pb-24 selection:bg-brand-purple selection:text-white">
-      
+
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-brand-purple/5 blur-[150px] rounded-full"></div>
       </div>
 
       <div className="max-w-4xl mx-auto relative z-10">
-        
+
         {/* Header */}
         <div className="mb-8">
           <Link href={`/gig/${id}`} className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-4 group">
@@ -195,8 +195,8 @@ useEffect(() => {
             </div>
             {/* Applicant Counter */}
             <div className="text-right hidden sm:block">
-               <span className="text-2xl font-bold text-white">{applicants.length}</span>
-               <span className="text-white/40 text-sm"> / 10 Applicants</span>
+              <span className="text-2xl font-bold text-white">{applicants.length}</span>
+              <span className="text-white/40 text-sm"> / 10 Applicants</span>
             </div>
           </div>
         </div>
@@ -212,7 +212,7 @@ useEffect(() => {
             <p className="text-white/60 mb-8 max-w-md mx-auto">
               Funds are held in escrow. You can now chat with the worker.
             </p>
-            
+
             {(() => {
               const hired = applicants.find(a => a.worker_id === gig.assigned_worker_id);
               return hired ? (
@@ -228,9 +228,9 @@ useEffect(() => {
                       <p className="text-xs text-white/50">{hired.worker?.email}</p>
                     </div>
                   </div>
-                  
+
                   {/* LINK TO THE CHAT PAGE */}
-                  <Link 
+                  <Link
                     href={`/gig/${id}/chat`}
                     className="flex items-center gap-2 px-8 py-3 bg-brand-purple text-white font-bold rounded-xl hover:bg-brand-purple/80 transition-all shadow-lg shadow-brand-purple/20"
                   >
@@ -245,13 +245,13 @@ useEffect(() => {
         ) : (
           /* --- APPLICANT LIST --- */
           <div className="space-y-4">
-            
+
             {/* Limit Warning */}
             {applicants.length >= 10 && (
-                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-center gap-3 text-yellow-500 text-sm mb-4">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>Application limit reached.</span>
-                </div>
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl flex items-center gap-3 text-yellow-500 text-sm mb-4">
+                <AlertCircle className="w-4 h-4" />
+                <span>Application limit reached.</span>
+              </div>
             )}
 
             {applicants.length === 0 ? (
@@ -263,22 +263,22 @@ useEffect(() => {
               </div>
             ) : (
               applicants.map((app) => (
-                <div 
-                  key={app.id} 
+                <div
+                  key={app.id}
                   className="bg-[#121217] border border-white/10 rounded-[24px] p-6 hover:border-brand-purple/30 transition-all group"
                 >
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    
+
                     {/* Worker Info */}
                     <div className="flex items-start gap-4">
                       <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 overflow-hidden relative flex-shrink-0 flex items-center justify-center text-xl font-bold uppercase text-white/60">
-                        {app.worker?.name?.[0] || app.worker?.email?.[0] || <User className="w-6 h-6"/>}
+                        {app.worker?.name?.[0] || app.worker?.email?.[0] || <User className="w-6 h-6" />}
                       </div>
-                      
+
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-bold text-lg text-white">
-                            {app.worker?.name || app.worker?.email?.split('@')[0] || "Unknown"}
+                            {app.worker?.name || "User"}
                           </h3>
                           {app.worker?.kyc_verified && (
                             <div className="p-1" title="Verified ID">
@@ -286,7 +286,7 @@ useEffect(() => {
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="flex flex-wrap items-center gap-4 text-xs text-white/40 mb-3">
                           <div className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">
                             <Star className="w-3 h-3 fill-current" />

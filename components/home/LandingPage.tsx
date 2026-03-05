@@ -7,7 +7,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, CheckCircle2, ShieldCheck, Zap, Lock,
-  DollarSign, ChevronDown, Quote, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock,
+  DollarSign, ChevronDown, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock,
   Linkedin, Instagram, Briefcase, ShoppingBag as ShoppingBagIcon
 } from "lucide-react";
 
@@ -152,14 +152,6 @@ const gigsMock = [
   },
 ];
 
-const testimonials = [
-  { role: "Poster", quote: "Got my assignment printed and delivered in 2 hours!", color: "#8825F5" },
-  { role: "Worker", quote: "I made ₹2000 last weekend just helping with Figma designs.", color: "#3B82F6" },
-  { role: "Student", quote: "The direct payment flow is so much better than other apps.", color: "#EC4899" },
-  { role: "Dev", quote: "Found someone to debug my code instantly.", color: "#10B981" },
-  { role: "Artist", quote: "Sold 3 custom sketches for a festival through this.", color: "#EAB308" }
-];
-
 const useScrollPosition = () => {
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
@@ -208,7 +200,7 @@ export default function LandingPage() {
 
   // 2. Asset Preloading (Logo and Sloth)
   useEffect(() => {
-    const criticalImages = ["/sloth.png", "/Doitforme_logo.png"];
+    const criticalImages = ["/Doitforme_logo.png"];
     let loaded = 0;
 
     criticalImages.forEach((src) => {
@@ -862,37 +854,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TICKER */}
-      <div className="w-full bg-white border-y border-zinc-200 py-3 md:py-4 mb-16 md:mb-24 overflow-hidden relative z-10">
-        <div className="absolute inset-y-0 left-0 w-16 md:w-32 bg-gradient-to-r from-background to-transparent z-10"></div>
-        <div className="absolute inset-y-0 right-0 w-16 md:w-32 bg-gradient-to-l from-background to-transparent z-10"></div>
-        <div className="animate-marquee whitespace-nowrap flex gap-10">
-          {[...Array(12)].map((_, i) => (
-            <span key={i} className="text-base md:text-lg font-bold text-black uppercase tracking-widest mx-4 flex items-center gap-4">
-              ASSIGNMENTS <span className="text-zinc-300">•</span>
-              RENTALS <span className="text-zinc-300">•</span>
-              PROJECTS <span className="text-zinc-300">•</span>
-              CASH <span className="text-zinc-300">•</span>
-              SKILLS <span className="text-zinc-300">•</span>
-            </span>
-          ))}
-        </div>
-      </div>
+
 
       {/* -------------------------------------------------------
           THE ESSENTIALS (4 Titles Grid)
       --------------------------------------------------------- */}
-      <section className="max-w-7xl mx-auto px-6 mb-12 md:mb-20 relative z-10">
+      <section className="max-w-7xl mx-auto px-6 pt-12 md:pt-20 mb-20 md:mb-32 relative z-10">
         <div className="mb-12 text-center md:text-left">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Why DoItForMe?</h2>
-          <p className="text-zinc-500 text-sm md:text-base">Built for speed, trust, and student life.</p>
+          <p className="text-zinc-500 text-sm md:text-base">Built for speed, trust, and the dual-campus economy.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[
-            { title: "Zero Friction", desc: "No CVs. No Interviews. Just apply and get to work.", icon: Zap },
-            { title: "Student Verified", desc: "Real students from verified colleges. No bots.", icon: Users },
-            { title: "Payouts in 24h", desc: "Money sent to your UPI within 24 hours of job completion.", icon: Clock },
-            { title: "24/7 Email Support", desc: "Dedicated email assistance for any dispute or issue.", icon: Mail }
+            { title: "Dual Economy", desc: "Earn by completing gigs, or buy/sell textbooks and gear in one place.", icon: Briefcase },
+            { title: "Zero Friction", desc: "No CVs. No Interviews. Just verified students getting things done.", icon: Zap },
+            { title: "Escrow Protected", desc: "Your money is held safely until the job is done or item is delivered.", icon: ShieldCheck },
+            { title: "Lightning Payouts", desc: "Instant transfers to UPI. No minimum withdrawal limits.", icon: Wallet }
           ].map((item, i) => (
             <div key={i} className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-brand-purple/50 transition-colors group active:scale-95 touch-manipulation">
               <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
@@ -1119,42 +1096,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* -------------------------------------------------------
-          STUDENT STORIES (Revolving + Minimalist Border)
-      --------------------------------------------------------- */}
-      <section className="py-16 md:py-24 overflow-hidden relative z-10">
-        <div className="max-w-6xl mx-auto px-6 mb-12 flex items-center gap-4">
-          <div className="h-px bg-zinc-800 flex-1"></div>
-          <h2 className="text-xl md:text-2xl font-bold text-white text-center">Student Stories</h2>
-          <div className="h-px bg-zinc-800 flex-1"></div>
-        </div>
 
-        {/* Infinite Marquee */}
-        <div className="w-full overflow-hidden">
-          <div className="flex animate-marquee gap-4 md:gap-6 px-4 md:px-6">
-            {[...testimonials, ...testimonials].map((t, i) => (
-              <div key={i} className={`flex-shrink-0 w-[280px] md:w-[320px] bg-[#0A0A0A] border-l-2 p-6 rounded-r-xl border-y border-r border-white/5 will-change-transform`} style={{ borderLeftColor: t.color }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 bg-white/5 rounded-full"><Quote size={12} className="text-zinc-400" /></div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{t.role}</span>
-                </div>
-                <p className="text-zinc-300 text-xs md:text-sm leading-relaxed">"{t.quote}"</p>
-                <div className="mt-4 flex gap-1">
-                  {[...Array(5)].map((_, j) => <Star key={j} size={10} className="fill-zinc-700 text-zinc-700" />)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* FAQ (Restored 4 items) */}
+      {/* FAQ */}
       <section id="faq" className="py-16 md:py-24 max-w-4xl mx-auto px-6 relative z-10">
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Common Questions</h2>
           <div className="inline-flex bg-white/5 rounded-full p-1 border border-white/10">
-            <button onClick={() => setFaqTab("students")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "students" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>Students</button>
-            <button onClick={() => setFaqTab("posters")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "posters" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>Posters</button>
+            <button onClick={() => setFaqTab("students")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "students" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>Hustle</button>
+            <button onClick={() => setFaqTab("posters")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "posters" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>Marketplace</button>
           </div>
         </div>
 
@@ -1223,18 +1173,18 @@ export default function LandingPage() {
 }
 
 // -------------------------------------------------------
-// STATIC DATA (4 FAQs)
+// STATIC DATA (FAQs)
 // -------------------------------------------------------
 const studentFaq = [
-  { q: "How do I get paid?", a: "Once your work is approved by the poster, funds are released immediately to your linked UPI or bank account. No minimum withdrawal limits." },
-  { q: "Is verification required?", a: "Yes — you must upload a valid Student ID. This keeps the platform safe and exclusive to students." },
-  { q: "What if the poster doesn't pay?", a: "They already paid! Funds are held in Escrow before you start working. If you do the work, you are guaranteed to get paid." },
-  { q: "What if I face a dispute?", a: "You can raise a dispute directly in the chat. Our team reviews the chat history and evidence to ensure a fair resolution." },
+  { q: "What is the Hustle platform?", a: "Hustle is where users post short-term campus gigs. You can either post tasks to get help from your peers, or apply to complete tasks and earn money instantly." },
+  { q: "How do I get paid for my Hustle?", a: "Once your work is approved by the poster, funds are released immediately to your linked UPI or bank account. No minimum withdrawal limits." },
+  { q: "What if the poster doesn't pay?", a: "They already paid! Funds are held in Escrow before you start working. If you do the work properly, you are 100% guaranteed to get paid." },
+  { q: "What are the fees for Hustle?", a: "Posting tasks is totally FREE. For completing tasks, we charge a 10% platform fee (which drops to 7.5% after you complete 10 gigs)." },
 ];
 
 const posterFaq = [
-  { q: "Is my money safe?", a: "Yes. Funds are held in Escrow. The worker cannot touch it until you verify their work and click 'Release'." },
-  { q: "What are the fees?", a: "Posting is FREE. For Services, we charge 10% (drops to 7.5% after 10 gigs). Market Sales are 0% fee. Rentals have a 3% escrow fee. Payment gateway charges (~2%) are extra." },
-  { q: "Can I sell my old books?", a: "Absolutely! List books, calculators, or lab coats in the Campus Market. It's free to list and you keep 100% of the sale price." },
-  { q: "How do disputes work?", a: "If you are unhappy with the work, raise a dispute before releasing funds. We mediate to ensure a fair outcome or refund." },
+  { q: "What is the Campus Marketplace?", a: "The Marketplace is an exclusive campus-only space where you can buy, sell, or rent items securely with other verified students." },
+  { q: "What are the Marketplace fees?", a: "Selling items is 100% FREE. We don't take any commission on your sales. For rentals, there is a small 3% escrow fee to ensure the items and deposits are handled safely." },
+  { q: "How do transactions work in the Marketplace?", a: "We keep all funds protected in Escrow until both parties approve the exchange. Payment gateway charges (~2%) apply as standard." },
+  { q: "Can I sell or rent old books and gadgets?", a: "Absolutely! You can easily list academic books, calculators, lab coats, and electronics. The Campus Marketplace is built right into DoItForMe." },
 ];

@@ -6,6 +6,7 @@ export async function GET(request: Request) {
     const { searchParams, origin } = new URL(request.url);
     const code = searchParams.get("code");
     const next = searchParams.get("next") ?? "/dashboard";
+    const ref = searchParams.get("ref"); // Capture optional referral
 
     if (code) {
         const cookieStore = await cookies();
@@ -38,6 +39,19 @@ export async function GET(request: Request) {
                 });
             } catch (e) {
                 console.error("User sync failed:", e);
+            }
+
+            // Apply Referral Code if exists
+            if (ref) {
+                try {
+                    await fetch(`${origin}/api/referral/apply`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: data.user.id, referralCode: ref }),
+                    });
+                } catch (e) {
+                    console.error("Referral apply failed in OAuth callback:", e);
+                }
             }
 
             return NextResponse.redirect(`${origin}${next}`);

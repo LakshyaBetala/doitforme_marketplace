@@ -1086,7 +1086,7 @@ export default function GigDetailPage() {
                                   </div>
 
                                   <div>
-                                    <h4 className="font-bold text-white text-sm">{app.worker?.name || "Unknown"}</h4>
+                                    <h4 className="font-bold text-white text-sm">{app.worker?.name || "User"}</h4>
                                     <div className="flex items-center gap-2 text-[10px] text-zinc-400">
                                       <span className="flex items-center gap-0.5 text-yellow-500">
                                         <Star size={10} fill="currentColor" /> {app.worker?.rating || "New"}

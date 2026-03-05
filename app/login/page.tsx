@@ -224,10 +224,16 @@ function AuthPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setMessage("");
+
+    const redirectUrl = new URL(`${window.location.origin}/auth/callback`);
+    if (referralCode.trim()) {
+      redirectUrl.searchParams.set("ref", referralCode.trim());
+    }
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: redirectUrl.toString(),
       },
     });
     if (error) {
