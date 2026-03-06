@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Cashfree } from "cashfree-pg";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
@@ -15,6 +16,10 @@ export async function POST(req: Request) {
     const { gigId } = await req.json();
 
     const supabase = await supabaseServer();
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const { data: { user } } = await supabase.auth.getUser(); // The Payer
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -138,7 +143,7 @@ export async function POST(req: Request) {
       deposit: deposit
     };
 
-    const { error: txnError } = await supabase.from('transactions').insert({
+    const { error: txnError } = await supabaseAdmin.from('transactions').insert({
       gig_id: gigId,
       user_id: user.id, // Payer
       amount: totalAmount,

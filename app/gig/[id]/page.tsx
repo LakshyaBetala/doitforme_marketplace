@@ -69,6 +69,7 @@ interface GigData {
   security_deposit?: number;
   item_condition?: string;
   poster_email?: string;
+  payment_status?: string;
 }
 
 interface UserProfile {
@@ -299,37 +300,38 @@ export default function GigDetailPage() {
   const handleBuy = async () => {
     if (!user) return alert("Please login to purchase.");
 
-    // V6 P2P FLOW (No Gateway)
-    if (gig?.listing_type === 'MARKET' && gig.market_type !== 'RENT') {
-      const action = gig.market_type === 'REQUEST' ? "Fulfill Request" : "Make Offer";
-      // Open Modal instead of confirm
+    // 1. Initial Application / Offer Step for ALL Market Gigs (including RENT)
+    if (gig?.listing_type === 'MARKET' && status === 'open') {
+      // Regardless of RENT, SELL, REQUEST, we want to make an offer first
       setShowOfferModal(true);
       return;
     }
 
-    // RENTAL / ESCROW FLOW
-    const action = gig?.market_type === 'RENT' ? "Rent" : "Buy";
-    if (!confirm(`Are you sure you want to ${action} this item? You will be redirected to payment.`)) return;
+    // 2. Gateway Payment Step (Only for RENT, after assignment)
+    if (gig?.listing_type === 'MARKET' && gig?.market_type === 'RENT' && status === 'assigned') {
+      const action = "Rent";
+      if (!confirm(`Are you sure you want to proceed to payment for this rental?`)) return;
 
-    setIsBuying(true);
-    try {
-      const res = await fetch("/api/payments/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gigId: id })
-      });
+      setIsBuying(true);
+      try {
+        const res = await fetch("/api/payments/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gigId: id })
+        });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to initiate payment");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to initiate payment");
 
-      if (data.payment_link) {
-        window.location.href = data.payment_link;
-      } else {
-        throw new Error("No payment link received");
+        if (data.payment_link) {
+          window.location.href = data.payment_link;
+        } else {
+          throw new Error("No payment link received");
+        }
+      } catch (err: any) {
+        alert(err.message);
+        setIsBuying(false);
       }
-    } catch (err: any) {
-      alert(err.message);
-      setIsBuying(false);
     }
   };
 
@@ -1230,7 +1232,23 @@ export default function GigDetailPage() {
                         </div>
                       )}
 
-                      {isWorker && status === "assigned" && (
+                      {isWorker && status === "assigned" && gig.market_type === "RENT" && gig.payment_status !== "ESCROW_FUNDED" && (
+                        <div className="space-y-3">
+                          <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-center">
+                            <p className="text-yellow-500 font-bold mb-1">Offer Accepted!</p>
+                            <p className="text-xs text-yellow-500/80">Please complete the payment and sign the rental agreement to unlock contact info.</p>
+                          </div>
+                          <button
+                            onClick={handleBuy}
+                            disabled={isBuying}
+                            className="w-full py-4 rounded-2xl bg-brand-purple text-white font-bold text-lg transition-all shadow-lg hover:bg-brand-purple/90"
+                          >
+                            {isBuying ? "Processing..." : "Pay & Sign Agreement"}
+                          </button>
+                        </div>
+                      )}
+
+                      {isWorker && status === "assigned" && (gig.market_type !== "RENT" || gig.payment_status === "ESCROW_FUNDED") && (
                         <div className="space-y-3">
                           <div className="p-4 rounded-2xl bg-brand-purple/10 border border-brand-purple/20 text-center">
                             <p className="text-brand-purple font-bold mb-1">Assigned to You!</p>
