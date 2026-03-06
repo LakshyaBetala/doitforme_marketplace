@@ -439,7 +439,7 @@ export default function LandingPage() {
           </p>
 
           {/* CTA Buttons — Stacked */}
-          <div className="flex flex-col gap-3 w-full max-w-[340px] mb-8">
+          <div className="flex flex-col gap-3 w-full max-w-[340px] mx-auto mb-8">
             <motion.button
               onClick={handleLogin}
               whileTap={{ scale: 0.97 }}
