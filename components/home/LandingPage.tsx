@@ -152,6 +152,18 @@ const gigsMock = [
   },
 ];
 
+// Live Feed items for mobile hero
+const liveFeedItems = [
+  { id: 1, type: "Gig" as const, title: "Fix React Hydration Bug", price: "₹500" },
+  { id: 2, type: "Item" as const, title: "TI-84 Calculator — Like New", price: "₹1,800" },
+  { id: 3, type: "Gig" as const, title: "Design Poster for Hackathon", price: "₹750" },
+  { id: 4, type: "Item" as const, title: "Data Structures Textbook", price: "₹350" },
+  { id: 5, type: "Gig" as const, title: "Deliver Assignment to Block 4", price: "₹150" },
+  { id: 6, type: "Item" as const, title: "Wireless Earbuds — Unused", price: "₹1,200" },
+  { id: 7, type: "Gig" as const, title: "Build Discord Bot for Server", price: "₹2,000" },
+  { id: 8, type: "Item" as const, title: "Lab Coat — Size M", price: "₹200" },
+];
+
 const useScrollPosition = () => {
   const [scrollY, setScrollY] = useState(0);
   useEffect(() => {
@@ -229,6 +241,22 @@ export default function LandingPage() {
     }, 3500);
     return () => clearInterval(interval);
   }, [loadingComplete]);
+
+  // Mobile Live Feed cycling
+  const [mobileFeedIndex, setMobileFeedIndex] = useState(0);
+  useEffect(() => {
+    if (!loadingComplete) return;
+    const interval = setInterval(() => {
+      setMobileFeedIndex((prev) => (prev + 1) % liveFeedItems.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [loadingComplete]);
+
+  const visibleFeedItems = [
+    liveFeedItems[mobileFeedIndex % liveFeedItems.length],
+    liveFeedItems[(mobileFeedIndex + 1) % liveFeedItems.length],
+    liveFeedItems[(mobileFeedIndex + 2) % liveFeedItems.length],
+  ];
 
   // Mouse Spotlight
   const mousePos = useRef({ x: 0, y: 0 });
@@ -340,64 +368,137 @@ export default function LandingPage() {
       {/* -------------------------------------------------------
           HERO SECTION
       --------------------------------------------------------- */}
-      <section className="relative z-10 min-h-[90vh] overflow-hidden">
+      <section className="relative z-10 lg:min-h-[90vh] overflow-hidden">
         {/* Hero Background Glow */}
         <div className="absolute inset-0 pointer-events-none z-0">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#8825F5]/15 rounded-full blur-[150px]" />
           <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#8825F5]/30 to-transparent" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 lg:pt-20 pb-10 md:pb-20 flex flex-col lg:grid lg:grid-cols-2 gap-6 md:gap-12 items-center lg:min-h-[85vh]">
+        {/* ============ MOBILE HERO (lg:hidden) ============ */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="lg:hidden relative z-10 px-5 pt-24 pb-10"
+        >
+          {/* Eyebrow Badge */}
+          <div
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-5 w-fit"
+            style={{
+              background: 'linear-gradient(135deg, rgba(136, 37, 245, 0.15) 0%, rgba(136, 37, 245, 0.05) 100%)',
+              border: '1px solid rgba(136, 37, 245, 0.3)',
+              backdropFilter: 'blur(12px)',
+            }}
+          >
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_6px_rgba(34,197,94,0.6)]"></span>
+            <span className="text-[10px] font-bold tracking-[0.15em] text-[#C084FC] uppercase">Live on your campus</span>
+          </div>
+
+          {/* Headline Block with Floating Sloth */}
+          <div className="relative mb-4">
+            {/* Floating Sloth - top right */}
+            <motion.div
+              animate={{
+                y: [0, -8, 0],
+                rotate: [-2, 2, -2],
+              }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -top-2 right-4 z-30 w-[105px] h-[105px]"
+            >
+              <Image
+                src="/hisloth.png"
+                alt="Sloth mascot"
+                width={105}
+                height={105}
+                className="object-contain"
+                style={{ filter: 'drop-shadow(0 0 15px rgba(136, 37, 245, 0.4)) drop-shadow(0 10px 20px rgba(0,0,0,0.3))' }}
+                priority
+              />
+            </motion.div>
+
+            {/* Stacked Headline — Space Grotesk Display */}
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white">
+                Earn.
+              </h1>
+              <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] mt-1">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8825F5] via-[#A855F7] to-[#C084FC]">
+                  Outsource.
+                </span>
+              </h1>
+              <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white mt-1">
+                Trade.
+              </h1>
+            </div>
+          </div>
+
+          {/* Subheadline */}
+          <p className="text-[15px] text-[#B8A9D4] leading-relaxed mb-7">
+            The campus marketplace where students earn, outsource &amp; trade — all in one place.
+          </p>
+
+          {/* CTA Buttons — Stacked */}
+          <div className="flex flex-col gap-3 w-full max-w-[340px] mb-8">
+            <motion.button
+              onClick={handleLogin}
+              whileTap={{ scale: 0.97 }}
+              className="group w-full py-[14px] rounded-full text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-300"
+              style={{
+                background: 'linear-gradient(135deg, #8825F5 0%, #6D28D9 100%)',
+                boxShadow: '0 0 25px rgba(136, 37, 245, 0.35), 0 4px 15px rgba(0, 0, 0, 0.3)',
+              }}
+            >
+              Explore Campus
+              <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
+            </motion.button>
+            <button
+              onClick={() => scrollToSection('how-it-works')}
+              className="w-full py-[14px] rounded-full text-sm font-bold text-white/90 border border-[#8825F5]/40 hover:border-[#8825F5]/70 transition-all flex items-center justify-center gap-2 active:scale-[0.97] bg-transparent"
+            >
+              How it works
+            </button>
+          </div>
+        </motion.div>
+
+        {/* ============ DESKTOP HERO (hidden lg:grid) ============ */}
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-20 pb-20 hidden lg:grid lg:grid-cols-2 gap-12 items-center lg:min-h-[85vh]">
 
           {/* LEFT: CONTENT */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="order-2 lg:order-1 text-center lg:text-left flex flex-col items-center lg:items-start relative z-20"
+            className="lg:order-1 text-left flex flex-col items-start relative z-20"
           >
 
             {/* Heading */}
-            <h1 className="text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-1 lg:mb-2 w-full">
-              Earn. Outsource.
-            </h1>
-            <h1 className="text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-3 lg:mb-4 w-full">
-              Trade.
+            <h1 className="text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8825F5] via-[#A855F7] to-[#C084FC]">Outsource.</span><br /> Trade.
             </h1>
 
             {/* Subheading */}
-            <p className="text-lg lg:text-2xl text-white/85 leading-snug mb-2 lg:mb-4 w-full">
+            <p className="text-2xl text-white/85 leading-snug mb-4 w-full">
               All in One <span className="font-bold">Campus Marketplace</span>
             </p>
 
             {/* Description */}
-            <p className="text-sm lg:text-base text-zinc-400 leading-relaxed max-w-xs lg:max-w-md mb-6 lg:mb-10 lg:pr-4">
-              Earn money, outsource tasks, and trade items &mdash; all within your campus.
+            <p className="text-base text-zinc-400 leading-relaxed max-w-md mb-10 pr-4">
+              Earn money, outsource tasks, and trade items all within your campus.
             </p>
 
-            {/* Mobile: Single CTA */}
-            <button
-              onClick={handleLogin}
-              className="lg:hidden w-full max-w-[300px] px-7 py-4 rounded-xl text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.12)]"
-            >
-              Explore Campus <ArrowRight size={16} />
-            </button>
-
             {/* Desktop: Two Buttons */}
-            <div className="hidden lg:flex items-center gap-4">
+            <div className="flex items-center gap-4">
               <button
                 onClick={handleLogin}
-                className="px-7 py-3.5 rounded-xl text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                className="px-7 py-3.5 rounded-full text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
               >
                 Explore Campus <ArrowRight size={16} />
               </button>
               <button
                 onClick={() => scrollToSection('how-it-works')}
-                className="px-7 py-3.5 rounded-xl text-sm font-bold border-2 border-white/10 text-white/80 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2.5 active:scale-95"
+                className="px-7 py-3.5 rounded-full text-sm font-bold border-2 border-white/10 text-white/80 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <div className="w-6 h-6 rounded-full border border-white/30 flex items-center justify-center">
-                  <div className="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[7px] border-l-white/80 ml-0.5" />
-                </div>
                 How it works
               </button>
             </div>
@@ -408,7 +509,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={loadingComplete ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative hidden lg:flex items-center justify-center h-[580px] w-full -ml-24"
+            className="relative flex items-center justify-center h-[580px] w-full lg:order-2 -ml-16"
           >
             {/* Multi-layer purple glow */}
             <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#8825F5]/10 rounded-full blur-[120px] pointer-events-none" />
@@ -532,27 +633,6 @@ export default function LandingPage() {
                 <div className="text-3xl font-bold text-white">₹12,450</div>
               </div>
             </motion.div>
-          </motion.div>
-
-          {/* MOBILE: Sloth on top */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="order-1 lg:hidden flex flex-col items-center relative"
-          >
-            <div className="relative">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] bg-[#8825F5]/25 rounded-full blur-[80px] pointer-events-none" />
-              <Image
-                src="/hisloth.png"
-                alt="Sloth mascot"
-                width={240}
-                height={240}
-                className="object-contain relative z-10"
-                style={{ filter: 'drop-shadow(0 0 30px rgba(136, 37, 245, 0.4)) drop-shadow(0 20px 40px rgba(0,0,0,0.35))' }}
-                priority
-              />
-            </div>
           </motion.div>
         </div>
       </section>
@@ -719,43 +799,43 @@ export default function LandingPage() {
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* -------------------------------------------------------
           SECTION 3: LIVE CAMPUS FEED
       --------------------------------------------------------- */}
-      <section className="pt-8 pb-20 md:pt-12 md:pb-32 bg-[#050505] relative z-10 border-y border-white/5 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+      < section className="pt-6 pb-10 md:pt-12 md:pb-32 bg-[#050505] relative z-10 border-y border-white/5 overflow-hidden" >
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-24 items-center">
 
           {/* LEFT: Static Content */}
           <div className="relative z-20">
             {/* Small Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8825F5]/30 bg-[#8825F5]/10 mb-6 w-fit">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8825F5]/30 bg-[#8825F5]/10 mb-4 w-fit">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-[pulse_2s_infinite]"></span>
               <span className="text-[10px] font-bold tracking-widest text-[#C084FC] uppercase">Live on your campus</span>
             </div>
 
             {/* Headline */}
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight text-white mb-6">
+            <h2 className="text-2xl sm:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight text-white mb-3 md:mb-6">
               See what’s happening right now.
             </h2>
 
             {/* Supporting Text */}
-            <p className="text-base md:text-lg text-zinc-400 leading-relaxed mb-8 max-w-md">
+            <p className="text-sm md:text-lg text-zinc-400 leading-relaxed mb-5 md:mb-8 max-w-md">
               Browse real tasks and marketplace listings from your campus.
             </p>
 
             {/* CTA Button */}
             <button
               onClick={handleLogin}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
+              className="w-full sm:w-auto px-8 py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
             >
               Explore Campus <ArrowRight size={18} />
             </button>
           </div>
 
           {/* RIGHT: Live Feed Panel & Sloth */}
-          <div className="relative h-[550px] w-full flex items-center justify-center lg:justify-end">
+          <div className="relative h-[400px] md:h-[550px] w-full flex items-center justify-center lg:justify-end">
 
             {/* Background Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#8825F5]/15 rounded-full blur-[100px] pointer-events-none"></div>
@@ -852,14 +932,14 @@ export default function LandingPage() {
 
           </div>
         </div>
-      </section>
+      </section >
 
 
 
       {/* -------------------------------------------------------
           THE ESSENTIALS (4 Titles Grid)
       --------------------------------------------------------- */}
-      <section className="max-w-7xl mx-auto px-6 pt-12 md:pt-20 mb-20 md:mb-32 relative z-10">
+      < section className="max-w-7xl mx-auto px-6 pt-12 md:pt-20 mb-20 md:mb-32 relative z-10" >
         <div className="mb-12 text-center md:text-left">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Why DoItForMe?</h2>
           <p className="text-zinc-500 text-sm md:text-base">Built for speed, trust, and the dual-campus economy.</p>
@@ -880,14 +960,14 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
-      </section>
+      </section >
 
       {/* -------------------------------------------------------
           SECTION 4: TRANSPARENCY & PRICING
       --------------------------------------------------------- */}
-      <section id="transparency" className="pt-12 pb-20 md:pt-16 md:pb-32 bg-[#050505] relative z-10 overflow-hidden">
+      < section id="transparency" className="pt-12 pb-20 md:pt-16 md:pb-32 bg-[#050505] relative z-10 overflow-hidden" >
         {/* Subtle Background Glows */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#8825F5]/5 rounded-full blur-[120px] pointer-events-none" />
+        < div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#8825F5]/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#6D28D9]/5 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="max-w-6xl mx-auto px-6">
@@ -1044,35 +1124,35 @@ export default function LandingPage() {
 
           {/* Trust Strip */}
           <div className="border-y border-white/10 py-6 overflow-hidden">
-            <div className="flex flex-wrap justify-center md:justify-between items-center gap-6 md:gap-4 max-w-5xl mx-auto">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-white/5"><ShieldCheck size={20} className="text-blue-400" /></div>
-                <span className="text-sm font-bold text-white uppercase tracking-wider">Escrow Protected</span>
+            <div className="grid grid-cols-2 md:flex md:justify-between items-center gap-4 md:gap-4 max-w-5xl mx-auto">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="p-2 rounded-full bg-white/5"><ShieldCheck size={18} className="text-blue-400" /></div>
+                <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Escrow Protected</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-white/5"><Lock size={20} className="text-pink-400" /></div>
-                <span className="text-sm font-bold text-white uppercase tracking-wider">Campus Only</span>
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="p-2 rounded-full bg-white/5"><Lock size={18} className="text-pink-400" /></div>
+                <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Campus Only</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-white/5"><DollarSign size={20} className="text-green-400" /></div>
-                <span className="text-sm font-bold text-white uppercase tracking-wider">Transparent Fees</span>
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="p-2 rounded-full bg-white/5"><DollarSign size={18} className="text-green-400" /></div>
+                <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Transparent Fees</span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-white/5"><CheckCircle2 size={20} className="text-brand-purple" /></div>
-                <span className="text-sm font-bold text-white uppercase tracking-wider">No Hidden Charges</span>
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="p-2 rounded-full bg-white/5"><CheckCircle2 size={18} className="text-brand-purple" /></div>
+                <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">No Hidden Charges</span>
               </div>
             </div>
           </div>
 
         </div>
-      </section>
+      </section >
 
       {/* HOW IT WORKS */}
-      <section id="how-it-works" className="pt-12 pb-16 md:pt-16 md:pb-24 bg-[#0A0A0A] border-y border-white/5 relative z-10">
+      < section id="how-it-works" className="pt-12 pb-16 md:pt-16 md:pb-24 bg-[#0A0A0A] border-y border-white/5 relative z-10" >
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-12 text-center">Simple Flow</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 relative">
-            {/* THE PURPLE ANIMATED LINE */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-8 relative">
+            {/* THE PURPLE ANIMATED LINE (Desktop) */}
             <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-[2px] bg-white/5 rounded-full overflow-hidden">
               <motion.div
                 animate={{ x: ["-100%", "100%"] }}
@@ -1081,25 +1161,36 @@ export default function LandingPage() {
               />
             </div>
 
+            {/* Vertical connecting line (Mobile) */}
+            <div className="md:hidden absolute left-7 top-[56px] bottom-[56px] w-[2px] bg-gradient-to-b from-[#8825F5]/40 via-[#8825F5]/20 to-[#8825F5]/40 z-0" />
+
             {[
               { step: "01", title: "Create Account", desc: "Sign up and upload your Student ID for verification." },
               { step: "02", title: "Post or Apply", desc: "Posters pay into safe Escrow. Workers apply to tasks." },
               { step: "03", title: "Release Funds", desc: "Work approved? Funds are released directly to the worker." }
             ].map((item, i) => (
-              <div key={i} className="relative z-10 flex flex-col items-center text-center">
-                <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-background border border-white/10 flex items-center justify-center text-lg md:text-xl font-bold text-white mb-6 shadow-xl z-20">{item.step}</div>
-                <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
-                <p className="text-zinc-400 max-w-xs text-sm md:text-base">{item.desc}</p>
+              <div key={i} className="relative z-10 flex flex-row md:flex-col items-center md:items-center text-left md:text-center gap-4 md:gap-0 py-4 md:py-0">
+                <motion.div
+                  initial={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', boxShadow: '0 0 0px rgba(136, 37, 245, 0), 0 4px 12px rgba(0, 0, 0, 0.3)' }}
+                  whileInView={{ background: 'linear-gradient(135deg, #8825F5 0%, #6D28D9 100%)', boxShadow: '0 0 20px rgba(136, 37, 245, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3)' }}
+                  transition={{ duration: 0.6, delay: i * 0.2 }}
+                  viewport={{ once: true, amount: 0.8 }}
+                  className="w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg md:text-xl font-bold text-white md:mb-6 z-20 shrink-0 border border-white/10"
+                >{item.step}</motion.div>
+                <div>
+                  <h3 className="text-lg md:text-xl font-bold text-white mb-1 md:mb-2">{item.title}</h3>
+                  <p className="text-zinc-400 max-w-xs text-sm md:text-base">{item.desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </section >
 
 
 
       {/* FAQ */}
-      <section id="faq" className="py-16 md:py-24 max-w-4xl mx-auto px-6 relative z-10">
+      < section id="faq" className="py-16 md:py-24 max-w-4xl mx-auto px-6 relative z-10" >
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Common Questions</h2>
           <div className="inline-flex bg-white/5 rounded-full p-1 border border-white/10">
@@ -1121,10 +1212,10 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
-      </section>
+      </section >
 
       {/* FOOTER */}
-      <footer className="w-full bg-[#020202] py-12 border-t border-white/5 relative z-10">
+      < footer className="w-full bg-[#020202] py-12 border-t border-white/5 relative z-10" >
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
 
           <div className="text-center md:text-left">
@@ -1167,8 +1258,8 @@ export default function LandingPage() {
           </div>
 
         </div>
-      </footer>
-    </div>
+      </footer >
+    </div >
   );
 }
 
