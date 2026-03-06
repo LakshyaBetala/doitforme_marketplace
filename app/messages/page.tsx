@@ -493,11 +493,13 @@ export default function ChatPage() {
                                         {activeConversation?.otherUser?.name || "Loading..."}
                                     </h2>
                                     <div className="flex items-center gap-2 text-[10px] text-zinc-400 mt-0.5">
-                                        {activeConversation?.otherUser?.rating ? (
+                                        {(!activeConversation?.otherUser?.rating || activeConversation?.otherUser?.rating_count === 0) ? (
+                                            <span className="text-white/20 text-[10px] font-bold">NA</span>
+                                        ) : (
                                             <span className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded">
-                                                <Star size={10} fill="currentColor" /> {activeConversation.otherUser.rating}
+                                                <Star size={10} fill="currentColor" /> {Number(activeConversation.otherUser.rating).toFixed(1)}
                                             </span>
-                                        ) : <span className="text-white/20">New User</span>}
+                                        )}
 
                                         {activeConversation?.gig?.title && <span className="opacity-50 truncate max-w-[150px]">• {activeConversation.gig.title}</span>}
                                     </div>

@@ -426,7 +426,7 @@ export default function ProfilePage() {
             {/* Stats Block */}
             <div className="flex md:flex-col gap-3 w-full md:w-auto md:min-w-[140px]">
               <div className="flex-1 p-4 md:p-5 bg-white/5 rounded-2xl border border-white/5 text-center">
-                <div className="text-2xl md:text-3xl font-black text-white">{Number(profile.rating || 0).toFixed(1)}</div>
+                <div className="text-2xl md:text-3xl font-black text-white">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
                 <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider flex items-center justify-center gap-1 mt-1">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> Rating
                 </div>
@@ -682,7 +682,7 @@ export default function ProfilePage() {
               <Star className="w-5 h-5 text-yellow-500" /> Reputation
             </h3>
             <div className="flex flex-col items-center justify-center h-[100px] bg-[#0B0B11] border border-white/5 rounded-2xl">
-              <div className="text-3xl md:text-4xl font-black text-white">{profile.rating || 0}</div>
+              <div className="text-3xl md:text-4xl font-black text-white">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
               <div className="text-white/40 text-[10px] tracking-widest uppercase mt-1">{profile.rating_count || 0} Reviews</div>
             </div>
           </div>

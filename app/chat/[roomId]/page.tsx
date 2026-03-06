@@ -459,7 +459,7 @@ export default function ChatRoomPage() {
                             {lastMsg.content}
                           </p>
                         ) : (
-                          <p className="text-[10px] text-white/30 flex items-center gap-1"><Star size={10} className="text-yellow-500 fill-current" /> {app.rating} Rating</p>
+                          <p className="text-[10px] text-white/30 flex items-center gap-1"><Star size={10} className="text-yellow-500 fill-current" /> {(!app.rating || app.rating_count === 0) ? "NA" : Number(app.rating).toFixed(1)} Rating</p>
                         )}
                       </div>
                     </button>

@@ -1089,7 +1089,7 @@ export default function GigDetailPage() {
                                     <h4 className="font-bold text-white text-sm">{app.worker?.name || "User"}</h4>
                                     <div className="flex items-center gap-2 text-[10px] text-zinc-400">
                                       <span className="flex items-center gap-0.5 text-yellow-500">
-                                        <Star size={10} fill="currentColor" /> {app.worker?.rating || "New"}
+                                        <Star size={10} fill="currentColor" /> {(!app.worker?.rating || app.worker?.rating_count === 0) ? "NA" : Number(app.worker.rating).toFixed(1)}
                                       </span>
                                       <span>• {app.worker?.jobs_completed || 0} Jobs</span>
                                     </div>
@@ -1294,7 +1294,7 @@ export default function GigDetailPage() {
                   <div className="flex items-center gap-2 text-xs text-zinc-400 mt-1">
                     <span className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full border border-yellow-500/20">
                       <Star size={10} fill="currentColor" />
-                      <span className="font-bold">{posterDetails?.rating_count > 0 ? posterDetails.rating : "New"}</span>
+                      <span className="font-bold">{(!posterDetails?.rating || posterDetails?.rating_count === 0) ? "NA" : Number(posterDetails.rating).toFixed(1)}</span>
                       {posterDetails?.rating_count > 0 && <span className="text-yellow-500/50">({posterDetails.rating_count})</span>}
                     </span>
                     <span>• {posterDetails?.jobs_completed || 0} Jobs Done</span>

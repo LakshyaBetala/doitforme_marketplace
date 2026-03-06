@@ -291,7 +291,7 @@ export default function ApplicantsPage() {
                           <div className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">
                             <Star className="w-3 h-3 fill-current" />
                             <span className="font-bold">
-                              {app.worker?.rating ? Number(app.worker.rating).toFixed(1) : "New"}
+                              {(!app.worker?.rating || app.worker?.rating_count === 0) ? "NA" : Number(app.worker.rating).toFixed(1)}
                             </span>
                           </div>
                           <span className="flex items-center gap-1">
