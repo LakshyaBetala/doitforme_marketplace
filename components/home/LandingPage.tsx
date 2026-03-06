@@ -347,46 +347,53 @@ export default function LandingPage() {
           <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#8825F5]/30 to-transparent" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-16 md:pt-20 pb-16 md:pb-20 grid lg:grid-cols-2 gap-8 md:gap-12 items-center min-h-[85vh]">
+        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-24 lg:pt-20 pb-10 md:pb-20 flex flex-col lg:grid lg:grid-cols-2 gap-6 md:gap-12 items-center lg:min-h-[85vh]">
 
           {/* LEFT: CONTENT */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-center lg:text-left flex flex-col items-center lg:items-start relative z-20"
+            className="order-2 lg:order-1 text-center lg:text-left flex flex-col items-center lg:items-start relative z-20"
           >
 
             {/* Heading */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-2 w-full">
+            <h1 className="text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-1 lg:mb-2 w-full">
               Earn. Outsource.
             </h1>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full">
+            <h1 className="text-[2.5rem] sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white mb-3 lg:mb-4 w-full">
               Trade.
             </h1>
 
             {/* Subheading */}
-            <p className="text-2xl md:text-2xl text-white/90 leading-snug mb-4 w-full">
+            <p className="text-lg lg:text-2xl text-white/85 leading-snug mb-2 lg:mb-4 w-full">
               All in One <span className="font-bold">Campus Marketplace</span>
             </p>
 
             {/* Description */}
-            <p className="text-base md:text-base text-zinc-400 leading-relaxed max-w-md mb-8 md:mb-10 lg:pr-4">
-              The student economy, built for campus life.<br />
-              Earn money, outsource tasks, and trade items securely.
+            <p className="text-sm lg:text-base text-zinc-400 leading-relaxed max-w-xs lg:max-w-md mb-6 lg:mb-10 lg:pr-4">
+              Earn money, outsource tasks, and trade items &mdash; all within your campus.
             </p>
 
-            {/* Buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
+            {/* Mobile: Single CTA */}
+            <button
+              onClick={handleLogin}
+              className="lg:hidden w-full max-w-[300px] px-7 py-4 rounded-xl text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_25px_rgba(255,255,255,0.12)]"
+            >
+              Explore Campus <ArrowRight size={16} />
+            </button>
+
+            {/* Desktop: Two Buttons */}
+            <div className="hidden lg:flex items-center gap-4">
               <button
                 onClick={handleLogin}
-                className="w-full sm:w-auto px-7 py-4 sm:py-3.5 rounded-xl text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
+                className="px-7 py-3.5 rounded-xl text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
               >
                 Explore Campus <ArrowRight size={16} />
               </button>
               <button
                 onClick={() => scrollToSection('how-it-works')}
-                className="w-full sm:w-auto px-7 py-4 sm:py-3.5 rounded-xl text-sm font-bold border-2 border-white/10 text-white/80 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2.5 active:scale-95"
+                className="px-7 py-3.5 rounded-xl text-sm font-bold border-2 border-white/10 text-white/80 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2.5 active:scale-95"
               >
                 <div className="w-6 h-6 rounded-full border border-white/30 flex items-center justify-center">
                   <div className="w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-l-[7px] border-l-white/80 ml-0.5" />
@@ -527,31 +534,24 @@ export default function LandingPage() {
             </motion.div>
           </motion.div>
 
-          {/* MOBILE: Sloth + Cards stacked */}
+          {/* MOBILE: Sloth on top */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="lg:hidden flex flex-col items-center relative"
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="order-1 lg:hidden flex flex-col items-center relative"
           >
             <div className="relative">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-[#8825F5]/20 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] bg-[#8825F5]/25 rounded-full blur-[80px] pointer-events-none" />
               <Image
                 src="/hisloth.png"
                 alt="Sloth mascot"
-                width={280}
-                height={280}
-                className="object-contain drop-shadow-[0_15px_40px_rgba(136,37,245,0.4)] relative z-10"
+                width={240}
+                height={240}
+                className="object-contain relative z-10"
+                style={{ filter: 'drop-shadow(0 0 30px rgba(136, 37, 245, 0.4)) drop-shadow(0 20px 40px rgba(0,0,0,0.35))' }}
                 priority
               />
-            </div>
-            <div className="flex flex-wrap justify-center gap-3 mt-6">
-              <div className="bg-white/95 text-black px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 text-xs font-bold">
-                <CheckCircle2 size={14} className="text-green-600" /> Funds Released
-              </div>
-              <div className="bg-[#1A1A2E]/90 border border-white/10 px-4 py-2.5 rounded-xl shadow-lg text-xs font-bold text-white flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500"></span> ₹12,450 Earned
-              </div>
             </div>
           </motion.div>
         </div>
