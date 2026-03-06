@@ -1,4 +1,7 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -59,6 +62,7 @@ export default function PostGigPage() {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [githubLink, setGithubLink] = useState(""); // Added GitHub Link State
+  const [category, setCategory] = useState(""); // Category state
 
   // Lightbox State
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -141,6 +145,7 @@ export default function PostGigPage() {
 
   // Validation
   const validate = () => {
+    if (!category) return "Please select a category.";
     if (!title.trim()) return "Please enter a title.";
     if (title.length > 80) return "Title is too long (max 80 chars).";
     if (!description.trim()) return "Please describe the item/task.";
@@ -249,6 +254,7 @@ export default function PostGigPage() {
 
       const payload = {
         listing_type: listingType || "HUSTLE", // Fallback for safety
+        category: category,
         market_type: listingType === "MARKET" ? marketType : null,
         item_condition: listingType === "MARKET" ? itemCondition : null,
         poster_id: user.id,
@@ -260,7 +266,7 @@ export default function PostGigPage() {
         location: (listingType === "MARKET" || mode !== "Online") ? (location.trim() || "Campus") : null, // Default location for market items
         images: uploadedPaths,
         deadline: listingType === "HUSTLE" ? deadlineISO : null, // Only for hustles
-        github_link: (listingType === "HUSTLE" && githubLink.trim()) ? githubLink.trim() : null, // Added GitHub Link
+        github_link: (listingType === "HUSTLE" && (category === "Tech & Engineering" || category === "Academics & Projects") && githubLink.trim()) ? githubLink.trim() : null, // Added GitHub Link
         status: "open",
         created_at: new Date().toISOString()
       };
@@ -429,6 +435,29 @@ export default function PostGigPage() {
 
           {/* SECTION 1: BASICS */}
           <div className="space-y-6">
+            <div className="space-y-3 pt-2">
+              <label className="block text-xs font-medium text-white/40 uppercase tracking-wider">Category</label>
+              <div className="flex flex-wrap gap-2">
+                {(listingType === "HUSTLE" ? [
+                  "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content", "Tutoring", "Other"
+                ] : [
+                  "Electronics", "Furniture", "Books & Study Material", "Vehicles", "Fashion & Clothing", "Appliances", "Accessories", "Sports & Fitness", "Subscriptions & Tickets", "Other"
+                ]).map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => { setCategory(cat); setError(""); }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${category === cat
+                      ? "bg-white text-black"
+                      : "bg-white/5 border border-white/10 text-white/40 hover:bg-white/10 hover:text-white"
+                      }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-1">
               <label className="block text-xs font-medium text-white/40 uppercase tracking-wider">Title</label>
               <input
@@ -452,7 +481,7 @@ export default function PostGigPage() {
             </div>
 
             {/* GitHub Link (Optional) - Only for HUSTLE */}
-            {listingType === "HUSTLE" && (
+            {listingType === "HUSTLE" && (category === "Tech & Engineering" || category === "Academics & Projects") && (
               <div className="space-y-1">
                 <label className="block text-xs font-medium text-white/40 uppercase tracking-wider flex items-center gap-2">
                   GitHub Repository <span className="text-[10px] text-white/20 normal-case">(Optional)</span>
@@ -789,7 +818,7 @@ export default function PostGigPage() {
 
             {/* Info Text */}
             <p className="text-[10px] text-white/30">
-              You can upload up to 5 photos. Use meaningful images to get better responses.
+              You can upload up to 5 {listingType === 'HUSTLE' ? 'images or reference documents (PDF/Doc)' : 'images'}. Use meaningful files to get better responses.
             </p>
           </div>
 

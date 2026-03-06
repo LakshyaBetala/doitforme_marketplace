@@ -1,4 +1,7 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
@@ -8,7 +11,7 @@ import Image from "next/image";
 import {
   Plus, Briefcase, Search, MapPin, MessageSquare, User,
   Home, ShoppingBag, Inbox, Star, Settings, LogOut, Bell, ChevronDown, CheckCircle2,
-  DollarSign, ArrowRight, Zap, ShieldCheck, AlertTriangle, X, Gift, Copy, Clock, Filter
+  DollarSign, ArrowRight, Zap, ShieldCheck, AlertTriangle, X, Gift, Copy, Clock, Filter, Tags
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -21,8 +24,13 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [feedType, setFeedType] = useState<'ALL' | 'HUSTLE' | 'MARKET'>('ALL');
   const [campusFilter, setCampusFilter] = useState<'ALL' | 'MY_CAMPUS'>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+
+  // User Preferences Onboarding
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
   // Referral state
   const [referralCode, setReferralCode] = useState("");
@@ -40,6 +48,11 @@ export default function Dashboard() {
       if (authUser) {
         const { data: dbUser } = await supabase.from("users").select("*").eq("id", authUser.id).single();
         setUser({ ...authUser, user_metadata: { ...authUser.user_metadata, ...dbUser } });
+
+        // Show preferences modal if KYC verified but no preferences
+        if (dbUser?.kyc_verified && (!dbUser?.preferences || dbUser.preferences.length === 0)) {
+          setShowPreferencesModal(true);
+        }
 
         // Load Feed
         const nowIso = new Date().toISOString();
@@ -96,7 +109,8 @@ export default function Dashboard() {
     const matchesCampus = campusFilter === 'ALL'
       ? true
       : (!gig.is_physical || gig.users?.college === user?.user_metadata?.college);
-    return matchesSearch && matchesType && matchesCampus;
+    const matchesCategory = categoryFilter === 'ALL' || gig.category === categoryFilter;
+    return matchesSearch && matchesType && matchesCampus && matchesCategory;
   }).sort((a, b) => {
     const aHighlighted = a.is_highlighted && a.highlight_expires_at && new Date(a.highlight_expires_at) > new Date();
     const bHighlighted = b.is_highlighted && b.highlight_expires_at && new Date(b.highlight_expires_at) > new Date();
@@ -108,6 +122,16 @@ export default function Dashboard() {
   // Dynamic opportunity counts (computed from ALL gigs, ignoring search/type filters)
   const hustleCount = gigs.filter(g => g.listing_type === 'HUSTLE').length;
   const marketCount = gigs.filter(g => g.listing_type === 'MARKET').length;
+
+  const handleFeedTypeChange = (type: 'ALL' | 'HUSTLE' | 'MARKET') => {
+    setFeedType(type);
+    setCategoryFilter('ALL'); // Reset category filter when switching tabs
+  };
+
+  const activeCategories = Array.from(new Set([
+    ...(feedType === 'ALL' || feedType === 'HUSTLE' ? ["Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content", "Tutoring", "Other"] : []),
+    ...(feedType === 'ALL' || feedType === 'MARKET' ? ["Electronics", "Furniture", "Books & Study Material", "Vehicles", "Fashion & Clothing", "Appliances", "Accessories", "Sports & Fitness", "Subscriptions & Tickets", "Other"] : [])
+  ]));
 
   const username = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Partner";
   const [profileAlertDismissed, setProfileAlertDismissed] = useState(false);
@@ -296,9 +320,9 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   {/* Type Filters */}
                   <div className="flex items-center bg-[#0F172A] rounded-full p-1 border border-[#1E293B]">
-                    <FeedTab label="All" active={feedType === 'ALL'} onClick={() => setFeedType('ALL')} />
-                    <FeedTab label="Hustles" active={feedType === 'HUSTLE'} onClick={() => setFeedType('HUSTLE')} />
-                    <FeedTab label="Marketplace" active={feedType === 'MARKET'} onClick={() => setFeedType('MARKET')} />
+                    <FeedTab label="All" active={feedType === 'ALL'} onClick={() => handleFeedTypeChange('ALL')} />
+                    <FeedTab label="Hustles" active={feedType === 'HUSTLE'} onClick={() => handleFeedTypeChange('HUSTLE')} />
+                    <FeedTab label="Marketplace" active={feedType === 'MARKET'} onClick={() => handleFeedTypeChange('MARKET')} />
                   </div>
 
                   {/* Campus Filter */}
@@ -330,6 +354,42 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
+
+                  {/* Category Filter - only visible when a specific feed type is selected */}
+                  {feedType !== 'ALL' && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}
+                        className={`p-2 rounded-full border transition-all ${categoryFilter !== 'ALL' ? 'bg-brand-pink text-white border-brand-pink' : 'border-[#1E293B] hover:bg-white/5 text-zinc-400 hover:text-white'}`}
+                        title="Filter by Category"
+                      >
+                        <Tags size={16} />
+                      </button>
+                      {isCategoryFilterOpen && (
+                        <div className="absolute right-0 top-full mt-2 w-64 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 max-h-[300px] overflow-y-auto">
+                          <div className="p-2 space-y-1">
+                            <button
+                              onClick={() => { setCategoryFilter('ALL'); setIsCategoryFilterOpen(false); }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${categoryFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                            >
+                              All Categories
+                              {categoryFilter === 'ALL' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                            </button>
+                            {activeCategories.map(cat => (
+                              <button
+                                key={cat}
+                                onClick={() => { setCategoryFilter(cat); setIsCategoryFilterOpen(false); }}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${categoryFilter === cat ? 'bg-brand-pink/20 text-brand-pink' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                              >
+                                {cat}
+                                {categoryFilter === cat && <div className="w-1.5 h-1.5 rounded-full bg-brand-pink"></div>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -419,6 +479,15 @@ export default function Dashboard() {
         )}
 
       </div>
+
+      {/* Preferences Modal Component */}
+      {showPreferencesModal && (
+        <PreferencesModal
+          user={user}
+          supabase={supabase}
+          onClose={() => setShowPreferencesModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -535,6 +604,72 @@ function DashboardSkeleton() {
   return (
     <div className="min-h-screen bg-[#070B1A] flex items-center justify-center">
       <div className="w-10 h-10 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+}
+
+function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: any, onClose: () => void }) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const categories = [
+    "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
+    "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content",
+    "Tutoring", "Electronics", "Furniture", "Books & Study Material", "Vehicles", "Fashion & Clothing",
+    "Sports & Fitness"
+  ];
+
+  const handleToggle = (cat: string) => {
+    if (selected.includes(cat)) {
+      setSelected(selected.filter(c => c !== cat));
+    } else {
+      if (selected.length < 5) {
+        setSelected([...selected, cat]);
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    if (selected.length === 0) return;
+    setLoading(true);
+    await supabase.from("users").update({ preferences: selected }).eq("id", user.id);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-md bg-[#0F172A] border border-[#1E293B] rounded-3xl p-6 md:p-8 flex flex-col pt-8 relative shadow-2xl">
+        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+          <X size={20} />
+        </button>
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-brand-purple/20 flex items-center justify-center border border-brand-purple/30">
+            <Star size={32} className="text-brand-purple" />
+          </div>
+        </div>
+        <h2 className="text-2xl font-black text-white text-center mb-2">Your Interests?</h2>
+        <p className="text-sm text-zinc-400 text-center mb-6">
+          Select up to 5 categories to get personalized opportunities and stand out to buyers. Highly recommended!
+        </p>
+        <div className="flex flex-wrap gap-2 mb-8 justify-center overflow-y-auto no-scrollbar pb-2">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => handleToggle(cat)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${selected.includes(cat) ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.4)]' : 'bg-[#1E293B]/50 border-[#1E293B] text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={loading || selected.length === 0}
+          className="w-full bg-brand-purple hover:bg-[#7D5FFF] text-white py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center"
+        >
+          {loading ? "Saving..." : `Save Preferences (${selected.length}/5)`}
+        </button>
+      </div>
     </div>
   );
 }

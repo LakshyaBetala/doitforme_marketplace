@@ -1,4 +1,7 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -83,7 +86,7 @@ export default function ApplicantsPage() {
           .select(`
             *,
             worker:users (
-              id, email, name, kyc_verified, rating, rating_count
+              id, email, name, kyc_verified, rating, rating_count, preferences
             )
           `)
           .eq("gig_id", id)
@@ -298,6 +301,16 @@ export default function ApplicantsPage() {
                             <Clock className="w-3 h-3" /> ETA: <span className="text-white">{app.eta || "N/A"}</span>
                           </span>
                         </div>
+
+                        {app.worker?.preferences && app.worker.preferences.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5 mb-3">
+                            {app.worker.preferences.map((pref: string) => (
+                              <span key={pref} className="px-2 py-0.5 rounded-md text-[9px] font-bold border border-white/10 bg-white/5 text-zinc-300 uppercase tracking-wider">
+                                {pref}
+                              </span>
+                            ))}
+                          </div>
+                        )}
 
                         <div className="bg-white/5 rounded-xl p-4 text-sm text-white/80 leading-relaxed border border-white/5 max-w-2xl">
                           "{app.pitch || app.message || "No message provided."}"

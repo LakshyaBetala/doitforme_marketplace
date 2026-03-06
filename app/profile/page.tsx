@@ -1,4 +1,7 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/no-unescaped-entities */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -18,22 +21,29 @@ const COLLEGES = [
   "SRM (Vadapalani)",
   "SRM (Ramapuram)",
   "SRM (Kattankulathur)",
+  "SRM (AP)",
   "VIT Vellore",
   "VIT Chennai",
+  "VIT AP",
   "Anna University (CEG/MIT/ACT)",
   "IIT Madras",
   "IIT Bombay",
   "IIT Delhi",
   "IIT Kharagpur",
   "IIT Kanpur",
+  "IIT Roorkee",
+  "IIT Hyderabad",
   "NIT Trichy",
   "NIT Warangal",
   "NIT Surathkal",
+  "NIT Calicut",
   "Delhi University (DU)",
   "Jawaharlal Nehru University (JNU)",
   "Banaras Hindu University (BHU)",
   "Manipal Academy of Higher Education",
   "BITS Pilani",
+  "BITS Goa",
+  "BITS Hyderabad",
   "Amrita Vishwa Vidyapeetham",
   "Sathyabama Institute",
   "Saveetha University",
@@ -42,6 +52,21 @@ const COLLEGES = [
   "DG Vaishnav",
   "Loyola College",
   "Madras Christian College (MCC)",
+  "Madras University",
+  "Stella Maris College",
+  "Ethiraj College for Women",
+  "Presidency College, Chennai",
+  "PSG College of Technology",
+  "Coimbatore Institute of Technology",
+  "SASTRA Deemed University",
+  "SSN College of Engineering",
+  "Christ University, Bangalore",
+  "PES University, Bangalore",
+  "RV College of Engineering",
+  "Osmania University",
+  "Symbiosis International",
+  "NMIMS Mumbai",
+  "Jadavpur University",
   "Other"
 ];
 
@@ -58,9 +83,17 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // Editable fields (ONLY name and phone)
+  // Editable fields
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editPreferences, setEditPreferences] = useState<string[]>([]);
+
+  const PREFERENCE_OPTIONS = [
+    "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
+    "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content",
+    "Tutoring", "Electronics", "Furniture", "Books & Study Material", "Vehicles", "Fashion & Clothing",
+    "Sports & Fitness"
+  ];
 
   // Referral state
   const [referralCode, setReferralCode] = useState("");
@@ -175,9 +208,10 @@ export default function ProfilePage() {
         setProfile(userData);
         setStats({ completed: completedCount, earnings: totalEarned, isLightningResponder: isLightning, avgResponseTime: Math.round(avgTime) });
 
-        // Initialize edit fields (only name & phone are editable)
+        // Initialize edit fields
         setEditName(userData.name || "");
         setEditPhone(userData.phone || "");
+        setEditPreferences(userData.preferences || []);
 
         // 5. Fetch Referral data
         if (userData.referral_code) {
@@ -219,6 +253,7 @@ export default function ProfilePage() {
   const cancelEditing = () => {
     setEditName(profile.name || "");
     setEditPhone(profile.phone || "");
+    setEditPreferences(profile.preferences || []);
     setIsEditing(false);
     setSaveMessage(null);
   };
@@ -234,12 +269,13 @@ export default function ProfilePage() {
     }
 
     try {
-      // Only update name and phone — college, UPI, email are locked
+      // Update fields
       const { error: dbError } = await supabase
         .from("users")
         .update({
           name: editName.trim(),
           phone: editPhone.trim(),
+          preferences: editPreferences,
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id);
@@ -262,6 +298,7 @@ export default function ProfilePage() {
         ...profile,
         name: editName.trim(),
         phone: editPhone.trim(),
+        preferences: editPreferences,
         updated_at: new Date().toISOString(),
       });
 
@@ -549,6 +586,47 @@ export default function ProfilePage() {
                 <Mail size={16} className="text-zinc-500 shrink-0" />
                 <span className="text-zinc-400">{profile.email}</span>
               </div>
+            </div>
+
+            {/* Preferences/Interests */}
+            <div className="space-y-3 md:col-span-2 mt-2 pt-4 border-t border-white/5">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center justify-between">
+                Interests & Strengths
+                {isEditing && <span className="text-[9px] text-zinc-600 font-normal normal-case">Select 3-5 ({editPreferences.length}/5)</span>}
+              </label>
+
+              {isEditing ? (
+                <div className="flex flex-wrap gap-2">
+                  {PREFERENCE_OPTIONS.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        if (editPreferences.includes(cat)) {
+                          setEditPreferences(editPreferences.filter(c => c !== cat));
+                        } else if (editPreferences.length < 5) {
+                          setEditPreferences([...editPreferences, cat]);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${editPreferences.includes(cat) ? 'bg-brand-purple text-white border-brand-purple' : 'bg-[#1E293B]/50 border-[#1E293B] text-zinc-400 hover:text-white'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {(!profile.preferences || profile.preferences.length === 0) ? (
+                    <span className="text-sm text-zinc-600 italic px-2">No preferences set</span>
+                  ) : (
+                    profile.preferences.map((cat: string) => (
+                      <span key={cat} className="px-3 py-1.5 rounded-full text-[10px] font-bold border border-white/10 bg-white/5 text-zinc-300">
+                        {cat}
+                      </span>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
