@@ -275,6 +275,7 @@ export default function ProfilePage() {
           name: editName.trim(),
           phone: editPhone.trim(),
           preferences: editPreferences,
+          profile_last_edited_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", profile.id);
@@ -298,6 +299,7 @@ export default function ProfilePage() {
         name: editName.trim(),
         phone: editPhone.trim(),
         preferences: editPreferences,
+        profile_last_edited_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
 
@@ -327,9 +329,9 @@ export default function ProfilePage() {
   const avatarLetter = profile.email ? profile.email[0].toUpperCase() : "U";
   const displayName = profile.name || profile.email.split("@")[0];
 
-  // 14-day edit cooldown logic
+  // 14-day edit cooldown logic (using profile_last_edited_at so new signups aren't locked)
   const EDIT_COOLDOWN_DAYS = 14;
-  const lastEditedAt = profile.updated_at ? new Date(profile.updated_at) : null;
+  const lastEditedAt = profile.profile_last_edited_at ? new Date(profile.profile_last_edited_at) : null;
   const now = new Date();
   const cooldownMs = EDIT_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
   const canEdit = !lastEditedAt || (now.getTime() - lastEditedAt.getTime()) >= cooldownMs;
