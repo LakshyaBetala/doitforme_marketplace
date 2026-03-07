@@ -232,7 +232,7 @@ export default function ApplyPage() {
 
       <div className="w-full max-w-2xl relative z-10">
         <button onClick={() => router.back()} className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 group">
-          <div className="p-2 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors">
+          <div className="p-2 rounded-full bg-white/10 group-hover:bg-white/10 transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </div>
           <span className="text-sm font-medium">Cancel</span>
@@ -247,11 +247,11 @@ export default function ApplyPage() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Pitch Section */}
             <div className="space-y-3 group">
-              <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
+              <label className="text-xs font-bold text-white/60 uppercase tracking-[0.2em] flex items-center gap-2">
                 <MessageSquare className="w-4 h-4" /> Why should we pick you?
               </label>
               <textarea
-                className="w-full bg-black/20 border border-white/10 rounded-2xl p-5 text-white placeholder:text-white/20 focus:outline-none focus:border-brand-blue/50 focus:bg-brand-blue/5 transition-all min-h-[160px] resize-none leading-relaxed text-lg shadow-inner"
+                className="w-full bg-black/20 border border-white/10 rounded-2xl p-5 text-white placeholder:text-white/60 focus:outline-none focus:border-brand-blue/50 focus:bg-brand-blue/5 transition-all min-h-[160px] resize-none leading-relaxed text-lg shadow-inner"
                 value={message}
                 onChange={(e) => { setMessage(e.target.value); setError(null); }}
                 maxLength={300}
@@ -260,15 +260,15 @@ export default function ApplyPage() {
                 autoFocus
               />
               <div className="flex justify-end">
-                <span className={`text-[10px] font-bold ${message.length > 250 ? "text-brand-pink" : "text-white/20"}`}>
+                <span className={`text-[10px] font-bold ${message.length > 250 ? "text-brand-pink" : "text-white/60"}`}>
                   {message.length}/300
                 </span>
               </div>
             </div>
 
             {/* IMPROVED DATE & TIME UX SECTION */}
-            <div className="space-y-6 bg-white/5 border border-white/5 p-6 rounded-3xl">
-              <label className="text-xs font-bold text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
+            <div className="space-y-6 bg-white/10 border border-white/5 p-6 rounded-3xl">
+              <label className="text-xs font-bold text-white/60 uppercase tracking-[0.2em] flex items-center gap-2">
                 <Clock className="w-4 h-4" /> Delivery Promise
               </label>
 
@@ -306,7 +306,7 @@ export default function ApplyPage() {
 
               {/* Quick Time Selector Chips */}
               <div className="space-y-3">
-                <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">Quick Hour Pick</p>
+                <p className="text-[10px] font-black text-white/60 uppercase tracking-widest">Quick Hour Pick</p>
                 <div className="flex flex-wrap gap-2">
                   {quickHours.map((h) => (
                     <button
@@ -316,7 +316,7 @@ export default function ApplyPage() {
                       className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
                         selectedTime === h 
                           ? "bg-brand-purple border-brand-purple text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]" 
-                          : "bg-white/5 border-white/10 text-white/40 hover:border-white/20"
+                          : "bg-white/10 border-white/10 text-white/60 hover:border-white/20"
                       }`}
                     >
                       {h === "23:59" ? "End of Day" : h}

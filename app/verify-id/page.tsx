@@ -176,7 +176,7 @@ export default function VerifyIDPage() {
                 ? "border-brand-purple bg-brand-purple/10 scale-[1.02]" 
                 : preview 
                   ? "border-brand-purple/50 bg-brand-purple/5" 
-                  : "border-white/10 hover:border-brand-purple/50 hover:bg-white/5"
+                  : "border-white/10 hover:border-brand-purple/50 hover:bg-white/10"
             }`}
           >
             <input 
@@ -197,14 +197,14 @@ export default function VerifyIDPage() {
               </div>
             ) : (
               <div className="text-center space-y-4 pointer-events-none">
-                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-transform duration-300 ${isDragging ? "bg-brand-purple scale-110" : "bg-white/5 group-hover:scale-110"}`}>
-                  <UploadCloud className={`w-8 h-8 transition-colors ${isDragging ? "text-white" : "text-white/40 group-hover:text-brand-purple"}`} />
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-transform duration-300 ${isDragging ? "bg-brand-purple scale-110" : "bg-white/10 group-hover:scale-110"}`}>
+                  <UploadCloud className={`w-8 h-8 transition-colors ${isDragging ? "text-white" : "text-white/60 group-hover:text-brand-purple"}`} />
                 </div>
                 <div>
                   <p className="text-lg font-bold text-white">
                     {isDragging ? "Drop it here!" : "Click or Drag to Upload"}
                   </p>
-                  <p className="text-sm text-white/40 mt-1">Clear photo of front side (Max 5MB)</p>
+                  <p className="text-sm text-white/60 mt-1">Clear photo of front side (Max 5MB)</p>
                 </div>
               </div>
             )}

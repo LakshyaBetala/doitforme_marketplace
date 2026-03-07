@@ -130,7 +130,7 @@ export default function AppliedGigsPage() {
                   <div className="relative z-10 flex flex-col h-full justify-between gap-6">
                     <div>
                       <div className="flex justify-between items-start mb-4">
-                        <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                        <div className="p-3 bg-white/10 rounded-2xl border border-white/5">
                           <Briefcase className="w-6 h-6 text-brand-blue" />
                         </div>
                         {getStatusBadge(app.status)}
@@ -147,7 +147,7 @@ export default function AppliedGigsPage() {
                     </div>
 
                     <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                      <span className="text-xs text-white/30 font-medium flex items-center gap-1">
+                      <span className="text-xs text-white/50 font-medium flex items-center gap-1">
                         <Clock className="w-3 h-3" /> Applied {timeAgo(app.created_at)}
                       </span>
                       <div className="flex items-center gap-1 text-xs font-bold text-white group-hover:text-brand-purple transition-colors">
@@ -162,8 +162,8 @@ export default function AppliedGigsPage() {
         ) : (
           /* EMPTY STATE */
           <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-[#121217] border border-white/10 rounded-[40px]">
-            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-              <Search className="w-10 h-10 text-white/20" />
+            <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-6">
+              <Search className="w-10 h-10 text-white/60" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">No applications yet</h2>
             <p className="text-white/50 max-w-md mb-8">

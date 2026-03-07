@@ -34,7 +34,7 @@ export default function TermsPage() {
         <div className="space-y-6">
 
           {/* Section 1: Introduction */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
                 <ScrollText size={20} />
@@ -49,7 +49,7 @@ export default function TermsPage() {
           </section>
 
           {/* Section 2: User Accounts */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-brand-purple shrink-0">
                 <UserCheck size={20} />
@@ -64,7 +64,7 @@ export default function TermsPage() {
           </section>
 
           {/* Section 3: Payments & Fees (Crucial Section) */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 shrink-0">
                 <DollarSign size={20} />
@@ -104,7 +104,7 @@ export default function TermsPage() {
           </section>
 
           {/* Section 4: Prohibited Activities */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
                 <Ban size={20} />
@@ -113,17 +113,17 @@ export default function TermsPage() {
                 <h3 className="text-xl font-bold text-white">4. Prohibited Activities</h3>
                 <p className="text-zinc-400">You agree not to use the platform for:</p>
                 <ul className="grid sm:grid-cols-2 gap-2">
-                  <li className="px-3 py-2 rounded-lg bg-white/5 text-xs text-zinc-300 border border-white/5">Illegal activities</li>
-                  <li className="px-3 py-2 rounded-lg bg-white/5 text-xs text-zinc-300 border border-white/5">Academic dishonesty</li>
-                  <li className="px-3 py-2 rounded-lg bg-white/5 text-xs text-zinc-300 border border-white/5">Harassment/Hate speech</li>
-                  <li className="px-3 py-2 rounded-lg bg-white/5 text-xs text-zinc-300 border border-white/5">Fraudulent Gigs</li>
+                  <li className="px-3 py-2 rounded-lg bg-white/10 text-xs text-zinc-300 border border-white/5">Illegal activities</li>
+                  <li className="px-3 py-2 rounded-lg bg-white/10 text-xs text-zinc-300 border border-white/5">Academic dishonesty</li>
+                  <li className="px-3 py-2 rounded-lg bg-white/10 text-xs text-zinc-300 border border-white/5">Harassment/Hate speech</li>
+                  <li className="px-3 py-2 rounded-lg bg-white/10 text-xs text-zinc-300 border border-white/5">Fraudulent Gigs</li>
                 </ul>
               </div>
             </div>
           </section>
 
           {/* Section 5: Liability */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 shrink-0">
                 <AlertTriangle size={20} />

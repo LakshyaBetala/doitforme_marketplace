@@ -25,7 +25,7 @@ export default function PricingPage() {
               <p className="text-white/50 text-sm mb-6">Students who want tasks done.</p>
               
               <div className="text-4xl font-black text-white mb-6">
-                0% <span className="text-lg font-medium text-white/40">Commission</span>
+                0% <span className="text-lg font-medium text-white/60">Commission</span>
               </div>
 
               <ul className="space-y-4 mb-8 flex-1">
@@ -43,7 +43,7 @@ export default function PricingPage() {
                  </li>
               </ul>
               
-              <p className="text-xs text-white/30 pt-4 border-t border-white/5">
+              <p className="text-xs text-white/50 pt-4 border-t border-white/5">
                 * Standard Payment Gateway fees (2-3%) may apply when adding funds to wallet via Razorpay.
               </p>
            </div>
@@ -58,7 +58,7 @@ export default function PricingPage() {
               <p className="text-white/50 text-sm mb-6">Students earning money.</p>
               
               <div className="text-4xl font-black text-white mb-6">
-                10% <span className="text-lg font-medium text-white/40">Platform Fee</span>
+                10% <span className="text-lg font-medium text-white/60">Platform Fee</span>
               </div>
 
               <ul className="space-y-4 mb-8 flex-1">
@@ -76,7 +76,7 @@ export default function PricingPage() {
                  </li>
               </ul>
 
-              <p className="text-xs text-white/30 pt-4 border-t border-white/5">
+              <p className="text-xs text-white/50 pt-4 border-t border-white/5">
                 * Example: If you withdraw ₹1000, you receive ₹900. The ₹100 fee covers platform maintenance and server costs.
               </p>
            </div>

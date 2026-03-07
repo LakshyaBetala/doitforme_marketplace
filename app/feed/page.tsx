@@ -222,19 +222,19 @@ export default function FeedPage() {
           </h1>
           <button
             onClick={() => router.push('/messages')}
-            className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
+            className="p-2.5 rounded-full bg-white/10 hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
           >
             <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${feedType === 'MARKET' ? 'bg-pink-500' : 'bg-brand-purple'} animate-pulse`}></div>
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
           </button>
         </div>
 
-        <div className="flex bg-white/5 p-1 rounded-2xl relative">
+        <div className="flex bg-white/10 p-1 rounded-2xl relative">
           <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white/10 rounded-xl transition-all duration-300 ease-out ${feedType === 'HUSTLE' ? 'left-[calc(50%+2px)]' : 'left-1'}`}></div>
-          <button onClick={() => { setFeedType("MARKET"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "MARKET" ? "text-pink-400" : "text-white/40 hover:text-white"}`}>
+          <button onClick={() => { setFeedType("MARKET"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "MARKET" ? "text-pink-400" : "text-white/60 hover:text-white"}`}>
             <ShoppingBagIcon size={16} /> Campus Market
           </button>
-          <button onClick={() => { setFeedType("HUSTLE"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "HUSTLE" ? "text-brand-purple" : "text-white/40 hover:text-white"}`}>
+          <button onClick={() => { setFeedType("HUSTLE"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "HUSTLE" ? "text-brand-purple" : "text-white/60 hover:text-white"}`}>
             <Briefcase size={16} /> The Hustle
           </button>
         </div>
@@ -247,9 +247,9 @@ export default function FeedPage() {
         {!loading && (
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="flex items-center justify-center gap-4 mb-6">
-              <button onClick={() => { setCampusFilter('ALL'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all ${campusFilter === 'ALL' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>All Campuses</button>
+              <button onClick={() => { setCampusFilter('ALL'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all ${campusFilter === 'ALL' ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/10'}`}>All Campuses</button>
               <div className="w-px h-4 bg-white/10"></div>
-              <button onClick={() => { setCampusFilter('MY_CAMPUS'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all flex items-center gap-2 ${campusFilter === 'MY_CAMPUS' ? 'bg-white text-black' : 'bg-white/5 text-white/40 hover:bg-white/10'}`}>
+              <button onClick={() => { setCampusFilter('MY_CAMPUS'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all flex items-center gap-2 ${campusFilter === 'MY_CAMPUS' ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/10'}`}>
                 <MapPin size={12} /> My Campus
               </button>
             </div>
@@ -258,8 +258,8 @@ export default function FeedPage() {
 
         {loading ? (
           <div className="text-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-white/40 mb-4" />
-            <p className="text-white/40 text-sm">Loading campus vibe...</p>
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-white/60 mb-4" />
+            <p className="text-white/60 text-sm">Loading campus vibe...</p>
           </div>
         ) : gigs.length === 0 ? (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 space-y-6">
@@ -309,7 +309,7 @@ export default function FeedPage() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-white/10">
-                            {gig.listing_type === "MARKET" ? <ShoppingBagIcon size={32} className="text-white/20" /> : <Briefcase size={32} className="text-white/20" />}
+                            {gig.listing_type === "MARKET" ? <ShoppingBagIcon size={32} className="text-white/60" /> : <Briefcase size={32} className="text-white/60" />}
                           </div>
                         )}
                         <div className={`absolute top-2 right-2 backdrop-blur px-2 py-1 rounded-lg border border-white/10 text-xs font-bold text-white shadow-lg ${gig.market_type === 'REQUEST' ? 'bg-blue-500/80' : 'bg-black/60'}`}>
@@ -322,7 +322,7 @@ export default function FeedPage() {
                       </div>
                       <div className="p-3">
                         <h3 className="text-sm font-bold text-white mb-1 leading-tight line-clamp-2">{gig.title}</h3>
-                        <div className="flex items-center justify-between text-[10px] text-white/40 mt-2">
+                        <div className="flex items-center justify-between text-[10px] text-white/60 mt-2">
                           <span className="flex items-center gap-1 truncate max-w-[60%]"><MapPin size={10} /> {gig.location || "Campus"}</span>
                           <span>{timeAgo(gig.created_at)}</span>
                         </div>
@@ -343,7 +343,7 @@ export default function FeedPage() {
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="px-6 py-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+                  className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/10 border border-white/5 text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                 >
                   {loadingMore ? "Loading..." : "Load More"}
                 </button>

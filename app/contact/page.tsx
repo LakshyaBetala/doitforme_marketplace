@@ -18,7 +18,7 @@ export default function ContactPage() {
            </p>
         </div>
 
-        <div className="space-y-6 bg-white/5 p-8 rounded-3xl border border-white/10">
+        <div className="space-y-6 bg-white/10 p-8 rounded-3xl border border-white/10">
           
           {/* Email Support */}
           <div className="flex items-start gap-4">

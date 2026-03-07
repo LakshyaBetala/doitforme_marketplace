@@ -1,11 +1,13 @@
 "use client";
 
+import { toast } from "sonner";
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
 import { load } from '@cashfreepayments/cashfree-js';
+
 import {
   Clock,
   MapPin,
@@ -18,6 +20,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   ChevronLeft,
+  ChevronRight,
   Sparkles,
   RefreshCcw,
   Send,
@@ -30,7 +33,10 @@ import {
   FileText,
   Download,
   Github,
-  HelpCircle
+  HelpCircle,
+  Flag,
+  Key,
+  Eye
 } from "lucide-react";
 
 // --- UTILITY ---
@@ -113,6 +119,12 @@ export default function GigDetailPage() {
   const [isAccepting, setIsAccepting] = useState<string | null>(null);
   const [isRejecting, setIsRejecting] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Report State
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetails, setReportDetails] = useState("");
+  const [isReporting, setIsReporting] = useState(false);
 
   // New Negotiation State
   const [showOfferModal, setShowOfferModal] = useState(false);
@@ -293,12 +305,12 @@ export default function GigDetailPage() {
 
   // --- HANDLERS ---
   const handleApplyNavigation = () => {
-    if (!user) return alert("Please login to apply.");
+    if (!user) return toast.error("Please login to apply.");
     router.push(`/gig/${id}/apply`);
   };
 
   const handleBuy = async () => {
-    if (!user) return alert("Please login to purchase.");
+    if (!user) return toast.error("Please login to purchase.");
 
     // 1. Initial Application / Offer Step for ALL Market Gigs (including RENT)
     if (gig?.listing_type === 'MARKET' && status === 'open') {
@@ -331,14 +343,14 @@ export default function GigDetailPage() {
           throw new Error("No payment session received");
         }
       } catch (err: any) {
-        alert(err.message);
+        toast.error(err.message);
         setIsBuying(false);
       }
     }
   };
 
   const handleMakeOffer = async () => {
-    if (!offerPrice || Number(offerPrice) <= 0) return alert("Please enter a valid price.");
+    if (!offerPrice || Number(offerPrice) <= 0) return toast.error("Please enter a valid price.");
 
     setSubmitting(true);
     try {
@@ -358,13 +370,13 @@ export default function GigDetailPage() {
         throw new Error(json.error || "Failed to submit offer.");
       }
 
-      alert("Offer submitted! Waiting for poster approval.");
+      toast.success("Offer submitted! Waiting for poster approval.");
       setShowOfferModal(false);
       setHasApplied(true);
       // Refresh to show pending state
       window.location.reload();
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message);
     } finally {
       setSubmitting(false);
     }
@@ -386,14 +398,14 @@ export default function GigDetailPage() {
       }
 
       const data = await res.json();
-      alert("Offer Accepted! Redirecting to chat...");
+      toast.success("Offer Accepted! Redirecting to chat...");
 
       // Redirect to chat with the worker
       const chatId = `${id}_${data.workerId}`;
       router.push(`/chat/${id}?chat=${chatId}`);
 
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message);
     } finally {
       setIsAccepting(null);
     }
@@ -416,7 +428,7 @@ export default function GigDetailPage() {
       // Remove from list or update status
       setApplications(prev => prev.map(a => a.id === applicationId ? { ...a, status: 'rejected' } : a));
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message);
     } finally {
       setIsRejecting(null);
     }
@@ -434,12 +446,12 @@ export default function GigDetailPage() {
         });
         if (res.ok) window.location.reload();
         else throw new Error("Failed to mark as returned");
-      } catch (e: any) { alert(e.message); }
+      } catch (e: any) { toast.error(e.message); }
       finally { setIsCompleting(false); }
       return;
     }
 
-    if (!gig?.is_physical && !deliveryLink.trim()) return alert("Please enter a submission link.");
+    if (!gig?.is_physical && !deliveryLink.trim()) return toast.error("Please enter a submission link.");
     if (!confirm("Notify the poster that the work is finished?")) return;
     setIsCompleting(true);
     try {
@@ -451,7 +463,7 @@ export default function GigDetailPage() {
       if (res.ok) window.location.reload();
       else throw new Error("Submission failed");
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message);
     } finally {
       setIsCompleting(false);
     }
@@ -484,7 +496,7 @@ export default function GigDetailPage() {
       setIsWorker(user?.id === workerId);
       window.location.reload();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message);
       setSubmitting(false); // Only clear loading state on error
     }
   };
@@ -497,8 +509,31 @@ export default function GigDetailPage() {
     setShowReviewModal(true);
   };
 
+  const handleReport = async () => {
+    if (!reportReason) return toast.error("Please select a reason.");
+    setIsReporting(true);
+    try {
+      const res = await fetch("/api/gig/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: id, targetType: "gig", reason: reportReason, details: reportDetails })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to submit report");
+
+      toast.success("Report submitted successfully for review.");
+      setShowReportModal(false);
+      setReportReason("");
+      setReportDetails("");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
   const submitReview = async () => {
-    if (!rating) return alert("Select a rating.");
+    if (!rating) return toast.error("Select a rating.");
     setIsCompleting(true);
     try {
       const res = await fetch("/api/gig/complete", {
@@ -509,7 +544,7 @@ export default function GigDetailPage() {
       if (res.ok) window.location.reload();
       else throw new Error("Completion failed");
     } catch (e: any) {
-      alert(e.message);
+      toast.error(e.message);
     } finally {
       setIsCompleting(false);
     }
@@ -525,7 +560,7 @@ export default function GigDetailPage() {
       });
       if (res.ok) window.location.reload();
       else throw new Error("Confirmation failed");
-    } catch (e: any) { alert(e.message); }
+    } catch (e: any) { toast.error(e.message); }
     finally { setIsCompleting(false); }
   }
 
@@ -543,17 +578,17 @@ export default function GigDetailPage() {
 
       if (res.ok) {
         if (data.requestOnly) {
-          alert("Cancellation request submitted. Waiting for approval.");
+          toast.success("Cancellation request submitted. Waiting for approval.");
           window.location.reload();
         } else {
-          alert("Gig cancelled successfully.");
+          toast.success("Gig cancelled successfully.");
           window.location.href = "/dashboard";
         }
       } else {
         throw new Error(data.error || "Cancellation failed");
       }
     } catch (e: any) {
-      alert(e.message || "Network error.");
+      toast.error(e.message || "Network error.");
     } finally {
       setIsCancelling(false);
     }
@@ -561,7 +596,7 @@ export default function GigDetailPage() {
 
   const onVerifyHandshake = async () => {
     const code = inputCode.join("");
-    if (code.length !== 4) return alert("Please enter the full 4-digit code.");
+    if (code.length !== 4) return toast.error("Please enter the full 4-digit code.");
 
     setVerifyingHandshake(true);
     try {
@@ -577,13 +612,13 @@ export default function GigDetailPage() {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([50, 30, 50, 30, 100]);
         }
-        alert("Handshake Confirmed! Funds Released.");
+        toast.success("Handshake Confirmed! Funds Released.");
         window.location.reload();
       } else {
-        alert(data.error || "Verification Failed");
+        toast.error(data.error || "Verification Failed");
       }
     } catch (e) {
-      alert("Network error");
+      toast.error("Network error");
     } finally {
       setVerifyingHandshake(false);
     }
@@ -651,6 +686,32 @@ export default function GigDetailPage() {
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white font-sans selection:bg-brand-purple">
 
+      {/* REPORT MODAL */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-[70] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-2xl">
+            <button onClick={() => setShowReportModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
+            <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><Flag size={20} /></div>
+            <h2 className="text-xl font-bold text-center mb-2">Report this Listing</h2>
+            <p className="text-center text-white/50 text-sm mb-6">Help keep our community safe.</p>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {["Scam / Fraud", "Inappropriate", "Spam", "Other"].map(r => (
+                  <button key={r} onClick={() => setReportReason(r)} className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all ${reportReason === r ? "bg-red-500/20 border-red-500/50 text-red-500" : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"}`}>{r}</button>
+                ))}
+              </div>
+
+              <textarea value={reportDetails} onChange={(e) => setReportDetails(e.target.value)} placeholder="Provide specific details (optional)..." className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 h-24 outline-none text-white resize-none focus:border-red-500/50 transition-all font-mono text-sm" />
+
+              <button onClick={handleReport} disabled={isReporting} className="w-full py-4 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                {isReporting ? <Loader2 className="animate-spin w-5 h-5" /> : <Flag className="w-5 h-5" />} Submit Report
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* BACKGROUND BLOBS */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-brand-purple/10 blur-[150px] rounded-full opacity-40"></div>
@@ -661,7 +722,7 @@ export default function GigDetailPage() {
       {showOfferModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-2xl">
-            <button onClick={() => setShowOfferModal(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+            <button onClick={() => setShowOfferModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
             <h2 className="text-2xl font-bold text-center mb-2">{isMarket ? (gig.market_type === "RENT" ? "Rental Offer" : "Make an Offer") : "Apply for Gig"}</h2>
             <p className="text-center text-white/50 text-sm mb-6">
               {isMarket ? "Propose your price or accept the listing price." : "Tell the poster why you're a good fit."}
@@ -705,7 +766,7 @@ export default function GigDetailPage() {
       {showContactModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#1A1A24] border border-brand-pink/30 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-[0_0_50px_rgba(236,72,153,0.2)]">
-            <button onClick={() => setShowContactModal(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+            <button onClick={() => setShowContactModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
 
             <div className="text-center space-y-4">
               <div className="w-16 h-16 bg-brand-pink/10 rounded-full flex items-center justify-center mx-auto mb-2 animate-bounce">
@@ -720,20 +781,20 @@ export default function GigDetailPage() {
 
               <div className="bg-black/40 rounded-xl p-6 border border-white/5 space-y-4">
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Name</label>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">Name</label>
                   <p className="text-lg font-bold text-white">{posterDetails?.name || "Poster"}</p>
                 </div>
 
                 {posterDetails?.phone && (
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">Phone</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">Phone</label>
                     <p className="text-xl font-mono text-brand-pink tracking-wider select-all">{posterDetails.phone}</p>
                   </div>
                 )}
 
                 {posterDetails?.upi_id && (
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/40">UPI ID</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">UPI ID</label>
                     <p className="text-base font-mono text-white/80 select-all">{posterDetails.upi_id}</p>
                   </div>
                 )}
@@ -742,7 +803,7 @@ export default function GigDetailPage() {
               <div className="pt-2">
                 <button
                   onClick={() => router.push(`/chat/${id}`)}
-                  className="w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl transition-all"
+                  className="w-full py-4 bg-white/10 hover:bg-white/10 text-white font-bold rounded-xl transition-all"
                 >
                   Close & Chat
                 </button>
@@ -756,7 +817,7 @@ export default function GigDetailPage() {
       {showReturnModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-2xl">
-            <button onClick={() => setShowReturnModal(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+            <button onClick={() => setShowReturnModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
             <h2 className="text-2xl font-bold text-center mb-2">Confirm Return</h2>
             <p className="text-center text-white/50 text-sm mb-6">Verify the item condition and release deposit.</p>
 
@@ -770,10 +831,10 @@ export default function GigDetailPage() {
                   max={gig.security_deposit || 0}
                   className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-purple/50 transition-all font-mono"
                 />
-                <p className="text-xs text-white/40">Max Deduction: ₹{gig.security_deposit || 0}</p>
+                <p className="text-xs text-white/60">Max Deduction: ₹{gig.security_deposit || 0}</p>
               </div>
 
-              <div className="p-4 bg-white/5 rounded-xl flex justify-between items-center text-sm">
+              <div className="p-4 bg-white/10 rounded-xl flex justify-between items-center text-sm">
                 <span>Refund to Renter:</span>
                 <span className="font-bold text-green-400 font-mono">₹{(gig.security_deposit || 0) - deductionAmount}</span>
               </div>
@@ -797,7 +858,7 @@ export default function GigDetailPage() {
       {showReviewModal && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-2xl">
-            <button onClick={() => setShowReviewModal(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+            <button onClick={() => setShowReviewModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
             <h2 className="text-2xl font-bold text-center mb-2">Rate Experience</h2>
             <div className="flex justify-center gap-3 mb-8">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -842,9 +903,14 @@ export default function GigDetailPage() {
                 </span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">
-                {gig.title}
-              </h1>
+              <div className="flex items-start justify-between gap-4 pr-0 md:pr-12">
+                <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">
+                  {gig.title}
+                </h1>
+                <button onClick={() => setShowReportModal(true)} className="px-4 py-2 shrink-0 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/30 flex items-center gap-2 transition-all font-bold text-xs group" title="Report Listing">
+                  <Flag size={14} className="group-hover:fill-red-400/20" /> Report
+                </button>
+              </div>
 
               <div className="flex items-center gap-4 text-white/60 text-sm">
                 <span>Posted {new Date(gig.created_at).toLocaleDateString()}</span>
@@ -865,16 +931,16 @@ export default function GigDetailPage() {
             </div>
 
             <div className="hidden md:block text-right">
-              <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md inline-block min-w-[200px]">
-                <p className="text-white/40 text-xs uppercase tracking-widest font-bold mb-1">
+              <div className="bg-white/10 border border-white/10 p-6 rounded-3xl backdrop-blur-md inline-block min-w-[200px]">
+                <p className="text-white/60 text-xs uppercase tracking-widest font-bold mb-1">
                   {isMarket ? gig.market_type === "RENT" ? "Rental Fee" : "Price" : "Budget"}
                 </p>
                 <p className="text-4xl font-mono font-bold text-white tracking-tighter">
                   ₹{gig.price}
                 </p>
-                <div className="mt-2 flex items-center gap-1 text-xs text-white/40 group relative cursor-help w-fit">
+                <div className="mt-2 flex items-center gap-1 text-xs text-white/60 group relative cursor-help w-fit">
                   <span>+ ₹{Math.floor(gig.price * 0.02)} Platform Fee</span>
-                  <HelpCircle size={12} className="text-white/20" />
+                  <HelpCircle size={12} className="text-white/60" />
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 border border-white/10 rounded-lg text-[10px] text-white/80 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
                     Includes 2% Gateway Security & Escrow Protection. <br /> (7.5% Rate for Campus Pros).
                     <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/90"></div>
@@ -882,7 +948,7 @@ export default function GigDetailPage() {
                 </div>
                 {isMarket && gig.market_type === "RENT" && (
                   <div className="mt-2 pt-2 border-t border-white/10">
-                    <p className="text-xs text-white/40 uppercase">Deposit</p>
+                    <p className="text-xs text-white/60 uppercase">Deposit</p>
                     <p className="text-sm font-mono text-white/80">₹{gig.security_deposit || 0}</p>
                   </div>
                 )}
@@ -936,17 +1002,35 @@ export default function GigDetailPage() {
                 <h3 className="text-2xl font-bold text-white mb-2">
                   {isOwner ? "Provide this code to the worker" : "Enter code from the seller"}
                 </h3>
-                <p className="text-white/60 text-sm leading-relaxed">
+                <p className="text-white/60 text-sm leading-relaxed mb-6">
                   {isOwner
                     ? "To ensure safety, only share this code when you physically meet the worker and verify the service/item. Once they enter it, funds are released to them."
                     : "Ask the seller for the 4-digit code when you meet. Entering this code confirms you have received the item/service and releases the payment."}
                 </p>
+
+                {/* ESCROW 3-STEP VISUAL */}
+                <div className="flex items-center gap-2 md:gap-4 text-[10px] md:text-xs font-bold uppercase tracking-widest text-white/50 bg-black/30 p-4 rounded-3xl border border-white/10 w-full md:w-auto mt-6 shadow-inner">
+                  <div className="flex flex-col items-center gap-2 flex-1 relative">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30"><User size={18} /></div>
+                    <span className="text-center text-blue-400 shrink-0">1. Meet Up</span>
+                  </div>
+                  <ChevronRight size={16} className="text-white/20 shrink-0" />
+                  <div className="flex flex-col items-center gap-2 flex-1 relative">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30"><Eye size={18} /></div>
+                    <span className="text-center text-purple-400 shrink-0">2. Inspect</span>
+                  </div>
+                  <ChevronRight size={16} className="text-white/20 shrink-0" />
+                  <div className="flex flex-col items-center gap-2 flex-1 relative">
+                    <div className="w-10 h-10 rounded-2xl bg-yellow-500/20 text-yellow-500 flex items-center justify-center border border-yellow-500/30"><Key size={18} /></div>
+                    <span className="text-center text-yellow-500 shrink-0">3. Exchange</span>
+                  </div>
+                </div>
               </div>
 
               <div className="bg-black/40 p-6 rounded-2xl border border-white/10 backdrop-blur-sm min-w-[280px]">
                 {isOwner ? (
                   <div className="text-center">
-                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">Your Secret Code</p>
+                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Your Secret Code</p>
                     <div className="flex justify-center gap-3">
                       {handshakeCode?.split('').map((digit, i) => (
                         <div key={i} className="w-12 h-16 flex items-center justify-center bg-[#1A1A24] border border-yellow-500/50 rounded-xl text-3xl font-mono font-bold text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
@@ -954,11 +1038,11 @@ export default function GigDetailPage() {
                         </div>
                       )) || <Loader2 className="animate-spin text-yellow-500" />}
                     </div>
-                    <p className="mt-4 text-[10px] text-white/30">Don't share online.</p>
+                    <p className="mt-4 text-[10px] text-white/50">Don't share online.</p>
                   </div>
                 ) : (
                   <div className="text-center">
-                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">Enter Handshake Code</p>
+                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Enter Handshake Code</p>
                     <div className="flex justify-center gap-3 mb-6">
                       {inputCode.map((digit, i) => (
                         <input
@@ -1006,7 +1090,7 @@ export default function GigDetailPage() {
                       return (
                         <div key={i} className="min-w-full h-full relative snap-center flex items-center justify-center bg-[#1A1A24] cursor-pointer group/file" onClick={() => window.open(url, '_blank')}>
                           <div className="text-center space-y-4">
-                            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto group-hover/file:scale-110 transition-transform">
+                            <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center mx-auto group-hover/file:scale-110 transition-transform">
                               <FileText size={32} className="text-white/60" />
                             </div>
                             <div>
@@ -1030,7 +1114,7 @@ export default function GigDetailPage() {
                 {gig.images.length > 1 && (
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
                     {gig.images.map((_, i) => (
-                      <div key={i} className="w-2 h-2 rounded-full bg-white/50 backdrop-blur-sm"></div>
+                      <div key={i} className="w-2 h-2 rounded-full bg-white/100 backdrop-blur-sm"></div>
                     ))}
                   </div>
                 )}
@@ -1043,7 +1127,7 @@ export default function GigDetailPage() {
               {/* GitHub Link Display */}
               {gig.github_link && (
                 <div className="mb-6 pb-6 border-b border-white/5">
-                  <h3 className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
                     Reference Repo
                   </h3>
                   <a
@@ -1052,22 +1136,22 @@ export default function GigDetailPage() {
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 p-4 rounded-xl bg-[#1A1A24] border border-white/10 hover:border-brand-purple/50 hover:bg-brand-purple/5 transition-all group"
                   >
-                    <div className="p-2 bg-white/5 rounded-lg text-white group-hover:text-brand-purple transition-colors">
+                    <div className="p-2 bg-white/10 rounded-lg text-white group-hover:text-brand-purple transition-colors">
                       <Github size={20} />
                     </div>
                     <div className="overflow-hidden">
                       <p className="text-sm font-bold text-white truncate group-hover:text-brand-purple transition-colors">
                         {gig.github_link.replace(/^https?:\/\//, '')}
                       </p>
-                      <p className="text-[10px] text-white/40">Open Repository</p>
+                      <p className="text-[10px] text-white/60">Open Repository</p>
                     </div>
-                    <ArrowUpRight size={16} className="ml-auto text-white/20 group-hover:text-brand-purple" />
+                    <ArrowUpRight size={16} className="ml-auto text-white/60 group-hover:text-brand-purple" />
                   </a>
                 </div>
               )}
 
               <div>
-                <h3 className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
                   <span className="w-6 h-[1px] bg-white/20"></span> Description
                 </h3>
                 <p className="text-lg text-white/80 leading-relaxed font-light whitespace-pre-line">
@@ -1077,21 +1161,21 @@ export default function GigDetailPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-white/5">
                 <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-white/5 text-white/60">
+                  <div className="p-3 rounded-xl bg-white/10 text-white/60">
                     <MapPin className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-xs text-white/40 uppercase font-bold">Location</p>
+                    <p className="text-xs text-white/60 uppercase font-bold">Location</p>
                     <p className="text-base font-medium">{gig.location || "Remote"}</p>
                   </div>
                 </div>
                 {isMarket ? (
                   <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-xl bg-white/5 text-white/60">
+                    <div className="p-3 rounded-xl bg-white/10 text-white/60">
                       <ShieldCheck className="w-5 h-5" />
                     </div>
                     <div>
-                      <p className="text-xs text-white/40 uppercase font-bold">Condition</p>
+                      <p className="text-xs text-white/60 uppercase font-bold">Condition</p>
                       <p className="text-base font-medium capitalize">
                         {gig.item_condition ? gig.item_condition.replace(/_/g, " ").toLowerCase() : "Not specified"}
                       </p>
@@ -1100,11 +1184,11 @@ export default function GigDetailPage() {
                 ) : (
                   <>
                     <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-xl bg-white/5 text-white/60">
+                      <div className="p-3 rounded-xl bg-white/10 text-white/60">
                         <Clock className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-xs text-white/40 uppercase font-bold">Deadline</p>
+                        <p className="text-xs text-white/60 uppercase font-bold">Deadline</p>
                         <p className="text-base font-medium">
                           {gig.deadline ? new Date(gig.deadline as string).toLocaleDateString() : "Flexible"}
                         </p>
@@ -1113,12 +1197,12 @@ export default function GigDetailPage() {
                     {/* APPLICANT LIST (POSTER ONLY) */}
                     {user && gig.poster_id === user.id && (
                       <div className="space-y-4">
-                        <h3 className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">
+                        <h3 className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">
                           Applications ({applications.length})
                         </h3>
 
                         {applications.length === 0 ? (
-                          <p className="text-white/30 text-sm">No applications yet.</p>
+                          <p className="text-white/50 text-sm">No applications yet.</p>
                         ) : (
                           <div className="space-y-3">
                             {applications.map((app) => (
@@ -1129,7 +1213,7 @@ export default function GigDetailPage() {
                                     {app.worker?.avatar_url ? (
                                       <Image src={app.worker.avatar_url} alt={app.worker.name} fill className="object-cover" />
                                     ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-white/40 font-bold text-xs">{app.worker?.name?.[0]}</div>
+                                      <div className="w-full h-full flex items-center justify-center text-white/60 font-bold text-xs">{app.worker?.name?.[0]}</div>
                                     )}
                                   </div>
 
@@ -1147,7 +1231,7 @@ export default function GigDetailPage() {
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => router.push(`/messages?chat=${gig.id}_${app.worker_id}`)}
-                                    className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-colors"
+                                    className="p-2 bg-white/10 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-colors"
                                     title="Message"
                                   >
                                     <MessageSquare size={16} />
@@ -1164,7 +1248,7 @@ export default function GigDetailPage() {
                                       <button
                                         onClick={() => handleRejectOffer(app.id)}
                                         disabled={isRejecting === app.id}
-                                        className="px-4 py-2 bg-white/5 text-white/60 text-xs font-bold rounded-xl hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                                        className="px-4 py-2 bg-white/10 text-white/60 text-xs font-bold rounded-xl hover:bg-red-500/20 hover:text-red-400 transition-colors"
                                       >
                                         {isRejecting === app.id ? "..." : "Reject"}
                                       </button>
@@ -1189,7 +1273,7 @@ export default function GigDetailPage() {
             {/* Price Card (Mobile Only) */}
             <div className="md:hidden bg-[#121217] border border-white/10 p-6 rounded-3xl flex justify-between items-center">
               <div>
-                <p className="text-white/40 text-xs uppercase tracking-widest font-bold">
+                <p className="text-white/60 text-xs uppercase tracking-widest font-bold">
                   {isMarket ? gig.market_type === "RENT" ? "Rental Fee" : "Price" : "Budget"}
                 </p>
                 <p className="text-3xl font-mono font-bold text-white">₹{gig.price}</p>
@@ -1204,7 +1288,7 @@ export default function GigDetailPage() {
                 <>
                   {isOwner ? (
                     <div className="space-y-3">
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
+                      <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
                         <p className="text-sm text-white/60">You are the owner of this post.</p>
                       </div>
 
@@ -1265,7 +1349,7 @@ export default function GigDetailPage() {
                           )}
                         </button>
                       ) : (
-                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
+                        <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
                           <p className="text-sm text-white/60">
                             {status === "completed" ? "This listing is closed." : "This listing is currently assigned."}
                           </p>
@@ -1320,9 +1404,9 @@ export default function GigDetailPage() {
 
             {/* SELLER/POSTER PROFILE (Unmasked) */}
             <div className="bg-[#121217] border border-white/10 p-6 rounded-[32px] space-y-4 shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -z-10 group-hover:bg-white/10 transition-colors"></div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -z-10 group-hover:bg-white/10 transition-colors"></div>
 
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Posted By</h3>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-2">Posted By</h3>
 
               <div className="flex items-center gap-4">
                 <div className={`w-14 h-14 rounded-full flex items-center justify-center shrink-0 ${(posterDetails?.jobs_completed || 0) > 10
@@ -1333,7 +1417,7 @@ export default function GigDetailPage() {
                     {posterDetails?.avatar_url ? (
                       <Image src={posterDetails.avatar_url} alt={posterDetails.name} width={56} height={56} className="object-cover w-full h-full" />
                     ) : (
-                      <span className="text-white/40 font-bold text-lg">{posterDetails?.name?.[0] || "?"}</span>
+                      <span className="text-white/60 font-bold text-lg">{posterDetails?.name?.[0] || "?"}</span>
                     )}
                   </div>
                 </div>
@@ -1365,7 +1449,7 @@ export default function GigDetailPage() {
               {user && user.id !== gig.poster_id && (
                 <button
                   onClick={handleMessage}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 text-white font-medium transition-all active:scale-[0.98]"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/10 hover:bg-white/10 border border-white/5 hover:border-white/20 text-white font-medium transition-all active:scale-[0.98]"
                 >
                   <MessageSquare size={16} />
                   Message Poster

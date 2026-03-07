@@ -34,7 +34,7 @@ export default function PrivacyPolicy() {
         <div className="space-y-6">
 
           {/* Section 1: Data Collection */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
                 <Database size={20} />
@@ -59,7 +59,7 @@ export default function PrivacyPolicy() {
           </section>
 
           {/* Section 2: How We Use Your Data */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-brand-purple shrink-0">
                 <Eye size={20} />
@@ -90,7 +90,7 @@ export default function PrivacyPolicy() {
           </section>
 
           {/* Section 3: Payment Security & Data Sharing */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 shrink-0">
                 <FileText size={20} />
@@ -116,7 +116,7 @@ export default function PrivacyPolicy() {
           </section>
 
           {/* Section 4: Contact */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 shrink-0">
                 <Mail size={20} />

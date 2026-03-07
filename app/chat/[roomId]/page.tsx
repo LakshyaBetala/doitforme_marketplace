@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
@@ -264,7 +266,7 @@ export default function ChatRoomPage() {
     if (type === 'text') {
       const aiResult = await analyze(textToSend, 'CHAT');
       if (!aiResult.isSafe) {
-        alert(`⚠️ Safety Alert: ${aiResult.reason || "Content flagged by AI."}`);
+        toast.error(`⚠️ Safety Alert: ${aiResult.reason || "Content flagged by AI."}`);
         return;
       }
     }
@@ -292,7 +294,7 @@ export default function ChatRoomPage() {
       const json = await res.json();
 
       if (!res.ok) {
-        alert(json.message || json.error || "Failed");
+        toast.error(json.message || json.error || "Failed");
         return;
       }
 
@@ -300,7 +302,7 @@ export default function ChatRoomPage() {
       if (type === 'text' && !txt) setInput("");
 
     } catch (e) {
-      alert("Network error.");
+      toast.error("Network error.");
     }
   };
 
@@ -308,9 +310,9 @@ export default function ChatRoomPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) return alert("File size must be less than 5MB");
+    if (file.size > 5 * 1024 * 1024) return toast.error("File size must be less than 5MB");
     // Validate type (Client side check)
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return alert("Only JPG, PNG, WEBP allowed");
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return toast.error("Only JPG, PNG, WEBP allowed");
 
     setIsUploading(true);
     try {
@@ -334,7 +336,7 @@ export default function ChatRoomPage() {
 
     } catch (err: any) {
       console.error(err);
-      alert("Upload failed: " + err.message);
+      toast.error("Upload failed: " + err.message);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -373,13 +375,13 @@ export default function ChatRoomPage() {
         setGig(prev => prev ? ({ ...prev, negotiated_price: offerToAccept.offer_amount! }) : null); // Optional: store locally for UI
         setIsAcceptModalOpen(false);
         setOfferToAccept(null);
-        alert("Offer accepted! Worker has been notified.");
+        toast.success("Offer accepted! Worker has been notified.");
       } else {
         const json = await res.json();
-        alert(json.error || "Failed to accept offer");
+        toast.error(json.error || "Failed to accept offer");
       }
     } catch (e) {
-      alert("Network error");
+      toast.error("Network error");
     } finally {
       setIsAccepting(false);
     }
@@ -423,11 +425,11 @@ export default function ChatRoomPage() {
           <aside className={`fixed md:relative z-40 w-72 h-full bg-[#121217] border-r border-white/10 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
             <div className="p-4 border-b border-white/10 flex justify-between items-center">
               <h2 className="font-bold text-sm tracking-wider uppercase text-white/60">Applicants</h2>
-              <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/40"><X size={20} /></button>
+              <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/60"><X size={20} /></button>
             </div>
             <div className="overflow-y-auto h-full pb-20">
               {applicants.length === 0 ? (
-                <div className="p-8 text-center text-white/30 text-xs">No applicants yet.</div>
+                <div className="p-8 text-center text-white/50 text-xs">No applicants yet.</div>
               ) : (
                 applicants.map(app => {
                   // Find last MESSAGE from this applicant OR to this applicant to show in sidebar
@@ -442,7 +444,7 @@ export default function ChatRoomPage() {
                     <button
                       key={app.id}
                       onClick={() => { setSelectedApplicantId(app.id); setSidebarOpen(false); }}
-                      className={`w-full p-4 flex items-center gap-3 hover:bg-white/5 transition-colors border-b border-white/5 ${selectedApplicantId === app.id ? 'bg-brand-purple/10 border-l-2 border-l-brand-purple' : ''}`}
+                      className={`w-full p-4 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-white/5 ${selectedApplicantId === app.id ? 'bg-brand-purple/10 border-l-2 border-l-brand-purple' : ''}`}
                     >
                       <div className="w-10 h-10 rounded-full bg-zinc-800 relative overflow-hidden shrink-0">
                         {app.avatar_url ? <Image src={app.avatar_url} alt={app.name} fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs">{app.name[0]}</div>}
@@ -450,16 +452,16 @@ export default function ChatRoomPage() {
                       <div className="text-left overflow-hidden flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-0.5">
                           <p className={`font-medium truncate text-sm ${selectedApplicantId === app.id ? 'text-white' : 'text-white/80'}`}>{app.name}</p>
-                          {lastMsg && <span className="text-[9px] text-white/30 whitespace-nowrap ml-2">{new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                          {lastMsg && <span className="text-[9px] text-white/50 whitespace-nowrap ml-2">{new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
                         </div>
 
                         {lastMsg ? (
-                          <p className="text-xs text-white/40 truncate flex items-center gap-1">
+                          <p className="text-xs text-white/60 truncate flex items-center gap-1">
                             {lastMsg.sender_id === currentUser.id && <span className="text-brand-purple">You:</span>}
                             {lastMsg.content}
                           </p>
                         ) : (
-                          <p className="text-[10px] text-white/30 flex items-center gap-1"><Star size={10} className="text-yellow-500 fill-current" /> {(!app.rating || app.rating_count === 0) ? "NA" : Number(app.rating).toFixed(1)} Rating</p>
+                          <p className="text-[10px] text-white/50 flex items-center gap-1"><Star size={10} className="text-yellow-500 fill-current" /> {(!app.rating || app.rating_count === 0) ? "NA" : Number(app.rating).toFixed(1)} Rating</p>
                         )}
                       </div>
                     </button>
@@ -478,7 +480,7 @@ export default function ChatRoomPage() {
         <header className="px-4 py-3 border-b border-white/10 bg-[#121217] flex items-center gap-4 shadow-lg z-20 shrink-0">
           <div className="flex items-center gap-3">
             {isPoster && <button onClick={() => setSidebarOpen(true)} className="md:hidden text-white/70"><Menu size={24} /></button>}
-            <Link href={`/gig/${roomId}`} className="p-2 rounded-full bg-white/5 hover:bg-white/10">
+            <Link href={`/gig/${roomId}`} className="p-2 rounded-full bg-white/10 hover:bg-white/10">
               <ArrowLeft size={20} className="text-white/70" />
             </Link>
 
@@ -501,7 +503,7 @@ export default function ChatRoomPage() {
           <div className="w-10 h-10 rounded-lg bg-zinc-800 relative overflow-hidden shrink-0 border border-white/10">
             {gig.images?.[0]
               ? <Image src={supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl} alt="Gig" fill className="object-cover" />
-              : (gig.listing_type === 'MARKET' ? <ShoppingBag className="p-2 w-full h-full text-white/30" /> : <Briefcase className="p-2 w-full h-full text-white/30" />)
+              : (gig.listing_type === 'MARKET' ? <ShoppingBag className="p-2 w-full h-full text-white/50" /> : <Briefcase className="p-2 w-full h-full text-white/50" />)
             }
           </div>
           <div className="flex-1 min-w-0">
@@ -533,7 +535,7 @@ export default function ChatRoomPage() {
               <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
                 <button
                   onClick={() => setIsOfferModalOpen(false)}
-                  className="absolute top-4 right-4 text-white/40 hover:text-white"
+                  className="absolute top-4 right-4 text-white/60 hover:text-white"
                 >
                   <X size={20} />
                 </button>
@@ -550,7 +552,7 @@ export default function ChatRoomPage() {
                   />
                   {/* Fee Logic Display for Worker (Hustle) */}
                   {!isPoster && gig.listing_type === 'HUSTLE' && (
-                    <div className="bg-white/5 rounded-lg p-3 text-xs space-y-1 my-4">
+                    <div className="bg-white/10 rounded-lg p-3 text-xs space-y-1 my-4">
                       <div className="flex justify-between text-white/50">
                         <span>Gross Amount:</span>
                         <span>₹{offerAmount || 0}</span>
@@ -599,10 +601,10 @@ export default function ChatRoomPage() {
                   <div className="text-4xl font-black text-white tracking-tighter mb-1">
                     ₹{offerToAccept.offer_amount}
                   </div>
-                  <p className="text-xs text-white/40 uppercase tracking-widest font-bold">New Agreed Price</p>
+                  <p className="text-xs text-white/60 uppercase tracking-widest font-bold">New Agreed Price</p>
                 </div>
 
-                <div className="bg-white/5 rounded-xl p-4 mb-6 text-xs text-white/70 leading-relaxed border border-white/5">
+                <div className="bg-white/10 rounded-xl p-4 mb-6 text-xs text-white/70 leading-relaxed border border-white/5">
                   {gig.listing_type === 'MARKET' ? (
                     gig.market_type === 'RENT' ? (
                       <p>
@@ -623,7 +625,7 @@ export default function ChatRoomPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setIsAcceptModalOpen(false)}
-                    className="py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-bold text-sm transition-colors"
+                    className="py-3 bg-white/10 hover:bg-white/10 rounded-xl text-white font-bold text-sm transition-colors"
                   >
                     Cancel
                   </button>
@@ -646,12 +648,12 @@ export default function ChatRoomPage() {
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
 
           {(isPoster && !selectedApplicantId) ? (
-            <div className="flex h-full items-center justify-center text-white/30 text-sm flex-col gap-2">
+            <div className="flex h-full items-center justify-center text-white/50 text-sm flex-col gap-2">
               <User size={32} />
               Select an applicant to start chatting.
             </div>
           ) : activeMessages.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-white/30 text-sm flex-col gap-2">
+            <div className="flex h-full items-center justify-center text-white/50 text-sm flex-col gap-2">
               <Sparkles size={32} />
               No messages yet. Say hi!
             </div>
@@ -666,7 +668,7 @@ export default function ChatRoomPage() {
                   {isOffer ? (
                     // OFFER CARD UI
                     <div className={`max-w-[85%] md:max-w-[300px] w-full rounded-2xl overflow-hidden border ${isMe ? 'border-brand-purple/50 bg-brand-purple/5' : 'border-white/10 bg-[#1A1A24]'}`}>
-                      <div className="p-4 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                      <div className="p-4 bg-white/10 border-b border-white/5 flex justify-between items-center">
                         <span className="text-xs font-bold uppercase tracking-wider text-white/60">
                           {isMe ? "You sent an offer" : "Received Offer"}
                         </span>
@@ -676,7 +678,7 @@ export default function ChatRoomPage() {
                         <div className="text-3xl font-black text-white tracking-tighter">
                           ₹{m.offer_amount}
                         </div>
-                        <p className="text-[10px] text-white/40">
+                        <p className="text-[10px] text-white/60">
                           {isMe ? "Waiting for response..." : "Proposed Price"}
                         </p>
                       </div>
@@ -721,7 +723,7 @@ export default function ChatRoomPage() {
                           onClick={() => window.open(m.content, '_blank')}
                         />
                       </div>
-                      <div className="px-2 py-1 bg-[#1A1A24] text-[9px] text-right text-white/30 font-mono">
+                      <div className="px-2 py-1 bg-[#1A1A24] text-[9px] text-right text-white/50 font-mono">
                         {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
@@ -746,7 +748,7 @@ export default function ChatRoomPage() {
 
           {/* Visual Limit (Applicant Only) */}
           {!isPoster && gig.status === 'open' && (
-            <div className="w-full bg-white/5 h-1 relative">
+            <div className="w-full bg-white/10 h-1 relative">
               <div
                 className={`h-full transition-all duration-500 ${msgCount >= msgLimit ? 'bg-red-500' : 'bg-brand-purple'}`}
                 style={{ width: `${Math.min((msgCount / msgLimit) * 100, 100)}%` }}
@@ -764,7 +766,7 @@ export default function ChatRoomPage() {
                 key={i}
                 onClick={() => sendMessage(chip)}
                 disabled={!isPoster && msgCount >= msgLimit}
-                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition-colors disabled:opacity-50"
+                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition-colors disabled:opacity-50"
               >
                 {chip}
               </button>
@@ -777,7 +779,7 @@ export default function ChatRoomPage() {
             {!isPoster && gig.listing_type === 'MARKET' && gig.status === 'open' && (
               <button
                 onClick={() => setIsOfferModalOpen(true)}
-                className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-green-400 border border-white/5 transition-all shrink-0"
+                className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-green-400 border border-white/5 transition-all shrink-0"
                 title="Make an Offer"
               >
                 <IndianRupee size={20} />
@@ -795,7 +797,7 @@ export default function ChatRoomPage() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-white/70 border border-white/5 transition-all shrink-0 disabled:opacity-50"
+              className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-white/70 border border-white/5 transition-all shrink-0 disabled:opacity-50"
               title="Attach Image"
             >
               {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}

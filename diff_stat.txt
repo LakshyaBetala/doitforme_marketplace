@@ -1,0 +1,27 @@
+﻿ app/about/page.tsx                   |    6 +-
+ app/chat/[roomId]/page.tsx           |   64 +-
+ app/contact/page.tsx                 |    2 +-
+ app/dashboard/admin/payouts/page.tsx |   14 +-
+ app/dashboard/page.tsx               |   33 +-
+ app/feed/page.tsx                    |   22 +-
+ app/gig/[id]/applicants/page.tsx     |   20 +-
+ app/gig/[id]/apply/page.tsx          |   16 +-
+ app/gig/[id]/chat/page.tsx           |    4 +-
+ app/gig/[id]/page.tsx                |  226 +++++---
+ app/gig/applied/page.tsx             |    8 +-
+ app/login/page.tsx                   |   26 +-
+ app/messages/page.tsx                |   50 +-
+ app/onboarding/page.tsx              |   12 +-
+ app/payouts/page.tsx                 |   18 +-
+ app/post/page.tsx                    | 1061 +++++++++++++---------------------
+ app/pricing/page.tsx                 |    8 +-
+ app/privacy-policy/page.tsx          |    8 +-
+ app/profile/page.tsx                 |   36 +-
+ app/refund-policy/page.tsx           |   14 +-
+ app/terms/page.tsx                   |   18 +-
+ app/verify-id/page.tsx               |    8 +-
+ app/verify/page.tsx                  |    4 +-
+ components/home/LandingPage.tsx      |   36 +-
+ package-lock.json                    |   58 +-
+ package.json                         |    5 +-
+ 26 files changed, 817 insertions(+), 960 deletions(-)

@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
@@ -290,7 +292,7 @@ export default function ChatPage() {
                 if (modRes.ok) {
                     const aiCheck = await modRes.json();
                     if (!aiCheck.success) {
-                        alert(`Message Blocked: ${aiCheck.reason}`);
+                        toast.error(`Message Blocked: ${aiCheck.reason}`);
                         return; // Stop here
                     }
                 }
@@ -324,7 +326,7 @@ export default function ChatPage() {
             }
 
             if (!res.ok) {
-                alert(data.message || data.error || "Failed to send.");
+                toast.error(data.message || data.error || "Failed to send.");
                 return;
             }
 
@@ -336,7 +338,7 @@ export default function ChatPage() {
 
         } catch (err: any) {
             console.error("Send Error:", err);
-            alert("Failed to send message. Please try again.");
+            toast.error("Failed to send message. Please try again.");
         }
     };
 
@@ -363,16 +365,16 @@ export default function ChatPage() {
             });
 
             if (res.ok) {
-                alert("Offer accepted! This gig is now assigned.");
+                toast.success("Offer accepted! This gig is now assigned.");
                 // Force refresh or optimistic update
                 window.location.reload();
             } else {
                 const json = await res.json();
-                alert(json.error || "Failed to accept offer");
+                toast.error(json.error || "Failed to accept offer");
             }
         } catch (e) {
             console.error(e);
-            alert("Network error");
+            toast.error("Network error");
         }
     };
 
@@ -380,8 +382,8 @@ export default function ChatPage() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (file.size > 5 * 1024 * 1024) return alert("File size must be less than 5MB");
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return alert("Only JPG, PNG, WEBP allowed");
+        if (file.size > 5 * 1024 * 1024) return toast.error("File size must be less than 5MB");
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return toast.error("Only JPG, PNG, WEBP allowed");
 
         setIsUploading(true);
         try {
@@ -403,7 +405,7 @@ export default function ChatPage() {
 
         } catch (err: any) {
             console.error(err);
-            alert("Upload failed: " + err.message);
+            toast.error("Upload failed: " + err.message);
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = "";
@@ -427,36 +429,36 @@ export default function ChatPage() {
 
                 <div className="p-4">
                     <div className="relative">
-                        <Search className="absolute left-3 top-3 text-white/30 w-4 h-4" />
-                        <input className="w-full bg-[#1A1A24] rounded-xl pl-10 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-brand-purple/50 transition-all" placeholder="Search conversations..." />
+                        <Search className="absolute left-3 top-3 text-white/50 w-4 h-4" />
+                        <input className="w-full bg-[#1A1A24] rounded-xl pl-10 py-3 text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-1 focus:ring-brand-purple/50 transition-all" placeholder="Search conversations..." />
                     </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
                     {loading && conversations.length === 0 ? (
-                        <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/20" /></div>
+                        <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/60" /></div>
                     ) : conversations.length === 0 ? (
-                        <div className="p-8 text-center text-white/40 text-sm">No messages yet.</div>
+                        <div className="p-8 text-center text-white/60 text-sm">No messages yet.</div>
                     ) : (
                         conversations.map((chat) => (
                             <div
                                 key={chat.conversationKey}
                                 onClick={() => setActiveChat(chat.conversationKey)}
-                                className={`p-4 mx-2 rounded-xl cursor-pointer flex gap-4 transition-all hover:bg-white/5 ${activeChat === chat.conversationKey ? 'bg-white/10' : ''}`}
+                                className={`p-4 mx-2 rounded-xl cursor-pointer flex gap-4 transition-all hover:bg-white/10 ${activeChat === chat.conversationKey ? 'bg-white/10' : ''}`}
                             >
                                 <div className="relative shrink-0">
                                     <div className="w-12 h-12 rounded-full bg-[#2A2A35] flex items-center justify-center overflow-hidden border border-white/5">
                                         {chat.otherUser.avatar_url ? (
                                             <Image src={chat.otherUser.avatar_url} alt="" fill className="object-cover" />
                                         ) : (
-                                            <User className="w-5 h-5 text-white/40" />
+                                            <User className="w-5 h-5 text-white/60" />
                                         )}
                                     </div>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-baseline mb-1">
                                         <h3 className="font-semibold text-white truncate">{chat.otherUser.name}</h3>
-                                        <span className="text-[10px] text-white/30 ml-2 shrink-0">
+                                        <span className="text-[10px] text-white/50 ml-2 shrink-0">
                                             {new Date(chat.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
@@ -484,7 +486,7 @@ export default function ChatPage() {
                                     {activeConversation?.otherUser?.avatar_url ? (
                                         <Image src={activeConversation.otherUser.avatar_url} alt="" fill className="object-cover" />
                                     ) : (
-                                        <User className="w-5 h-5 text-white/40" />
+                                        <User className="w-5 h-5 text-white/60" />
                                     )}
                                 </div>
 
@@ -494,7 +496,7 @@ export default function ChatPage() {
                                     </h2>
                                     <div className="flex items-center gap-2 text-[10px] text-zinc-400 mt-0.5">
                                         {(!activeConversation?.otherUser?.rating || activeConversation?.otherUser?.rating_count === 0) ? (
-                                            <span className="text-white/20 text-[10px] font-bold">NA</span>
+                                            <span className="text-white/60 text-[10px] font-bold">NA</span>
                                         ) : (
                                             <span className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded">
                                                 <Star size={10} fill="currentColor" /> {Number(activeConversation.otherUser.rating).toFixed(1)}
@@ -517,7 +519,7 @@ export default function ChatPage() {
                                 <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
                                     <button
                                         onClick={() => setIsOfferModalOpen(false)}
-                                        className="absolute top-4 right-4 text-white/40 hover:text-white"
+                                        className="absolute top-4 right-4 text-white/60 hover:text-white"
                                     >
                                         <X size={20} />
                                     </button>
@@ -556,7 +558,7 @@ export default function ChatPage() {
                                         {msg.message_type === 'offer' ? (
                                             // OFFER CARD UI
                                             <div className={`max-w-[85%] md:max-w-[300px] w-full rounded-2xl overflow-hidden border ${isMe ? 'border-[#8825F5]/50 bg-[#8825F5]/5' : 'border-white/10 bg-[#1A1A24]'}`}>
-                                                <div className="p-4 bg-white/5 border-b border-white/5 flex justify-between items-center">
+                                                <div className="p-4 bg-white/10 border-b border-white/5 flex justify-between items-center">
                                                     <span className="text-xs font-bold uppercase tracking-wider text-white/60">
                                                         {isMe ? "You sent an offer" : "Received Offer"}
                                                     </span>
@@ -566,7 +568,7 @@ export default function ChatPage() {
                                                     <div className="text-3xl font-black text-white tracking-tighter">
                                                         ₹{msg.offer_amount}
                                                     </div>
-                                                    <p className="text-[10px] text-white/40">
+                                                    <p className="text-[10px] text-white/60">
                                                         {isMe ? "Waiting for response..." : "Proposed Price"}
                                                     </p>
                                                 </div>
@@ -610,7 +612,7 @@ export default function ChatPage() {
                                                 ) : (
                                                     msg.content
                                                 )}
-                                                <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-white/30'}`}>
+                                                <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-white/50'}`}>
                                                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </div>
                                             </div>
@@ -694,8 +696,8 @@ export default function ChatPage() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-white/30 gap-4">
-                        <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-2 animate-pulse">
+                    <div className="flex-1 flex flex-col items-center justify-center text-white/50 gap-4">
+                        <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-2 animate-pulse">
                             <Send size={40} className="opacity-50" />
                         </div>
                         <p>Select a chat to start messaging</p>

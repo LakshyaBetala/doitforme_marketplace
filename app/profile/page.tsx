@@ -208,8 +208,8 @@ export default function ProfilePage() {
         setStats({ completed: completedCount, earnings: totalEarned, isLightningResponder: isLightning, avgResponseTime: Math.round(avgTime) });
 
         // Initialize edit fields
-        setEditName(userData.name || "");
-        setEditPhone(userData.phone || "");
+        setEditName(userData.name ? String(userData.name) : "");
+        setEditPhone(userData.phone ? String(userData.phone) : "");
         setEditPreferences(userData.preferences || []);
 
         // 5. Fetch Referral data
@@ -250,8 +250,8 @@ export default function ProfilePage() {
   };
 
   const cancelEditing = () => {
-    setEditName(profile.name || "");
-    setEditPhone(profile.phone || "");
+    setEditName(profile.name ? String(profile.name) : "");
+    setEditPhone(profile.phone ? String(profile.phone) : "");
     setEditPreferences(profile.preferences || []);
     setIsEditing(false);
     setSaveMessage(null);
@@ -261,7 +261,7 @@ export default function ProfilePage() {
     setSaving(true);
     setSaveMessage(null);
 
-    if (!editName.trim()) {
+    if (!String(editName).trim()) {
       setSaveMessage({ type: 'error', text: 'Name cannot be empty.' });
       setSaving(false);
       return;
@@ -272,8 +272,8 @@ export default function ProfilePage() {
       const { error: dbError } = await supabase
         .from("users")
         .update({
-          name: editName.trim(),
-          phone: editPhone.trim(),
+          name: String(editName).trim(),
+          phone: String(editPhone).trim(),
           preferences: editPreferences,
           profile_last_edited_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -285,9 +285,9 @@ export default function ProfilePage() {
       // Update auth metadata
       const { error: authError } = await supabase.auth.updateUser({
         data: {
-          full_name: editName.trim(),
-          name: editName.trim(),
-          phone: editPhone.trim(),
+          full_name: String(editName).trim(),
+          name: String(editName).trim(),
+          phone: String(editPhone).trim(),
         },
       });
 
@@ -296,8 +296,8 @@ export default function ProfilePage() {
       // Update local state
       setProfile({
         ...profile,
-        name: editName.trim(),
-        phone: editPhone.trim(),
+        name: String(editName).trim(),
+        phone: String(editPhone).trim(),
         preferences: editPreferences,
         profile_last_edited_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -429,13 +429,13 @@ export default function ProfilePage() {
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 text-white/60 text-xs md:text-sm font-medium">
                 {/* Email (always read-only) */}
-                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 truncate max-w-full">
+                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5 truncate max-w-full">
                   <Mail className="w-4 h-4 text-[#0097FF] shrink-0" /> {profile.email}
                 </span>
 
                 {/* Phone */}
                 {profile.phone && (
-                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-green-400">
+                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5 text-green-400">
                     <Phone className="w-4 h-4 shrink-0" /> {profile.phone}
                   </span>
                 )}
@@ -449,13 +449,13 @@ export default function ProfilePage() {
 
                 {/* College */}
                 {profile.college && (
-                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-yellow-400">
+                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5 text-yellow-400">
                     <GraduationCap className="w-4 h-4 shrink-0" /> {profile.college}
                   </span>
                 )}
 
                 {/* Join Date */}
-                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-white/40">
+                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5 text-white/60">
                   <Calendar className="w-4 h-4 shrink-0" /> Joined {joinDate}
                 </span>
               </div>
@@ -463,15 +463,15 @@ export default function ProfilePage() {
 
             {/* Stats Block */}
             <div className="flex md:flex-col gap-3 w-full md:w-auto md:min-w-[140px]">
-              <div className="flex-1 p-4 md:p-5 bg-white/5 rounded-2xl border border-white/5 text-center">
+              <div className="flex-1 p-4 md:p-5 bg-white/10 rounded-2xl border border-white/5 text-center">
                 <div className="text-2xl md:text-3xl font-black text-white">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
-                <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider flex items-center justify-center gap-1 mt-1">
+                <div className="text-[10px] text-white/60 uppercase font-bold tracking-wider flex items-center justify-center gap-1 mt-1">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> Rating
                 </div>
               </div>
-              <div className="flex-1 p-4 md:p-5 bg-white/5 rounded-2xl border border-white/5 text-center">
+              <div className="flex-1 p-4 md:p-5 bg-white/10 rounded-2xl border border-white/5 text-center">
                 <div className="text-2xl md:text-3xl font-black text-white">{stats.completed}</div>
-                <div className="text-[10px] text-white/40 uppercase font-bold tracking-wider flex items-center justify-center gap-1 mt-1">
+                <div className="text-[10px] text-white/60 uppercase font-bold tracking-wider flex items-center justify-center gap-1 mt-1">
                   <CheckCircle2 className="w-3 h-3 text-green-500" /> Done
                 </div>
               </div>
@@ -497,7 +497,7 @@ export default function ProfilePage() {
                 <button
                   onClick={startEditing}
                   disabled={!canEdit}
-                  className="px-5 py-2.5 bg-white/5 border border-white/10 text-white text-xs font-bold rounded-xl hover:bg-brand-purple/10 hover:border-brand-purple/30 hover:text-brand-purple transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/5 disabled:hover:border-white/10 disabled:hover:text-white"
+                  className="px-5 py-2.5 bg-white/10 border border-white/10 text-white text-xs font-bold rounded-xl hover:bg-brand-purple/10 hover:border-brand-purple/30 hover:text-brand-purple transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/10 disabled:hover:border-white/10 disabled:hover:text-white"
                 >
                   {canEdit ? 'Edit' : 'Locked'}
                 </button>
@@ -506,7 +506,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={cancelEditing}
-                  className="px-4 py-2 bg-white/5 border border-white/10 text-zinc-400 text-xs font-bold rounded-xl hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95"
+                  className="px-4 py-2 bg-white/10 border border-white/10 text-zinc-400 text-xs font-bold rounded-xl hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95"
                 >
                   Cancel
                 </button>
@@ -532,7 +532,7 @@ export default function ProfilePage() {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="Enter your full name"
-                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
+                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/60 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
                 />
               ) : (
                 <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
@@ -552,7 +552,7 @@ export default function ProfilePage() {
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
                   placeholder="Enter phone number"
-                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
+                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/60 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
                 />
               ) : (
                 <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
@@ -621,7 +621,7 @@ export default function ProfilePage() {
                     <span className="text-sm text-zinc-600 italic px-2">No preferences set</span>
                   ) : (
                     profile.preferences.map((cat: string) => (
-                      <span key={cat} className="px-3 py-1.5 rounded-full text-[10px] font-bold border border-white/10 bg-white/5 text-zinc-300">
+                      <span key={cat} className="px-3 py-1.5 rounded-full text-[10px] font-bold border border-white/10 bg-white/10 text-zinc-300">
                         {cat}
                       </span>
                     ))
@@ -681,7 +681,7 @@ export default function ProfilePage() {
                       setCodeCopied(true);
                       setTimeout(() => setCodeCopied(false), 2000);
                     }}
-                    className="p-1.5 rounded-lg bg-white/5 hover:bg-brand-purple/20 text-zinc-400 hover:text-brand-purple transition-all active:scale-90"
+                    className="p-1.5 rounded-lg bg-white/10 hover:bg-brand-purple/20 text-zinc-400 hover:text-brand-purple transition-all active:scale-90"
                     title="Copy Code"
                   >
                     {codeCopied ? <CheckCircle2 size={16} className="text-green-400" /> : <Copy size={16} />}
@@ -708,7 +708,7 @@ export default function ProfilePage() {
             {/* Right: Stats Footer */}
             <div className="pt-4 border-t border-white/5 flex items-center gap-8 overflow-x-auto scrollbar-hide relative z-10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
                   <User size={16} className="text-zinc-400" />
                 </div>
                 <div>
@@ -717,7 +717,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="w-px h-8 bg-white/5 shrink-0"></div>
+              <div className="w-px h-8 bg-white/10 shrink-0"></div>
 
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
@@ -730,7 +730,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Rewards Coming Soon Display */}
-              <div className="w-px h-8 bg-white/5 shrink-0"></div>
+              <div className="w-px h-8 bg-white/10 shrink-0"></div>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-brand-pink/10 border border-brand-pink/20 flex items-center justify-center shrink-0">
                   <Gift size={16} className="text-brand-pink" />
@@ -762,7 +762,7 @@ export default function ProfilePage() {
             </h3>
             <div className="flex flex-col items-center justify-center h-[100px] bg-[#0B0B11] border border-white/5 rounded-2xl">
               <div className="text-3xl md:text-4xl font-black text-white">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
-              <div className="text-white/40 text-[10px] tracking-widest uppercase mt-1">{profile.rating_count || 0} Reviews</div>
+              <div className="text-white/60 text-[10px] tracking-widest uppercase mt-1">{profile.rating_count || 0} Reviews</div>
             </div>
           </div>
         </div>

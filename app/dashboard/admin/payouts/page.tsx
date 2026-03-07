@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
@@ -60,7 +62,7 @@ export default function AdminPayoutsPage() {
             .eq("id", id);
 
         if (error) {
-            alert("Error updating status: " + error.message);
+            toast.error("Error updating status: " + error.message);
         } else {
             setPayouts(prev => prev.filter(p => p.id !== id));
         }
@@ -74,7 +76,7 @@ export default function AdminPayoutsPage() {
             <div className="max-w-6xl mx-auto">
                 <div className="flex items-center justify-between mb-8">
                     <h1 className="text-3xl font-bold">Admin Payout Queue</h1>
-                    <button onClick={fetchPayouts} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+                    <button onClick={fetchPayouts} className="p-2 bg-white/10 rounded-full hover:bg-white/10 transition-colors">
                         <RefreshCcw size={20} />
                     </button>
                 </div>
@@ -85,14 +87,14 @@ export default function AdminPayoutsPage() {
                     <div className="text-center py-20 bg-[#121217] rounded-3xl border border-white/5">
                         <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
                         <h3 className="text-xl font-bold">All caught up!</h3>
-                        <p className="text-white/40">No pending payouts.</p>
+                        <p className="text-white/60">No pending payouts.</p>
                     </div>
                 ) : (
                     <div className="bg-[#121217] border border-white/5 rounded-3xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="bg-white/5 text-xs uppercase tracking-widest text-white/40 border-b border-white/5">
+                                    <tr className="bg-white/10 text-xs uppercase tracking-widest text-white/60 border-b border-white/5">
                                         <th className="p-6">Date</th>
                                         <th className="p-6">Worker</th>
                                         <th className="p-6">UPI ID</th>
@@ -102,13 +104,13 @@ export default function AdminPayoutsPage() {
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {payouts.map((p) => (
-                                        <tr key={p.id} className="hover:bg-white/5 transition-colors">
+                                        <tr key={p.id} className="hover:bg-white/10 transition-colors">
                                             <td className="p-6 text-sm text-white/60">
                                                 {new Date(p.created_at).toLocaleDateString()}
                                             </td>
                                             <td className="p-6">
                                                 <div className="font-bold">{p.users?.full_name || "Unknown"}</div>
-                                                <div className="text-xs text-white/40">{p.users?.email}</div>
+                                                <div className="text-xs text-white/60">{p.users?.email}</div>
                                             </td>
                                             <td className="p-6 font-mono text-brand-purple bg-brand-purple/10 rounded px-2 py-1 w-fit">
                                                 {p.upi_id || "NOT LINKED"}

@@ -77,7 +77,7 @@ export default function PayoutsPage() {
 
             {/* HEADER */}
             <div className="max-w-2xl mx-auto mb-8 flex items-center gap-4">
-                <Link href="/dashboard" className="p-2 -ml-2 rounded-full hover:bg-white/5 text-white/60 hover:text-white transition-colors">
+                <Link href="/dashboard" className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
                     <ArrowLeft size={24} />
                 </Link>
                 <h1 className="text-2xl font-bold tracking-tight">Financial Dashboard</h1>
@@ -95,12 +95,12 @@ export default function PayoutsPage() {
                             <span className="text-xs font-bold uppercase tracking-widest">Pending Payouts</span>
                         </div>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl text-white/40 font-light">₹</span>
+                            <span className="text-2xl text-white/60 font-light">₹</span>
                             <span className="text-5xl md:text-6xl font-black tracking-tighter text-white">
                                 {totalPending.toLocaleString('en-IN')}
                             </span>
                         </div>
-                        <p className="mt-4 text-sm text-white/40 leading-relaxed max-w-sm">
+                        <p className="mt-4 text-sm text-white/60 leading-relaxed max-w-sm">
                             Money currently held in Escrow or processing. It will be transferred to your UPI once the gig is marked complete.
                         </p>
                     </div>
@@ -110,16 +110,16 @@ export default function PayoutsPage() {
                 <div>
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                         Activity History
-                        <span className="text-xs font-normal text-white/40 bg-white/5 px-2 py-0.5 rounded-full">{payouts.length}</span>
+                        <span className="text-xs font-normal text-white/60 bg-white/10 px-2 py-0.5 rounded-full">{payouts.length}</span>
                     </h2>
 
                     {payouts.length === 0 ? (
                         <div className="text-center py-12 bg-[#1A1A24] rounded-3xl border border-white/5 border-dashed">
-                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <AlertTriangle className="text-white/20" />
+                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <AlertTriangle className="text-white/60" />
                             </div>
-                            <p className="text-white/40 font-medium">No earnings yet.</p>
-                            <p className="text-white/30 text-sm mt-1">Start hustling to see activity here!</p>
+                            <p className="text-white/60 font-medium">No earnings yet.</p>
+                            <p className="text-white/50 text-sm mt-1">Start hustling to see activity here!</p>
                             <Link href="/feed" className="inline-block mt-4 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold uppercase tracking-wider transition-all">
                                 Find Work
                             </Link>
@@ -141,7 +141,7 @@ export default function PayoutsPage() {
                                             <h3 className="font-bold text-sm text-white truncate group-hover:text-brand-purple transition-colors">
                                                 {p.gig?.title || "Unknown Gig"}
                                             </h3>
-                                            <p className="text-[10px] text-white/40 font-mono mt-0.5">
+                                            <p className="text-[10px] text-white/60 font-mono mt-0.5">
                                                 {new Date(p.created_at).toLocaleDateString()} • ID: {p.id.slice(0, 8)}
                                             </p>
                                         </div>

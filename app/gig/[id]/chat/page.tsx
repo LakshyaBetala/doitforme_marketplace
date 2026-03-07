@@ -242,7 +242,7 @@ export default function GigChatPage() {
                 }`}>
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                 <div className="flex items-center justify-end gap-1 mt-1.5">
-                  <p className={`text-[10px] font-medium opacity-50 ${isMe ? "text-white" : "text-white/40"}`}>
+                  <p className={`text-[10px] font-medium opacity-50 ${isMe ? "text-white" : "text-white/60"}`}>
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                   {isMe && !msg.pending && <Check className="w-3 h-3 text-white/50" />}
@@ -274,7 +274,7 @@ export default function GigChatPage() {
               if (warning) setWarning(null);
             }}
             placeholder={isChatLocked ? "Chat disabled until accepted/paid." : "Type message..."}
-            className={`flex-1 bg-[#0B0B11] border rounded-2xl px-5 py-4 focus:outline-none transition-all shadow-inner text-sm placeholder:text-white/20 disabled:opacity-50 disabled:cursor-not-allowed ${warning ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-brand-purple"
+            className={`flex-1 bg-[#0B0B11] border rounded-2xl px-5 py-4 focus:outline-none transition-all shadow-inner text-sm placeholder:text-white/60 disabled:opacity-50 disabled:cursor-not-allowed ${warning ? "border-red-500/50 focus:border-red-500" : "border-white/10 focus:border-brand-purple"
               }`}
           />
           <button

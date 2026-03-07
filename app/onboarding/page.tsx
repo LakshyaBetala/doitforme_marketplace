@@ -129,7 +129,7 @@ export default function OnboardingPage() {
         }
     };
 
-    const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all appearance-none";
+    const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all appearance-none";
 
     return (
         <div className="flex items-center justify-center min-h-[100dvh] p-4 md:p-6 bg-[#0B0B11] text-white relative overflow-hidden">
@@ -178,14 +178,14 @@ export default function OnboardingPage() {
                             onChange={(e) => setPhone(e.target.value)}
                             autoFocus
                         />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
                             <Phone size={18} />
                         </div>
                     </div>
 
                     {/* College */}
                     <div className="relative">
-                        <label className="block text-[10px] font-bold text-white/40 mb-1 ml-1 uppercase tracking-wider">
+                        <label className="block text-[10px] font-bold text-white/60 mb-1 ml-1 uppercase tracking-wider">
                             Select University
                         </label>
                         <div className="relative">
@@ -198,7 +198,7 @@ export default function OnboardingPage() {
                                     <option key={col} value={col} className="bg-[#0B0B11]">{col}</option>
                                 ))}
                             </select>
-                            <div className="pointer-events-none absolute top-1/2 -translate-y-1/2 right-4 text-white/30">
+                            <div className="pointer-events-none absolute top-1/2 -translate-y-1/2 right-4 text-white/50">
                                 <GraduationCap size={18} />
                             </div>
                         </div>
@@ -228,11 +228,11 @@ export default function OnboardingPage() {
                             value={upiId}
                             onChange={(e) => setUpiId(e.target.value)}
                         />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
                             <Wallet size={18} />
                         </div>
                     </div>
-                    <p className="text-[10px] text-white/40 px-1 leading-tight">
+                    <p className="text-[10px] text-white/60 px-1 leading-tight">
                         Optional — needed to receive payouts. You can add it later in Profile.
                     </p>
 

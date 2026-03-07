@@ -212,7 +212,7 @@ function VerifyContent() {
     <div className="flex items-center justify-center min-h-screen p-6 bg-[#0B0B11] text-white cursor-default">
       <div className="w-full max-w-md bg-[#1A1A24] border border-white/10 shadow-2xl rounded-3xl p-8 relative">
 
-        <Link href="/login" className="absolute top-6 left-6 text-white/40 hover:text-white transition-colors">
+        <Link href="/login" className="absolute top-6 left-6 text-white/60 hover:text-white transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </Link>
 
@@ -259,7 +259,7 @@ function VerifyContent() {
 
           <div className="text-center">
             {resendDisabled ? (
-              <p className="text-sm text-white/40">
+              <p className="text-sm text-white/60">
                 Resend code in <span className="text-white font-mono font-bold">{timer}s</span>
               </p>
             ) : (

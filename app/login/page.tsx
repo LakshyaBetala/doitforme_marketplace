@@ -230,7 +230,7 @@ function AuthPage() {
   };
 
   // --- STYLES ---
-  const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all appearance-none";
+  const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all appearance-none";
   const buttonStyle = "w-full bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] active:scale-[0.98] hover:opacity-90 text-white p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation";
 
   // --- GOOGLE OAUTH ---
@@ -293,7 +293,7 @@ function AuthPage() {
         {/* Divider */}
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1 h-px bg-white/10"></div>
-          <span className="text-[10px] text-white/30 uppercase tracking-widest font-bold">or</span>
+          <span className="text-[10px] text-white/50 uppercase tracking-widest font-bold">or</span>
           <div className="flex-1 h-px bg-white/10"></div>
         </div>
 
@@ -301,7 +301,7 @@ function AuthPage() {
 
           {view === "LOGIN" && (
             <div className="space-y-4">
-              <div className="flex bg-white/5 p-1 rounded-xl mb-6 border border-white/5">
+              <div className="flex bg-white/10 p-1 rounded-xl mb-6 border border-white/5">
                 <button
                   type="button"
                   onClick={() => setLoginMethod("PASSWORD")}
@@ -343,7 +343,7 @@ function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-2 touch-manipulation"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white p-2 touch-manipulation"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -393,14 +393,14 @@ function AuthPage() {
                   value={upiId}
                   onChange={(e) => setUpiId(e.target.value)}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
                   <Wallet size={18} />
                 </div>
               </div>
-              <p className="text-[10px] text-white/40 px-1 leading-tight">Optional — add later in Profile. Required to post/apply.</p>
+              <p className="text-[10px] text-white/60 px-1 leading-tight">Optional — add later in Profile. Required to post/apply.</p>
 
               <div className="relative">
-                <label className="block text-[10px] font-bold text-white/40 mb-1 ml-1 uppercase tracking-wider">Select University</label>
+                <label className="block text-[10px] font-bold text-white/60 mb-1 ml-1 uppercase tracking-wider">Select University</label>
                 <select
                   value={college}
                   onChange={(e) => setCollege(e.target.value)}
@@ -410,7 +410,7 @@ function AuthPage() {
                     <option key={col} value={col} className="bg-[#0B0B11]">{col}</option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute bottom-4 right-4 text-white/30">
+                <div className="pointer-events-none absolute bottom-4 right-4 text-white/50">
                   <ChevronDown size={18} />
                 </div>
               </div>
@@ -440,7 +440,7 @@ function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white p-2 touch-manipulation"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white p-2 touch-manipulation"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -458,11 +458,11 @@ function AuthPage() {
                   onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                   maxLength={8}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30">
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50">
                   <Gift size={18} />
                 </div>
               </div>
-              <p className="text-[10px] text-white/40 px-1 leading-tight">Got a code from a friend? Enter it, and you BOTH get 25 Reward Points!</p>
+              <p className="text-[10px] text-white/60 px-1 leading-tight">Got a code from a friend? Enter it, and you BOTH get 25 Reward Points!</p>
             </div>
           )}
 
@@ -486,7 +486,7 @@ function AuthPage() {
 
         <div className="mt-8 text-center text-xs md:text-sm">
           {view === "LOGIN" ? (
-            <p className="text-white/40">
+            <p className="text-white/60">
               Don't have an account?{" "}
               <button
                 type="button"
@@ -497,7 +497,7 @@ function AuthPage() {
               </button>
             </p>
           ) : (
-            <p className="text-white/40">
+            <p className="text-white/60">
               Already have an account?{" "}
               <button
                 type="button"

@@ -34,7 +34,7 @@ export default function RefundPolicy() {
         <div className="space-y-6">
 
           {/* Section 1: Platform Fees */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
                 <Receipt size={20} />
@@ -73,7 +73,7 @@ export default function RefundPolicy() {
           </section>
 
           {/* Section 2: Refunds */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-brand-purple shrink-0">
                 <RotateCcw size={20} />
@@ -84,15 +84,15 @@ export default function RefundPolicy() {
                   Funds are held in secure Escrow. You are eligible for a 100% refund to your wallet if:
                 </p>
                 <div className="grid gap-2">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 border border-white/5">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                     <span className="text-sm text-zinc-300">You cancel before work starts</span>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 border border-white/5">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                     <span className="text-sm text-zinc-300">Worker misses deadline</span>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 border border-white/5">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                     <span className="text-sm text-zinc-300">Unsatisfactory work (verified by dispute)</span>
                   </div>
@@ -102,7 +102,7 @@ export default function RefundPolicy() {
           </section>
 
           {/* Section 3: Disputes */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 shrink-0">
                 <Scale size={20} />
@@ -117,7 +117,7 @@ export default function RefundPolicy() {
           </section>
 
           {/* Section 4: Withdrawals */}
-          <section className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center text-green-500 shrink-0">
                 <Banknote size={20} />

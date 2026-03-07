@@ -354,9 +354,9 @@ export default function LandingPage() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-3">
-            <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm hover:bg-white/10">How it works</button>
-            <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm hover:bg-white/10">FAQ</button>
-            <Link href="/contact" className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/5 backdrop-blur-sm hover:bg-white/10">Support</Link>
+            <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">How it works</button>
+            <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">FAQ</button>
+            <Link href="/contact" className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">Support</Link>
           </nav>
 
           <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95">
@@ -869,7 +869,7 @@ export default function LandingPage() {
                 {/* Blur Overlay - Bottom Half */}
                 <div className="absolute inset-x-0 bottom-0 h-[280px] bg-gradient-to-t from-[#0A0A0E] via-[#0A0A0E]/95 to-transparent backdrop-blur-[2px] flex flex-col items-center justify-end pb-10 z-20 group-hover:via-[#0A0A0E]/90 transition-all">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(136,37,245,0.2)]">
+                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(136,37,245,0.2)]">
                       <Lock size={20} className="text-[#C084FC]" />
                     </div>
                     <span className="text-sm font-bold text-white max-w-[200px] text-center drop-shadow-md">
@@ -891,7 +891,7 @@ export default function LandingPage() {
                       { title: "Engineering Drawing Sheet", price: "₹50", category: "Marketplace", time: "18 min ago" },
                       { title: "Need help with Python Assignment", price: "₹500", category: "Freelance", time: "24 min ago" },
                     ].map((item, i) => (
-                      <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+                      <div key={i} className="bg-white/10 border border-white/10 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
                         <div className="flex justify-between items-start gap-4">
                           <h4 className="text-sm font-bold text-white leading-tight flex-1">{item.title}</h4>
                           <span className="text-sm font-bold text-[#C084FC] whitespace-nowrap">{item.price}</span>
@@ -912,7 +912,7 @@ export default function LandingPage() {
                       { title: "Engineering Drawing Sheet", price: "₹50", category: "Marketplace", time: "18 min ago" },
                       { title: "Need help with Python Assignment", price: "₹500", category: "Freelance", time: "24 min ago" },
                     ].map((item, i) => (
-                      <div key={`dup-${i}`} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
+                      <div key={`dup-${i}`} className="bg-white/10 border border-white/10 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
                         <div className="flex justify-between items-start gap-4">
                           <h4 className="text-sm font-bold text-white leading-tight flex-1">{item.title}</h4>
                           <span className="text-sm font-bold text-[#C084FC] whitespace-nowrap">{item.price}</span>
@@ -952,7 +952,7 @@ export default function LandingPage() {
             { title: "Lightning Payouts", desc: "Instant transfers to UPI. No minimum withdrawal limits.", icon: Wallet }
           ].map((item, i) => (
             <div key={i} className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-brand-purple/50 transition-colors group active:scale-95 touch-manipulation">
-              <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
                 <item.icon size={24} />
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
@@ -1012,12 +1012,12 @@ export default function LandingPage() {
                 </div>
 
                 {/* Fee Ladder */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8">
+                <div className="bg-white/10 border border-white/10 rounded-2xl p-5 mb-8">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-sm text-zinc-400">First 10 jobs</span>
                     <span className="font-bold text-white bg-white/10 px-3 py-1 rounded-full text-sm">10% fee</span>
                   </div>
-                  <div className="w-full h-px bg-white/5 mb-3" />
+                  <div className="w-full h-px bg-white/10 mb-3" />
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-[#C084FC] font-medium flex items-center gap-1"><Star size={14} className="fill-[#C084FC]" /> After 10 jobs</span>
                     <span className="font-bold text-[#C084FC] bg-[#C084FC]/10 border border-[#C084FC]/20 px-3 py-1 rounded-full text-sm">7.5% fee</span>
@@ -1058,7 +1058,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Rental Fee block */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8">
+                <div className="bg-white/10 border border-white/10 rounded-2xl p-5 mb-8">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-zinc-300 font-medium">Rent out items</span>
                     <span className="font-bold text-white bg-white/10 px-3 py-1 rounded-full text-sm">3% escrow fee</span>
@@ -1066,7 +1066,7 @@ export default function LandingPage() {
                   <p className="text-xs text-zinc-500 mt-2">Covers holding deposits and securing rentals securely.</p>
                 </div>
 
-                <div className="mt-auto bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-center">
+                <div className="mt-auto bg-white/10 border border-white/10 rounded-xl py-3 px-4 text-center">
                   <span className="text-sm font-bold text-white">No commission. No hidden charges.</span>
                 </div>
               </div>
@@ -1126,19 +1126,19 @@ export default function LandingPage() {
           <div className="border-y border-white/10 py-6 overflow-hidden">
             <div className="grid grid-cols-2 md:flex md:justify-between items-center gap-4 md:gap-4 max-w-5xl mx-auto">
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 rounded-full bg-white/5"><ShieldCheck size={18} className="text-blue-400" /></div>
+                <div className="p-2 rounded-full bg-white/10"><ShieldCheck size={18} className="text-blue-400" /></div>
                 <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Escrow Protected</span>
               </div>
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 rounded-full bg-white/5"><Lock size={18} className="text-pink-400" /></div>
+                <div className="p-2 rounded-full bg-white/10"><Lock size={18} className="text-pink-400" /></div>
                 <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Campus Only</span>
               </div>
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 rounded-full bg-white/5"><DollarSign size={18} className="text-green-400" /></div>
+                <div className="p-2 rounded-full bg-white/10"><DollarSign size={18} className="text-green-400" /></div>
                 <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Transparent Fees</span>
               </div>
               <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 rounded-full bg-white/5"><CheckCircle2 size={18} className="text-brand-purple" /></div>
+                <div className="p-2 rounded-full bg-white/10"><CheckCircle2 size={18} className="text-brand-purple" /></div>
                 <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">No Hidden Charges</span>
               </div>
             </div>
@@ -1153,7 +1153,7 @@ export default function LandingPage() {
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-12 text-center">Simple Flow</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-8 relative">
             {/* THE PURPLE ANIMATED LINE (Desktop) */}
-            <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-[2px] bg-white/5 rounded-full overflow-hidden">
+            <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-[2px] bg-white/10 rounded-full overflow-hidden">
               <motion.div
                 animate={{ x: ["-100%", "100%"] }}
                 transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
@@ -1193,7 +1193,7 @@ export default function LandingPage() {
       < section id="faq" className="py-16 md:py-24 max-w-4xl mx-auto px-6 relative z-10" >
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Common Questions</h2>
-          <div className="inline-flex bg-white/5 rounded-full p-1 border border-white/10">
+          <div className="inline-flex bg-white/10 rounded-full p-1 border border-white/10">
             <button onClick={() => setFaqTab("students")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "students" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>Hustle</button>
             <button onClick={() => setFaqTab("posters")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "posters" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>Marketplace</button>
           </div>
@@ -1202,7 +1202,7 @@ export default function LandingPage() {
         <div className="space-y-3 md:space-y-4">
           {(faqTab === "students" ? studentFaq : posterFaq).map((f, i) => (
             <div key={i} className="border border-white/5 rounded-xl bg-[#0A0A0A] overflow-hidden">
-              <button onClick={() => toggleFAQ(i)} className="w-full flex items-center justify-between p-5 md:p-6 text-left hover:bg-white/5 transition-colors touch-manipulation active:bg-white/[0.02]">
+              <button onClick={() => toggleFAQ(i)} className="w-full flex items-center justify-between p-5 md:p-6 text-left hover:bg-white/10 transition-colors touch-manipulation active:bg-white/[0.02]">
                 <span className="font-medium text-white text-sm md:text-base pr-4">{f.q}</span>
                 <ChevronDown size={18} className={`text-zinc-500 transition-transform duration-300 shrink-0 ${openFaq === i ? "rotate-180" : ""}`} />
               </button>

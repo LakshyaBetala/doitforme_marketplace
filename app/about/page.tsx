@@ -24,7 +24,7 @@ export default function AboutPage() {
 
         {/* Mission Grid */}
         <div className="grid md:grid-cols-3 gap-6">
-           <div className="bg-white/5 p-8 rounded-3xl border border-white/10 hover:border-[#8825F5]/50 transition-colors">
+           <div className="bg-white/10 p-8 rounded-3xl border border-white/10 hover:border-[#8825F5]/50 transition-colors">
               <div className="w-12 h-12 bg-[#8825F5]/20 rounded-xl flex items-center justify-center text-[#8825F5] mb-4">
                  <Zap className="w-6 h-6" />
               </div>
@@ -32,7 +32,7 @@ export default function AboutPage() {
               <p className="text-white/60 text-sm">To empower every student in India with financial independence and time freedom.</p>
            </div>
            
-           <div className="bg-white/5 p-8 rounded-3xl border border-white/10 hover:border-[#0097FF]/50 transition-colors">
+           <div className="bg-white/10 p-8 rounded-3xl border border-white/10 hover:border-[#0097FF]/50 transition-colors">
               <div className="w-12 h-12 bg-[#0097FF]/20 rounded-xl flex items-center justify-center text-[#0097FF] mb-4">
                  <Users className="w-6 h-6" />
               </div>
@@ -40,7 +40,7 @@ export default function AboutPage() {
               <p className="text-white/60 text-sm">Built by students, for students. We understand the chaotic schedule of college life.</p>
            </div>
 
-           <div className="bg-white/5 p-8 rounded-3xl border border-white/10 hover:border-green-500/50 transition-colors">
+           <div className="bg-white/10 p-8 rounded-3xl border border-white/10 hover:border-green-500/50 transition-colors">
               <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center text-green-500 mb-4">
                  <ShieldCheck className="w-6 h-6" />
               </div>

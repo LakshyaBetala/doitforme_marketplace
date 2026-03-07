@@ -185,7 +185,7 @@ export default function Dashboard() {
             <span className="text-xs font-bold text-brand-purple uppercase tracking-widest mt-0.5">Refer & Earn</span>
           </Link>
 
-          <button onClick={() => router.push('/messages')} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors relative group">
+          <button onClick={() => router.push('/messages')} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors relative group">
             <MessageSquare size={18} />
             <div className="absolute top-2 right-2 w-2 h-2 bg-brand-purple rounded-full"></div>
           </button>
@@ -194,7 +194,7 @@ export default function Dashboard() {
 
           {/* Profile Dropdown */}
           <div className="relative">
-            <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-[#1E293B] bg-white/5 hover:bg-white/10 transition-colors">
+            <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-[#1E293B] bg-white/10 hover:bg-white/10 transition-colors">
               <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#8825F5] to-[#EC4899] flex items-center justify-center text-sm font-bold shadow-inner">
                 {username[0]?.toUpperCase()}
               </div>
@@ -204,7 +204,7 @@ export default function Dashboard() {
 
             {isProfileDropdownOpen && (
               <div className="absolute top-full right-0 mt-2 w-48 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden py-1 z-50">
-                <Link href="/profile" className="flex items-center px-4 py-2 hover:bg-white/5 text-sm text-zinc-300 hover:text-white"><User size={14} className="mr-3" /> Profile</Link>
+                <Link href="/profile" className="flex items-center px-4 py-2 hover:bg-white/10 text-sm text-zinc-300 hover:text-white"><User size={14} className="mr-3" /> Profile</Link>
                 <div className="h-px bg-[#1E293B] my-1"></div>
                 <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 hover:bg-red-500/10 text-sm text-red-400 transition-colors">
                   <LogOut size={14} className="mr-3" /> Logout
@@ -288,17 +288,17 @@ export default function Dashboard() {
             {/* Layer 2: Quick Action Bar */}
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Link href="/post" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
-                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all">
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all">
                   <Plus size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
                 </div>
-                <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Post Hustle</span>
+                <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Create Post</span>
               </Link>
               <Link href="/post?type=market" className="flex flex-col items-center justify-center py-6 px-4 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-2xl hover:opacity-95 active:scale-95 group hover:-translate-y-1 transition-all shadow-[0_0_20px_rgba(136,37,245,0.2)] hover:shadow-[0_0_30px_rgba(136,37,245,0.6)]">
                 <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><ShoppingBag size={24} /></div>
                 <span className="font-black tracking-wide">Sell Item</span>
               </Link>
               <Link href="/gig/my-gigs" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
-                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all relative">
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all relative">
                   <Briefcase size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
                   {/* Subtle notification dot for active applications */}
                   <span className="absolute top-2 right-2 w-2 h-2 bg-brand-pink rounded-full border-2 border-[#0F172A]"></span>
@@ -331,7 +331,7 @@ export default function Dashboard() {
                   <div className="relative">
                     <button
                       onClick={() => setIsFilterOpen(!isFilterOpen)}
-                      className={`p-2 rounded-full border transition-all ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-[#1E293B] hover:bg-white/5 text-zinc-400 hover:text-white'}`}
+                      className={`p-2 rounded-full border transition-all ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-[#1E293B] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
                     >
                       <Filter size={16} />
                     </button>
@@ -340,14 +340,14 @@ export default function Dashboard() {
                         <div className="p-2 space-y-1">
                           <button
                             onClick={() => { setCampusFilter('ALL'); setIsFilterOpen(false); }}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
                           >
                             All Campuses
                             {campusFilter === 'ALL' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                           </button>
                           <button
                             onClick={() => { setCampusFilter('MY_CAMPUS'); setIsFilterOpen(false); }}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple/20 text-brand-purple' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple/20 text-brand-purple' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
                           >
                             My Campus
                             {campusFilter === 'MY_CAMPUS' && <div className="w-1.5 h-1.5 rounded-full bg-brand-purple"></div>}
@@ -362,7 +362,7 @@ export default function Dashboard() {
                     <div className="relative">
                       <button
                         onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}
-                        className={`p-2 rounded-full border transition-all ${categoryFilter !== 'ALL' ? 'bg-brand-pink text-white border-brand-pink' : 'border-[#1E293B] hover:bg-white/5 text-zinc-400 hover:text-white'}`}
+                        className={`p-2 rounded-full border transition-all ${categoryFilter !== 'ALL' ? 'bg-brand-pink text-white border-brand-pink' : 'border-[#1E293B] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
                         title="Filter by Category"
                       >
                         <Tags size={16} />
@@ -372,7 +372,7 @@ export default function Dashboard() {
                           <div className="p-2 space-y-1">
                             <button
                               onClick={() => { setCategoryFilter('ALL'); setIsCategoryFilterOpen(false); }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${categoryFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${categoryFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
                             >
                               All Categories
                               {categoryFilter === 'ALL' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
@@ -381,7 +381,7 @@ export default function Dashboard() {
                               <button
                                 key={cat}
                                 onClick={() => { setCategoryFilter(cat); setIsCategoryFilterOpen(false); }}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${categoryFilter === cat ? 'bg-brand-pink/20 text-brand-pink' : 'text-zinc-500 hover:text-white hover:bg-white/5'}`}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${categoryFilter === cat ? 'bg-brand-pink/20 text-brand-pink' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
                               >
                                 {cat}
                                 {categoryFilter === cat && <div className="w-1.5 h-1.5 rounded-full bg-brand-pink"></div>}
@@ -421,7 +421,7 @@ export default function Dashboard() {
               <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 hover:border-brand-purple/30 transition-colors mb-3 group hover:-translate-y-1 hover:shadow-xl transition-all">
                 <span className="text-xs text-zinc-400 font-bold block mb-1">Total Earned</span>
                 <div className="text-3xl font-black text-white mb-4 tracking-tight">₹{user?.user_metadata?.total_earned || 0}</div>
-                <button className="w-full py-2 bg-white/5 hover:bg-white/10 text-white text-sm font-bold rounded-xl transition-all active:scale-95 border border-white/10 flex items-center justify-center gap-2 group-hover:bg-brand-purple/10 group-hover:text-brand-purple group-hover:border-brand-purple/30">
+                <button className="w-full py-2 bg-white/10 hover:bg-white/10 text-white text-sm font-bold rounded-xl transition-all active:scale-95 border border-white/10 flex items-center justify-center gap-2 group-hover:bg-brand-purple/10 group-hover:text-brand-purple group-hover:border-brand-purple/30">
                   Withdraw <ArrowRight size={14} />
                 </button>
               </div>
@@ -500,7 +500,7 @@ export default function Dashboard() {
 
 function SidebarLink({ href, icon: Icon, label, active, badge }: any) {
   return (
-    <Link href={href} className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group ${active ? 'bg-brand-purple/10 text-brand-purple' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}>
+    <Link href={href} className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group ${active ? 'bg-brand-purple/10 text-brand-purple' : 'text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
       <div className="flex items-center gap-3 text-sm font-bold">
         <Icon size={18} className={active ? 'text-brand-purple' : 'text-zinc-500 group-hover:text-white transition-colors'} />
         {label}
@@ -570,6 +570,11 @@ function FeedCard({ gig, index }: { gig: any, index?: number }) {
             Featured
           </div>
         )}
+        <div className="mb-2 relative z-10">
+          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${gig.listing_type === 'HUSTLE' ? 'bg-brand-purple/20 text-brand-purple' : 'bg-brand-pink/20 text-brand-pink'}`}>
+            {gig.listing_type === 'HUSTLE' ? 'HUSTLE' : gig.market_type}
+          </span>
+        </div>
         <div className="flex justify-between items-start mb-3 relative z-10">
           <h3 className="font-bold text-white text-[17px] leading-snug group-hover:text-brand-purple transition-colors line-clamp-2 pr-4">{gig.title}</h3>
         </div>

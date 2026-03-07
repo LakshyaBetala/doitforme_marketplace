@@ -1,4 +1,6 @@
 "use client";
+
+import { toast } from "sonner";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/no-unescaped-entities */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -146,7 +148,7 @@ export default function ApplicantsPage() {
       }
 
     } catch (err: any) {
-      alert("Error: " + err.message);
+      toast.error("Error: " + err.message);
       setAssigning(null);
     }
   };
@@ -199,7 +201,7 @@ export default function ApplicantsPage() {
             {/* Applicant Counter */}
             <div className="text-right hidden sm:block">
               <span className="text-2xl font-bold text-white">{applicants.length}</span>
-              <span className="text-white/40 text-sm"> / 10 Applicants</span>
+              <span className="text-white/60 text-sm"> / 10 Applicants</span>
             </div>
           </div>
         </div>
@@ -259,10 +261,10 @@ export default function ApplicantsPage() {
 
             {applicants.length === 0 ? (
               <div className="text-center py-20 bg-[#121217] rounded-[32px] border border-white/10">
-                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="w-8 h-8 text-white/20" />
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <User className="w-8 h-8 text-white/60" />
                 </div>
-                <p className="text-white/40">No applicants yet.</p>
+                <p className="text-white/60">No applicants yet.</p>
               </div>
             ) : (
               applicants.map((app) => (
@@ -274,7 +276,7 @@ export default function ApplicantsPage() {
 
                     {/* Worker Info */}
                     <div className="flex items-start gap-4">
-                      <div className="w-14 h-14 rounded-full bg-white/5 border border-white/10 overflow-hidden relative flex-shrink-0 flex items-center justify-center text-xl font-bold uppercase text-white/60">
+                      <div className="w-14 h-14 rounded-full bg-white/10 border border-white/10 overflow-hidden relative flex-shrink-0 flex items-center justify-center text-xl font-bold uppercase text-white/60">
                         {app.worker?.name?.[0] || app.worker?.email?.[0] || <User className="w-6 h-6" />}
                       </div>
 
@@ -290,7 +292,7 @@ export default function ApplicantsPage() {
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-white/40 mb-3">
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-white/60 mb-3">
                           <div className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">
                             <Star className="w-3 h-3 fill-current" />
                             <span className="font-bold">
@@ -305,14 +307,14 @@ export default function ApplicantsPage() {
                         {app.worker?.preferences && app.worker.preferences.length > 0 && (
                           <div className="flex flex-wrap items-center gap-1.5 mb-3">
                             {app.worker.preferences.map((pref: string) => (
-                              <span key={pref} className="px-2 py-0.5 rounded-md text-[9px] font-bold border border-white/10 bg-white/5 text-zinc-300 uppercase tracking-wider">
+                              <span key={pref} className="px-2 py-0.5 rounded-md text-[9px] font-bold border border-white/10 bg-white/10 text-zinc-300 uppercase tracking-wider">
                                 {pref}
                               </span>
                             ))}
                           </div>
                         )}
 
-                        <div className="bg-white/5 rounded-xl p-4 text-sm text-white/80 leading-relaxed border border-white/5 max-w-2xl">
+                        <div className="bg-white/10 rounded-xl p-4 text-sm text-white/80 leading-relaxed border border-white/5 max-w-2xl">
                           "{app.pitch || app.message || "No message provided."}"
                         </div>
                       </div>
