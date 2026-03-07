@@ -91,8 +91,7 @@ export default function ProfilePage() {
   const PREFERENCE_OPTIONS = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
     "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content",
-    "Tutoring", "Electronics", "Furniture", "Books & Study Material", "Vehicles", "Fashion & Clothing",
-    "Sports & Fitness"
+    "Tutoring", "Other"
   ];
 
   // Referral state

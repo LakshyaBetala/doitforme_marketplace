@@ -56,18 +56,13 @@ export function useModeration() {
         // Phone: Catches "9 8 7...", "9_8_7...", "9.8.7..."
         const phoneRegex = /(?:\+?91|0)?[6-9](?:[\s_.,-]*\d){9}/;
 
-        // Email/Handle: Catches "user at gmail", "insta: user", "@handle"
+        // Email/Handle: Catches "user at gmail" but allow amazon links
         const emailRegex = /[a-zA-Z0-9._%+-]+(?:\s*@\s*|\s+at\s+)[a-zA-Z0-9.-]+\s*(?:\.|dot)\s*[a-zA-Z]{2,}/i;
         const socialRegex = /(?:@[\w_.]+|insta|instagram|telegram|tg|snap|sc)\s*[:\-\s]?\s*[\w_.]+/i;
         const upiRegex = /[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}/;
 
-        // Handle: Catches "user_name", "user-name", "user.name" (Strict)
-        // If a word has an internal symbol often used in handles
-        const handleRegex = /\b[a-zA-Z0-9]+[._-][a-zA-Z0-9]+\b/;
-
         if (phoneRegex.test(text)) return { isSafe: false, reason: "Phone number detected (even if hidden). Keep comms on platform." };
         if (emailRegex.test(text) || socialRegex.test(text)) return { isSafe: false, reason: "External contact/Social handle detected. Keep comms on platform." };
-        if (handleRegex.test(text)) return { isSafe: false, reason: "Potential username/handle detected. Please disable auto-correct or remove symbols." };
         if (upiRegex.test(text)) return { isSafe: false, reason: "UPI ID detected. Please use the secure Escrow system." };
 
         // 1.5 Keyword Blocklist (Catch obvious illegal items that AI might miss)
@@ -97,10 +92,10 @@ export function useModeration() {
 
             console.log(`AI Analysis (${context}):`, topLabel, score);
 
-            // V6 Smart Threshold: Only block if 'bad' label > 0.90
+            // V6 Smart Threshold: Only block if 'bad' label > 0.96 for a more liberal approach
             const BAD_LABELS = ['exchange phone number', 'pay via upi', 'pay outside', 'illegal item', 'contraband', 'academic cheating', 'illegal content', 'prohibited items', 'hidden contact info', 'social media handle', 'username', 'social media link'];
 
-            if (BAD_LABELS.includes(topLabel) && score > 0.90) {
+            if (BAD_LABELS.includes(topLabel) && score > 0.96) {
                 if (['exchange phone number', 'contact info', 'hidden contact info', 'social media handle', 'username', 'social media link'].includes(topLabel)) {
                     return { isSafe: false, reason: "AI detected contact sharing. Please keep it on-platform." };
                 }

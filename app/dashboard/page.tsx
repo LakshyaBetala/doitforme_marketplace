@@ -615,8 +615,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
   const categories = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
     "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content",
-    "Tutoring", "Electronics", "Furniture", "Books & Study Material", "Vehicles", "Fashion & Clothing",
-    "Sports & Fitness"
+    "Tutoring", "Other"
   ];
 
   const handleToggle = (cat: string) => {
@@ -638,20 +637,20 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-md bg-[#0F172A] border border-[#1E293B] rounded-3xl p-6 md:p-8 flex flex-col pt-8 relative shadow-2xl">
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
+      <div className="w-full max-w-md max-h-[90vh] flex flex-col bg-[#0F172A] border border-[#1E293B] rounded-[24px] md:rounded-3xl p-5 md:p-8 pt-8 relative shadow-2xl overflow-y-auto scrollbar-hide">
+        <button onClick={onClose} className="absolute top-3 right-3 md:top-4 md:right-4 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
           <X size={20} />
         </button>
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-full bg-brand-purple/20 flex items-center justify-center border border-brand-purple/30">
-            <Star size={32} className="text-brand-purple" />
+        <div className="flex justify-center mb-5 md:mb-6 shrink-0">
+          <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-brand-purple/20 flex items-center justify-center border border-brand-purple/30">
+            <Star size={28} className="text-brand-purple md:w-8 md:h-8" />
           </div>
         </div>
-        <h2 className="text-2xl font-black text-white text-center mb-2">Your Interests?</h2>
-        <p className="text-sm text-zinc-400 text-center mb-6">
-          Select up to 5 categories to get personalized opportunities and stand out to buyers. Highly recommended!
+        <h2 className="text-xl md:text-2xl font-black text-white text-center mb-2 shrink-0">Your Interests?</h2>
+        <p className="text-xs md:text-sm text-zinc-400 text-center mb-5 md:mb-6 shrink-0">
+          Select 1 to 5 categories to get personalized opportunities and stand out to buyers. Highly recommended!
         </p>
-        <div className="flex flex-wrap gap-2 mb-8 justify-center overflow-y-auto no-scrollbar pb-2">
+        <div className="flex flex-wrap gap-2 mb-6 md:mb-8 justify-center overflow-y-auto no-scrollbar pb-2">
           {categories.map(cat => (
             <button
               key={cat}
@@ -665,7 +664,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
         <button
           onClick={handleSave}
           disabled={loading || selected.length === 0}
-          className="w-full bg-brand-purple hover:bg-[#7D5FFF] text-white py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center"
+          className="w-full bg-brand-purple hover:bg-[#7D5FFF] text-white py-3.5 md:py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center shrink-0"
         >
           {loading ? "Saving..." : `Save Preferences (${selected.length}/5)`}
         </button>
