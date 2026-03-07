@@ -168,7 +168,7 @@ export async function POST(req: Request) {
         customer_phone: String(payerProfile.phone || "9999999999"),
       },
       order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/gig/${gigId}?payment_status={order_status}`,
+        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/gig/${gigId}?payment=verify&order_id=${orderId}&worker_id=${user.id}`,
         notify_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/webhook`,
       },
     };

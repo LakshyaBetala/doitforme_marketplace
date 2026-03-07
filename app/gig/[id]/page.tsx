@@ -323,10 +323,12 @@ export default function GigDetailPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to initiate payment");
 
-        if (data.payment_link) {
+        if (data.payment_session_id && cashfree) {
+          cashfree.checkout({ paymentSessionId: data.payment_session_id });
+        } else if (data.payment_link) {
           window.location.href = data.payment_link;
         } else {
-          throw new Error("No payment link received");
+          throw new Error("No payment session received");
         }
       } catch (err: any) {
         alert(err.message);
@@ -654,6 +656,50 @@ export default function GigDetailPage() {
         <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-brand-purple/10 blur-[150px] rounded-full opacity-40"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-brand-blue/10 blur-[150px] rounded-full opacity-40"></div>
       </div>
+
+      {/* OFFER / APPLY MODAL */}
+      {showOfferModal && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-2xl">
+            <button onClick={() => setShowOfferModal(false)} className="absolute top-4 right-4 text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+            <h2 className="text-2xl font-bold text-center mb-2">{isMarket ? (gig.market_type === "RENT" ? "Rental Offer" : "Make an Offer") : "Apply for Gig"}</h2>
+            <p className="text-center text-white/50 text-sm mb-6">
+              {isMarket ? "Propose your price or accept the listing price." : "Tell the poster why you're a good fit."}
+            </p>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/60">Your Offer (₹)</label>
+                <input
+                  type="number"
+                  value={offerPrice}
+                  onChange={(e) => setOfferPrice(e.target.value)}
+                  placeholder={gig.price.toString()}
+                  className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-purple/50 transition-all font-mono"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/60">Message / Pitch</label>
+                <textarea
+                  value={offerPitch}
+                  onChange={(e) => setOfferPitch(e.target.value)}
+                  placeholder="I'm interested..."
+                  className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 h-24 outline-none text-white resize-none focus:border-brand-purple/50 transition-all"
+                />
+              </div>
+
+              <button
+                onClick={handleMakeOffer}
+                disabled={submitting || !offerPrice}
+                className="w-full py-4 bg-brand-purple hover:bg-[#7D5FFF] text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_0_20px_rgba(136,37,245,0.3)] disabled:opacity-50"
+              >
+                {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />} Send Offer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CONTACT REVEAL MODAL (P2P) */}
       {showContactModal && (
