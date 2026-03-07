@@ -10,57 +10,106 @@ import {
   MapPin,
   Briefcase,
   AlertCircle,
-  Clock
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Hourglass,
+  IndianRupee,
+  ArrowUpRight,
+  Send,
+  ShoppingBag
 } from "lucide-react";
 import { timeAgo } from "@/lib/utils";
 
-export default function MyGigsPage() {
+export default function ActivityHubPage() {
   const supabase = supabaseBrowser();
-  const [gigs, setGigs] = useState<any[]>([]);
+
+  // States
+  const [activeTab, setActiveMainTab] = useState<'POSTS' | 'APPLICATIONS'>('POSTS');
+  const [subFilter, setSubFilter] = useState<'ALL' | 'HUSTLE' | 'MARKET'>('ALL');
+
+  const [myPosts, setMyPosts] = useState<any[]>([]);
+  const [myApplications, setMyApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'HUSTLE' | 'MARKET'>('ALL');
-
-  const filteredGigs = gigs.filter(gig => {
-    if (filter === 'ALL') return true;
-    if (filter === 'HUSTLE') return gig.listing_type !== 'MARKET';
-    if (filter === 'MARKET') return gig.listing_type === 'MARKET';
-    return true;
-  });
 
   useEffect(() => {
-    const loadGigs = async () => {
+    const loadData = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data, error: fetchError } = await supabase
+        // 1. Fetch Posts created by User
+        const { data: postsData, error: postsError } = await supabase
           .from("gigs")
           .select("*")
           .eq("poster_id", user.id)
           .order("created_at", { ascending: false });
 
-        if (fetchError) throw fetchError;
-        setGigs(data || []);
+        if (postsError) throw postsError;
+        setMyPosts(postsData || []);
+
+        // 2. Fetch Applications made by User
+        const { data: appsData, error: appsError } = await supabase
+          .from("applications")
+          .select(`*, gigs (id, title, price, location, status, created_at, listing_type, market_type)`)
+          .eq("worker_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (appsError) throw appsError;
+        setMyApplications(appsData || []);
 
       } catch (err: any) {
-        console.error("Error loading gigs:", err);
-        setError(err.message || "Failed to load gigs");
+        console.error("Error loading activity:", err);
+        setError(err.message || "Failed to load activity data");
       } finally {
         setLoading(false);
       }
     };
 
-    loadGigs();
+    loadData();
   }, [supabase]);
 
+  // Derived Data
+  const filteredPosts = myPosts.filter(gig => {
+    if (subFilter === 'ALL') return true;
+    if (subFilter === 'HUSTLE') return gig.listing_type !== 'MARKET';
+    if (subFilter === 'MARKET') return gig.listing_type === 'MARKET';
+    return true;
+  });
+
+  // Helpers
   const getStatusDot = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'open': return 'bg-green-500';
-      case 'assigned': return 'bg-blue-500';
-      case 'completed': return 'bg-teal-500';
-      case 'cancelled': return 'bg-red-500';
+      case 'open': return 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]';
+      case 'assigned': return 'bg-brand-purple shadow-[0_0_10px_rgba(136,37,245,0.6)]';
+      case 'delivered': return 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]';
+      case 'completed': return 'bg-teal-500 shadow-[0_0_10px_rgba(20,184,166,0.6)]';
+      case 'cancelled': return 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)]';
       default: return 'bg-zinc-500';
+    }
+  };
+
+  const getAppStatusBadge = (status: string) => {
+    switch (status) {
+      case "accepted":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-black uppercase tracking-widest">
+            <CheckCircle2 className="w-3 h-3" /> Hired / Accepted
+          </span>
+        );
+      case "rejected":
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest">
+            <XCircle className="w-3 h-3" /> Rejected
+          </span>
+        );
+      default:
+        return (
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-[10px] font-black uppercase tracking-widest">
+            <Hourglass className="w-3 h-3 animate-pulse" /> Pending
+          </span>
+        );
     }
   };
 
@@ -73,141 +122,224 @@ export default function MyGigsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070B1A] text-white selection:bg-brand-purple selection:text-white">
-
-      {/* Background glow */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-20%] right-[20%] w-[500px] h-[500px] bg-brand-purple/5 blur-[150px] rounded-full"></div>
+    <div className="min-h-screen bg-[#070B1A] text-white selection:bg-brand-purple selection:text-white pb-24">
+      {/* Antigravity Background Glow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 flex justify-center">
+        <div className="absolute top-[-10%] w-[800px] h-[500px] bg-brand-purple/5 blur-[150px] rounded-full"></div>
       </div>
 
-      <div className="max-w-6xl mx-auto relative z-10 p-6 lg:p-12 pb-24 space-y-8">
-
+      <div className="max-w-6xl mx-auto relative z-10 p-4 md:p-8 lg:p-12 space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <Link href="/dashboard" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-3 group text-sm font-medium">
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Dashboard
             </Link>
-            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">My Hustles</h1>
-            <p className="text-sm text-zinc-400 mt-1">Manage your posted gigs and marketplace listings</p>
+            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight">Activity Hub</h1>
+            <p className="text-sm text-zinc-400 mt-2">Manage everything you post and everywhere you apply.</p>
           </div>
           <Link
             href="/post"
-            className="px-6 py-3 bg-gradient-to-r from-brand-purple to-brand-pink text-white font-bold rounded-xl hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(136,37,245,0.3)]"
+            className="px-6 py-3.5 bg-white hover:bg-zinc-200 text-black font-black rounded-2xl active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:shadow-[0_0_40px_rgba(255,255,255,0.25)]"
           >
-            <Plus className="w-5 h-5" /> Post Hustle / Item
+            <Plus className="w-5 h-5" /> Post New
           </Link>
         </div>
 
-        {/* Error State */}
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 flex items-center gap-3">
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 flex items-center gap-3 animate-in fade-in">
             <AlertCircle className="w-5 h-5" />
-            <span>Error: {error}</span>
+            <span>{error}</span>
           </div>
         )}
 
-        {/* Feed Section */}
-        <section>
-          {/* Sticky Header + Filters */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sticky top-0 bg-[#070B1A]/90 backdrop-blur-md py-4 z-20">
-            <div>
-              <h2 className="text-xl font-black text-white flex items-center gap-2 mb-1">
-                Your Listings <span className="text-sm font-bold text-zinc-500">({filteredGigs.length})</span>
-              </h2>
-              <p className="text-xs text-zinc-400 font-medium">All your posted hustles and marketplace items</p>
+        {/* Floating Toggle Tabs */}
+        <div className="bg-[#0F172A]/80 backdrop-blur-xl border border-[#1E293B] p-1.5 rounded-2xl inline-flex w-full md:w-auto relative shadow-2xl">
+          <button
+            onClick={() => setActiveMainTab('POSTS')}
+            className={`flex-1 md:w-48 py-2.5 text-sm font-bold rounded-xl transition-all z-10 ${activeTab === 'POSTS' ? 'text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            My Posts ({myPosts.length})
+          </button>
+          <button
+            onClick={() => setActiveMainTab('APPLICATIONS')}
+            className={`flex-1 md:w-48 py-2.5 text-sm font-bold rounded-xl transition-all z-10 ${activeTab === 'APPLICATIONS' ? 'text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'}`}
+          >
+            Applications ({myApplications.length})
+          </button>
+
+          {/* Animated Tab Background */}
+          <div
+            className="absolute top-1.5 bottom-1.5 w-[calc(50%-0.375rem)] md:w-48 bg-[#1E293B] rounded-xl transition-transform duration-300 ease-out border border-white/5 shadow-inner"
+            style={{ transform: `translateX(${activeTab === 'POSTS' ? '0' : '100%'})` }}
+          />
+        </div>
+
+        {/* -------------------- TAB 1: MY POSTS -------------------- */}
+        {activeTab === 'POSTS' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Sub Filters */}
+            <div className="flex gap-2 mb-6">
+              <FilterTab label="All" active={subFilter === 'ALL'} onClick={() => setSubFilter('ALL')} />
+              <FilterTab label="Hustles" active={subFilter === 'HUSTLE'} onClick={() => setSubFilter('HUSTLE')} />
+              <FilterTab label="Marketplace" active={subFilter === 'MARKET'} onClick={() => setSubFilter('MARKET')} />
             </div>
 
-            <div className="flex items-center gap-2">
-              <FilterTab label="All" active={filter === 'ALL'} onClick={() => setFilter('ALL')} />
-              <FilterTab label="Hustles" active={filter === 'HUSTLE'} onClick={() => setFilter('HUSTLE')} />
-              <FilterTab label="Marketplace" active={filter === 'MARKET'} onClick={() => setFilter('MARKET')} />
-            </div>
-          </div>
-
-          {filteredGigs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredGigs.map((gig: any, index: number) => {
-                const isMarket = gig.listing_type === 'MARKET';
-                const isRent = gig.market_type === 'RENT';
-                const delay = `${index * 50}ms`;
-
-                return (
-                  <div
-                    key={gig.id}
-                    className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 flex flex-col group hover:border-[#334155] hover:-translate-y-1 hover:shadow-xl transition-all h-[170px] relative overflow-hidden"
-                    style={{ animationDelay: delay }}
-                  >
-                    {/* Title + Status */}
-                    <div className="flex justify-between items-start mb-2 relative z-10">
-                      <h3 className="font-bold text-white text-[15px] leading-snug group-hover:text-brand-purple transition-colors line-clamp-2 pr-4">{gig.title}</h3>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className={`w-2 h-2 rounded-full ${getStatusDot(gig.status)}`}></span>
-                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest font-bold">{gig.status}</span>
-                      </div>
-                    </div>
-
-                    {/* Price + Type */}
-                    <div className="flex items-center gap-2 mb-auto relative z-10">
-                      <span className="text-xs font-black text-brand-purple">₹{Number(gig.price).toLocaleString()}</span>
-                      {isMarket && isRent && <span className="text-[10px] text-zinc-500">/rental</span>}
-                      {isMarket && (
-                        <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md border ${isRent ? 'text-brand-purple border-brand-purple/20 bg-brand-purple/10' : 'text-green-400 border-green-500/20 bg-green-500/10'}`}>
-                          {isRent ? 'RENT' : 'SELL'}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="mt-auto pt-3 border-t border-[#1E293B] flex items-center justify-between relative z-10">
-                      <div className="flex items-center gap-3 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
-                        <span className="flex items-center gap-1"><MapPin size={10} className="text-zinc-600" /> {gig.location || "Campus"}</span>
-                        <span className="flex items-center gap-1"><Clock size={10} className="text-zinc-600" /> {timeAgo(gig.created_at)}</span>
-                      </div>
-                      <Link href={`/gig/${gig.id}`} className="px-3 py-1.5 bg-white/5 border border-white/5 rounded-lg text-[10px] font-bold text-white uppercase tracking-wider hover:bg-brand-purple hover:border-brand-purple transition-colors">
-                        Manage
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            /* EMPTY STATE */
-            <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-[#0F172A] border border-[#1E293B] rounded-3xl">
-              <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
-                <Briefcase className="w-10 h-10 text-zinc-600" />
+            {filteredPosts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredPosts.map((gig, idx) => (
+                  <PostCard key={gig.id} gig={gig} getStatusDot={getStatusDot} delay={idx * 50} />
+                ))}
               </div>
-              <h2 className="text-2xl font-black text-white mb-2">No active items found</h2>
-              <p className="text-zinc-400 max-w-md mb-8 text-sm">
-                Start by posting your first gig or listing an item.
-              </p>
-              <Link
-                href="/post"
-                className="px-8 py-4 bg-gradient-to-r from-brand-purple to-brand-pink text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-[0_0_20px_rgba(136,37,245,0.3)] active:scale-95"
-              >
-                Post New
-              </Link>
-            </div>
-          )}
-        </section>
-      </div>
+            ) : (
+              <EmptyState
+                icon={Briefcase}
+                title="No active posts found"
+                desc="Start by posting your first hustle or marketplace item to the campus."
+                actionLink="/post"
+                actionText="Create Listing"
+              />
+            )}
+          </div>
+        )}
 
-      {/* MOBILE FAB */}
-      <Link
-        href="/post"
-        className="md:hidden fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-full shadow-2xl shadow-brand-purple/30 flex items-center justify-center active:scale-90 transition-transform"
-      >
-        <Plus size={28} strokeWidth={2.5} />
-      </Link>
+        {/* -------------------- TAB 2: MY APPLICATIONS -------------------- */}
+        {activeTab === 'APPLICATIONS' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {myApplications.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {myApplications.map((app, idx) => {
+                  const gig = app.gigs;
+                  if (!gig) return null;
+                  return (
+                    <ApplicationCard
+                      key={app.id}
+                      app={app}
+                      gig={gig}
+                      getAppStatusBadge={getAppStatusBadge}
+                      delay={idx * 50}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState
+                icon={Send}
+                title="No applications yet"
+                desc="You haven't applied to any gigs or made offers on items yet. Explore the feed!"
+                actionLink="/feed"
+                actionText="Browse Marketplace"
+              />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function FilterTab({ label, active, onClick }: any) {
+// Subcomponents
+
+function FilterTab({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${active ? 'bg-[#1E293B] text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}>
+    <button onClick={onClick} className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${active ? 'bg-brand-purple text-white shadow-[0_0_15px_rgba(136,37,245,0.3)]' : 'bg-[#0F172A] border border-[#1E293B] text-zinc-400 hover:text-white hover:border-zinc-600'}`}>
       {label}
     </button>
+  );
+}
+
+function PostCard({ gig, getStatusDot, delay }: { gig: any, getStatusDot: any, delay: number }) {
+  const isMarket = gig.listing_type === 'MARKET';
+  const isRent = gig.market_type === 'RENT';
+
+  return (
+    <Link
+      href={`/gig/${gig.id}`}
+      className="bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-6 flex flex-col group hover:border-brand-purple/50 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(136,37,245,0.2)] transition-all h-[190px] relative overflow-hidden fill-mode-both animate-in fade-in"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex justify-between items-start mb-3 relative z-10">
+        <h3 className="font-bold text-white text-[16px] leading-tight group-hover:text-brand-purple transition-colors line-clamp-2 pr-4">{gig.title}</h3>
+        <div className="flex items-center gap-1.5 shrink-0 bg-[#1A2235] px-2 py-1 rounded-full border border-white/5">
+          <span className={`w-2 h-2 rounded-full ${getStatusDot(gig.status)}`}></span>
+          <span className="text-[9px] text-white/70 uppercase tracking-widest font-bold">{gig.status}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-auto relative z-10 mt-1">
+        <span className="text-lg font-black text-brand-purple">₹{Number(gig.price).toLocaleString()}</span>
+        {isMarket && isRent && <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">/day</span>}
+        {isMarket && (
+          <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border ${isRent ? 'text-brand-purple border-brand-purple/20 bg-brand-purple/10' : 'text-brand-pink border-brand-pink/20 bg-brand-pink/10'}`}>
+            {isRent ? 'RENT' : 'SELL'}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-auto pt-4 border-t border-[#1E293B] flex items-center justify-between relative z-10">
+        <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+          <span className="flex items-center gap-1"><Clock size={12} className="text-zinc-600" /> {timeAgo(gig.created_at)}</span>
+        </div>
+        <span className="text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1 group-hover:text-brand-purple transition-colors">
+          Manage <ArrowUpRight size={12} />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function ApplicationCard({ app, gig, getAppStatusBadge, delay }: { app: any, gig: any, getAppStatusBadge: any, delay: number }) {
+  const isMarket = gig.listing_type === 'MARKET';
+
+  return (
+    <Link
+      href={`/gig/${gig.id}`}
+      className="group bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-6 hover:border-brand-pink/40 transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(236,72,153,0.15)] overflow-hidden h-[190px] flex flex-col fill-mode-both animate-in fade-in"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className="p-2.5 bg-[#1E293B] rounded-xl border border-white/5 text-brand-pink group-hover:scale-110 transition-transform shadow-inner">
+          {isMarket ? <ShoppingBag className="w-4 h-4" /> : <Briefcase className="w-4 h-4" />}
+        </div>
+        {getAppStatusBadge(app.status)}
+      </div>
+
+      <h3 className="text-[16px] font-bold text-white mb-2 line-clamp-2 group-hover:text-brand-pink transition-colors">
+        {gig.title}
+      </h3>
+
+      <div className="flex items-center gap-2 text-zinc-400 text-sm mt-auto">
+        <IndianRupee className="w-4 h-4" />
+        <span className="font-black text-white">{gig.price?.toLocaleString()}</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest opacity-50 ml-2">Offered: ₹{app.offer_price || gig.price}</span>
+      </div>
+
+      <div className="pt-4 mt-3 border-t border-[#1E293B] flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-1">
+          <Clock className="w-3 h-3" /> {timeAgo(app.created_at)}
+        </span>
+        <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-white group-hover:text-brand-pink transition-colors">
+          View Gig <ArrowUpRight className="w-3 h-3" />
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function EmptyState({ icon: Icon, title, desc, actionLink, actionText }: any) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 px-4 text-center bg-[#0F172A]/50 border border-[#1E293B] rounded-[32px] backdrop-blur-sm">
+      <div className="w-24 h-24 bg-[#1E293B] rounded-[24px] rotate-3 flex items-center justify-center mb-6 shadow-inner border border-white/5">
+        <Icon className="w-10 h-10 text-brand-purple -rotate-3 drop-shadow-lg" />
+      </div>
+      <h2 className="text-2xl font-black text-white mb-2">{title}</h2>
+      <p className="text-zinc-400 max-w-sm mb-8 text-sm leading-relaxed">{desc}</p>
+      <Link
+        href={actionLink}
+        className="px-8 py-4 bg-white text-black font-black rounded-xl hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] active:scale-95 flex items-center gap-2"
+      >
+        {actionText} <ArrowUpRight size={18} />
+      </Link>
+    </div>
   );
 }

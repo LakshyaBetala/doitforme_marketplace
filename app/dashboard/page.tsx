@@ -298,10 +298,12 @@ export default function Dashboard() {
                 <span className="font-black tracking-wide">Sell Item</span>
               </Link>
               <Link href="/gig/my-gigs" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
-                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all">
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all relative">
                   <Briefcase size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
+                  {/* Subtle notification dot for active applications */}
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-brand-pink rounded-full border-2 border-[#0F172A]"></span>
                 </div>
-                <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">My Hustles</span>
+                <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Activity Hub</span>
               </Link>
             </section>
 

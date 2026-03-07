@@ -1196,7 +1196,7 @@ export default function GigDetailPage() {
               </div>
             </div>
 
-            {/* Action Card */}
+            {/* Action Card (Desktop) */}
             <div className="bg-[#121217] border border-white/10 p-6 rounded-[32px] space-y-6 shadow-2xl sticky top-8">
               <h3 className="text-lg font-bold">Action Required</h3>
 
@@ -1213,11 +1213,11 @@ export default function GigDetailPage() {
                           <button
                             onClick={handleComplete}
                             disabled={isCompleting}
-                            className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3"
+                            className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3 active:scale-[0.98]"
                           >
-                            {isCompleting ? "Processing..." : (
+                            {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
                               isMarket
-                                ? (gig.market_type === "RENT" ? "Confirm Return" : "Confirm Delivery")
+                                ? (gig.market_type === "RENT" ? "Confirm Return" : "Complete Deal")
                                 : "Mark as Completed"
                             )}
                           </button>
@@ -1236,23 +1236,17 @@ export default function GigDetailPage() {
                         <button
                           onClick={handleCancel}
                           disabled={isCancelling}
-                          className="w-full py-4 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-lg transition-all"
+                          className="w-full py-4 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-lg transition-all active:scale-[0.98]"
                         >
-                          {isCancelling ? "Cancelling..." : "Cancel Gig"}
+                          {isCancelling ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Cancel Listing"}
                         </button>
                       )}
 
                       {status === "cancellation_requested" && (
                         <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-center">
                           <p className="text-yellow-500 font-bold mb-1">Cancellation Pending</p>
-                          <p className="text-xs text-yellow-500/60">A request to cancel and refund has been sent. Waiting for approval.</p>
+                          <p className="text-xs text-yellow-500/60">A request to cancel has been sent. Waiting for approval.</p>
                         </div>
-                      )}
-
-                      {status !== "cancellation_requested" && (
-                        <button className="w-full py-3 rounded-2xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 transition-colors font-medium mt-3">
-                          Edit Gig
-                        </button>
                       )}
                     </div>
                   ) : (
@@ -1263,50 +1257,52 @@ export default function GigDetailPage() {
                           disabled={isBuying || hasApplied}
                           className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg active:scale-[0.98] ${hasApplied
                             ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 cursor-not-allowed"
-                            : "bg-white text-black hover:bg-white/90 shadow-white/10"
+                            : "bg-white text-black hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.15)]"
                             }`}
                         >
                           {isBuying ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
-                            hasApplied ? "Offer Pending" : (isMarket ? `${marketAction} Now` : "Apply for Gig")
+                            hasApplied ? "Offer Pending" : (isMarket ? (gig.market_type === 'RENT' ? "Rent Item" : "Make Offer") : "Apply Now")
                           )}
                         </button>
                       ) : (
                         <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
                           <p className="text-sm text-white/60">
-                            {status === "completed" ? "This gig is completed." : "This gig is currently assigned."}
+                            {status === "completed" ? "This listing is closed." : "This listing is currently assigned."}
                           </p>
                         </div>
                       )}
 
+                      {/* WORKER ACTIONS (RENT) */}
                       {isWorker && status === "assigned" && gig.market_type === "RENT" && gig.payment_status !== "ESCROW_FUNDED" && (
-                        <div className="space-y-3">
-                          <div className="p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 text-center">
-                            <p className="text-yellow-500 font-bold mb-1">Offer Accepted!</p>
-                            <p className="text-xs text-yellow-500/80">Please complete the payment and sign the rental agreement to unlock contact info.</p>
+                        <div className="space-y-3 animate-in fade-in zoom-in-95">
+                          <div className="p-4 rounded-2xl bg-brand-purple/10 border border-brand-purple/20 text-center">
+                            <p className="text-brand-purple font-bold mb-1">Rental Approved!</p>
+                            <p className="text-xs text-brand-purple/60">Complete payment to unlock owner's contact info.</p>
                           </div>
                           <button
                             onClick={handleBuy}
                             disabled={isBuying}
-                            className="w-full py-4 rounded-2xl bg-brand-purple text-white font-bold text-lg transition-all shadow-lg hover:bg-brand-purple/90"
+                            className="w-full py-4 rounded-2xl bg-brand-purple hover:bg-[#7D5FFF] text-white font-bold text-lg transition-all shadow-[0_0_20px_rgba(136,37,245,0.3)] active:scale-95"
                           >
-                            {isBuying ? "Processing..." : "Pay & Sign Agreement"}
+                            {isBuying ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Pay & Start Rental"}
                           </button>
                         </div>
                       )}
 
+                      {/* WORKER ACTIONS (HUSTLE or POST-PAYMENT RENT) */}
                       {isWorker && status === "assigned" && (gig.market_type !== "RENT" || gig.payment_status === "ESCROW_FUNDED") && (
-                        <div className="space-y-3">
+                        <div className="space-y-3 animate-in fade-in zoom-in-95">
                           <div className="p-4 rounded-2xl bg-brand-purple/10 border border-brand-purple/20 text-center">
                             <p className="text-brand-purple font-bold mb-1">Assigned to You!</p>
-                            <p className="text-xs text-brand-purple/60">Complete the task to get paid.</p>
+                            <p className="text-xs text-brand-purple/60">Complete the task or return the item to release funds.</p>
                           </div>
                           <button
                             onClick={handleDeliver}
                             disabled={isCompleting}
-                            className="w-full py-4 rounded-2xl bg-white text-black font-bold text-lg transition-all shadow-lg hover:bg-gray-200"
+                            className="w-full py-4 rounded-2xl bg-white hover:bg-zinc-200 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95"
                           >
-                            {isCompleting ? "Processing..." : (
-                              isMarket && gig.market_type === 'RENT' ? "Mark Returned" : "Submit Work"
+                            {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
+                              isMarket && gig.market_type === 'RENT' ? "Mark Item Returned" : "Submit Work"
                             )}
                           </button>
                         </div>
@@ -1317,7 +1313,7 @@ export default function GigDetailPage() {
               ) : (
                 <div className="text-center space-y-4">
                   <p className="text-white/60 text-sm">Log in to interact with this gig.</p>
-                  <button onClick={() => router.push('/login')} className="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold transition-colors">Login</button>
+                  <button onClick={() => router.push('/login')} className="w-full py-3 rounded-2xl bg-brand-purple hover:bg-[#7D5FFF] text-white font-bold transition-all shadow-lg active:scale-95">Login / Register</button>
                 </div>
               )}
             </div>
@@ -1380,53 +1376,7 @@ export default function GigDetailPage() {
         </div>
       </div>
 
-      {/* MOBILE STICKY ACTION BAR */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#0B0B11]/80 backdrop-blur-xl border-t border-white/10 z-50 md:hidden pb-[calc(1rem+env(safe-area-inset-bottom))] animate-in slide-in-from-bottom-full duration-500">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">
-              {isMarket ? (gig.market_type === "RENT" ? "Rental Fee" : "Price") : "Budget"}
-            </p>
-            <p className="text-xl font-mono font-bold text-white">₹{gig.price}</p>
-          </div>
 
-          <div className="flex-1">
-            {isOwner ? (
-              status === 'open' ? (
-                <button onClick={handleCancel} disabled={isCancelling} className="w-full py-3 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 font-bold text-sm">
-                  {isCancelling ? "..." : "Cancel"}
-                </button>
-              ) : (status === 'assigned' || status === 'delivered') ? (
-                <button onClick={handleComplete} disabled={isCompleting} className="w-full py-3 rounded-xl bg-green-500 text-black font-bold text-sm shadow-lg shadow-green-500/20">
-                  {isCompleting ? "..." : "Complete"}
-                </button>
-              ) : (
-                <button disabled className="w-full py-3 rounded-xl bg-white/5 text-white/40 font-bold text-sm">
-                  {status}
-                </button>
-              )
-            ) : (
-              isWorker && status === 'assigned' ? (
-                <button onClick={handleDeliver} disabled={isCompleting} className="w-full py-3 rounded-xl bg-white text-black font-bold text-sm shadow-lg">
-                  {isCompleting ? "..." : (isMarket && gig.market_type === 'RENT' ? "Returned" : "Submit")}
-                </button>
-              ) : status === 'open' ? (
-                <button
-                  onClick={isMarket ? handleBuy : handleApplyNavigation}
-                  disabled={isBuying || hasApplied}
-                  className={`w-full py-3 rounded-xl font-bold text-sm shadow-lg ${hasApplied ? "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20" : "bg-white text-black"}`}
-                >
-                  {isBuying ? "..." : (hasApplied ? "Pending" : (isMarket ? (gig.market_type === 'RENT' ? "Rent Now" : "Buy Now") : "Apply Now"))}
-                </button>
-              ) : (
-                <button disabled className="w-full py-3 rounded-xl bg-white/5 text-white/40 font-bold text-sm">
-                  {status === 'completed' ? "Completed" : "Assigned"}
-                </button>
-              )
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* Lightbox */}
       {selectedImage && (
