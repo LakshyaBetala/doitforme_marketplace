@@ -25,7 +25,7 @@ export default function AdminPayoutsPage() {
         if (!user) return router.push("/login");
 
         // Simple Admin Check (Matches RLS policy)
-        const ADMINS = ["lakshya.betala@gmail.com", "betala911@gmail.com"];
+        const ADMINS = ["lakshya.betala@gmail.com", "betala911@gmail.com", "doitforme@gmail.com"];
         if (ADMINS.includes(user.email || "")) {
             setIsAdmin(true);
             fetchPayouts();

@@ -137,6 +137,25 @@ export default function TermsPage() {
             </div>
           </section>
 
+          {/* Section 6: Contact Information */}
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
+                <ScrollText size={20} />
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-xl font-bold text-white">6. Contact Information</h3>
+                <p className="text-zinc-400 leading-relaxed">
+                  If you have any questions or concerns regarding these Terms of Service, please contact us at:
+                  <br /><br />
+                  <strong>Email:</strong> <a href="mailto:doitforme@gmail.com" className="text-white hover:text-brand-purple transition-colors">doitforme@gmail.com</a>
+                  <br />
+                  <strong>Phone:</strong> <a href="tel:+919344110272" className="text-white hover:text-brand-purple transition-colors">+91 93441 10272</a>
+                </p>
+              </div>
+            </div>
+          </section>
+
         </div>
       </div>
     </div>

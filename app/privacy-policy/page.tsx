@@ -124,7 +124,7 @@ export default function PrivacyPolicy() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">4. Contact</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  For any privacy-related concerns, please contact our Data Protection Officer at <a href="mailto:betala911@gmail.com" className="text-brand-purple hover:text-white transition-colors underline decoration-brand-purple/30 underline-offset-4">betala911@gmail.com</a>.
+                  For any privacy-related concerns, please contact our Data Protection Officer at <a href="mailto:doitforme@gmail.com" className="text-brand-purple hover:text-white transition-colors underline decoration-brand-purple/30 underline-offset-4">doitforme@gmail.com</a> or call us at <a href="tel:+919344110272" className="text-brand-purple hover:text-white transition-colors underline decoration-brand-purple/30 underline-offset-4">+91 93441 10272</a>.
                 </p>
               </div>
             </div>

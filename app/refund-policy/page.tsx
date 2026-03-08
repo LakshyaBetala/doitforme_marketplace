@@ -110,7 +110,7 @@ export default function RefundPolicy() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">3. Dispute Resolution</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  If a disagreement arises, DoItForMe acts as the arbitrator. Email evidence (chat logs) to <span className="text-white hover:underline cursor-pointer">betala911@gmail.com</span>. We resolve disputes within 48 hours.
+                  If a disagreement arises, DoItForMe acts as the arbitrator. Email evidence (chat logs) to <span className="text-white hover:underline cursor-pointer">doitforme@gmail.com</span> or contact support at <span className="text-white hover:underline cursor-pointer">+91 93441 10272</span>. We resolve disputes within 48 hours.
                 </p>
               </div>
             </div>
