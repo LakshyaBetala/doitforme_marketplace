@@ -130,6 +130,7 @@ export default function GigDetailPage() {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [offerPrice, setOfferPrice] = useState("");
   const [offerPitch, setOfferPitch] = useState("");
+  const [rentDuration, setRentDuration] = useState(1);
 
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showReturnModal, setShowReturnModal] = useState(false);
@@ -350,18 +351,30 @@ export default function GigDetailPage() {
   };
 
   const handleMakeOffer = async () => {
-    if (!offerPrice || Number(offerPrice) <= 0) return toast.error("Please enter a valid price.");
+    const isRental = gig?.market_type === 'RENT';
+    const basePrice = Number(gig?.price || 0);
+    const finalOfferPrice = isRental ? basePrice * rentDuration : Number(offerPrice);
+
+    if (!finalOfferPrice || finalOfferPrice <= 0) return toast.error("Please enter a valid price/duration.");
 
     setSubmitting(true);
     try {
+      const defaultPitch = isRental
+        ? `[Requested for ${rentDuration} Days] I'm interested in renting this item!`
+        : "I'm interested in this item!";
+
+      const customPitch = offerPitch
+        ? (isRental ? `[Requested for ${rentDuration} Days] ${offerPitch}` : offerPitch)
+        : defaultPitch;
+
       // FIX: Use dedicated Apply route
       const res = await fetch("/api/gig/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gigId: id,
-          offerPitch: offerPitch || "I'm interested in this item!",
-          offerPrice: Number(offerPrice) // Send the negotiated price
+          offerPitch: customPitch,
+          offerPrice: finalOfferPrice // Send the negotiated total price
         })
       });
 
@@ -729,16 +742,45 @@ export default function GigDetailPage() {
             </p>
 
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-widest text-white/60">Your Offer (₹)</label>
-                <input
-                  type="number"
-                  value={offerPrice}
-                  onChange={(e) => setOfferPrice(e.target.value)}
-                  placeholder={gig.price.toString()}
-                  className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-purple/50 transition-all font-mono"
-                />
-              </div>
+              {gig.market_type === "RENT" ? (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-white/60">Duration (Days)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={rentDuration}
+                    onChange={(e) => setRentDuration(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-purple/50 transition-all font-mono"
+                  />
+                  <div className="p-4 bg-white/5 rounded-xl border border-white/10 mt-2 space-y-2">
+                    <div className="flex justify-between text-sm text-white/60">
+                      <span>Rental (₹{gig.price} × {rentDuration} days)</span>
+                      <span>₹{gig.price * rentDuration}</span>
+                    </div>
+                    {(gig.security_deposit || 0) > 0 && (
+                      <div className="flex justify-between text-sm text-white/60">
+                        <span>Refundable Deposit</span>
+                        <span>₹{gig.security_deposit}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-white pt-2 border-t border-white/10">
+                      <span>Total Offer Value</span>
+                      <span className="text-brand-purple">₹{(gig.price * rentDuration) + (gig.security_deposit || 0)}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-white/60">Your Offer (₹)</label>
+                  <input
+                    type="number"
+                    value={offerPrice}
+                    onChange={(e) => setOfferPrice(e.target.value)}
+                    placeholder={gig.price.toString()}
+                    className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-purple/50 transition-all font-mono"
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-widest text-white/60">Message / Pitch</label>
@@ -752,7 +794,7 @@ export default function GigDetailPage() {
 
               <button
                 onClick={handleMakeOffer}
-                disabled={submitting || !offerPrice}
+                disabled={submitting || (gig.market_type !== "RENT" && !offerPrice) || (gig.market_type === "RENT" && rentDuration < 1)}
                 className="w-full py-4 bg-brand-purple hover:bg-[#7D5FFF] text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_0_20px_rgba(136,37,245,0.3)] disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />} Send Offer
