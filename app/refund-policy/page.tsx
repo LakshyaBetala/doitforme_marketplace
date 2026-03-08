@@ -65,7 +65,7 @@ export default function RefundPolicy() {
                 </div>
                 <div className="pt-4 border-t border-white/5 mt-4">
                   <p className="text-xs text-zinc-500 leading-relaxed">
-                    <strong>Gateway Charges:</strong> Razorpay processes all payments. A fee of ~2% applies on deposits, paid to the gateway provider.
+                    <strong>Gateway Charges:</strong> Cashfree processes all payments. A fee of ~2% applies on deposits, paid to the gateway provider.
                   </p>
                 </div>
               </div>

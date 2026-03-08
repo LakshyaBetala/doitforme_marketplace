@@ -1,18 +1,9 @@
 import { NextResponse } from "next/server";
-import { Cashfree } from "cashfree-pg";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
-    // 1. Setup Cashfree
-    // @ts-ignore
-    Cashfree.XClientId = process.env.CASHFREE_APP_ID!;
-    // @ts-ignore
-    Cashfree.XClientSecret = process.env.CASHFREE_SECRET_KEY!;
-    // @ts-ignore
-    Cashfree.XEnvironment = process.env.NODE_ENV === "production" ? "PRODUCTION" : "SANDBOX";
-
     const { gigId } = await req.json();
 
     const supabase = await supabaseServer();
@@ -98,34 +89,39 @@ export async function POST(req: Request) {
 
     // Security Deposit (Only for Market Rent)
     let deposit = 0;
-
     if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
       deposit = Number(gig.security_deposit) || 0;
     }
 
     // Platform Fee Logic
-    let platformFee = 0;
+    let platformFee = 0; // The deduction taken from the Seller/Worker
+    let renterFee = 0;   // The upfront fee added to the Subtotal for the Renter
+    let netWorkerPay = 0;
     let discountApplied = false;
 
     if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
-      // Rental Fee: 3% of (Price + Deposit)
-      platformFee = Math.ceil((price + deposit) * 0.03);
+      // Rental Fee: 1% added to the Upfront Renter Price, 2% deducted from the Owner Output
+      renterFee = Math.ceil((price + deposit) * 0.01);
+      platformFee = Math.ceil(price * 0.02);
+      netWorkerPay = price - platformFee;
     } else {
       // Hustle/Sell Tiered: 7.5% if jobs > 10, else 10%
-      // Veteran Discount for Experienced Workers (or Sellers)
+      // This is purely a deduction from Net Pay. The buyer DOES NOT pay this fee upfront.
+      renterFee = 0;
       if (jobsCompleted > 10) {
         platformFee = Math.ceil(price * 0.075);
         discountApplied = true;
       } else {
         platformFee = Math.ceil(price * 0.10);
       }
+      netWorkerPay = price - platformFee;
     }
 
     // Subtotal (Base charge before Gateway)
-    // Logic: User Pays: Price + Deposit + Platform Fee + Gateway Fee
-    const subtotal = price + deposit + platformFee;
+    // Logic: User Pays: Price + Deposit + Renter Fee (if applicable)
+    const subtotal = price + deposit + renterFee;
 
-    // Gateway Fee (2%)
+    // Gateway Fee (2% applied on everything)
     const gatewayFee = Math.ceil(subtotal * 0.02);
 
     const totalAmount = subtotal + gatewayFee;
@@ -135,12 +131,14 @@ export async function POST(req: Request) {
     // [New] Create Transaction Record (PENDING) with Fee Breakdown
     const breakdown = {
       subtotal: subtotal,
-      processingFee: gatewayFee,
-      discountApplied: discountApplied, // "Campus Pro Discount Applied" UI trigger
+      renter_fee: renterFee,
+      gateway_fee: gatewayFee,
+      discount_applied: discountApplied,
       total: totalAmount,
-      platformFee: platformFee,
-      basePrice: price,
-      deposit: deposit
+      platform_fee: platformFee, // Stores the Deduction Amount
+      base_price: price,
+      deposit: deposit,
+      net_worker_pay: netWorkerPay
     };
 
     const { error: txnError } = await supabaseAdmin.from('transactions').insert({
@@ -156,25 +154,55 @@ export async function POST(req: Request) {
 
     if (txnError) throw txnError;
 
-    // 6. Create Cashfree Order
-    const request = {
+    // 6. Create Cashfree Order using native fetch
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL}/gig/${gigId}?payment=verify&order_id={order_id}&worker_id=${encodeURIComponent(user.id)}`;
+
+    const payload = {
       order_amount: totalAmount,
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
         customer_id: user.id,
         customer_name: payerProfile.name || "User",
-        customer_email: payerProfile.email || "user@example.com",
+        customer_email: payerProfile.email || "no-email@example.com",
         customer_phone: String(payerProfile.phone || "9999999999"),
       },
       order_meta: {
-        return_url: `${process.env.NEXT_PUBLIC_BASE_URL}/gig/${gigId}?payment=verify&order_id=${orderId}&worker_id=${user.id}`,
-        notify_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/webhook`,
+        return_url: returnUrl,
+        notify_url: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/cashfree`,
       },
+      order_tags: {
+        gig_id: gigId,
+        worker_id: user.id,
+        type: "ESCROW_DEPOSIT"
+      },
+      order_note: `Gig Payment: ${gig.title}`
     };
 
-    // @ts-ignore
-    const response = await Cashfree.PGCreateOrder("2023-08-01", request);
+    const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
+    const cashfreeUrl = `https://${CASHFREE_ENV}.cashfree.com/pg/orders`;
+
+    console.log("Initiating Payment via native fetch:", orderId, "| Amount:", totalAmount);
+
+    const response = await fetch(cashfreeUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-version": "2023-08-01",
+        "x-client-id": process.env.CASHFREE_APP_ID!,
+        "x-client-secret": process.env.CASHFREE_SECRET_KEY!
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Cashfree API Error:", data);
+      throw new Error(data.message || "Payment initiation failed at gateway");
+    }
+
+    const paymentSessionId = data.payment_session_id;
 
     await supabase.from('gigs').update({
       gateway_order_id: orderId,
@@ -185,7 +213,12 @@ export async function POST(req: Request) {
     // Duplicate Transaction Insert Removed.
     // The "PENDING" transaction created earlier is the Single Source of Truth V3.
 
-    return NextResponse.json({ ...response.data, breakdown });
+    return NextResponse.json({
+      success: true,
+      payment_session_id: paymentSessionId,
+      order_id: orderId,
+      breakdown
+    });
 
   } catch (error: any) {
     console.error("Order Creation Error:", error);

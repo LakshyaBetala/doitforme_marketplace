@@ -63,6 +63,7 @@ export async function POST(req: Request) {
     const basePrice = breakdown.base_price || 0;
     const deposit = breakdown.deposit || 0;
     const platformFee = breakdown.platform_fee || 0;
+    const renterFee = breakdown.renter_fee || 0;
     const netWorkerPay = breakdown.net_worker_pay || 0;
 
     // 4. Update Transaction to COMPLETED
@@ -95,11 +96,11 @@ export async function POST(req: Request) {
       gig_id: gigId,
       poster_id: gig.poster_id,
       worker_id: workerId,
-      original_amount: basePrice,
-      platform_fee: platformFee,
-      gateway_fee: gatewayFee,
-      amount_held: amountHeld,
-      net_amount: netWorkerPay,
+      original_amount: basePrice, // Original price of the gig
+      platform_fee: platformFee,  // What gets deducted from the worker/owner
+      gateway_fee: gatewayFee,    // Cashfree specific fee
+      amount_held: amountHeld,    // Escrow holding amount
+      net_amount: netWorkerPay,   // Final net pay to worker/owner
       status: "HELD",
       release_condition: deposit > 0 ? "RENTAL_RETURN" : "GIG_COMPLETION",
       release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),

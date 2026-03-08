@@ -96,7 +96,7 @@ export default function TermsPage() {
 
                 <div className="pt-4 border-t border-white/5">
                   <p className="text-xs text-zinc-500">
-                    <strong>Payment Gateway:</strong> A standard processing fee (approx. 2%) is charged by Razorpay on deposits. This is non-refundable.
+                    <strong>Payment Gateway:</strong> A standard processing fee (approx. 2%) is charged by Cashfree on deposits. This is non-refundable.
                   </p>
                 </div>
               </div>

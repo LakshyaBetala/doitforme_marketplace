@@ -101,13 +101,13 @@ export default function PrivacyPolicy() {
                   <div>
                     <h4 className="text-white font-medium mb-1">Payment Security</h4>
                     <p className="text-zinc-400 text-sm leading-relaxed">
-                      We do not store your credit card or banking password details. All payment processing is handled securely by <strong className="text-white">Razorpay</strong>, which is compliant with PCI-DSS standards.
+                      We do not store your credit card or banking password details. All payment processing is handled securely by <strong className="text-white">Cashfree</strong>, which is compliant with PCI-DSS standards.
                     </p>
                   </div>
                   <div>
                     <h4 className="text-white font-medium mb-1">Data Sharing</h4>
                     <p className="text-zinc-400 text-sm leading-relaxed">
-                      We do not sell your personal data. We only share necessary data with third-party providers (like Razorpay) to facilitate transactions.
+                      We do not sell your personal data. We only share necessary data with third-party providers (like Cashfree) to facilitate transactions.
                     </p>
                   </div>
                 </div>
