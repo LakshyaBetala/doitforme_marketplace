@@ -509,22 +509,6 @@ export default function PostGigWizard() {
                       </button>
                     )}
 
-                    {/* Quick Pick Chips */}
-                    {!(listingType === "HUSTLE" && mode === "Online") && (
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {["Tech Park Java", "Central Library", "Clock Tower", "Hostel Block A", "Food Court"].map((spot) => (
-                          <button
-                            key={spot}
-                            type="button"
-                            onClick={() => { store.setField('location', spot); setShowLocationSuggestions(false); }}
-                            className="px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs text-white/60 hover:bg-brand-purple/20 hover:border-brand-purple/50 hover:text-white transition-all"
-                          >
-                            {spot}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
                     {/* Autocomplete Dropdown */}
                     {showLocationSuggestions && location.length > 0 && !(listingType === "HUSTLE" && mode === "Online") && (
                       <div className="absolute top-[72px] left-0 w-full bg-[#1A1A24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
@@ -551,12 +535,28 @@ export default function PostGigWizard() {
                         </div>
                       </div>
                     )}
-
-                    {/* Click outside overlay */}
-                    {showLocationSuggestions && (
-                      <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowLocationSuggestions(false)} />
-                    )}
                   </div>
+
+                  {/* Quick Pick Chips */}
+                  {!(listingType === "HUSTLE" && mode === "Online") && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {["Tech Park Java", "Central Library", "Clock Tower", "Hostel Block A", "Food Court"].map((spot) => (
+                        <button
+                          key={spot}
+                          type="button"
+                          onClick={() => { store.setField('location', spot); setShowLocationSuggestions(false); }}
+                          className="px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs text-white/60 hover:bg-brand-purple/20 hover:border-brand-purple/50 hover:text-white transition-all"
+                        >
+                          {spot}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Click outside overlay */}
+                  {showLocationSuggestions && (
+                    <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowLocationSuggestions(false)} />
+                  )}
                 </div>
 
                 {listingType === "HUSTLE" && (
