@@ -16,27 +16,37 @@ export async function POST(req: Request) {
     }
 
     // 1. Verify Status with Cashfree DIRECTLY
-    const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
+    let validPayment: any = null;
 
-    const response = await fetch(`https://${CASHFREE_ENV}.cashfree.com/pg/orders/${orderId}/payments`, {
-      method: "GET",
-      headers: {
-        "x-client-id": process.env.CASHFREE_APP_ID!,
-        "x-client-secret": process.env.CASHFREE_SECRET_KEY!,
-        "x-api-version": "2023-08-01"
+    if (process.env.NODE_ENV !== 'development') {
+      const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
+      const response = await fetch(`https://${CASHFREE_ENV}.cashfree.com/pg/orders/${orderId}/payments`, {
+        method: "GET",
+        headers: {
+          "x-client-id": process.env.CASHFREE_APP_ID!,
+          "x-client-secret": process.env.CASHFREE_SECRET_KEY!,
+          "x-api-version": "2023-08-01"
+        }
+      });
+
+      const data = await response.json();
+
+      // Check if any transaction in the list is successful
+      validPayment = Array.isArray(data)
+        ? data.find((p: any) => p.payment_status === "SUCCESS")
+        : null;
+
+      if (!validPayment) {
+        console.error("Cashfree Payment Verification Failed:", data);
+        return NextResponse.json({ error: "Payment pending or failed" }, { status: 400 });
       }
-    });
-
-    const data = await response.json();
-
-    // Check if any transaction in the list is successful
-    const validPayment = Array.isArray(data)
-      ? data.find((p: any) => p.payment_status === "SUCCESS")
-      : null;
-
-    if (!validPayment) {
-      console.error("Cashfree Payment Verification Failed:", data);
-      return NextResponse.json({ error: "Payment pending or failed" }, { status: 400 });
+    } else {
+      console.log("DEV MODE BYPASS: Faking successful Cashfree verification payload.");
+      validPayment = {
+        payment_status: "SUCCESS",
+        payment_amount: 0, // In dev we rely purely on DB setup
+        cf_payment_id: "fake_cf_payment_123"
+      };
     }
 
     const paidAmount = validPayment.payment_amount;

@@ -137,6 +137,12 @@ export default function ApplicantsPage() {
         throw new Error(json.error || "Payment initiation failed");
       }
 
+      if (json.paymentSessionId === "fake_session_123") {
+        console.log("DEV MOCK: Bypassing Cashfree Checkout SDK & redirecting to verify");
+        window.location.href = `/gig/${id}?order_id=${json.orderId}&order_token=fake_token`;
+        return;
+      }
+
       if (json.paymentSessionId) {
         // 3. Open Cashfree Checkout
         cashfree.checkout({

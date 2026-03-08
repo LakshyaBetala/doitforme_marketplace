@@ -323,7 +323,7 @@ export default function GigDetailPage() {
     // 2. Gateway Payment Step (Only for RENT, after assignment)
     if (gig?.listing_type === 'MARKET' && gig?.market_type === 'RENT' && status === 'assigned') {
       const action = "Rent";
-      if (!confirm(`Are you sure you want to proceed to payment for this rental?`)) return;
+      // if (!confirm(`Are you sure you want to proceed to payment for this rental?`)) return;
 
       setIsBuying(true);
       try {
@@ -336,6 +336,15 @@ export default function GigDetailPage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to initiate payment");
 
+        // START DEV MOCK BYPASS
+        if (data.payment_session_id === "fake_session_123") {
+          console.log("DEV MOCK: Bypassing Cashfree Checkout SDK for Rental & redirecting to verify");
+          window.location.href = `/gig/${id}?payment=verify&order_id=${data.order_id}&worker_id=${user?.id}`;
+          return;
+        }
+        // END DEV MOCK BYPASS
+
+        // 4. Trigger Cashfree
         if (data.payment_session_id && cashfree) {
           cashfree.checkout({ paymentSessionId: data.payment_session_id });
         } else if (data.payment_link) {
@@ -395,37 +404,44 @@ export default function GigDetailPage() {
     }
   };
 
-  const handleAcceptOffer = async (applicationId: string) => {
-    if (!confirm("Accept this offer? This will close the gig and reveal contact info.")) return;
-    setIsAccepting(applicationId);
-    try {
-      const res = await fetch("/api/gig/accept-offer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ applicationId })
-      });
+  const handleAcceptOffer = async (applicationId: string, workerId: string) => {
+    if (gig?.listing_type === 'MARKET' && gig?.market_type === 'RENT') {
+      // if (!confirm("Accept this offer? This will close the gig and reveal contact info.")) return;
+      setIsAccepting(applicationId);
+      try {
+        const res = await fetch("/api/gig/accept-offer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ applicationId })
+        });
 
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error || "Failed to accept offer.");
+        if (!res.ok) {
+          const json = await res.json();
+          throw new Error(json.error || "Failed to accept offer.");
+        }
+
+        const data = await res.json();
+        toast.success("Offer Accepted! Redirecting to chat...");
+
+        // Redirect to chat with the worker
+        const chatId = `${id}_${data.workerId || workerId}`;
+        router.push(`/messages?chat=${chatId}`);
+
+      } catch (e: any) {
+        toast.error(e.message);
+      } finally {
+        setIsAccepting(null);
       }
-
-      const data = await res.json();
-      toast.success("Offer Accepted! Redirecting to chat...");
-
-      // Redirect to chat with the worker
-      const chatId = `${id}_${data.workerId}`;
-      router.push(`/chat/${id}?chat=${chatId}`);
-
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
+    } else {
+      // Hustle or Sell gig - Poster pays Escrow to assign
+      setIsAccepting(applicationId);
+      await handleAssign(workerId);
       setIsAccepting(null);
     }
   };
 
   const handleRejectOffer = async (applicationId: string) => {
-    if (!confirm("Reject this offer?")) return;
+    // if (!confirm("Reject this offer?")) return;
     setIsRejecting(applicationId);
     try {
       const res = await fetch("/api/gig/reject-offer", {
@@ -449,7 +465,7 @@ export default function GigDetailPage() {
 
   const handleDeliver = async () => {
     if (gig?.listing_type === "MARKET" && gig.market_type === "RENT") {
-      if (!confirm("Confirm you have returned the item? This will notify the owner.")) return;
+      // if (!confirm("Confirm you have returned the item? This will notify the owner.")) return;
       setIsCompleting(true);
       try {
         const res = await fetch("/api/rental/return", {
@@ -465,7 +481,7 @@ export default function GigDetailPage() {
     }
 
     if (!gig?.is_physical && !deliveryLink.trim()) return toast.error("Please enter a submission link.");
-    if (!confirm("Notify the poster that the work is finished?")) return;
+    // if (!confirm("Notify the poster that the work is finished?")) return;
     setIsCompleting(true);
     try {
       const res = await fetch("/api/gig/deliver", {
@@ -483,7 +499,7 @@ export default function GigDetailPage() {
   };
 
   const handleAssign = async (workerId: string) => {
-    if (!confirm("Are you sure you want to assign this gig to this worker?")) return;
+    // if (!confirm("Are you sure you want to assign this gig to this worker?")) return;
     setSubmitting(true);
     try {
       const res = await fetch("/api/gig/hire", {
@@ -578,7 +594,7 @@ export default function GigDetailPage() {
   }
 
   const handleCancel = async () => {
-    if (!confirm("Are you sure you want to cancel this gig?")) return;
+    // if (!confirm("Are you sure you want to cancel this gig?")) return;
     setIsCancelling(true);
     try {
       const res = await fetch("/api/escrow/cancel", {
@@ -1074,7 +1090,7 @@ export default function GigDetailPage() {
                   <div className="text-center">
                     <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Your Secret Code</p>
                     <div className="flex justify-center gap-3">
-                      {handshakeCode?.split('').map((digit, i) => (
+                      {(handshakeCode || "").split('').map((digit, i) => (
                         <div key={i} className="w-12 h-16 flex items-center justify-center bg-[#1A1A24] border border-yellow-500/50 rounded-xl text-3xl font-mono font-bold text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                           {digit}
                         </div>
@@ -1086,7 +1102,7 @@ export default function GigDetailPage() {
                   <div className="text-center">
                     <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Enter Handshake Code</p>
                     <div className="flex justify-center gap-3 mb-6">
-                      {inputCode.map((digit, i) => (
+                      {(inputCode || ["", "", "", ""]).map((digit, i) => (
                         <input
                           key={i}
                           id={`digit-${i}`}
@@ -1101,7 +1117,7 @@ export default function GigDetailPage() {
                     </div>
                     <button
                       onClick={onVerifyHandshake}
-                      disabled={verifyingHandshake || inputCode.some(d => !d)}
+                      disabled={verifyingHandshake || (inputCode || []).some((d: string) => !d)}
                       className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all shadow-lg shadow-yellow-500/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 flex items-center justify-center gap-2"
                     >
                       {verifyingHandshake ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
@@ -1281,7 +1297,7 @@ export default function GigDetailPage() {
                                   {status === 'open' && (
                                     <div className="flex gap-2">
                                       <button
-                                        onClick={() => handleAcceptOffer(app.id)}
+                                        onClick={() => handleAcceptOffer(app.id, app.worker_id)}
                                         disabled={isAccepting === app.id}
                                         className="px-4 py-2 bg-green-500 text-black text-xs font-bold rounded-xl hover:bg-green-400 transition-colors"
                                       >

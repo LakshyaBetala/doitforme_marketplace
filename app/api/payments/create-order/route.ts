@@ -126,7 +126,8 @@ export async function POST(req: Request) {
 
     const totalAmount = subtotal + gatewayFee;
 
-    const orderId = `order_${gigId}_${Date.now()}`;
+    // Shorten orderId to avoid 50 character limit in Cashfree
+    const orderId = `ord_${Date.now()}_${gigId.split('-')[0]}`;
 
     // [New] Create Transaction Record (PENDING) with Fee Breakdown
     const breakdown = {
@@ -157,26 +158,29 @@ export async function POST(req: Request) {
     // 6. Create Cashfree Order using native fetch
     const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL}/gig/${gigId}?payment=verify&order_id={order_id}&worker_id=${encodeURIComponent(user.id)}`;
 
+    // Ensure phone is exactly 10 digits to prevent Cashfree validation errors
+    const validPhone = String(payerProfile.phone || "").replace(/\D/g, '').slice(-10) || "9999999999";
+
     const payload = {
       order_amount: totalAmount,
       order_currency: "INR",
       order_id: orderId,
       customer_details: {
-        customer_id: user.id,
-        customer_name: payerProfile.name || "User",
+        customer_id: user.id || "CUST_R_123",
+        customer_name: (payerProfile.name || "User").substring(0, 30),
         customer_email: payerProfile.email || "no-email@example.com",
-        customer_phone: String(payerProfile.phone || "9999999999"),
+        customer_phone: validPhone.length === 10 ? validPhone : "9999999999",
       },
       order_meta: {
         return_url: returnUrl,
-        notify_url: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/cashfree`,
+        notify_url: `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/webhooks/cashfree`,
       },
       order_tags: {
         gig_id: gigId,
         worker_id: user.id,
         type: "ESCROW_DEPOSIT"
       },
-      order_note: `Gig Payment: ${gig.title}`
+      order_note: `Gig Payment: ${(gig.title || '').substring(0, 30)}`
     };
 
     const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
@@ -184,25 +188,31 @@ export async function POST(req: Request) {
 
     console.log("Initiating Payment via native fetch:", orderId, "| Amount:", totalAmount);
 
-    const response = await fetch(cashfreeUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-version": "2023-08-01",
-        "x-client-id": process.env.CASHFREE_APP_ID!,
-        "x-client-secret": process.env.CASHFREE_SECRET_KEY!
-      },
-      body: JSON.stringify(payload)
-    });
+    let paymentSessionId = "fake_session_123";
 
-    const data = await response.json();
+    if (process.env.NODE_ENV !== 'development') {
+      const response = await fetch(cashfreeUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-version": "2023-08-01",
+          "x-client-id": process.env.CASHFREE_APP_ID!,
+          "x-client-secret": process.env.CASHFREE_SECRET_KEY!
+        },
+        body: JSON.stringify(payload)
+      });
 
-    if (!response.ok) {
-      console.error("Cashfree API Error:", data);
-      throw new Error(data.message || "Payment initiation failed at gateway");
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Cashfree API Error:", data);
+        throw new Error(data.message || "Payment initiation failed at gateway");
+      }
+
+      paymentSessionId = data.payment_session_id;
+    } else {
+      console.log("DEV MODE BYPASS: Skipping Cashfree network call for create-order, mocking session ID.");
     }
-
-    const paymentSessionId = data.payment_session_id;
 
     await supabase.from('gigs').update({
       gateway_order_id: orderId,

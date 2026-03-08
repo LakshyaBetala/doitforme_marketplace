@@ -1,0 +1,24 @@
+2026-03-08T21:41:16.175Z - authentication Failed
+Error: authentication Failed
+    at POST (webpack-internal:///(rsc)/./app/api/gig/hire/route.ts:159:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AppRouteRouteModule.do (C:\Users\laksh\doitforme1\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:37866)
+    at async AppRouteRouteModule.handle (C:\Users\laksh\doitforme1\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:5:45156)
+    at async responseGenerator (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fgig%2Fhire%2Froute&page=%2Fapi%2Fgig%2Fhire%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fgig%2Fhire%2Froute.ts&appDir=C%3A%5CUsers%5Claksh%5Cdoitforme1%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5Claksh%5Cdoitforme1&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:230:38)
+    at async AppRouteRouteModule.handleResponse (C:\Users\laksh\doitforme1\node_modules\next\dist\compiled\next-server\app-route.runtime.dev.js:1:187638)
+    at async handleResponse (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fgig%2Fhire%2Froute&page=%2Fapi%2Fgig%2Fhire%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fgig%2Fhire%2Froute.ts&appDir=C%3A%5CUsers%5Claksh%5Cdoitforme1%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5Claksh%5Cdoitforme1&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:293:32)
+    at async Module.handler (webpack-internal:///(rsc)/./node_modules/next/dist/build/webpack/loaders/next-app-loader/index.js?name=app%2Fapi%2Fgig%2Fhire%2Froute&page=%2Fapi%2Fgig%2Fhire%2Froute&appPaths=&pagePath=private-next-app-dir%2Fapi%2Fgig%2Fhire%2Froute.ts&appDir=C%3A%5CUsers%5Claksh%5Cdoitforme1%5Capp&pageExtensions=tsx&pageExtensions=ts&pageExtensions=jsx&pageExtensions=js&rootDir=C%3A%5CUsers%5Claksh%5Cdoitforme1&isDev=true&tsconfigPath=&basePath=&assetPrefix=&nextConfigOutput=&preferredRegion=&middlewareConfig=e30%3D&isGlobalNotFoundEnabled=!:347:13)
+    at async DevServer.renderToResponseWithComponentsImpl (C:\Users\laksh\doitforme1\node_modules\next\dist\server\base-server.js:1422:9)
+    at async DevServer.renderPageComponent (C:\Users\laksh\doitforme1\node_modules\next\dist\server\base-server.js:1474:24)
+    at async DevServer.renderToResponseImpl (C:\Users\laksh\doitforme1\node_modules\next\dist\server\base-server.js:1524:32)
+    at async DevServer.pipeImpl (C:\Users\laksh\doitforme1\node_modules\next\dist\server\base-server.js:1018:25)
+    at async NextNodeServer.handleCatchallRenderRequest (C:\Users\laksh\doitforme1\node_modules\next\dist\server\next-server.js:395:17)
+    at async DevServer.handleRequestImpl (C:\Users\laksh\doitforme1\node_modules\next\dist\server\base-server.js:909:17)
+    at async C:\Users\laksh\doitforme1\node_modules\next\dist\server\dev\next-dev-server.js:387:20
+    at async Span.traceAsyncFn (C:\Users\laksh\doitforme1\node_modules\next\dist\trace\trace.js:157:20)
+    at async DevServer.handleRequest (C:\Users\laksh\doitforme1\node_modules\next\dist\server\dev\next-dev-server.js:383:24)
+    at async invokeRender (C:\Users\laksh\doitforme1\node_modules\next\dist\server\lib\router-server.js:248:21)
+    at async handleRequest (C:\Users\laksh\doitforme1\node_modules\next\dist\server\lib\router-server.js:447:24)
+    at async requestHandlerImpl (C:\Users\laksh\doitforme1\node_modules\next\dist\server\lib\router-server.js:496:13)
+    at async Server.requestListener (C:\Users\laksh\doitforme1\node_modules\next\dist\server\lib\start-server.js:226:13)
+
