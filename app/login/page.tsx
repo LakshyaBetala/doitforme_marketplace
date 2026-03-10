@@ -5,60 +5,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Eye, EyeOff, Wallet, Gift } from "lucide-react";
-
-// --- COLLEGES LIST ---
-const COLLEGES = [
-  "SRM (Vadapalani)",
-  "SRM (Ramapuram)",
-  "SRM (Kattankulathur)",
-  "SRM (AP)",
-  "VIT Vellore",
-  "VIT Chennai",
-  "VIT AP",
-  "Anna University (CEG/MIT/ACT)",
-  "IIT Madras",
-  "IIT Bombay",
-  "IIT Delhi",
-  "IIT Kharagpur",
-  "IIT Kanpur",
-  "IIT Roorkee",
-  "IIT Hyderabad",
-  "NIT Trichy",
-  "NIT Warangal",
-  "NIT Surathkal",
-  "NIT Calicut",
-  "Delhi University (DU)",
-  "Jawaharlal Nehru University (JNU)",
-  "Banaras Hindu University (BHU)",
-  "Manipal Academy of Higher Education",
-  "BITS Pilani",
-  "BITS Goa",
-  "BITS Hyderabad",
-  "Amrita Vishwa Vidyapeetham",
-  "Sathyabama Institute",
-  "Saveetha University",
-  "Hindustan University",
-  "MOP Vaishnav",
-  "DG Vaishnav",
-  "Loyola College",
-  "Madras Christian College (MCC)",
-  "Madras University",
-  "Stella Maris College",
-  "Ethiraj College for Women",
-  "Presidency College, Chennai",
-  "PSG College of Technology",
-  "Coimbatore Institute of Technology",
-  "SASTRA Deemed University",
-  "SSN College of Engineering",
-  "Christ University, Bangalore",
-  "PES University, Bangalore",
-  "RV College of Engineering",
-  "Osmania University",
-  "Symbiosis International",
-  "NMIMS Mumbai",
-  "Jadavpur University",
-  "Other"
-];
+import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 
 // --- BACKGROUND COMPONENT ---
 function BackgroundBlobs() {
@@ -399,20 +346,8 @@ function AuthPage() {
               </div>
               <p className="text-[10px] text-white/60 px-1 leading-tight">Optional — add later in Profile. Required to post/apply.</p>
 
-              <div className="relative">
-                <label className="block text-[10px] font-bold text-white/60 mb-1 ml-1 uppercase tracking-wider">Select University</label>
-                <select
-                  value={college}
-                  onChange={(e) => setCollege(e.target.value)}
-                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base focus:outline-none focus:border-[#8825F5] appearance-none cursor-pointer"
-                >
-                  {COLLEGES.map((col) => (
-                    <option key={col} value={col} className="bg-[#0B0B11]">{col}</option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute bottom-4 right-4 text-white/50">
-                  <ChevronDown size={18} />
-                </div>
+              <div className="relative z-50">
+                <UniversitySelect value={college} onChange={setCollege} />
               </div>
 
               {college === "Other" && (

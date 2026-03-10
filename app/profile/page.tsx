@@ -15,60 +15,8 @@ import {
   Phone, GraduationCap, ArrowLeft, Edit2, Check, X,
   Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock
 } from "lucide-react";
+import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 
-// --- COLLEGES LIST ---
-const COLLEGES = [
-  "SRM (Vadapalani)",
-  "SRM (Ramapuram)",
-  "SRM (Kattankulathur)",
-  "SRM (AP)",
-  "VIT Vellore",
-  "VIT Chennai",
-  "VIT AP",
-  "Anna University (CEG/MIT/ACT)",
-  "IIT Madras",
-  "IIT Bombay",
-  "IIT Delhi",
-  "IIT Kharagpur",
-  "IIT Kanpur",
-  "IIT Roorkee",
-  "IIT Hyderabad",
-  "NIT Trichy",
-  "NIT Warangal",
-  "NIT Surathkal",
-  "NIT Calicut",
-  "Delhi University (DU)",
-  "Jawaharlal Nehru University (JNU)",
-  "Banaras Hindu University (BHU)",
-  "Manipal Academy of Higher Education",
-  "BITS Pilani",
-  "BITS Goa",
-  "BITS Hyderabad",
-  "Amrita Vishwa Vidyapeetham",
-  "Sathyabama Institute",
-  "Saveetha University",
-  "Hindustan University",
-  "MOP Vaishnav",
-  "DG Vaishnav",
-  "Loyola College",
-  "Madras Christian College (MCC)",
-  "Madras University",
-  "Stella Maris College",
-  "Ethiraj College for Women",
-  "Presidency College, Chennai",
-  "PSG College of Technology",
-  "Coimbatore Institute of Technology",
-  "SASTRA Deemed University",
-  "SSN College of Engineering",
-  "Christ University, Bangalore",
-  "PES University, Bangalore",
-  "RV College of Engineering",
-  "Osmania University",
-  "Symbiosis International",
-  "NMIMS Mumbai",
-  "Jadavpur University",
-  "Other"
-];
 
 export default function ProfilePage() {
   const supabase = supabaseBrowser();
@@ -87,6 +35,9 @@ export default function ProfilePage() {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editPreferences, setEditPreferences] = useState<string[]>([]);
+  const [editUpiId, setEditUpiId] = useState("");
+  const [editCollege, setEditCollege] = useState(COLLEGES[0]);
+  const [editCustomCollege, setEditCustomCollege] = useState("");
 
   const PREFERENCE_OPTIONS = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
@@ -211,6 +162,9 @@ export default function ProfilePage() {
         setEditName(userData.name ? String(userData.name) : "");
         setEditPhone(userData.phone ? String(userData.phone) : "");
         setEditPreferences(userData.preferences || []);
+        setEditUpiId(userData.upi_id ? String(userData.upi_id) : "");
+        setEditCollege(userData.college ? String(userData.college) : COLLEGES[0]);
+        setEditCustomCollege("");
 
         // 5. Fetch Referral data
         if (userData.referral_code) {
@@ -253,6 +207,9 @@ export default function ProfilePage() {
     setEditName(profile.name ? String(profile.name) : "");
     setEditPhone(profile.phone ? String(profile.phone) : "");
     setEditPreferences(profile.preferences || []);
+    setEditUpiId(profile.upi_id ? String(profile.upi_id) : "");
+    setEditCollege(profile.college ? String(profile.college) : COLLEGES[0]);
+    setEditCustomCollege("");
     setIsEditing(false);
     setSaveMessage(null);
   };
@@ -267,28 +224,62 @@ export default function ProfilePage() {
       return;
     }
 
+    let finalUpiId = profile.upi_id;
+    if (!profile.upi_id && editUpiId.trim()) {
+      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+      if (!upiRegex.test(editUpiId.trim())) {
+        setSaveMessage({ type: 'error', text: 'Invalid UPI ID format. (e.g., name@oksbi)' });
+        setSaving(false);
+        return;
+      }
+      finalUpiId = editUpiId.trim();
+    }
+
+    let finalCollege = profile.college;
+    if (!profile.college) {
+      if (editCollege === "Other") {
+        finalCollege = editCustomCollege.trim();
+        if (!finalCollege) {
+          setSaveMessage({ type: 'error', text: 'Please enter your university name.' });
+          setSaving(false);
+          return;
+        }
+      } else {
+        finalCollege = editCollege;
+      }
+    }
+
     try {
       // Update fields
+      const updates: any = {
+        name: String(editName).trim(),
+        phone: String(editPhone).trim(),
+        preferences: editPreferences,
+        profile_last_edited_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (!profile.college && finalCollege) updates.college = finalCollege;
+      if (!profile.upi_id && finalUpiId) updates.upi_id = finalUpiId;
+
       const { error: dbError } = await supabase
         .from("users")
-        .update({
-          name: String(editName).trim(),
-          phone: String(editPhone).trim(),
-          preferences: editPreferences,
-          profile_last_edited_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
+        .update(updates)
         .eq("id", profile.id);
 
       if (dbError) throw dbError;
 
       // Update auth metadata
+      const authData: any = {
+        full_name: String(editName).trim(),
+        name: String(editName).trim(),
+        phone: String(editPhone).trim(),
+      };
+      if (!profile.college && finalCollege) authData.college = finalCollege;
+      if (!profile.upi_id && finalUpiId) authData.upi_id = finalUpiId;
+
       const { error: authError } = await supabase.auth.updateUser({
-        data: {
-          full_name: String(editName).trim(),
-          name: String(editName).trim(),
-          phone: String(editPhone).trim(),
-        },
+        data: authData,
       });
 
       if (authError) throw authError;
@@ -296,11 +287,7 @@ export default function ProfilePage() {
       // Update local state
       setProfile({
         ...profile,
-        name: String(editName).trim(),
-        phone: String(editPhone).trim(),
-        preferences: editPreferences,
-        profile_last_edited_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        ...updates
       });
 
       setIsEditing(false);
@@ -562,22 +549,58 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* College (read-only always) */}
+            {/* College */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1">University / College <Lock size={8} className="text-zinc-600" /></label>
-              <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                <GraduationCap size={16} className="text-zinc-500 shrink-0" />
-                <span className={profile.college ? "text-white" : "text-zinc-600 italic"}>{profile.college || "Not set"}</span>
-              </div>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                University / College {profile.college && <Lock size={8} className="text-zinc-600" />}
+              </label>
+              {isEditing && !profile.college ? (
+                <div className="space-y-2">
+                  <div className="relative z-[60]">
+                    <UniversitySelect value={editCollege} onChange={setEditCollege} />
+                  </div>
+                  {editCollege === "Other" && (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                      <input
+                        type="text"
+                        placeholder="Enter University Name"
+                        value={editCustomCollege}
+                        onChange={(e) => setEditCustomCollege(e.target.value)}
+                        className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/60 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
+                        autoFocus
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
+                  <GraduationCap size={16} className="text-zinc-500 shrink-0" />
+                  <span className={profile.college ? "text-white" : "text-zinc-600 italic"}>{profile.college || "Not set"}</span>
+                </div>
+              )}
             </div>
 
-            {/* UPI ID (read-only always) */}
+            {/* UPI ID */}
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1">UPI ID <Lock size={8} className="text-zinc-600" /></label>
-              <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                <Wallet size={16} className="text-zinc-500 shrink-0" />
-                <span className={profile.upi_id ? "text-white" : "text-zinc-600 italic"}>{profile.upi_id || "Not set"}</span>
-              </div>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1">
+                UPI ID {profile.upi_id && <Lock size={8} className="text-zinc-600" />}
+              </label>
+              {isEditing && !profile.upi_id ? (
+                <input
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  value={editUpiId}
+                  onChange={(e) => setEditUpiId(e.target.value)}
+                  placeholder="UPI ID (e.g. name@oksbi)"
+                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/60 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
+                />
+              ) : (
+                <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
+                  <Wallet size={16} className="text-zinc-500 shrink-0" />
+                  <span className={profile.upi_id ? "text-white" : "text-zinc-600 italic"}>{profile.upi_id || "Not set"}</span>
+                </div>
+              )}
             </div>
 
             {/* Email (read-only) */}

@@ -139,7 +139,7 @@ export default function ApplicantsPage() {
 
       if (json.paymentSessionId === "fake_session_123") {
         console.log("DEV MOCK: Bypassing Cashfree Checkout SDK & redirecting to verify");
-        window.location.href = `/gig/${id}?order_id=${json.orderId}&order_token=fake_token`;
+        window.location.href = `/gig/${id}?payment=verify&order_id=${json.orderId}&worker_id=${workerId}`;
         return;
       }
 
