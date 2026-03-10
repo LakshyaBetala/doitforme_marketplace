@@ -11,11 +11,11 @@ type CollegeGroup = {
 
 export const COLLEGES: string[] = [
     // --- PRIMARY MARKET (TOP OF LIST) ---
-    "SRM Institute of Science and Technology (Kattankulathur)",
-    "SRM Institute of Science and Technology (Ramapuram)",
-    "SRM Institute of Science and Technology (Vadapalani)",
-    "SRM Institute of Science and Technology (NCR)",
-    "SRM University AP",
+    "SRM University (Kattankulathur)",
+    "SRM University (Ramapuram)",
+    "SRM University (Vadapalani)",
+    "SRM University (NCR)",
+    "SRM University (AP)",
     "VIT Vellore",
     "VIT Chennai",
 
@@ -125,9 +125,9 @@ export default function UniversitySelect({ value, onChange }: Props) {
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base flex justify-between items-center cursor-pointer hover:border-[#8825F5]/50 focus:border-[#8825F5] focus:outline-none focus:ring-1 focus:ring-[#8825F5] transition-all group shadow-sm text-left"
             >
-                <div className="flex items-center gap-3 truncate pr-4">
+                <div className="flex items-center gap-3 pr-4 flex-1 overflow-hidden">
                     <Building2 size={18} className="text-white/40 group-hover:text-brand-purple shrink-0 transition-colors" />
-                    <span className={`truncate ${value ? "text-white font-medium" : "text-white/40"}`}>
+                    <span className={`line-clamp-2 text-left leading-tight ${value ? "text-white font-medium" : "text-white/40"}`}>
                         {value || "Search for your college..."}
                     </span>
                 </div>
@@ -179,11 +179,11 @@ export default function UniversitySelect({ value, onChange }: Props) {
                                                     setSearch("");
                                                 }}
                                                 className={`w-full text-left px-4 py-3 rounded-xl text-sm md:text-base cursor-pointer flex items-center justify-between transition-all group ${value === col
-                                                        ? 'bg-[#8825F5]/20 text-white font-bold border border-[#8825F5]/30'
-                                                        : 'text-white/70 hover:bg-white/5 hover:text-white border border-transparent'
+                                                    ? 'bg-[#8825F5]/20 text-white font-bold border border-[#8825F5]/30'
+                                                    : 'text-white/70 hover:bg-white/5 hover:text-white border border-transparent'
                                                     }`}
                                             >
-                                                <span className="truncate pr-4">{col}</span>
+                                                <span className="text-left break-words pr-4 leading-tight">{col}</span>
                                                 {value === col && (
                                                     <div className="w-5 h-5 rounded-full bg-[#8825F5] flex items-center justify-center shrink-0">
                                                         <Check size={12} className="text-white" strokeWidth={3} />
