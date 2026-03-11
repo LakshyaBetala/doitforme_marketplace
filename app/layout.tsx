@@ -4,7 +4,8 @@ import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 import RealtimeListener from "@/components/RealtimeListener";
-import NotificationManager from "@/components/NotificationManager"; // Request notification permission
+import NotificationManager from "@/components/NotificationManager";
+import { SpeedInsights } from "@vercel/speed-insights/next"// Request notification permission
 
 export const metadata: Metadata = {
   title: "DoItForMe - Students Helping Students",

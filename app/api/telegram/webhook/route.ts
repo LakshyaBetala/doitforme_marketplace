@@ -2,12 +2,23 @@ import { NextResponse } from 'next/server';
 import { createClient } from "@supabase/supabase-js";
 import { sendTelegramAlert } from '@/lib/telegram';
 
+export async function GET() {
+    return NextResponse.json({ 
+        status: "Online", 
+        message: "Telegram Webhook is listening for POST requests." 
+    });
+}
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const message = body.message;
-
-        if (!message || !message.text) return NextResponse.json({ ok: true });
+        
+        // Telegram might send updates instead of messages (e.g. edited_message, callback_query)
+        const message = body.message || body.edited_message;
+        
+        if (!message || !message.text || !message.chat || !message.chat.id) {
+            return NextResponse.json({ ok: true });
+        }
 
         const text = message.text;
         const chatId = message.chat.id.toString();
@@ -15,9 +26,8 @@ export async function POST(req: Request) {
         // Check if it's the start command with the UUID payload
         if (text.startsWith('/start ')) {
             const userId = text.split(' ')[1];
-
             // Validate UUID length/format to prevent injection
-            if (userId.length === 36) {
+            if (userId && userId.length === 36) {
                 // We use Service Role because this is a server-to-server webhook
                 const supabaseAdmin = createClient(
                     process.env.NEXT_PUBLIC_SUPABASE_URL!,
