@@ -83,7 +83,7 @@ export default function OnboardingPage() {
         <div className="flex items-center justify-center min-h-[100dvh] p-4 md:p-6 bg-[#0B0B11] text-white relative overflow-hidden">
 
             {/* Background blobs */}
-            <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+            <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 hidden md:block">
                 <div className="absolute w-[40rem] h-[40rem] bg-[#8825F5]/20 blur-[100px] rounded-full -top-40 -left-40 animate-blob will-change-transform" />
                 <div className="absolute w-[30rem] h-[30rem] bg-[#0097FF]/20 blur-[100px] rounded-full top-[30%] -right-20 animate-blob animation-delay-2000 will-change-transform" />
             </div>

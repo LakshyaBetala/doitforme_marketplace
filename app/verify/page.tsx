@@ -78,12 +78,16 @@ function VerifyContent() {
     if (e.key === "ArrowRight" && idx < 5) focusInput(idx + 1);
   };
 
-  // --- FIX: Added e.preventDefault() for clean pasting ---
+  // --- FIX: Added extraction of digits for clean pasting ---
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault(); // Prevents the browser from filling the first input with the whole string
     const paste = e.clipboardData.getData("text");
-    if (!/^[0-9]+$/.test(paste)) return;
-    const chars = paste.split("").slice(0, 6);
+    
+    // Extract only digits from the pasted text
+    const digitsOnly = paste.replace(/\D/g, "");
+    if (!digitsOnly) return;
+    
+    const chars = digitsOnly.split("").slice(0, 6);
     setDigits((prev) => {
       const next = [...prev];
       for (let i = 0; i < chars.length; i++) next[i] = chars[i];

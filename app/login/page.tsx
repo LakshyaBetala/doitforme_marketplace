@@ -10,7 +10,7 @@ import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 // --- BACKGROUND COMPONENT ---
 function BackgroundBlobs() {
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 hidden md:block">
       <div className="absolute w-[40rem] h-[40rem] bg-[#8825F5]/20 blur-[100px] rounded-full -top-40 -left-40 animate-blob will-change-transform" />
       <div className="absolute w-[30rem] h-[30rem] bg-[#0097FF]/20 blur-[100px] rounded-full top-[30%] -right-20 animate-blob animation-delay-2000 will-change-transform" />
       <div className="absolute w-[26rem] h-[26rem] bg-[#D31CE7]/10 blur-[100px] rounded-full bottom-0 left-1/2 transform -translate-x-1/2 animate-blob animation-delay-4000 will-change-transform" />
