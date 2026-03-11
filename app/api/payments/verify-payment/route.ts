@@ -93,7 +93,7 @@ export async function POST(req: Request) {
 
     // 5. Create Escrow Record (The "Liability" Ledger)
     // Fetch Poster ID for Escrow
-    const { data: gig } = await supabaseAdmin.from('gigs').select('poster_id').eq('id', gigId).single();
+    const { data: gig } = await supabaseAdmin.from('gigs').select('title, poster_id').eq('id', gigId).single();
     if (!gig) throw new Error("Gig not found");
 
     const amountHeld = basePrice + deposit;
@@ -160,6 +160,26 @@ export async function POST(req: Request) {
       .neq("worker_id", workerId);
 
     if (rejectError) console.error("Error rejecting other applications:", rejectError);
+
+    // --- TELEGRAM NOTIFICATION TO WORKER ---
+    try {
+      const { data: worker } = await supabaseAdmin
+        .from('users')
+        .select('telegram_chat_id')
+        .eq('id', workerId)
+        .single();
+
+      if (worker?.telegram_chat_id) {
+        const { sendTelegramAlert } = await import('@/lib/telegram');
+        await sendTelegramAlert(
+          worker.telegram_chat_id,
+          `🎉 <b>You've been hired!</b>\nYour offer for <i>${gig.title}</i> was just accepted and funds are secured in escrow.\n<a href="https://doitforme.in/gig/${gigId}">View Gig</a>`
+        );
+      }
+    } catch (e) {
+      console.error("Telegram notification failed:", e);
+    }
+    // ---------------------------------------
 
     return NextResponse.json({ success: true, message: "Escrow funded and worker assigned successfully" });
 

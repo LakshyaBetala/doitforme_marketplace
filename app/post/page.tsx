@@ -190,8 +190,24 @@ export default function PostGigWizard() {
         created_at: new Date().toISOString()
       };
 
-      const { error: dbError } = await supabase.from("gigs").insert(payload);
+      const { data: newGig, error: dbError } = await supabase.from("gigs").insert(payload).select('id').single();
       if (dbError) throw dbError;
+
+      // --- ASYNC TELEGRAM BROADCAST PING ---
+      if (newGig?.id && payload.category) {
+        fetch("/api/telegram/broadcast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gigId: newGig.id,
+            category: payload.category,
+            title: payload.title,
+            price: payload.price,
+            posterId: payload.poster_id
+          })
+        }).catch(err => console.error("Telegram broadcast failed to trigger:", err));
+      }
+      // -------------------------------------
 
       store.reset(); // clear drafts
       toast.success("Gig posted successfully!");

@@ -10,10 +10,10 @@ import {
   User, Mail, ShieldCheck, ShieldAlert, Star, Briefcase,
   Loader2, Wallet, Calendar, CheckCircle2,
   Phone, GraduationCap, ArrowLeft, Edit2, Check, X,
-  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock
+  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock, Send
 } from "lucide-react";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
-
+import TelegramLinkButton from "@/components/TelegramLinkButton";
 
 export default function ProfilePage() {
   const supabase = supabaseBrowser();
@@ -616,6 +616,13 @@ export default function ProfilePage() {
                 {isEditing && <span className="text-[9px] text-zinc-600 font-normal normal-case">Select 3-5 ({editPreferences.length}/5)</span>}
               </label>
 
+              <div className="p-3 bg-brand-purple/10 border border-brand-purple/20 rounded-xl flex gap-3 items-start">
+                <Zap className="w-4 h-4 text-brand-purple mt-0.5 shrink-0" />
+                <p className="text-[11px] text-zinc-300 leading-relaxed">
+                  <span className="font-bold text-white">Why pick interests?</span> When someone posts a new gig matching your interests, we instantly notify you so you get first dibs. <b>Connect Telegram below to get these alerts directly on your phone!</b>
+                </p>
+              </div>
+
               {isEditing ? (
                 <div className="flex flex-wrap gap-2">
                   {PREFERENCE_OPTIONS.map(cat => (
@@ -763,6 +770,22 @@ export default function ProfilePage() {
             </div>
           </section>
         )}
+
+        {/* Telegram Notifications Section */}
+        <section className="scroll-mt-24 rounded-[28px] md:rounded-[32px] border border-[#0088cc]/20 bg-[#121217] p-6 md:p-8 relative overflow-hidden group hover:border-[#0088cc]/40 transition-colors">
+          <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#0088cc]/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-[#0088cc]/10 transition-all"></div>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10 w-full text-center md:text-left">
+            <div className="flex-1 max-w-sm">
+              <h3 className="text-lg font-black text-white flex items-center gap-2 justify-center md:justify-start">
+                <Send size={20} className="text-[#0088cc]" /> Telegram Alerts
+              </h3>
+              <p className="text-xs text-zinc-400 mt-1">Get instant push notifications for direct messages and gig matches completely free.</p>
+            </div>
+            <div className="w-full md:w-auto min-w-[280px]">
+              <TelegramLinkButton userId={profile.id} isLinked={!!profile.telegram_chat_id} />
+            </div>
+          </div>
+        </section>
 
         {/* Financials & Reviews Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">

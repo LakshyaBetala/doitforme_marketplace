@@ -85,6 +85,32 @@ export async function POST(req: Request) {
             // Don't fail the request, as the application was created
         }
 
+        // --- TELEGRAM NOTIFICATION ---
+        try {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabaseAdmin = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!
+            );
+
+            const { data: poster } = await supabaseAdmin
+                .from('users')
+                .select('telegram_chat_id')
+                .eq('id', gig.poster_id)
+                .single();
+
+            if (poster?.telegram_chat_id) {
+                const { sendTelegramAlert } = await import('@/lib/telegram');
+                await sendTelegramAlert(
+                    poster.telegram_chat_id,
+                    `📄 <b>New Offer / Application!</b>\nSomeone just made an offer on your listing: <i>${gig.title}</i>.\n<a href="https://doitforme.in/gig/${gigId}/applicants">Review Offer</a>`
+                );
+            }
+        } catch (e) {
+            console.error("Telegram notification failed:", e);
+        }
+        // ----------------------------
+
         return NextResponse.json({ success: true });
 
     } catch (error: any) {

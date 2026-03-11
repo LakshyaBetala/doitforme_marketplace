@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     // 3. Fetch Gig to Derive Receiver
     const { data: gig, error: gigError } = await supabase
       .from('gigs')
-      .select('status, poster_id, assigned_worker_id, listing_type, market_type')
+      .select('title, status, poster_id, assigned_worker_id, listing_type, market_type')
       .eq('id', gigId)
       .single();
 
@@ -154,6 +154,35 @@ export async function POST(req: Request) {
       .single();
 
     if (insertError) throw insertError;
+
+    // --- TELEGRAM NOTIFICATION ---
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
+      const { data: receiver } = await supabaseAdmin
+        .from('users')
+        .select('telegram_chat_id')
+        .eq('id', receiverId)
+        .single();
+        
+      if (receiver?.telegram_chat_id) {
+        const { sendTelegramAlert } = await import('@/lib/telegram');
+        // Chat room ID is gigId_workerId
+        const workerId = isPoster ? receiverId : user.id;
+        const chatLink = `https://doitforme.in/messages?chat=${gigId}_${workerId}`;
+        await sendTelegramAlert(
+          receiver.telegram_chat_id,
+          `💬 <b>New Message!</b>\nYou received a new message regarding a gig: <i>${gig.title}</i>.\n<a href="${chatLink}">Click to reply</a>`
+        );
+      }
+    } catch (e) {
+      console.error("Telegram notification failed:", e);
+    }
+    // ----------------------------
 
     return NextResponse.json({ success: true, message: msg });
 

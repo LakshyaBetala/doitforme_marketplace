@@ -123,19 +123,25 @@ export async function POST(req: Request) {
 
         if (escrowError) console.error("Escrow setup warning:", escrowError);
 
-        // 4. CREATE CHAT (Conversation)
-        // Check if exists first? Or just create.
-        // Assuming 'conversations' table or whatever the chat system uses.
-        // Based on previous contexts, it seems we use a 'conversations' table with participants.
-        // Let's try to find or create a conversation.
+        // --- TELEGRAM NOTIFICATION TO WORKER ---
+        try {
+            const { data: worker } = await supabaseAdmin
+                .from('users')
+                .select('telegram_chat_id')
+                .eq('id', application.worker_id)
+                .single();
 
-        // *Optimistic approach*: Create a new conversation for this specific gig interaction if your chat supports it.
-        // Use a trusted RPC or just insert if standard. 
-        // For simplicity in this step, I'll rely on the frontend to "start" the chat, 
-        // OR I can insert a system message if I know the schema.
-        // Migration 20260215_fix_chat_and_rls.sql might have schema.
-        // I will SKIP clear chat creation here to avoid breaking it if I don't know the exact schema, 
-        // but I will return the success so the FRONTEND can redirect to chat.
+            if (worker?.telegram_chat_id) {
+                const { sendTelegramAlert } = await import('@/lib/telegram');
+                await sendTelegramAlert(
+                    worker.telegram_chat_id,
+                    `🎉 <b>Offer Accepted!</b>\nYou have been chosen for <i>${gig.title}</i>.\n<a href="https://doitforme.in/gig/${gig.id}">View Details</a>`
+                );
+            }
+        } catch (e) {
+            console.error("Telegram notification failed:", e);
+        }
+        // ---------------------------------------
 
         return NextResponse.json({ success: true, gigId: gig.id, workerId: application.worker_id });
 
