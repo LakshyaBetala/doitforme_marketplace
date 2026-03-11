@@ -32,6 +32,9 @@ export default function Dashboard() {
   // User Preferences Onboarding
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
+  // Unread messages indicator
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+
   // Referral state
   const [referralCode, setReferralCode] = useState("");
   const [pointsBalance, setPointsBalance] = useState(0);
@@ -48,6 +51,16 @@ export default function Dashboard() {
       if (authUser) {
         const { data: dbUser } = await supabase.from("users").select("*").eq("id", authUser.id).single();
         setUser({ ...authUser, user_metadata: { ...authUser.user_metadata, ...dbUser } });
+
+        // Check for unread messages (received in last 24h, not sent by me)
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { data: unread } = await supabase
+          .from("messages")
+          .select("id")
+          .eq("receiver_id", authUser.id)
+          .gt("created_at", oneDayAgo)
+          .limit(1);
+        setHasUnreadMessages((unread?.length || 0) > 0);
 
         // Show preferences modal if KYC verified but no preferences
         if (dbUser?.kyc_verified && (!dbUser?.preferences || dbUser.preferences.length === 0)) {
@@ -187,7 +200,7 @@ export default function Dashboard() {
 
           <button onClick={() => router.push('/messages')} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors relative group">
             <MessageSquare size={18} />
-            <div className="absolute top-2 right-2 w-2 h-2 bg-brand-purple rounded-full"></div>
+            {hasUnreadMessages && <div className="absolute top-2 right-2 w-2 h-2 bg-brand-purple rounded-full"></div>}
           </button>
 
           <div className="h-6 w-px bg-[#1E293B] mx-1 md:mx-2"></div>

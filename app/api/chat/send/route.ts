@@ -107,7 +107,7 @@ export async function POST(req: Request) {
       if (countError) throw countError;
 
       // Dynamic Limits based on Listing Type and Market Type
-      let limit = 2; // Default for HUSTLE
+      let limit = 5; // Default for HUSTLE
 
       if (gig.listing_type === 'MARKET') {
         limit = 10; // Unified Limit for V6 (Sell, Rent, Request)

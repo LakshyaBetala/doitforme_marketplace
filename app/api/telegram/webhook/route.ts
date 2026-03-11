@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { createClient } from "@supabase/supabase-js";
 
+// Force Vercel to treat this as a dynamic serverless function, never cache it
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 async function sendTG(chatId: string, text: string) {

@@ -29,6 +29,9 @@ export default function ChatPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+    // Send cooldown to prevent double-sending
+    const [isSending, setIsSending] = useState(false);
+
     // Offer State
     const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
     const [offerAmount, setOfferAmount] = useState("");
@@ -207,7 +210,7 @@ export default function ChatPage() {
 
                 if (!isPoster && isPreAgreement) {
                     // Applicant Logic
-                    const limit = gig.listing_type === 'MARKET' ? 10 : 2;
+                    const limit = gig.listing_type === 'MARKET' ? 10 : 5;
                     setMessageLimit(limit);
 
                     // Recalculate isLimitReached with the correct count
@@ -270,12 +273,14 @@ export default function ChatPage() {
 
 
     // 4. Send Message Logic
-    // 4. Send Message Logic
     const sendMessage = async (e?: React.FormEvent, type: 'text' | 'image' | 'offer' = 'text', contentUrl?: string, amount?: number) => {
         if (e) e.preventDefault();
+        if (isSending) return; // Prevent double-send
 
         const text = contentUrl || newMessage.trim();
         if ((!text && type === 'text') || !user || !activeChat || (isLimitReached && type !== 'image')) return;
+
+        setIsSending(true);
 
         const [gigId, otherUserId] = activeChat.split('_');
         if (type === 'text') setNewMessage(""); // Optimistic clear
@@ -339,6 +344,8 @@ export default function ChatPage() {
         } catch (err: any) {
             console.error("Send Error:", err);
             toast.error("Failed to send message. Please try again.");
+        } finally {
+            setIsSending(false);
         }
     };
 
@@ -459,7 +466,7 @@ export default function ChatPage() {
                                     <div className="flex justify-between items-baseline mb-1">
                                         <h3 className="font-semibold text-white truncate">{chat.otherUser.name}</h3>
                                         <span className="text-[10px] text-white/50 ml-2 shrink-0">
-                                            {new Date(chat.lastMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            {formatSmartDate(chat.lastMessage.created_at)}
                                         </span>
                                     </div>
                                     <p className="text-sm text-white/50 truncate pr-4 flex items-center gap-1">
@@ -590,7 +597,7 @@ export default function ChatPage() {
                                                     </div>
                                                 )}
                                                 <div className="px-4 py-2 text-[9px] text-right opacity-30 font-mono">
-                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {formatSmartDate(msg.created_at)}
                                                 </div>
                                             </div>
                                         ) : (
@@ -613,7 +620,7 @@ export default function ChatPage() {
                                                     msg.content
                                                 )}
                                                 <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-white/50'}`}>
-                                                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {formatSmartDate(msg.created_at)}
                                                 </div>
                                             </div>
                                         )}
@@ -687,7 +694,7 @@ export default function ChatPage() {
                                 />
                                 <button
                                     type="submit"
-                                    disabled={!newMessage.trim() || isLimitReached}
+                                    disabled={!newMessage.trim() || isLimitReached || isSending}
                                     className={`p-3 bg-[#8825F5] hover:bg-[#7b1dd1] disabled:opacity-50 disabled:scale-95 text-white rounded-full shadow-lg shadow-[#8825F5]/20 transition-all ${isLimitReached ? 'grayscale opacity-30' : ''}`}
                                 >
                                     <Send size={18} className="translate-x-0.5" />
@@ -717,4 +724,20 @@ export default function ChatPage() {
 
         </div>
     );
+}
+
+function formatSmartDate(dateString: string) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    const isToday = date.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+    
+    if (isToday) return time;
+    if (isYesterday) return `Yesterday, ${time}`;
+    return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
 }
