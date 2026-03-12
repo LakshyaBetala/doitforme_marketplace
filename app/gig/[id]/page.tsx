@@ -139,7 +139,7 @@ export default function GigDetailPage() {
 
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
   // Handshake State
   const [handshakeCode, setHandshakeCode] = useState<string | null>(null);
@@ -996,14 +996,16 @@ export default function GigDetailPage() {
                 <p className="text-4xl font-mono font-bold text-white tracking-tighter">
                   ₹{gig.price}
                 </p>
-                <div className="mt-2 flex items-center gap-1 text-xs text-white/60 group relative cursor-help w-fit">
-                  <span>+ ₹{Math.floor(gig.price * 0.02)} Platform Fee</span>
-                  <HelpCircle size={12} className="text-white/60" />
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 border border-white/10 rounded-lg text-[10px] text-white/80 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
-                    Includes 2% Gateway Security & Escrow Protection. <br /> (7.5% Rate for Campus Pros).
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/90"></div>
+                {!isMarket && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-white/60 group relative cursor-help w-fit">
+                    <span>+ ₹{Math.floor(gig.price * 0.02)} Platform Fee</span>
+                    <HelpCircle size={12} className="text-white/60" />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-black/90 border border-white/10 rounded-lg text-[10px] text-white/80 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-center">
+                      Includes 2% Gateway Security & Escrow Protection. <br /> (7.5% Rate for Campus Pros).
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/90"></div>
+                    </div>
                   </div>
-                </div>
+                )}
                 {isMarket && gig.market_type === "RENT" && (
                   <div className="mt-2 pt-2 border-t border-white/10">
                     <p className="text-xs text-white/60 uppercase">Deposit</p>
@@ -1163,7 +1165,7 @@ export default function GigDetailPage() {
                     }
 
                     return (
-                      <div key={i} className="min-w-full h-full relative snap-center" onClick={() => setSelectedImage(url)}>
+                      <div key={i} className="min-w-full h-full relative snap-center cursor-pointer" onClick={() => setSelectedImageIndex(i)}>
                         <Image src={url} alt={`Image ${i + 1}`} fill className="object-cover" />
                       </div>
                     )
@@ -1520,15 +1522,74 @@ export default function GigDetailPage() {
 
 
 
-      {/* Lightbox */}
-      {selectedImage && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
-          <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
-          <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
-            <Image src={selectedImage} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
+      {/* Lightbox - Scrollable Multi-Image Gallery */}
+      {selectedImageIndex !== null && gig.images && gig.images.length > 0 && (() => {
+        const imageUrls = gig.images
+          .filter((path: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(path))
+          .map((path: string) => supabase.storage.from("gig-images").getPublicUrl(path).data.publicUrl);
+        const currentIndex = Math.min(selectedImageIndex, imageUrls.length - 1);
+        const goNext = () => setSelectedImageIndex(prev => prev !== null ? Math.min(prev + 1, imageUrls.length - 1) : 0);
+        const goPrev = () => setSelectedImageIndex(prev => prev !== null ? Math.max(prev - 1, 0) : 0);
+
+        return (
+          <div
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+            onClick={() => setSelectedImageIndex(null)}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowRight') goNext();
+              else if (e.key === 'ArrowLeft') goPrev();
+              else if (e.key === 'Escape') setSelectedImageIndex(null);
+            }}
+            tabIndex={0}
+            onTouchStart={(e) => {
+              const startX = e.touches[0].clientX;
+              const el = e.currentTarget;
+              el.dataset.touchStartX = String(startX);
+            }}
+            onTouchEnd={(e) => {
+              const startX = Number(e.currentTarget.dataset.touchStartX || 0);
+              const endX = e.changedTouches[0].clientX;
+              const diff = startX - endX;
+              if (Math.abs(diff) > 50) {
+                if (diff > 0) goNext();
+                else goPrev();
+              }
+            }}
+          >
+            <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-20" onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(null); }}>
+              <X className="w-8 h-8" />
+            </button>
+
+            {imageUrls.length > 1 && currentIndex > 0 && (
+              <button className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-20" onClick={(e) => { e.stopPropagation(); goPrev(); }}>
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {imageUrls.length > 1 && currentIndex < imageUrls.length - 1 && (
+              <button className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-20" onClick={(e) => { e.stopPropagation(); goNext(); }}>
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+
+            <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+              <Image src={imageUrls[currentIndex]} alt={`Image ${currentIndex + 1} of ${imageUrls.length}`} fill className="object-contain" quality={100} />
+            </div>
+
+            {imageUrls.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                {imageUrls.map((_: string, i: number) => (
+                  <button
+                    key={i}
+                    onClick={(e) => { e.stopPropagation(); setSelectedImageIndex(i); }}
+                    className={`w-2.5 h-2.5 rounded-full transition-all ${i === currentIndex ? 'bg-white scale-125' : 'bg-white/40 hover:bg-white/60'}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
     </div>
   );

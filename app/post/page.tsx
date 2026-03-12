@@ -210,7 +210,7 @@ export default function PostGigWizard() {
       // -------------------------------------
 
       store.reset(); // clear drafts
-      toast.success("Gig posted successfully!");
+      toast.success(listingType === 'MARKET' ? "Item listed! Your listing is now live." : "Hustle posted! Your gig is now live.");
       router.push("/dashboard");
 
     } catch (err: any) {
@@ -400,7 +400,12 @@ export default function PostGigWizard() {
 
                     <button onClick={() => fileInputRef.current?.click()} className="w-24 h-24 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/30 hover:bg-white/10 flex flex-col items-center justify-center shrink-0 transition-all group">
                       <ImageIcon className="w-6 h-6 text-white/60 group-hover:text-white mb-2" />
-                      <span className="text-[10px] text-white/60 group-hover:text-white font-bold uppercase tracking-widest">Upload</span>
+                      <span className="text-[10px] text-white/60 group-hover:text-white font-bold uppercase tracking-widest">Gallery</span>
+                    </button>
+
+                    <button onClick={() => cameraInputRef.current?.click()} className="w-24 h-24 rounded-2xl border-2 border-dashed border-white/10 hover:border-brand-purple/40 hover:bg-brand-purple/10 flex flex-col items-center justify-center shrink-0 transition-all group">
+                      <Camera className="w-6 h-6 text-white/60 group-hover:text-brand-purple mb-2" />
+                      <span className="text-[10px] text-white/60 group-hover:text-brand-purple font-bold uppercase tracking-widest">Camera</span>
                     </button>
 
                     {imagePreviews.map((src, i) => {
