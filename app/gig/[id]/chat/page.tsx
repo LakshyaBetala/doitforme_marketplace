@@ -110,7 +110,7 @@ export default function GigChatPage() {
   const isEscrowSecured = gig?.escrow_status === "HELD" || gig?.escrow_status === "RELEASED";
 
   // Dynamic Limit
-  const MESSAGE_LIMIT = gig?.listing_type === 'MARKET' ? 5 : 2;
+  const MESSAGE_LIMIT = gig?.listing_type === 'MARKET' ? 10 : 5;
   const messageCount = messages.filter(m => !m.pending && m.sender_id === user?.id).length;
 
   // Hard Lock: Limit Messages if not secured

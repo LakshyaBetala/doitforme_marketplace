@@ -193,7 +193,7 @@ export default function ChatRoomPage() {
           // Fetch poster details for header if needed, but we have gig.
 
           // Set Limit Logic
-          let limit = 2; // Default
+          let limit = 5; // Default (Hustle)
           if (gigData.listing_type === 'MARKET') {
             limit = 10; // Unified V6 Limit
           }
