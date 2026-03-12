@@ -26,20 +26,26 @@ export default function VerifyIDPage() {
   const [status, setStatus] = useState<"idle" | "success">("idle");
   const [error, setError] = useState("");
   
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Redirect if already verified
+  // Redirect if already verified, or show "Under Review" if already uploaded
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase
           .from("users")
-          .select("kyc_verified")
+          .select("kyc_verified, id_card_url")
           .eq("id", user.id)
           .single();
         
-        if (data?.kyc_verified) router.push("/profile");
+        if (data?.kyc_verified) {
+          router.push("/profile");
+        } else if (data?.id_card_url) {
+          // Already uploaded but not yet verified
+          setAlreadySubmitted(true);
+        }
       }
     })();
   }, [supabase, router]);
@@ -136,6 +142,26 @@ export default function VerifyIDPage() {
           <h1 className="text-3xl font-bold text-white">Upload Received</h1>
           <div className="space-y-2 text-white/60">
             <p>Your ID is now <strong>Pending Review</strong>.</p>
+            <p className="text-sm">Our team will verify it shortly. Approvals typically take 1-12 hours.</p>
+          </div>
+          <Link href="/profile" className="inline-block text-brand-purple hover:text-white transition-colors font-bold mt-4">
+            Return to Profile
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (alreadySubmitted) {
+    return (
+      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
+        <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500 max-w-md">
+          <div className="w-24 h-24 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto border border-amber-500/20">
+            <Clock className="w-12 h-12 text-amber-400 animate-pulse" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">Under Review</h1>
+          <div className="space-y-2 text-white/60">
+            <p>Your Student ID has already been submitted and is <strong className="text-amber-400">pending review</strong>.</p>
             <p className="text-sm">Our team will verify it shortly. Approvals typically take 1-12 hours.</p>
           </div>
           <Link href="/profile" className="inline-block text-brand-purple hover:text-white transition-colors font-bold mt-4">

@@ -62,8 +62,8 @@ export default function Dashboard() {
           .limit(1);
         setHasUnreadMessages((unread?.length || 0) > 0);
 
-        // Show preferences modal if KYC verified but no preferences
-        if (dbUser?.kyc_verified && (!dbUser?.preferences || dbUser.preferences.length === 0)) {
+        // Show preferences modal if user has no preferences set
+        if (!dbUser?.preferences || dbUser.preferences.length === 0) {
           setShowPreferencesModal(true);
         }
 

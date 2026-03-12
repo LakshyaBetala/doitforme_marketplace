@@ -1,25 +1,43 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-const supabase = createClient(
+// Service role client for privileged DB writes
+const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
 // Redeem points — highlight a gig or use as platform credit
 export async function POST(req: Request) {
     try {
-        const { userId, type, amount, gigId } = await req.json();
+        const { type, amount, gigId } = await req.json();
 
-        if (!userId || !type || !amount) {
+        if (!type || !amount) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
+
+        // SECURITY: Authenticate the caller via cookie/header — NEVER trust userId from body
+        const cookieStore = await cookies();
+        const supabaseAuth = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { cookies: { getAll() { return cookieStore.getAll(); } } }
+        );
+
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const userId = user.id; // Server-verified user ID
 
         // 1. Check user's available (non-expired, non-redeemed) points
         const now = new Date().toISOString();
 
-        const { data: earnedPoints } = await supabase
+        const { data: earnedPoints } = await supabaseAdmin
             .from("points_transactions")
             .select("id, amount, expires_at")
             .eq("user_id", userId)
@@ -50,7 +68,7 @@ export async function POST(req: Request) {
             // Highlight the gig for 24 hours
             const highlightExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
-            const { error: gigErr } = await supabase
+            const { error: gigErr } = await supabaseAdmin
                 .from("gigs")
                 .update({
                     is_highlighted: true,
@@ -71,14 +89,14 @@ export async function POST(req: Request) {
 
             if (pt.amount <= remaining) {
                 // Fully consume this transaction
-                await supabase
+                await supabaseAdmin
                     .from("points_transactions")
                     .update({ redeemed: true })
                     .eq("id", pt.id);
                 remaining -= pt.amount;
             } else {
                 // Partially consume — update amount and create a new smaller record
-                await supabase
+                await supabaseAdmin
                     .from("points_transactions")
                     .update({ amount: pt.amount - remaining })
                     .eq("id", pt.id);
@@ -87,7 +105,7 @@ export async function POST(req: Request) {
         }
 
         // 4. Record the spend transaction
-        await supabase.from("points_transactions").insert({
+        await supabaseAdmin.from("points_transactions").insert({
             user_id: userId,
             amount: -amount,
             type: "SPEND",
@@ -96,7 +114,7 @@ export async function POST(req: Request) {
         });
 
         // 5. Update user's total balance
-        await supabase.rpc("increment_points", { uid: userId, pts: -amount });
+        await supabaseAdmin.rpc("increment_points", { uid: userId, pts: -amount });
 
         return NextResponse.json({
             success: true,
