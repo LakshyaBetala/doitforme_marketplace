@@ -91,6 +91,7 @@ export default function ChatRoomPage() {
   const channelRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   // 1. Load Data
   useEffect(() => {
@@ -258,9 +259,12 @@ export default function ChatRoomPage() {
 
 
   const sendMessage = async (txt?: string, type: 'text' | 'offer' | 'image' = 'text', amount?: number) => {
+    if (isSending) return; // Prevent double-send
     const textToSend = txt || input;
     // For offes, text might be empty
     if ((type === 'text' && !textToSend.trim()) || !currentUser) return;
+
+    setIsSending(true);
 
     // AI Safety Check (Client-Side)
     if (type === 'text') {
@@ -303,6 +307,8 @@ export default function ChatRoomPage() {
 
     } catch (e) {
       toast.error("Network error.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -765,7 +771,7 @@ export default function ChatRoomPage() {
               <button
                 key={i}
                 onClick={() => sendMessage(chip)}
-                disabled={!isPoster && msgCount >= msgLimit}
+                disabled={isSending || (!isPoster && msgCount >= msgLimit)}
                 className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition-colors disabled:opacity-50"
               >
                 {chip}
@@ -816,7 +822,7 @@ export default function ChatRoomPage() {
 
             <button
               onClick={() => sendMessage()}
-              disabled={!input.trim() || isUploading || ['completed', 'cancelled'].includes(gig.status)}
+              disabled={!input.trim() || isSending || isUploading || ['completed', 'cancelled'].includes(gig.status)}
               className="w-12 h-12 rounded-full bg-brand-purple hover:bg-brand-purple/90 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:hover:bg-brand-purple shrink-0 shadow-[0_0_20px_rgba(136,37,245,0.3)]"
             >
               <Send size={18} className="ml-1" />
