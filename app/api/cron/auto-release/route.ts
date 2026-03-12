@@ -9,13 +9,13 @@ const supabase = createClient(
 export async function GET(req: Request) {
   try {
     const secret = process.env.CRON_SECRET;
-    if (secret) {
-      const provided = req.headers.get("x-cron-secret");
-      if (!provided || provided !== secret) {
-        return NextResponse.json({ error: "Unauthorized cron invocation" }, { status: 401 });
-      }
+    const provided = req.headers.get("x-cron-secret");
+    if (!secret || !provided || provided !== secret) {
+      return NextResponse.json({ error: "Unauthorized cron invocation" }, { status: 401 });
     }
-  } catch (_) { }
+  } catch (_) {
+    return NextResponse.json({ error: "Auth check failed" }, { status: 401 });
+  }
 
   const details: Array<any> = [];
   let releasedCount = 0;

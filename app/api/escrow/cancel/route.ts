@@ -1,23 +1,40 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-const supabase = createClient(
+const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function POST(req: Request) {
   try {
-    const { gigId, posterId } = await req.json();
+    const { gigId } = await req.json();
 
-    if (!gigId || !posterId) {
+    if (!gigId) {
       return NextResponse.json(
-        { error: "Missing gigId/posterId" },
+        { error: "Missing gigId" },
         { status: 400 }
       );
     }
 
-    const { data: gig } = await supabase
+    // SECURITY: Authenticate caller via cookie
+    const cookieStore = await cookies();
+    const supabaseAuth = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return cookieStore.getAll(); } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const posterId = user.id; // Server-verified
+
+    const { data: gig } = await supabaseAdmin
       .from("gigs")
       .select("*")
       .eq("id", gigId)
@@ -36,7 +53,7 @@ export async function POST(req: Request) {
 
     // SCENARIO 1: Funds are held -> Request Cancellation (No immediate refund)
     if (gig.payment_status === "ESCROW_HELD") {
-      await supabase
+      await supabaseAdmin
         .from("gigs")
         .update({
           status: "cancellation_requested", // New status
@@ -53,7 +70,7 @@ export async function POST(req: Request) {
     }
 
     // SCENARIO 2: No funds held (Open) -> Immediate Cancel
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("gigs")
       .update({
         status: "cancelled",

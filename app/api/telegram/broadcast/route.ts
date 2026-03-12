@@ -1,9 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { sendTelegramAlert } from '@/lib/telegram';
 
 export async function POST(req: Request) {
     try {
+        // SECURITY: Authenticate caller — only logged-in users can trigger broadcasts
+        const cookieStore = await cookies();
+        const supabaseAuth = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { cookies: { getAll() { return cookieStore.getAll(); } } }
+        );
+
+        const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+        if (authError || !user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const { gigId, category, title, price, posterId } = await req.json();
 
         if (!gigId || !category) {
@@ -22,7 +37,7 @@ export async function POST(req: Request) {
             .select('telegram_chat_id, id')
             .contains('preferences', [category])
             .not('telegram_chat_id', 'is', null)
-            .neq('id', posterId);
+            .neq('id', posterId || user.id);
 
         if (error) {
             console.error("Error fetching matched users for broadcast:", error);
@@ -32,7 +47,7 @@ export async function POST(req: Request) {
         if (matchedUsers && matchedUsers.length > 0) {
             const message = `🚀 <b>New Match in ${category}</b>\n<b>${title}</b>\nBudget/Price: ₹${price}\n\n<a href="https://doitforme.in/gig/${gigId}">View Details</a>`;
             
-            // Send in parallel (in production, batch this or queue it to avoid rate limits 30 msg/sec)
+            // Send in parallel
             await Promise.allSettled(
                 matchedUsers.map(u => sendTelegramAlert(u.telegram_chat_id, message))
             );

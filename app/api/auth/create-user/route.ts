@@ -1,19 +1,33 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // 1. Extract upi_id from the request body
-    // This comes from the 'verify' page where we passed the metadata
-    const { id, email, name, phone, college, upi_id } = body;
+    const { email, name, phone, college, upi_id } = body;
 
-    if (!id || !email) {
-      return NextResponse.json({ error: "Missing ID or Email" }, { status: 400 });
+    // SECURITY: Authenticate caller via cookie — use session user ID, never trust body
+    const cookieStore = await cookies();
+    const supabaseAuth = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return cookieStore.getAll(); } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Validate UPI ID Format (Regex Check)
-    // This prevents bad data from entering the database early on.
+    const id = user.id; // Server-verified user ID
+
+    if (!email) {
+      return NextResponse.json({ error: "Missing Email" }, { status: 400 });
+    }
+
+    // Validate UPI ID Format
     if (upi_id) {
       const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
       if (!upiRegex.test(upi_id)) {
@@ -21,36 +35,28 @@ export async function POST(req: Request) {
       }
     }
 
-    // Initialize Admin Client (Bypasses RLS to ensure we can read/write everything)
+    // Admin Client (Bypasses RLS for user upsert operations)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // --- 3. FETCH EXISTING USER DATA ---
+    // Fetch existing user data
     const { data: existingUser } = await supabase
       .from("users")
       .select("*")
       .eq("id", id)
       .single();
 
-    // --- 4. PREPARE SMART DATA ---
-    // If user exists, keep their old data. Only overwrite if new data is sent (truthy).
-    // If user is new, use the defaults.
-
+    // Smart data: keep old, overwrite only if new data sent
     const finalName = name || existingUser?.name || email.split("@")[0];
     const finalPhone = phone || existingUser?.phone || null;
     const finalCollege = college || existingUser?.college || null;
-
-    // Preserve existing UPI if not provided in this update, otherwise use new one
-    // This is crucial: If they log in again later without sending UPI, we don't want to erase the old one.
     const finalUpi = upi_id || existingUser?.upi_id || null;
-
-    // Preserve verification status
     const finalKyc = existingUser?.kyc_verified || false;
 
-    // --- 5. UPSERT USER (With UPI ID) ---
+    // Upsert user (with verified ID from session)
     const { error: userError } = await supabase
       .from("users")
       .upsert({
@@ -59,7 +65,7 @@ export async function POST(req: Request) {
         name: finalName,
         phone: finalPhone,
         college: finalCollege,
-        upi_id: finalUpi, // <--- Storing the UPI ID here for Payouts
+        upi_id: finalUpi,
         kyc_verified: finalKyc,
         updated_at: new Date().toISOString(),
       })
@@ -71,8 +77,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: userError.message }, { status: 500 });
     }
 
-    // --- 6. AUTO-GENERATE REFERRAL CODE ---
-    // If user doesn't have a referral code yet, generate one
+    // Auto-generate referral code if missing
     if (!existingUser?.referral_code) {
       const { data: codeData } = await supabase.rpc("generate_referral_code");
       if (codeData) {
@@ -83,9 +88,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // --- 7. ENSURE WALLET EXISTS ---
-    // Wallets table is actively used by escrow release/refund RPCs,
-    // freeze/unfreeze operations, and the auto-release cron job.
+    // Ensure wallet exists
     const { error: walletError } = await supabase
       .from("wallets")
       .upsert(

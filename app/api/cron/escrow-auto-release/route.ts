@@ -6,7 +6,18 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET() {
+export async function GET(req: Request) {
+  // SECURITY: Fail closed — require CRON_SECRET
+  try {
+    const secret = process.env.CRON_SECRET;
+    const provided = req.headers.get("x-cron-secret");
+    if (!secret || !provided || provided !== secret) {
+      return NextResponse.json({ error: "Unauthorized cron invocation" }, { status: 401 });
+    }
+  } catch (_) {
+    return NextResponse.json({ error: "Auth check failed" }, { status: 401 });
+  }
+
   try {
     const now = new Date();
     const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

@@ -1,10 +1,3 @@
--- SECURITY FIX: Restrict which columns users can update on their own profile.
--- This prevents users from escalating their role to "admin",
--- modifying their points_balance, kyc_verified, rating, or other privileged fields.
---
--- INSTRUCTIONS: Run this SQL in the Supabase SQL Editor (Dashboard → SQL Editor → New query)
--- This replaces the existing "Users can update own profile" policy.
-
 -- Step 1: Drop the existing overly permissive UPDATE policy
 DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 
