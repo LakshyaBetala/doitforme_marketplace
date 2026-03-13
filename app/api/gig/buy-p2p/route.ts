@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         // FETCH GIG
         const { data: gig, error: gigError } = await supabaseAdmin
             .from("gigs")
-            .select("status, poster_id")
+            .select("status, poster_id, price")
             .eq("id", gigId)
             .single();
 
@@ -81,14 +81,14 @@ export async function POST(req: Request) {
             gig_id: gigId,
             worker_id: workerId,
             poster_id: gig.poster_id,
-            original_amount: 0,
-            amount_held: 0,
+            original_amount: gig.price || 0,
+            amount_held: gig.price || 0,
             platform_fee: 0,
             gateway_fee: 0,
             release_date: new Date().toISOString(),
             status: 'HELD',
             handshake_code: handshakeCode,
-            escrow_category: 'PROJECT'
+            escrow_category: 'MARKETPLACE'
         });
 
         if (escrowError) {

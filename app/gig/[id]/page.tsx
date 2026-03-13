@@ -683,7 +683,8 @@ export default function GigDetailPage() {
           navigator.vibrate([50, 30, 50, 30, 100]);
         }
         toast.success("Handshake Confirmed! Funds Released.");
-        window.location.reload();
+        setShowReviewModal(true); // Open rating modal automatically
+        // window.location.reload(); // Don't reload, let user rate
       } else {
         toast.error(data.error || "Verification Failed");
       }
@@ -1059,7 +1060,7 @@ export default function GigDetailPage() {
             </div>
             <textarea value={reviewText} onChange={(e) => setReviewText(e.target.value)} placeholder="Review the work..." className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 mb-6 h-32 outline-none text-white" />
             <button onClick={submitReview} disabled={isCompleting} className="w-full py-4 bg-brand-purple text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all">
-              {isCompleting ? <Loader2 className="animate-spin" /> : <CheckCircle className="w-5 h-5" />} Approve & Release Funds
+              {isCompleting ? <Loader2 className="animate-spin" /> : <CheckCircle className="w-5 h-5" />} {status === 'completed' ? 'Submit Rating' : 'Approve & Release Funds'}
             </button>
           </div>
         </div>
@@ -1284,11 +1285,16 @@ export default function GigDetailPage() {
                   <div className="text-center">
                     <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Secret Code</p>
                     <div className="flex justify-center gap-3">
-                      {(handshakeCode || "").split('').map((digit, i) => (
+                      {handshakeCode ? (handshakeCode || "").split('').map((digit, i) => (
                         <div key={i} className="w-12 h-16 flex items-center justify-center bg-[#1A1A24] border border-yellow-500/50 rounded-xl text-3xl font-mono font-bold text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
                           {digit}
                         </div>
-                      )) || <Loader2 className="animate-spin text-yellow-500" />}
+                      )) : (
+                        <div className="flex flex-col items-center gap-2">
+                           <Loader2 className="animate-spin text-yellow-500" />
+                           <span className="text-[10px] text-white/30">Generating Secure Code...</span>
+                        </div>
+                      )}
                     </div>
                     <p className="mt-4 text-[10px] text-white/50">Don't share online.</p>
                   </div>
@@ -1554,17 +1560,19 @@ export default function GigDetailPage() {
 
                       {(status === "assigned" || status === "delivered") && (
                         <>
-                          <button
-                            onClick={handleComplete}
-                            disabled={isCompleting}
-                            className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3 active:scale-[0.98]"
-                          >
-                            {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
-                              isMarket
-                                ? (gig.market_type === "RENT" ? "Confirm Return" : "Complete Deal")
-                                : "Mark as Completed"
-                            )}
-                          </button>
+                          {(!isMarket || !gig.is_physical) && (
+                            <button
+                              onClick={handleComplete}
+                              disabled={isCompleting}
+                              className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3 active:scale-[0.98]"
+                            >
+                              {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
+                                isMarket
+                                  ? (gig.market_type === "RENT" ? "Confirm Return" : "Complete Deal")
+                                  : "Mark as Completed"
+                              )}
+                            </button>
+                          )}
 
                           <button
                             onClick={handleCancel}
@@ -1646,27 +1654,7 @@ export default function GigDetailPage() {
                                   : "Complete the task and submit your work below."}
                             </p>
                           </div>
-                          {/* Submit Work ONLY for remote Hustle (not physical, not marketplace) */}
-                          {!isMarket && !gig.is_physical && (
-                            <button
-                              onClick={handleDeliver}
-                              disabled={isCompleting}
-                              className="w-full py-4 rounded-2xl bg-white hover:bg-zinc-200 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95"
-                            >
-                              {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Work"}
-                            </button>
-                          )}
-                          {/* Rent return button */}
-                          {isMarket && gig.market_type === "RENT" && (
-                            <button
-                              onClick={handleDeliver}
-                              disabled={isCompleting}
-                              className="w-full py-4 rounded-2xl bg-white hover:bg-zinc-200 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95"
-                            >
-                              {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Mark Item Returned"}
-                            </button>
-                          )}
-                        </div>
+                         </div>
                       )}
                     </div>
                   )}
