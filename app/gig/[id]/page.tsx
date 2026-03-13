@@ -1729,25 +1729,69 @@ export default function GigDetailPage() {
                       <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
                         <p className="text-sm text-white/60">
                           {isMarket 
-                            ? (gig.market_type === "RENT" ? "You are the Renter (Owner)" : "You are the Seller") 
+                            ? (gig.market_type === "RENT" ? "You are the Owner (Renter)" : "You are the Seller") 
                             : "You are the Poster of this hustle."}
                         </p>
                       </div>
 
                       {(status === "assigned" || status === "delivered") && (
                         <>
-                          {(!isMarket || !gig.is_physical) && (
-                            <button
-                              onClick={handleComplete}
-                              disabled={isCompleting}
-                              className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3 active:scale-[0.98]"
-                            >
-                              {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
-                                isMarket
-                                  ? (gig.market_type === "RENT" ? "Confirm Return" : "Complete Deal")
-                                  : "Mark as Completed"
-                              )}
-                            </button>
+                          {/* Buy/Sell: Seller enters OTP from buyer directly in action card */}
+                          {isMarket && (gig.market_type === "SELL" || gig.market_type === "REQUEST") ? (
+                            <div className="space-y-3">
+                              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
+                                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Step: Enter Buyer's Code</p>
+                                <p className="text-yellow-400/70 text-xs">Ask the buyer for their 4-digit code after they're satisfied with the item.</p>
+                              </div>
+                              <div className="flex justify-center gap-2">
+                                {(inputCode || ["", "", "", ""]).map((digit, i) => (
+                                  <input
+                                    key={i}
+                                    id={`action-digit-${i}`}
+                                    type="text"
+                                    inputMode="numeric"
+                                    maxLength={1}
+                                    value={digit}
+                                    onChange={(e) => {
+                                      const val = e.target.value.replace(/\D/g, "").slice(-1);
+                                      const newCode = [...inputCode];
+                                      newCode[i] = val;
+                                      setInputCode(newCode);
+                                      if (val && i < 3) document.getElementById(`action-digit-${i + 1}`)?.focus();
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Backspace" && !inputCode[i] && i > 0) {
+                                        document.getElementById(`action-digit-${i - 1}`)?.focus();
+                                      }
+                                    }}
+                                    className="w-14 h-16 text-center text-2xl font-mono font-bold bg-[#0B0B11] border-2 border-yellow-500/40 focus:border-yellow-500 rounded-xl text-yellow-400 outline-none transition-all"
+                                  />
+                                ))}
+                              </div>
+                              <button
+                                onClick={onVerifyHandshake}
+                                disabled={verifyingHandshake || inputCode.join("").length !== 4}
+                                className="w-full py-4 rounded-2xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(234,179,8,0.3)] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                              >
+                                {verifyingHandshake ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
+                                Confirm & Complete Deal
+                              </button>
+                            </div>
+                          ) : (
+                            /* Non-Buy/Sell seller actions */
+                            (!isMarket || !gig.is_physical) && (
+                              <button
+                                onClick={handleComplete}
+                                disabled={isCompleting}
+                                className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3 active:scale-[0.98]"
+                              >
+                                {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
+                                  isMarket
+                                    ? (gig.market_type === "RENT" ? "Confirm Return" : "Complete Deal")
+                                    : "Mark as Completed"
+                                )}
+                              </button>
+                            )
                           )}
 
                           <button
@@ -1793,11 +1837,29 @@ export default function GigDetailPage() {
                           )}
                         </button>
                       ) : (
-                        <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
-                          <p className="text-sm text-white/60">
-                            {status === "completed" ? "This listing is closed." : (isMarket ? "This item is currently in a deal." : "This hustle is currently assigned.")}
-                          </p>
-                        </div>
+                        /* Buyer (isWorker) in assigned Buy/Sell: show their OTP code */
+                        isWorker && isMarket && (gig.market_type === "SELL" || gig.market_type === "REQUEST") && handshakeCode && (status === "assigned" || status === "delivered") ? (
+                          <div className="space-y-3">
+                            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-center">
+                              <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Your Verification Code</p>
+                              <p className="text-yellow-400/70 text-xs">Show this to the Seller after you verify the item.</p>
+                            </div>
+                            <div className="flex justify-center gap-3">
+                              {(handshakeCode || "").split("").map((digit, i) => (
+                                <div key={i} className="w-14 h-16 flex items-center justify-center bg-[#0B0B11] border-2 border-yellow-500/50 rounded-xl text-3xl font-mono font-bold text-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.2)]">
+                                  {digit}
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-center text-[10px] text-white/40">Only share this after inspecting the item in person.</p>
+                          </div>
+                        ) : (
+                          <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
+                            <p className="text-sm text-white/60">
+                              {status === "completed" ? "This listing is closed." : (isMarket ? "This item is currently in a deal." : "This hustle is currently assigned.")}
+                            </p>
+                          </div>
+                        )
                       )}
 
                       {/* WORKER ACTIONS (RENT) */}
