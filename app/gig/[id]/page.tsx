@@ -289,12 +289,12 @@ export default function GigDetailPage() {
           setApplicantCount(apps?.length || 0);
         }
 
-        if (gigData.status === 'assigned' || gigData.escrow_status === 'HELD') {
+        if (gigData.status === 'assigned' || gigData.status === 'delivered' || gigData.escrow_status === 'HELD') {
           // Handshake code logic:
-          // Poster (isOwner === true) DISPLAYS the code.
-          // Worker (assigned_worker_id === user.id) INPUTS the code.
+          // For Buy/Sell (SELL): Buyer (worker) DISPLAYS code, Seller (poster) INPUTS it.
+          // For Physical Hustle: Poster (isOwner) DISPLAYS code, Worker INPUTS it.
           
-          let hCode = gigData.handshake_code; // Try gig table first (P2P sell)
+          let hCode = gigData.handshake_code; // Try gig table first (P2P sell — stored directly)
 
           if (!hCode) {
             const { data: escrowData } = await supabase
@@ -1404,8 +1404,11 @@ export default function GigDetailPage() {
           </div>
         )}
 
-        {/* HANDSHAKE SECTION — Physical Deals only */}
-        {handshakeCode && (status === 'assigned' || status === 'delivered') && (isOwner || isWorker) && gig.is_physical === true && (
+        {/* HANDSHAKE SECTION — Physical Hustle OR Buy/Sell Marketplace */}
+        {/* Physical Hustle: Poster shows code, Worker enters */}
+        {/* Buy/Sell: Buyer (worker) shows code, Seller (poster) enters */}
+        {handshakeCode && (status === 'assigned' || status === 'delivered') && (isOwner || isWorker) &&
+          (gig.is_physical === true || (isMarket && (gig.market_type === 'SELL' || gig.market_type === 'REQUEST'))) && (
           <div className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -1415,17 +1418,17 @@ export default function GigDetailPage() {
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">
                   {isMarket 
-                    ? (isOwner ? "Enter code from the Buyer" : "Provide this code to the Seller")
+                    ? (isOwner ? "Enter the code from the Buyer" : "Share this code with the Seller")
                     : (isOwner ? "Provide this code to the Hustler" : "Enter code from the Poster")}
                 </h3>
                 <p className="text-white/60 text-sm leading-relaxed mb-6">
                   {isMarket
                     ? (isOwner 
-                        ? "Ask the Buyer for the 4-digit code once they have verified the item and are satisfied. Entering this code releases the payment to you."
-                        : "Provide this code to the Seller only after you have physically verified the item and are ready to complete the transaction.")
+                        ? "The Buyer will show you a 4-digit code once they've verified the item and are satisfied. Enter that code here to confirm the deal and complete the transaction."
+                        : "Show this code to the Seller only after you have physically inspected the item and are fully satisfied. This completes the deal.")
                     : (isOwner 
-                        ? `To ensure safety, only share this code when you physically meet the Hustler and verify the work. Once they enter it, funds are released to them.`
-                        : `Ask the Poster for the 4-digit code when you meet and verify the task. Entering this code confirms completion and releases payment.`)}
+                        ? `Share this code with the Hustler in person after verifying the work. Once they enter it, funds are released to them.`
+                        : `Get the 4-digit code from the Poster when you meet to confirm task completion. Entering this code releases your payment.`)}
                 </p>
 
                 {/* ESCROW 3-STEP VISUAL */}
@@ -1448,7 +1451,9 @@ export default function GigDetailPage() {
               </div>
 
               <div className="bg-black/40 p-6 rounded-2xl border border-white/10 backdrop-blur-sm min-w-[280px]">
-                {(isMarket ? !isOwner : isOwner) ? (
+                {/* Buy/Sell: Buyer (worker) shows code, Seller (poster/owner) enters */}
+                {/* Hustle: Poster (owner) shows code, Worker enters */}
+                {(isMarket ? isWorker : isOwner) ? (
                   <div className="text-center">
                     <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Secret Code</p>
                     <div className="flex justify-center gap-3">
