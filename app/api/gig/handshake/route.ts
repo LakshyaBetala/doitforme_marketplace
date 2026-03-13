@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 export async function GET(req: Request) {
@@ -17,15 +18,9 @@ export async function GET(req: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            cookieStore.set({ name, value, ...options });
-          },
-          remove(name: string, options: CookieOptions) {
-            cookieStore.delete({ name, ...options });
-          },
+          get(name: string) { return cookieStore.get(name)?.value; },
+          set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }); },
+          remove(name: string, options: CookieOptions) { cookieStore.delete({ name, ...options }); },
         },
       }
     );
@@ -36,8 +31,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { persistSession: false } }
+    );
+
     // Must be either poster or assigned worker
-    const { data: gig, error: gigError } = await supabase
+    const { data: gig, error: gigError } = await supabaseAdmin
       .from('gigs')
       .select('poster_id, assigned_worker_id, handshake_code')
       .eq('id', gigId)
@@ -59,7 +60,7 @@ export async function GET(req: Request) {
     // Fallback to Escrow table (Hustles use this)
     // using raw service role fetch if necessary since RLS might block worker reading escrow table
     // However, since we've already done an auth check above, we can safely just fetch the code.
-    const { data: escrow } = await supabase
+    const { data: escrow } = await supabaseAdmin
       .from('escrow')
       .select('handshake_code')
       .eq('gig_id', gigId)

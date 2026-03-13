@@ -1777,63 +1777,18 @@ export default function GigDetailPage() {
 
                       {(status === "assigned" || status === "delivered") && (
                         <>
-                          {shouldEnterCode && isOwner ? (
-                            <div className="space-y-3">
-                              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-center">
-                                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Waiting for Verification</p>
-                                <p className="text-yellow-400/70 text-xs text-center px-2 mb-4">Enter the 4-digit code from the {isMarket ? "Buyer" : "Hustler"}</p>
-                                <div className="flex justify-center gap-2 mb-4">
-                                  {(inputCode || ["", "", "", ""]).map((digit, i) => (
-                                    <input
-                                      key={i}
-                                      id={`action-digit-${i}`}
-                                      type="text"
-                                      maxLength={1}
-                                      value={digit}
-                                      onChange={(e) => handleDigitChange(i, e.target.value)}
-                                      onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                                      className="w-10 h-10 text-center bg-[#1A1A24] border border-yellow-500/30 rounded-lg text-lg font-mono font-bold text-yellow-400 focus:outline-none focus:border-yellow-400 transition-colors"
-                                    />
-                                  ))}
-                                </div>
-                                <button
-                                  onClick={onVerifyHandshake}
-                                  disabled={inputCode.join('').length !== 4}
-                                  className="w-full py-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 disabled:hover:bg-yellow-500 text-black font-bold text-sm transition-all shadow-[0_0_20px_rgba(234,179,8,0.2)]"
-                                >
-                                  Verify Code
-                                </button>
-                              </div>
-                            </div>
-                          ) : shouldShowCode && isOwner && handshakeCode ? (
-                            <div className="space-y-3">
-                              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-center">
-                                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-3">Your Secure Code</p>
-                                <div className="flex justify-center gap-2 mb-3">
-                                  {handshakeCode.split('').map((digit, i) => (
-                                    <div key={i} className="w-10 h-12 flex items-center justify-center bg-[#1A1A24] border border-yellow-500/50 rounded-xl text-xl font-mono font-bold text-yellow-500">
-                                      {digit}
-                                    </div>
-                                  ))}
-                                </div>
-                                <p className="text-yellow-400/70 text-xs">Show this to the {isMarket ? "Seller" : "Hustler"} to release payment</p>
-                              </div>
-                            </div>
-                          ) : (
-                            /* Non-Buy/Sell/Physical seller actions */
-                            (!isMarket || !gig.is_physical) && !shouldEnterCode && !shouldShowCode && (
-                              <button
-                                onClick={handleComplete}
-                                disabled={isCompleting}
-                                className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3 active:scale-[0.98]"
-                              >
-                                {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
-                                  isMarket
-                                    ? (gig.market_type === "RENT" ? "Confirm Return" : "Complete Deal")
-                                    : "Mark as Completed"
-                                )}
-                              </button>
-                            )
+                          {(!isMarket || !gig.is_physical) && !shouldEnterCode && !shouldShowCode && (
+                            <button
+                              onClick={handleComplete}
+                              disabled={isCompleting}
+                              className="w-full py-4 rounded-2xl bg-green-500 hover:bg-green-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)] mb-3 active:scale-[0.98]"
+                            >
+                              {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
+                                isMarket
+                                  ? (gig.market_type === "RENT" ? "Confirm Return" : "Complete Deal")
+                                  : "Mark as Completed"
+                              )}
+                            </button>
                           )}
 
                           <button
@@ -1879,55 +1834,11 @@ export default function GigDetailPage() {
                           )}
                         </button>
                       ) : (
-                        shouldShowCode && !isOwner && handshakeCode && (status === "assigned" || status === "delivered") ? (
-                          <div className="space-y-3">
-                            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-center">
-                              <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-3">Your Secure Code</p>
-                              <div className="flex justify-center gap-2 mb-3">
-                                {handshakeCode.split('').map((digit, i) => (
-                                  <div key={i} className="w-10 h-12 flex items-center justify-center bg-[#1A1A24] border border-yellow-500/50 rounded-xl text-xl font-mono font-bold text-yellow-500">
-                                    {digit}
-                                  </div>
-                                ))}
-                              </div>
-                              <p className="text-yellow-400/70 text-xs text-center">Only share this after inspecting {isMarket ? "the item" : "the completed work"} in person.</p>
-                            </div>
-                          </div>
-                        ) : shouldEnterCode && !isOwner && (status === "assigned" || status === "delivered") ? (
-                          <div className="space-y-3">
-                            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-center">
-                              <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Waiting for Verification</p>
-                              <p className="text-yellow-400/70 text-xs text-center px-2 mb-4">Enter the 4-digit code from the {isMarket ? "Buyer" : "Poster"}</p>
-                              <div className="flex justify-center gap-2 mb-4">
-                                {(inputCode || ["", "", "", ""]).map((digit, i) => (
-                                  <input
-                                    key={i}
-                                    id={`action-digit-${i}`}
-                                    type="text"
-                                    maxLength={1}
-                                    value={digit}
-                                    onChange={(e) => handleDigitChange(i, e.target.value)}
-                                    onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                                    className="w-10 h-10 text-center bg-[#1A1A24] border border-yellow-500/30 rounded-lg text-lg font-mono font-bold text-yellow-400 focus:outline-none focus:border-yellow-400 transition-colors"
-                                  />
-                                ))}
-                              </div>
-                              <button
-                                onClick={onVerifyHandshake}
-                                disabled={inputCode.join('').length !== 4}
-                                className="w-full py-3 rounded-xl bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-bold text-sm transition-all shadow-[0_0_20px_rgba(234,179,8,0.2)]"
-                              >
-                                {verifyingHandshake ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Verify Code"}
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
-                            <p className="text-sm text-white/60">
-                              {status === "completed" ? "This listing is closed." : (isMarket ? "This item is currently in a deal." : "This hustle is currently assigned.")}
-                            </p>
-                          </div>
-                        )
+                        <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
+                          <p className="text-sm text-white/60">
+                            {status === "completed" ? "This listing is closed." : (isMarket ? "This item is currently in a deal." : "This hustle is currently assigned.")}
+                          </p>
+                        </div>
                       )}
 
                       {/* WORKER ACTIONS (RENT) */}
@@ -2143,40 +2054,19 @@ export default function GigDetailPage() {
                 👤 View Contact Info
               </button>
             ) : shouldEnterCode && (status === 'assigned' || status === 'delivered') ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between gap-1">
-                  {(inputCode || ["", "", "", ""]).map((digit, i) => (
-                    <input
-                      key={i}
-                      id={`mobile-digit-${i}`}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleDigitChange(i, e.target.value)}
-                      onKeyDown={(e) => handleDigitKeyDown(i, e)}
-                      className="w-8 h-10 text-center bg-[#1A1A24] border border-yellow-500/30 rounded-md text-lg font-mono font-bold text-yellow-400 focus:outline-none focus:border-yellow-400 transition-colors"
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={onVerifyHandshake}
-                  disabled={inputCode.join('').length !== 4}
-                  className="w-full py-2.5 rounded-xl bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black font-bold text-xs transition-all shadow-[0_0_15px_rgba(234,179,8,0.2)]"
-                >
-                  Verify Code
-                </button>
-              </div>
+              <button 
+                onClick={() => document.getElementById('handshake-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} 
+                className="w-full py-3 rounded-2xl bg-yellow-500 text-black font-bold text-sm active:scale-95 transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(234,179,8,0.3)]"
+              >
+                <ShieldCheck className="w-5 h-5" /> Enter Code
+              </button>
             ) : shouldShowCode && !isOwner && handshakeCode && (status === 'assigned' || status === 'delivered') ? (
-               <div className="flex flex-col gap-1 items-center bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-2 w-full">
-                 <span className="text-[10px] text-yellow-500 font-bold uppercase tracking-widest leading-none">Your Code</span>
-                 <div className="flex gap-1.5">
-                   {handshakeCode.split('').map((digit, i) => (
-                      <span key={i} className="text-lg font-mono font-bold text-yellow-400 bg-black/40 px-2 rounded-md border border-yellow-500/30">
-                        {digit}
-                      </span>
-                    ))}
-                 </div>
-               </div>
+               <button 
+                onClick={() => document.getElementById('handshake-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} 
+                className="w-full py-3 rounded-2xl bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 font-bold text-sm active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-5 h-5" /> Show Verification Code
+              </button>
             ) : isOwner && isDelivered && !gig.is_physical && !isMarket ? (
               <button onClick={() => setShowReviewModal(true)} className="w-full py-3 rounded-2xl bg-green-500 text-black font-bold text-sm active:scale-95 transition-all">
                 ✓ Approve Work
