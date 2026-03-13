@@ -2037,9 +2037,9 @@ export default function GigDetailPage() {
                 {!isMarket && gig.is_physical && (
                   <div className="space-y-3">
                     {[
-                      { n: 1, icon: '📝', title: isOwner ? 'Accept a Hustler' : 'Apply & Get Hired', desc: isOwner ? 'Review applications and accept the best Hustler.' : 'Apply with a pitch. Get hired by the Poster.' },
-                      { n: 2, icon: '🤝', title: 'Meet & Complete Task', desc: 'Poster pays into escrow. Meet in person and complete the task together.' },
-                      { n: 3, icon: '🔑', title: isOwner ? 'Share Your Code' : 'Enter Poster\'s Code', desc: isOwner ? 'Share your 4-digit code with the Hustler to confirm completion and release payment.' : 'Get the Poster\'s code after task is done. Enter it to receive your payment.' },
+                      { n: 1, icon: '📝', title: isOwner ? 'Accept a Hustler' : 'Apply & Get Hired', desc: isOwner ? 'Review applications and accept the best Hustler. Funds go into escrow.' : 'Apply with a pitch. Get hired by the Poster.' },
+                      { n: 2, icon: '✅', title: isOwner ? 'Verify Completed Work' : 'Complete the Task', desc: isOwner ? 'Worker completes the task first, then meets you to show the result. You inspect and verify.' : 'Complete the task, then meet the Poster in person so they can verify what you\'ve done.' },
+                      { n: 3, icon: '🔑', title: isOwner ? 'Share Your Code' : 'Enter Poster\'s Code', desc: isOwner ? 'Once satisfied, share your 4-digit code with the Hustler. This releases their payment.' : 'After the Poster verifies your work, get their code and enter it here to receive payment.' },
                     ].map(step => (
                       <div key={step.n} className="flex items-start gap-3">
                         <div className="w-7 h-7 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{step.n}</div>
