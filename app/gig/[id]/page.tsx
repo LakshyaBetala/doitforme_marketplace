@@ -430,11 +430,11 @@ export default function GigDetailPage() {
         }
 
         const data = await res.json();
-        toast.success("Offer Accepted! Redirecting to chat...");
+        toast.success("Offer Accepted! Opening chat...");
 
         // Redirect to chat with the worker
-        const chatId = `${id}_${data.workerId || workerId}`;
-        router.push(`/messages?chat=${chatId}`);
+        const resolvedWorkerId = data.workerId || workerId;
+        router.push(`/chat/${id}?chat=${id}_${resolvedWorkerId}`);
 
       } catch (e: any) {
         toast.error(e.message);
@@ -1464,7 +1464,7 @@ export default function GigDetailPage() {
 
                                 <div className="flex gap-2">
                                   <button
-                                    onClick={() => router.push(`/messages?chat=${gig.id}_${app.worker_id}`)}
+                                    onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)}
                                     className="p-2 bg-white/10 hover:bg-white/10 rounded-xl text-white/60 hover:text-white transition-colors"
                                     title="Message"
                                   >
@@ -1612,17 +1612,34 @@ export default function GigDetailPage() {
                         <div className="space-y-3 animate-in fade-in zoom-in-95">
                           <div className="p-4 rounded-2xl bg-brand-purple/10 border border-brand-purple/20 text-center">
                             <p className="text-brand-purple font-bold mb-1">Assigned to You!</p>
-                            <p className="text-xs text-brand-purple/60">Complete the task or return the item to release funds.</p>
+                            <p className="text-xs text-brand-purple/60">
+                              {isMarket
+                                ? "Complete the handshake to release funds."
+                                : gig.is_physical
+                                  ? "Meet the poster and complete the handshake to release funds."
+                                  : "Complete the task and submit your work below."}
+                            </p>
                           </div>
-                          <button
-                            onClick={handleDeliver}
-                            disabled={isCompleting}
-                            className="w-full py-4 rounded-2xl bg-white hover:bg-zinc-200 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95"
-                          >
-                            {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (
-                              isMarket && gig.market_type === 'RENT' ? "Mark Item Returned" : "Submit Work"
-                            )}
-                          </button>
+                          {/* Submit Work ONLY for remote Hustle (not physical, not marketplace) */}
+                          {!isMarket && !gig.is_physical && (
+                            <button
+                              onClick={handleDeliver}
+                              disabled={isCompleting}
+                              className="w-full py-4 rounded-2xl bg-white hover:bg-zinc-200 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95"
+                            >
+                              {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Work"}
+                            </button>
+                          )}
+                          {/* Rent return button */}
+                          {isMarket && gig.market_type === "RENT" && (
+                            <button
+                              onClick={handleDeliver}
+                              disabled={isCompleting}
+                              className="w-full py-4 rounded-2xl bg-white hover:bg-zinc-200 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] active:scale-95"
+                            >
+                              {isCompleting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Mark Item Returned"}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

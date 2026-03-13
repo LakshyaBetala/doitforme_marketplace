@@ -713,6 +713,18 @@ export default function ChatRoomPage() {
         {/* INPUT AREA */}
         <div className="bg-[#121217] border-t border-white/10 shrink-0 pb-safe">
 
+          {/* Chat Closed Banner */}
+          {(gig.status === 'completed' || gig.status === 'cancelled') && (
+            <div className="px-4 py-3 flex items-center justify-center gap-2 text-sm text-white/50 bg-white/5 border-b border-white/10">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+              <span>
+                {gig.status === 'completed'
+                  ? 'This deal is completed. Chat is now closed.'
+                  : 'This gig was cancelled. Chat is closed.'}
+              </span>
+            </div>
+          )}
+
           {/* Visual Limit (Applicant Only) */}
           {!isPoster && gig.status === 'open' && (
             <div className="w-full bg-white/10 h-1 relative">
