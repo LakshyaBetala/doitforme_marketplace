@@ -51,43 +51,46 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "File size must be less than 5MB" }, { status: 400 });
     }
 
-    // 4. Upload to Supabase Storage using service role (bypasses RLS)
+    // 4. Upload to Storage
+    console.log("Starting KYC upload to bucket 'kyc-ids' for user:", user.id);
     const fileExt = file.name.split('.').pop() || 'jpg';
     const filePath = `${user.id}/${user.id}_student_id_${Date.now()}.${fileExt}`;
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from("kyc-ids")
-      .upload(filePath, buffer, {
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+      .from('kyc-ids')
+      .upload(filePath, file, {
         contentType: file.type,
-        upsert: true,
+        upsert: true
       });
 
     if (uploadError) {
-      console.error("KYC Storage upload error:", uploadError.message);
-      return NextResponse.json({ error: "Storage upload failed: " + uploadError.message }, { status: 500 });
+      console.error("KYC Storage Upload Error Details:", uploadError);
+      return NextResponse.json({ 
+        error: "Storage upload failed", 
+        details: uploadError.message,
+        code: (uploadError as any).statusCode 
+      }, { status: 500 });
     }
 
-    // 5. Save the path in the users table
-    const { error: dbError } = await supabaseAdmin
-      .from("users")
-      .update({
-        id_card_url: filePath,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", user.id);
+    console.log("Upload successful:", uploadData.path);
 
-    if (dbError) {
-      console.error("KYC DB update error:", dbError.message);
-      return NextResponse.json({ error: "Database update failed: " + dbError.message }, { status: 500 });
+    // 5. Update User Profile
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        student_id_url: filePath,
+        kyc_status: 'PENDING'
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error("KYC Profile Update Error Details:", updateError);
+      return NextResponse.json({ error: "Failed to update user profile", details: updateError.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, path: filePath });
 
   } catch (err: any) {
-    console.error("KYC Upload Route Error:", err);
-    return NextResponse.json({ error: err.message || "Upload failed" }, { status: 500 });
+    console.error("Fatal KYC Upload Error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

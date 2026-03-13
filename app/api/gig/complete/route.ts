@@ -170,13 +170,23 @@ export async function POST(request: Request) {
         const newCount = oldCount + 1;
         const newRating = ((oldRating * oldCount) + Number(rating)) / newCount;
 
+        const updateData: any = {
+          rating: newRating,
+          rating_count: newCount,
+        };
+
+        if (listingType === 'HUSTLE') {
+          updateData.jobs_completed = oldJobs + 1;
+          // If total_earned exists, update it here as well
+          const { data: userCurrent } = await supabaseAdmin.from('users').select('total_earned').eq('id', gig.assigned_worker_id).single();
+          if (userCurrent) {
+            updateData.total_earned = (Number(userCurrent.total_earned) || 0) + payoutAmount;
+          }
+        }
+
         await supabaseAdmin
           .from("users")
-          .update({
-            rating: newRating,
-            rating_count: newCount,
-            jobs_completed: oldJobs + 1
-          })
+          .update(updateData)
           .eq("id", gig.assigned_worker_id);
       }
     }

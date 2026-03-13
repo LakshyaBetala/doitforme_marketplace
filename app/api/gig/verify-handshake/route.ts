@@ -40,10 +40,20 @@ export async function POST(req: Request) {
 
     if (!gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    // 3. Auth: for HUSTLE - worker enters poster's code
-    //         for MARKET - worker (buyer) enters poster (seller)'s code
-    if (gig.assigned_worker_id !== user.id) {
-      return NextResponse.json({ error: "Only the assigned worker/buyer can verify this code" }, { status: 403 });
+    // 3. Auth Logic:
+    //    - HUSTLE: Worker (assigned_worker_id) enters code from Poster.
+    //    - MARKETPLACE: Seller (poster_id) enters code from Buyer.
+    const isMarket = gig.listing_type === 'MARKET';
+    const canVerify = isMarket 
+      ? gig.poster_id === user.id 
+      : gig.assigned_worker_id === user.id;
+
+    if (!canVerify) {
+      return NextResponse.json({ 
+        error: isMarket 
+          ? "Only the seller/owner can verify this code" 
+          : "Only the assigned worker/hustler can verify this code" 
+      }, { status: 403 });
     }
 
     // 4. Fetch Escrow
@@ -61,7 +71,6 @@ export async function POST(req: Request) {
     }
 
     // 6. Determine payout
-    const isMarket = gig.listing_type === 'MARKET';
     let payoutDestination = gig.assigned_worker_id; // Hustle: pay worker
     const { data: escrowRecord } = await supabaseAdmin
       .from('escrow')
@@ -151,18 +160,23 @@ export async function POST(req: Request) {
       });
     }
 
-    // 11. Update worker stats (jobs_completed++)
-    const { data: worker } = await supabaseAdmin
-      .from('users')
-      .select('jobs_completed')
-      .eq('id', gig.assigned_worker_id)
-      .single();
-
-    if (worker) {
-      await supabaseAdmin
+    // 11. Update worker stats (jobs_completed++) ONLY FOR HUSTLE
+    if (!isMarket) {
+      const { data: worker } = await supabaseAdmin
         .from('users')
-        .update({ jobs_completed: (worker.jobs_completed || 0) + 1 })
-        .eq('id', gig.assigned_worker_id);
+        .select('jobs_completed, total_earned')
+        .eq('id', gig.assigned_worker_id)
+        .single();
+  
+      if (worker) {
+        await supabaseAdmin
+          .from('users')
+          .update({ 
+            jobs_completed: (worker.jobs_completed || 0) + 1,
+            total_earned: (Number(worker.total_earned) || 0) + payoutAmount
+          })
+          .eq('id', gig.assigned_worker_id);
+      }
     }
 
     // 12. Telegram notifications

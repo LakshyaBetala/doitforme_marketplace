@@ -276,19 +276,21 @@ export default function GigDetailPage() {
             .eq("gig_id", id);
           setApplications(apps || []);
           setApplicantCount(apps?.length || 0);
+        }
 
-          if (gigData.status === 'assigned' || gigData.escrow_status === 'HELD') {
-            // Use API to fetch secure data if RLS fails, or just rely on RLS if set up correctly.
-            // For now, let's assuming RLS allows poster to see escrow.
-            const { data: escrowData } = await supabase
-              .from('escrow')
-              .select('handshake_code')
-              .eq('gig_id', id)
-              .maybeSingle();
+        if (gigData.status === 'assigned' || gigData.escrow_status === 'HELD') {
+          // Handshake code logic:
+          // Poster (isOwner === true) DISPLAYS the code.
+          // Worker (assigned_worker_id === user.id) INPUTS the code.
+          // The RLS policy should allow both to see the escrow record.
+          const { data: escrowData } = await supabase
+            .from('escrow')
+            .select('handshake_code')
+            .eq('gig_id', id)
+            .maybeSingle();
 
-            if (escrowData?.handshake_code) {
-              setHandshakeCode(escrowData.handshake_code);
-            }
+          if (escrowData?.handshake_code) {
+            setHandshakeCode(escrowData.handshake_code);
           }
         }
 
@@ -1087,9 +1089,12 @@ export default function GigDetailPage() {
 
                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${status === 'open' ? 'border-green-500/20 bg-green-500/10 text-green-400' :
                   status === 'assigned' ? 'border-yellow-500/20 bg-yellow-500/10 text-yellow-400' :
-                    'border-white/20 bg-white/10 text-white/60'
+                  status === 'completed' ? 'border-blue-500/20 bg-blue-500/10 text-blue-400' :
+                    'border-white/20 bg-white/10 text-white/40'
                   }`}>
-                  {status === 'assigned' ? (isMarket ? 'Sold/Rented' : 'Assigned') : status}
+                  {status === 'assigned' ? (isMarket ? 'IN DEAL' : 'HIRED') : 
+                   status === 'completed' ? 'COMPLETED' : 
+                   status.toUpperCase()}
                 </span>
               </div>
 
@@ -1106,6 +1111,13 @@ export default function GigDetailPage() {
                 <span>Posted {new Date(gig.created_at).toLocaleDateString()}</span>
                 <span>•</span>
                 <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center overflow-hidden relative border border-white/5">
+                    {posterDetails?.avatar_url ? (
+                      <Image src={posterDetails.avatar_url} alt="" fill className="object-cover" unoptimized />
+                    ) : (
+                      <User className="w-2.5 h-2.5 text-white/40" />
+                    )}
+                  </div>
                   <span className="font-medium text-white">{posterDetails?.name || gig.poster_email?.split('@')[0]}</span>
                   {posterDetails?.kyc_verified && (posterDetails.jobs_completed || 0) > 10 ? (
                     <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400 text-[10px] font-bold border border-yellow-500/50 flex items-center gap-1 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
@@ -1224,8 +1236,8 @@ export default function GigDetailPage() {
           </div>
         )}
 
-        {/* HANDSHAKE SECTION — Physical Hustle only */}
-        {gig.escrow_status === 'HELD' && (status === 'assigned' || status === 'delivered') && !isMarket && gig.is_physical === true && (
+        {/* HANDSHAKE SECTION — Physical Deals only */}
+        {gig.escrow_status === 'HELD' && (status === 'assigned' || status === 'delivered') && gig.is_physical === true && (
           <div className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -1234,12 +1246,18 @@ export default function GigDetailPage() {
                   <ShieldCheck size={12} /> Secure Handover Active
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-2">
-                  {isOwner ? "Provide this code to the worker" : "Enter code from the seller"}
+                  {isMarket 
+                    ? (isOwner ? "Enter code from the Buyer" : "Provide this code to the Seller")
+                    : (isOwner ? "Provide this code to the Hustler" : "Enter code from the Poster")}
                 </h3>
                 <p className="text-white/60 text-sm leading-relaxed mb-6">
-                  {isOwner
-                    ? "To ensure safety, only share this code when you physically meet the worker and verify the service/item. Once they enter it, funds are released to them."
-                    : "Ask the seller for the 4-digit code when you meet. Entering this code confirms you have received the item/service and releases the payment."}
+                  {isMarket
+                    ? (isOwner 
+                        ? "Ask the Buyer for the 4-digit code once they have verified the item and are satisfied. Entering this code releases the payment to you."
+                        : "Provide this code to the Seller only after you have physically verified the item and are ready to complete the transaction.")
+                    : (isOwner 
+                        ? `To ensure safety, only share this code when you physically meet the Hustler and verify the work. Once they enter it, funds are released to them.`
+                        : `Ask the Poster for the 4-digit code when you meet and verify the task. Entering this code confirms completion and releases payment.`)}
                 </p>
 
                 {/* ESCROW 3-STEP VISUAL */}
@@ -1262,9 +1280,9 @@ export default function GigDetailPage() {
               </div>
 
               <div className="bg-black/40 p-6 rounded-2xl border border-white/10 backdrop-blur-sm min-w-[280px]">
-                {isOwner ? (
+                {(isMarket ? !isOwner : isOwner) ? (
                   <div className="text-center">
-                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Your Secret Code</p>
+                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Secret Code</p>
                     <div className="flex justify-center gap-3">
                       {(handshakeCode || "").split('').map((digit, i) => (
                         <div key={i} className="w-12 h-16 flex items-center justify-center bg-[#1A1A24] border border-yellow-500/50 rounded-xl text-3xl font-mono font-bold text-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]">
@@ -1276,7 +1294,7 @@ export default function GigDetailPage() {
                   </div>
                 ) : (
                   <div className="text-center">
-                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Enter Handshake Code</p>
+                    <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Enter Code</p>
                     <div className="flex justify-center gap-3 mb-6">
                       {(inputCode || ["", "", "", ""]).map((digit, i) => (
                         <input
@@ -1443,11 +1461,19 @@ export default function GigDetailPage() {
                               <div key={app.id} className="bg-[#1A1A24] border border-white/5 p-4 rounded-2xl flex items-center justify-between group hover:border-white/10 transition-all">
                                 <div className="flex items-center gap-4">
                                   {/* Avatar */}
-                                  <div className="w-10 h-10 rounded-full bg-zinc-800 relative overflow-hidden">
+                                  <div className="w-10 h-10 rounded-full bg-zinc-800 relative overflow-hidden border border-white/5">
                                     {app.worker?.avatar_url ? (
-                                      <Image src={app.worker.avatar_url} alt={app.worker.name} fill className="object-cover" />
+                                      <Image 
+                                        src={app.worker.avatar_url} 
+                                        alt={app.worker.name} 
+                                        fill 
+                                        className="object-cover" 
+                                        unoptimized 
+                                      />
                                     ) : (
-                                      <div className="w-full h-full flex items-center justify-center text-white/60 font-bold text-xs">{app.worker?.name?.[0]}</div>
+                                      <div className="w-full h-full flex items-center justify-center text-white/40">
+                                        <User size={18} />
+                                      </div>
                                     )}
                                   </div>
 
@@ -1482,7 +1508,7 @@ export default function GigDetailPage() {
                                       <button
                                         onClick={() => handleRejectOffer(app.id)}
                                         disabled={isRejecting === app.id}
-                                        className="px-4 py-2 bg-white/10 text-white/60 text-xs font-bold rounded-xl hover:bg-red-500/20 hover:text-red-400 transition-colors"
+                                        className="px-4 py-2 bg-white/5 text-white/40 text-xs font-bold rounded-xl hover:bg-red-500/20 hover:text-red-400 border border-white/5 transition-colors"
                                       >
                                         {isRejecting === app.id ? "..." : "Reject"}
                                       </button>
@@ -1666,9 +1692,11 @@ export default function GigDetailPage() {
                   }`}>
                   <div className="w-full h-full rounded-full overflow-hidden bg-zinc-900 relative flex items-center justify-center">
                     {posterDetails?.avatar_url ? (
-                      <Image src={posterDetails.avatar_url} alt={posterDetails.name} width={56} height={56} className="object-cover w-full h-full" />
+                      <Image src={posterDetails.avatar_url} alt={posterDetails.name} width={56} height={56} className="object-cover w-full h-full" unoptimized />
                     ) : (
-                      <span className="text-white/60 font-bold text-lg">{posterDetails?.name?.[0] || "?"}</span>
+                      <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                        <User className="w-6 h-6 text-white/40" />
+                      </div>
                     )}
                   </div>
                 </div>

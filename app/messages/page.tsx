@@ -3,7 +3,7 @@
 import { toast } from "sonner";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
@@ -12,7 +12,12 @@ import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangl
 export default function ChatPage() {
     const supabase = supabaseBrowser();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [user, setUser] = useState<any>(null);
+    const magicChips = [
+        "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
+        "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
+    ];
     const [conversations, setConversations] = useState<any[]>([]);
     const [activeChat, setActiveChat] = useState<string | null>(null);
 
@@ -29,6 +34,9 @@ export default function ChatPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+    // Active Conversation gig status
+    const [activeGigStatus, setActiveGigStatus] = useState<string | null>(null);
+
     // Send cooldown to prevent double-sending
     const [isSending, setIsSending] = useState(false);
 
@@ -41,15 +49,51 @@ export default function ChatPage() {
     const [offerToAccept, setOfferToAccept] = useState<any>(null);
     const [isAccepting, setIsAccepting] = useState(false);
 
+    // RTsub cleanup ref
+    const channelRef = useRef<any>(null);
+
     // 1. Initialize User
+    // 1. Initialize User & Real-time Conversation List
     useEffect(() => {
+        let channel: any;
         supabase.auth.getUser().then(({ data }) => {
             if (data.user) {
+                const userId = data.user.id;
                 setUser(data.user);
-                fetchInitialData(data.user.id);
+                fetchInitialData(userId);
+
+                // Handle deep linking from URL
+                const chatParam = searchParams.get('chat');
+                if (chatParam) {
+                    setActiveChat(chatParam);
+                }
+
+                // Listen for any new messages involving me to update conversation list
+                channel = supabase
+                    .channel('global_messages_sync')
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `receiver_id=eq.${userId}`
+                    }, () => {
+                        fetchInitialData(userId); // Refresh list when new message arrives
+                    })
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `sender_id=eq.${userId}`
+                    }, () => {
+                        fetchInitialData(userId); // Refresh list when I send a message elsewhere
+                    })
+                    .subscribe();
             }
         });
-    }, []);
+        return () => {
+            if (channel) supabase.removeChannel(channel);
+        };
+    }, [searchParams]);
 
     // 2. Fetch Conversations & Users
     const fetchInitialData = async (userId: string) => {
@@ -171,12 +215,7 @@ export default function ChatPage() {
             });
         }
 
-        const magicChips = [
-            "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
-            "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
-        ];
-
-        // Load Messages & Limits
+        // Load Messages & Limits and set up real-time sub
         const loadMessagesAndLimits = async () => {
             // A. Load Messages
             const { data, error } = await supabase
@@ -188,41 +227,37 @@ export default function ChatPage() {
 
             if (data) {
                 setMessages(data);
-                // Count MY messages in this chat (Exclude Offers AND Magic Chips)
                 const myCount = data.filter((m: any) =>
                     m.sender_id === user.id &&
                     m.message_type !== 'offer' &&
                     !magicChips.includes(m.content)
                 ).length;
                 setMessageCount(myCount);
+                setTimeout(scrollToBottom, 50); // Initial scroll
             }
 
             // B. Check Gig Status & Limits
             const { data: gig } = await supabase
                 .from('gigs')
-                .select('status, listing_type, poster_id')
+                .select('status, listing_type, market_type, poster_id, price, is_physical')
                 .eq('id', gigId)
                 .single();
 
             if (gig) {
+                setActiveGigStatus(gig.status);
                 const isPoster = user.id === gig.poster_id;
                 const isPreAgreement = gig.status === 'open';
 
                 if (!isPoster && isPreAgreement) {
-                    // Applicant Logic
                     const limit = gig.listing_type === 'MARKET' ? 10 : 5;
                     setMessageLimit(limit);
-
-                    // Recalculate isLimitReached with the correct count
                     const myCount = data?.filter((m: any) =>
                         m.sender_id === user.id &&
                         m.message_type !== 'offer' &&
                         !magicChips.includes(m.content)
                     ).length || 0;
-
                     setIsLimitReached(myCount >= limit);
                 } else {
-                    // Poster or Hired -> No Limit
                     setMessageLimit(null);
                     setIsLimitReached(false);
                 }
@@ -230,42 +265,58 @@ export default function ChatPage() {
         };
         loadMessagesAndLimits();
 
-        // Subscribe to New Messages
-        const channel = supabase.channel(`chat_${gigId}`)
+        // Cleanup old channel
+        if (channelRef.current) {
+            supabase.removeChannel(channelRef.current);
+        }
+
+        // Real-time subscription for new messages
+        const channel = supabase
+            .channel(`messages_${gigId}_${otherUserId}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'messages',
-                filter: `gig_id=eq.${gigId}`
+                filter: `gig_id=eq.${gigId}`,
             }, (payload) => {
-                const newMsg = payload.new;
-                // Filter ensuring it belongs to THIS 1:1 chat
+                const newMsg = payload.new as any;
                 if (
                     (newMsg.sender_id === user.id && newMsg.receiver_id === otherUserId) ||
                     (newMsg.sender_id === otherUserId && newMsg.receiver_id === user.id)
                 ) {
-                    setMessages(prev => {
-                        const updated = [...prev, newMsg];
-                        // Update Count & Limit if I sent it
-                        if (newMsg.sender_id === user.id && messageLimit) {
-                            const newCount = updated.filter(m =>
-                                m.sender_id === user.id &&
-                                m.message_type !== 'offer' &&
-                                !magicChips.includes(m.content)
-                            ).length;
-                            setMessageCount(newCount);
-                            setIsLimitReached(newCount >= messageLimit);
-                        }
-                        return updated;
-                    });
+                    setMessages(prev => [...prev, newMsg]);
+                    
+                    // Update limit counter if I sent the message
+                    if (newMsg.sender_id === user.id && newMsg.message_type !== 'offer' && !magicChips.includes(newMsg.content)) {
+                        setMessageCount(prev => prev + 1);
+                    }
+
+                    // Update conversation list last message
+                    setConversations(prev => prev.map(c =>
+                        c.conversationKey === activeChat
+                            ? { ...c, lastMessage: newMsg }
+                            : c
+                    ));
                     scrollToBottom();
                 }
             })
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'gigs',
+                filter: `id=eq.${gigId}`,
+            }, (payload) => {
+                setActiveGigStatus((payload.new as any).status);
+            })
             .subscribe();
 
-        return () => { supabase.removeChannel(channel); };
+        channelRef.current = channel;
 
-    }, [activeChat, user, conversations]);
+        return () => {
+            supabase.removeChannel(channel);
+        };
+
+    }, [activeChat, user]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -420,25 +471,18 @@ export default function ChatPage() {
     };
 
 
+    const isCompleted = activeGigStatus === 'completed' || activeGigStatus === 'cancelled';
+
     return (
-        <div className="flex h-screen bg-[#0B0B11] text-white overflow-hidden font-sans selection:bg-brand-purple">
+        <div className="flex h-[100dvh] bg-[#0B0B11] text-white overflow-hidden font-sans selection:bg-brand-purple">
 
             {/* SIDEBAR */}
-            <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[380px] flex-col border-r border-white/5 bg-[#0B0B11]`}>
-                <div className="p-5 border-b border-white/5 flex gap-4 items-center bg-[#121217]">
-                    <button onClick={() => router.back()} className="p-2 -ml-2 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white">
-                        <ArrowLeft size={20} />
+            <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] flex-col border-r border-white/5 bg-[#0B0B11] shrink-0`}>
+                <div className="p-3 border-b border-white/5 flex gap-2 items-center bg-[#121217]">
+                    <button onClick={() => router.back()} className="p-1.5 -ml-1 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white">
+                        <ArrowLeft size={16} />
                     </button>
-                    <h1 className="text-xl font-bold tracking-tight">Messages</h1>
-                    <div className="flex-1"></div>
-                    <button className="p-2 hover:bg-white/10 rounded-full transition-colors"><MoreVertical size={18} /></button>
-                </div>
-
-                <div className="p-4">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-3 text-white/50 w-4 h-4" />
-                        <input className="w-full bg-[#1A1A24] rounded-xl pl-10 py-3 text-sm text-white placeholder:text-white/50 focus:outline-none focus:ring-1 focus:ring-brand-purple/50 transition-all" placeholder="Search conversations..." />
-                    </div>
+                    <h1 className="text-base font-bold tracking-tight">Messages</h1>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
@@ -447,77 +491,112 @@ export default function ChatPage() {
                     ) : conversations.length === 0 ? (
                         <div className="p-8 text-center text-white/60 text-sm">No messages yet.</div>
                     ) : (
-                        conversations.map((chat) => (
-                            <div
-                                key={chat.conversationKey}
-                                onClick={() => setActiveChat(chat.conversationKey)}
-                                className={`p-4 mx-2 rounded-xl cursor-pointer flex gap-4 transition-all hover:bg-white/10 ${activeChat === chat.conversationKey ? 'bg-white/10' : ''}`}
-                            >
-                                <div className="relative shrink-0">
-                                    <div className="w-12 h-12 rounded-full bg-[#2A2A35] flex items-center justify-center overflow-hidden border border-white/5">
-                                        {chat.otherUser.avatar_url ? (
-                                            <Image src={chat.otherUser.avatar_url} alt="" fill className="object-cover" />
-                                        ) : (
-                                            <User className="w-5 h-5 text-white/60" />
+                        conversations.map((chat) => {
+                            const gigStatus = chat.gig?.status;
+                            return (
+                                <div
+                                    key={chat.conversationKey}
+                                    onClick={() => setActiveChat(chat.conversationKey)}
+                                    className={`p-3 mx-2 my-1 rounded-xl cursor-pointer flex gap-3 transition-all hover:bg-white/5 ${activeChat === chat.conversationKey ? 'bg-white/10' : ''}`}
+                                >
+                                    <div className="relative shrink-0">
+                                        <div className="w-10 h-10 rounded-full bg-[#2A2A35] flex items-center justify-center overflow-hidden border border-white/5">
+                                            {chat.otherUser.avatar_url ? (
+                                                <Image
+                                                    src={chat.otherUser.avatar_url}
+                                                    alt=""
+                                                    fill
+                                                    className="object-cover"
+                                                    unoptimized // Google avatars often fail with Next.js image optimization if not configured correctly
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                                                    <User className="w-4 h-4 text-white/40" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-baseline mb-0.5">
+                                            <h3 className="font-semibold text-white text-sm truncate">{chat.otherUser.name}</h3>
+                                            <span className="text-[10px] text-white/40 ml-2 shrink-0">
+                                                {formatSmartDate(chat.lastMessage.created_at)}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-white/50 truncate">{chat.lastMessage.content}</p>
+                                        {gigStatus && gigStatus !== 'open' && (
+                                            <span className={`text-[10px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded-full ${gigStatus === 'completed' ? 'text-green-400 bg-green-500/10' : 'text-yellow-400 bg-yellow-500/10'
+                                                }`}>
+                                                {gigStatus === 'completed' ? '✓ Completed' : (chat.gig?.listing_type === 'MARKET' ? '● In Deal' : '● Hired')}
+                                            </span>
                                         )}
                                     </div>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-baseline mb-1">
-                                        <h3 className="font-semibold text-white truncate">{chat.otherUser.name}</h3>
-                                        <span className="text-[10px] text-white/50 ml-2 shrink-0">
-                                            {formatSmartDate(chat.lastMessage.created_at)}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-white/50 truncate pr-4 flex items-center gap-1">
-                                        {chat.lastMessage.message_type === 'offer' && <IndianRupee size={12} className="text-brand-purple" />}
-                                        {chat.lastMessage.content}
-                                    </p>
-                                </div>
-                            </div>
-                        ))
-                    )}
+                            );
+                        }) ) }
+
                 </div>
             </div>
 
             {/* CHAT AREA */}
-            <div className={`${!activeChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-[#050505] relative`}>
+            <div className={`${!activeChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-[#050505] relative min-w-0`}>
                 {activeChat ? (
                     <>
                         {/* Header */}
-                        <div className="p-4 border-b border-white/5 bg-[#121217] flex items-center justify-between z-20 shadow-xl">
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setActiveChat(null)} className="md:hidden p-2 -ml-2 hover:bg-white/10 rounded-full"><ArrowLeft size={20} /></button>
+                        <div className="p-3 border-b border-white/5 bg-[#121217] flex items-center gap-3 z-20 shadow-sm">
+                            <button onClick={() => setActiveChat(null)} className="p-2 -ml-1 hover:bg-white/10 rounded-full shrink-0" aria-label="Back">
+                                <ArrowLeft size={18} />
+                            </button>
 
-                                <div className="w-10 h-10 rounded-full bg-[#2A2A35] flex items-center justify-center overflow-hidden border border-white/10 relative">
-                                    {activeConversation?.otherUser?.avatar_url ? (
-                                        <Image src={activeConversation.otherUser.avatar_url} alt="" fill className="object-cover" />
-                                    ) : (
-                                        <User className="w-5 h-5 text-white/60" />
+                            <div className="w-8 h-8 rounded-full bg-[#2A2A35] flex items-center justify-center overflow-hidden border border-white/10 relative shrink-0">
+                                {activeConversation?.otherUser?.avatar_url ? (
+                                    <Image
+                                        src={activeConversation.otherUser.avatar_url}
+                                        alt=""
+                                        fill
+                                        className="object-cover"
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-zinc-800">
+                                        <User className="w-3 h-3 text-white/40" />
+                                    </div>
+                                )}
+                            </div>
+
+                             <div className="min-w-0 flex-1">
+                                <h2 className="font-bold text-white text-sm leading-tight truncate">
+                                    {activeConversation?.otherUser?.name || "Loading..."}
+                                </h2>
+                                <div className="flex items-center gap-2 text-[10px] text-zinc-400 mt-0.5">
+                                    {activeConversation?.gig?.title && <span className="opacity-50 truncate">{activeConversation.gig.title}</span>}
+                                    {activeGigStatus && (
+                                        <span className={`font-bold px-1.5 py-0.5 rounded-full ${activeGigStatus === 'completed' ? 'text-green-400 bg-green-500/10' :
+                                                activeGigStatus === 'assigned' ? 'text-yellow-400 bg-yellow-500/10' :
+                                                    'text-white/30'
+                                            }`}>{activeGigStatus === 'completed' ? '✓ Completed' : activeGigStatus === 'assigned' ? (activeConversation?.gig?.listing_type === 'MARKET' ? '● In Deal' : '● Hired') : activeGigStatus}
+                                        </span>
                                     )}
                                 </div>
-
-                                <div>
-                                    <h2 className="font-bold text-white text-sm md:text-base leading-tight">
-                                        {activeConversation?.otherUser?.name || "Loading..."}
-                                    </h2>
-                                    <div className="flex items-center gap-2 text-[10px] text-zinc-400 mt-0.5">
-                                        {(!activeConversation?.otherUser?.rating || activeConversation?.otherUser?.rating_count === 0) ? (
-                                            <span className="text-white/60 text-[10px] font-bold">NA</span>
-                                        ) : (
-                                            <span className="flex items-center gap-1 text-yellow-500 bg-yellow-500/10 px-1.5 py-0.5 rounded">
-                                                <Star size={10} fill="currentColor" /> {Number(activeConversation.otherUser.rating).toFixed(1)}
-                                            </span>
-                                        )}
-
-                                        {activeConversation?.gig?.title && <span className="opacity-50 truncate max-w-[150px]">• {activeConversation.gig.title}</span>}
-                                    </div>
-                                </div>
                             </div>
 
-                            <div className="flex gap-2">
-                                {/* Actions removed as per user request */}
-                            </div>
+                            {/* Approve Button for Poster if status is delivered/assigned (remote) */}
+                            {activeConversation?.gig?.poster_id === user?.id && (activeGigStatus === 'delivered' || activeGigStatus === 'assigned') && !activeConversation?.gig?.is_physical && (
+                                <button 
+                                    onClick={() => {
+                                        if (confirm("Approve the work and release funds?")) {
+                                            acceptOffer({ 
+                                                gig_id: activeConversation.gig_id, 
+                                                sender_id: activeConversation.otherUserId,
+                                                offer_amount: activeConversation.gig.price 
+                                            });
+                                        }
+                                    }}
+                                    className="px-3 py-1.5 bg-green-500 hover:bg-green-400 text-black text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap"
+                                >
+                                    Approve Work
+                                </button>
+                            )}
                         </div>
 
                         {/* OFFER MODAL */}
@@ -613,6 +692,7 @@ export default function ChatPage() {
                                                                 alt="Attachment"
                                                                 fill
                                                                 className="object-cover"
+                                                                unoptimized
                                                             />
                                                         </div>
                                                     </div>
@@ -630,76 +710,52 @@ export default function ChatPage() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Input */}
-                        <div className="p-4 bg-[#121217] border-t border-white/5 z-20">
-                            {/* Limit Warning Badge */}
-                            {messageLimit && (
-                                <div className={`mb-3 flex justify-center ${isLimitReached ? 'animate-pulse' : ''}`}>
-                                    <span className={`text-xs px-3 py-1 rounded-full border ${isLimitReached
-                                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
-                                        }`}>
-                                        {isLimitReached
-                                            ? "Limit Reached. Wait for the poster to accept your proposal."
-                                            : `${messageLimit - messageCount} messages left before acceptance`
-                                        }
-                                    </span>
+                        {/* Completed Banner & Input */}
+                        <div className="bg-[#121217] border-t border-white/5 z-20">
+                            {isCompleted ? (
+                                <div className="px-4 py-3 flex items-center justify-center gap-2 text-sm text-white/60 bg-green-500/5 border-b border-green-500/10">
+                                    <span className="text-green-400">✓</span>
+                                    {activeGigStatus === 'completed' ? 'Deal completed — chat is now closed.' : 'Gig cancelled — chat is closed.'}
+                                </div>
+                            ) : (
+                                <div className="p-3">
+                                    {messageLimit && (
+                                        <div className={`mb-2 flex justify-center ${isLimitReached ? 'animate-pulse' : ''}`}>
+                                            <span className={`text-xs px-3 py-1 rounded-full border ${isLimitReached ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                                                }`}>
+                                                {isLimitReached ? "Limit Reached. Wait for the poster to accept your proposal." : `${messageLimit - messageCount} messages left before acceptance`}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <form onSubmit={(e) => sendMessage(e)} className="flex gap-2 max-w-4xl mx-auto relative items-center">
+                                        <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/jpeg,image/png,image/webp" />
+                                        {activeConversation?.gig?.listing_type === 'MARKET' && activeConversation?.gig?.poster_id !== user?.id && (
+                                            <button type="button" onClick={() => setIsOfferModalOpen(true)} disabled={isLimitReached}
+                                                className="p-2.5 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-green-400 border border-white/10 disabled:opacity-50 shrink-0"
+                                            >
+                                                <IndianRupee size={16} />
+                                            </button>
+                                        )}
+                                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLimitReached || isUploading}
+                                            className="p-2.5 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-white/50 border border-white/10 disabled:opacity-50 shrink-0"
+                                        >
+                                            {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
+                                        </button>
+                                        <input
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            placeholder={isLimitReached ? "Waiting for acceptance..." : "Type a message..."}
+                                            disabled={isLimitReached}
+                                            className="flex-1 bg-[#1A1A24] text-white text-sm px-4 py-2.5 rounded-full border border-white/10 focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5]/20 outline-none transition-all disabled:opacity-50 min-w-0"
+                                        />
+                                        <button type="submit" disabled={!newMessage.trim() || isLimitReached || isSending}
+                                            className="p-2.5 bg-[#8825F5] hover:bg-[#7b1dd1] disabled:opacity-50 text-white rounded-full shadow-lg shrink-0"
+                                        >
+                                            <Send size={16} className="translate-x-0.5" />
+                                        </button>
+                                    </form>
                                 </div>
                             )}
-
-                            <form onSubmit={(e) => sendMessage(e)} className="flex gap-3 max-w-4xl mx-auto relative items-center">
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    className="hidden"
-                                    onChange={handleFileUpload}
-                                    accept="image/jpeg,image/png,image/webp"
-                                />
-
-                                {/* OFFER BUTTON - Only for Market Gigs & Non-Posters */}
-                                {activeConversation?.gig?.listing_type === 'MARKET' && activeConversation.gig.poster_id !== user.id && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsOfferModalOpen(true)}
-                                        disabled={isLimitReached}
-                                        className="p-3 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-green-400 hover:text-green-300 transition-colors border border-white/10 disabled:opacity-50"
-                                        title="Make an Offer"
-                                    >
-                                        <IndianRupee size={18} />
-                                    </button>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isLimitReached || isUploading}
-                                    className="p-3 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-white/50 hover:text-white transition-colors border border-white/10 disabled:opacity-50"
-                                >
-                                    {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
-                                </button>
-                                {isLimitReached && (
-                                    <div className="absolute inset-0 bg-[#121217]/60 z-10 flex items-center justify-center backdrop-blur-[1px] rounded-full cursor-not-allowed">
-                                        <span className="text-xs font-bold text-white/50 bg-black/40 px-3 py-1 rounded-full">
-                                            Reply Halted (Pending Approval)
-                                        </span>
-                                    </div>
-                                )}
-
-                                <input
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder={isLimitReached ? "Waiting for acceptance..." : "Type a message..."}
-                                    disabled={isLimitReached}
-                                    className={`flex-1 bg-[#1A1A24] text-white text-sm px-5 py-3 rounded-full border border-white/10 focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5]/20 outline-none transition-all ${isLimitReached ? 'opacity-50' : ''}`}
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={!newMessage.trim() || isLimitReached || isSending}
-                                    className={`p-3 bg-[#8825F5] hover:bg-[#7b1dd1] disabled:opacity-50 disabled:scale-95 text-white rounded-full shadow-lg shadow-[#8825F5]/20 transition-all ${isLimitReached ? 'grayscale opacity-30' : ''}`}
-                                >
-                                    <Send size={18} className="translate-x-0.5" />
-                                </button>
-                            </form>
                         </div>
                     </>
                 ) : (
@@ -717,7 +773,7 @@ export default function ChatPage() {
                 <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
                     <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
                     <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
-                        <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
+                        <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" unoptimized quality={100} />
                     </div>
                 </div>
             )}
@@ -731,12 +787,12 @@ function formatSmartDate(dateString: string) {
     const date = new Date(dateString);
     const now = new Date();
     const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
+
     const isToday = date.toDateString() === now.toDateString();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     const isYesterday = date.toDateString() === yesterday.toDateString();
-    
+
     if (isToday) return time;
     if (isYesterday) return `Yesterday, ${time}`;
     return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${time}`;
