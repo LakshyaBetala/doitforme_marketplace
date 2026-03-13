@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Send, ArrowLeft, Loader2, AlertCircle, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles, Paperclip, Clock, CheckCircle } from "lucide-react";
+import { Send, ArrowLeft, Loader2, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles, Paperclip, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,14 +44,14 @@ interface GigDetails {
   assigned_worker_id?: string;
   status: string;
   listing_type: "HUSTLE" | "MARKET";
-  market_type?: "SELL" | "RENT"; // Needed for limits
+  market_type?: "SELL" | "RENT";
   images?: string[];
 }
 
 export default function ChatRoomPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const roomId = params?.roomId as string; // gig_id
+  const roomId = params?.roomId as string;
   const router = useRouter();
   const supabase = supabaseBrowser();
 
@@ -68,7 +68,7 @@ export default function ChatRoomPage() {
   const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(null);
   const [applicantProfile, setApplicantProfile] = useState<UserProfile | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null); // Lightbox State
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Message Limits
   const [msgCount, setMsgCount] = useState(0);
@@ -106,17 +106,18 @@ export default function ChatRoomPage() {
         }
         setCurrentUser(user);
 
-        // Fetch My Profile (for Fee Calc)
-        const { data: myProfile } = await supabase.from('users').select('jobs_completed').eq('id', user.id).single();
-        if (myProfile) setCurrentUserProfile({ id: user.id, jobs_completed: myProfile.jobs_completed || 0 });
+        // ⚡ Fetch user profile, gig, and messages in parallel
+        const [myProfileRes, gigRes, msgsRes] = await Promise.all([
+          supabase.from('users').select('jobs_completed').eq('id', user.id).single(),
+          supabase.from("gigs").select("*").eq("id", roomId).single(),
+          supabase.from("messages").select("*").eq("gig_id", roomId).order("created_at", { ascending: true }),
+        ]);
 
-        // Fetch Gig
-        const { data: gigData, error: gigError } = await supabase
-          .from("gigs")
-          .select("*")
-          .eq("id", roomId)
-          .single();
+        if (myProfileRes.data) {
+          setCurrentUserProfile({ id: user.id, jobs_completed: myProfileRes.data.jobs_completed || 0 });
+        }
 
+        const { data: gigData, error: gigError } = gigRes;
         if (gigError || !gigData) {
           setError("Project not found.");
           setLoading(false);
@@ -127,20 +128,12 @@ export default function ChatRoomPage() {
         const posterMode = gigData.poster_id === user.id;
         setIsPoster(posterMode);
 
-        // Fetch Messages
-        const { data: msgs } = await supabase
-          .from("messages")
-          .select("*")
-          .eq("gig_id", roomId)
-          .order("created_at", { ascending: true });
-
-        const allMessages = msgs || [];
+        const allMessages = msgsRes.data || [];
         setMessages(allMessages);
 
         // Identify Context
         if (posterMode) {
           // POSTER: Load Applicants
-          // 1. Explicit Applications
           const { data: apps } = await supabase
             .from("applications")
             .select(`
@@ -151,56 +144,45 @@ export default function ChatRoomPage() {
 
           let applicantList = apps?.map((a: any) => ({ ...a.worker, id: a.worker_id })) || [];
 
-          // 1.5 Ensure Assigned Worker is in the list (Critical for P2P/Instant Buy)
+          // Ensure Assigned Worker is in the list (Critical for P2P/Instant Buy)
           if (gigData.assigned_worker_id) {
             const assignedInList = applicantList.find((a: any) => a.id === gigData.assigned_worker_id);
             if (!assignedInList) {
-              // Fetch them explicitly
               const { data: assignedWorker } = await supabase.from('users').select('id, name, avatar_url, rating').eq('id', gigData.assigned_worker_id).single();
               if (assignedWorker) applicantList.push(assignedWorker);
             }
           }
 
-          // 3. Deduplicate
           const uniqueApps = Array.from(new Map(applicantList.map((item: any) => [item.id, item])).values());
           setApplicants(uniqueApps);
 
-          // Select User
-          const queryChat = searchParams.get('chat'); // ?chat=gigId_workerId
+          const queryChat = searchParams.get('chat');
           const workerFromUrl = queryChat?.split('_')[1];
 
           let targetId = workerFromUrl || gigData.assigned_worker_id;
 
-          // If no target, default to first applicant or most recent messager
           if (!targetId && uniqueApps.length > 0) {
-            // Find most recent message sender that is NOT me
             const lastMsg = [...allMessages].reverse().find((m: any) => m.sender_id !== user.id);
-            targetId = lastMsg?.sender_id || uniqueApps[0].id;
+            targetId = lastMsg?.sender_id || (uniqueApps[0] as any).id;
           }
 
           if (targetId) {
-            setSelectedApplicantId(targetId);
+            setSelectedApplicantId(targetId as string);
             const validApp = uniqueApps.find((a: any) => a.id === targetId);
-            if (validApp) setApplicantProfile(validApp);
+            if (validApp) setApplicantProfile(validApp as UserProfile);
             else {
-              // Fetch if not in application list (edge case)
               const { data: looseUser } = await supabase.from('users').select('id, name, avatar_url, rating').eq('id', targetId).single();
-              if (looseUser) setApplicantProfile(looseUser);
+              if (looseUser) setApplicantProfile(looseUser as UserProfile);
             }
           }
         } else {
-          // APPLICANT: Target is Poster
-          setApplicantProfile(null); // I am talking to poster, don't need "applicant profile"
-          // Fetch poster details for header if needed, but we have gig.
+          // APPLICANT
+          setApplicantProfile(null);
 
-          // Set Limit Logic
-          let limit = 5; // Default (Hustle)
-          if (gigData.listing_type === 'MARKET') {
-            limit = 10; // Unified V6 Limit
-          }
+          let limit = 5;
+          if (gigData.listing_type === 'MARKET') limit = 10;
           setMsgLimit(limit);
 
-          // Calculate my count (exclude Offers AND Magic Chips from limit!)
           const allMagicChips = [
             "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
             "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
@@ -214,7 +196,7 @@ export default function ChatRoomPage() {
           setMsgCount(myMsgs.length);
         }
 
-        // Realtime
+        // Realtime subscription
         const channel = supabase.channel(`chat:${roomId}`)
           .on(
             "postgres_changes",
@@ -252,30 +234,27 @@ export default function ChatRoomPage() {
     };
   }, [roomId, supabase, router, searchParams]);
 
-  // Scroll to bottom
+  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, selectedApplicantId]);
 
-
   const sendMessage = async (txt?: string, type: 'text' | 'offer' | 'image' = 'text', amount?: number) => {
-    if (isSending) return; // Prevent double-send
+    if (isSending) return;
     const textToSend = txt || input;
-    // For offes, text might be empty
     if ((type === 'text' && !textToSend.trim()) || !currentUser) return;
 
     setIsSending(true);
 
-    // AI Safety Check (Client-Side)
     if (type === 'text') {
       const aiResult = await analyze(textToSend, 'CHAT');
       if (!aiResult.isSafe) {
         toast.error(`⚠️ Safety Alert: ${aiResult.reason || "Content flagged by AI."}`);
+        setIsSending(false);
         return;
       }
     }
 
-    // Don't clear immediately. Wait for success.
     if (type === 'offer') setIsOfferModalOpen(false);
 
     try {
@@ -285,7 +264,6 @@ export default function ChatRoomPage() {
         content: textToSend,
         type,
         offerAmount: amount,
-        // If poster, define who I am talking to
         applicantId: isPoster ? selectedApplicantId : undefined
       };
 
@@ -302,7 +280,6 @@ export default function ChatRoomPage() {
         return;
       }
 
-      // Success! Clear input now.
       if (type === 'text' && !txt) setInput("");
 
     } catch (e) {
@@ -317,27 +294,23 @@ export default function ChatRoomPage() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) return toast.error("File size must be less than 5MB");
-    // Validate type (Client side check)
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return toast.error("Only JPG, PNG, WEBP allowed");
 
     setIsUploading(true);
     try {
-      // 1. Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${roomId}/${Date.now()}.${fileExt}`;
 
-      const { data, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('chat-attachments')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
-      // 2. Get Public URL
       const { data: { publicUrl } } = supabase.storage
         .from('chat-attachments')
         .getPublicUrl(fileName);
 
-      // 3. Send Message as 'image'
       await sendMessage(publicUrl, 'image');
 
     } catch (err: any) {
@@ -365,20 +338,18 @@ export default function ChatRoomPage() {
     setIsAccepting(true);
 
     try {
-      // Use new V4 endpoint that updates 'applications' table
       const res = await fetch("/api/gig/accept-offer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gigId: gig?.id,
-          workerId: offerToAccept.sender_id, // The applicant who made the offer
+          workerId: offerToAccept.sender_id,
           price: offerToAccept.offer_amount
         }),
       });
 
       if (res.ok) {
-        // Optimistically update UI if needed, but the system message will trigger refresh
-        setGig(prev => prev ? ({ ...prev, negotiated_price: offerToAccept.offer_amount! }) : null); // Optional: store locally for UI
+        setGig(prev => prev ? ({ ...prev, negotiated_price: offerToAccept.offer_amount! }) : null);
         setIsAcceptModalOpen(false);
         setOfferToAccept(null);
         toast.success("Offer accepted! Worker has been notified.");
@@ -398,17 +369,14 @@ export default function ChatRoomPage() {
     sendMessage(`I've declined the offer of ₹${msg.offer_amount}.`, 'text');
   };
 
-
   // --- DERIVED STATE ---
-  // Filter messages for the active conversation
   const activeMessages = messages.filter(m => {
-    if (!isPoster) return true; // Applicant sees all (filtered by RLS anyway usually, but strictly: me <-> poster)
+    if (!isPoster) return true;
     if (!selectedApplicantId) return false;
     return (m.sender_id === currentUser?.id && m.receiver_id === selectedApplicantId) ||
       (m.sender_id === selectedApplicantId && m.receiver_id === currentUser?.id);
   });
 
-  // Magic Chips
   const magicChips = gig?.listing_type === 'MARKET'
     ? ["Available?", "Best Price?", "Where to meet?", "Can I see more pics?"]
     : ["I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"];
@@ -438,7 +406,6 @@ export default function ChatRoomPage() {
                 <div className="p-8 text-center text-white/50 text-xs">No applicants yet.</div>
               ) : (
                 applicants.map(app => {
-                  // Find last MESSAGE from this applicant OR to this applicant to show in sidebar
                   const lastMsg = [...messages]
                     .reverse()
                     .find(m =>
@@ -490,7 +457,6 @@ export default function ChatRoomPage() {
               <ArrowLeft size={20} className="text-white/70" />
             </Link>
 
-            {/* Dynamic Title */}
             <div>
               <h1 className="font-bold text-sm md:text-base leading-tight">
                 {isPoster ? (applicantProfile?.name || "Select Applicant") : gig.title}
@@ -529,14 +495,14 @@ export default function ChatRoomPage() {
           )}
         </div>
 
-        {/* OFFER MODAL */}
+        {/* OFFER MODAL — no backdrop-blur (GPU expensive on mobile) */}
         <AnimatePresence>
           {isOfferModalOpen && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             >
               <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
                 <button
@@ -556,7 +522,6 @@ export default function ChatRoomPage() {
                     placeholder="Enter amount (₹)"
                     className="w-full bg-black/20 text-white p-4 rounded-xl border border-white/10 focus:border-brand-purple outline-none text-lg font-bold"
                   />
-                  {/* Fee Logic Display for Worker (Hustle) */}
                   {!isPoster && gig.listing_type === 'HUSTLE' && (
                     <div className="bg-white/10 rounded-lg p-3 text-xs space-y-1 my-4">
                       <div className="flex justify-between text-white/50">
@@ -577,7 +542,7 @@ export default function ChatRoomPage() {
                   <button
                     onClick={sendOffer}
                     disabled={!offerAmount || Number(offerAmount) <= 0}
-                    className="w-full py-3 bg-brand-purple text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-brand-purple/20"
+                    className="w-full py-3 bg-brand-purple text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-brand-purple/20 touch-manipulation"
                   >
                     Send Offer
                   </button>
@@ -587,14 +552,14 @@ export default function ChatRoomPage() {
           )}
         </AnimatePresence>
 
-        {/* ACCEPT OFFER MODAL */}
+        {/* ACCEPT OFFER MODAL — no backdrop-blur */}
         <AnimatePresence>
           {isAcceptModalOpen && offerToAccept && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+              className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             >
               <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-purple to-pink-500"></div>
@@ -631,14 +596,14 @@ export default function ChatRoomPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setIsAcceptModalOpen(false)}
-                    className="py-3 bg-white/10 hover:bg-white/10 rounded-xl text-white font-bold text-sm transition-colors"
+                    className="py-3 bg-white/10 hover:bg-white/10 rounded-xl text-white font-bold text-sm transition-colors touch-manipulation"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmAcceptOffer}
                     disabled={isAccepting}
-                    className="py-3 bg-green-500 hover:bg-green-600 rounded-xl text-white font-bold text-sm transition-colors shadow-lg shadow-green-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="py-3 bg-green-500 hover:bg-green-600 rounded-xl text-white font-bold text-sm transition-colors shadow-lg shadow-green-500/20 disabled:opacity-50 flex items-center justify-center gap-2 touch-manipulation"
                   >
                     {isAccepting ? <Loader2 className="animate-spin" size={16} /> : "Confirm Acceptance"}
                   </button>
@@ -648,9 +613,9 @@ export default function ChatRoomPage() {
           )}
         </AnimatePresence>
 
-        {/* MESSAGES */}
+        {/* MESSAGES — CSS fade-in instead of Framer Motion per message (much lighter on mobile) */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 relative bg-[#0B0B11]">
-          {/* Wallpaper */}
+          {/* Subtle dot grid wallpaper */}
           <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
 
           {(isPoster && !selectedApplicantId) ? (
@@ -670,9 +635,8 @@ export default function ChatRoomPage() {
               const isImage = m.message_type === 'image';
 
               return (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative z-10`}>
+                <div key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative z-10 animate-in fade-in duration-150`}>
                   {isOffer ? (
-                    // OFFER CARD UI
                     <div className={`max-w-[85%] md:max-w-[300px] w-full rounded-2xl overflow-hidden border ${isMe ? 'border-brand-purple/50 bg-brand-purple/5' : 'border-white/10 bg-[#1A1A24]'}`}>
                       <div className="p-4 bg-white/10 border-b border-white/5 flex justify-between items-center">
                         <span className="text-xs font-bold uppercase tracking-wider text-white/60">
@@ -688,18 +652,17 @@ export default function ChatRoomPage() {
                           {isMe ? "Waiting for response..." : "Proposed Price"}
                         </p>
                       </div>
-                      {/* Actions for Receiver (Poster) */}
                       {!isMe && isPoster && gig.status === 'open' && (
                         <div className="p-2 grid grid-cols-2 gap-2 bg-black/20">
                           <button
                             onClick={() => declineOffer(m)}
-                            className="py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20"
+                            className="py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20 touch-manipulation"
                           >
                             Decline
                           </button>
                           <button
                             onClick={() => acceptOffer(m)}
-                            className="py-2 rounded-lg bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20"
+                            className="py-2 rounded-lg bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20 touch-manipulation"
                           >
                             Accept
                           </button>
@@ -718,7 +681,6 @@ export default function ChatRoomPage() {
                       </div>
                     </div>
                   ) : isImage ? (
-                    // IMAGE MESSAGE UI
                     <div className={`max-w-[85%] md:max-w-[300px] rounded-2xl overflow-hidden border cursor-zoom-in ${isMe ? 'border-brand-purple/50' : 'border-white/10'}`} onClick={() => setSelectedImage(m.content)}>
                       <div className="relative aspect-video bg-black/50">
                         <Image
@@ -734,7 +696,6 @@ export default function ChatRoomPage() {
                       </div>
                     </div>
                   ) : (
-                    // STANDARD MESSAGE UI
                     <div className={`max-w-[85%] md:max-w-[60%] px-4 py-2 rounded-2xl text-sm shadow-sm break-words ${isMe ? "bg-brand-purple text-white rounded-tr-none" : "bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-none"}`}>
                       {m.content}
                       <div className="text-[9px] mt-1 text-right opacity-50 font-mono">
@@ -742,7 +703,7 @@ export default function ChatRoomPage() {
                       </div>
                     </div>
                   )}
-                </motion.div>
+                </div>
               );
             })
           )}
@@ -766,13 +727,13 @@ export default function ChatRoomPage() {
           )}
 
           {/* Magic Chips */}
-          <div className="flex gap-2 overflow-x-auto px-4 py-3 no-scrollbar mask-gradient">
+          <div className="flex gap-2 overflow-x-auto px-4 py-3 no-scrollbar">
             {magicChips.map((chip, i) => (
               <button
                 key={i}
                 onClick={() => sendMessage(chip)}
                 disabled={isSending || (!isPoster && msgCount >= msgLimit)}
-                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition-colors disabled:opacity-50"
+                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition-colors disabled:opacity-50 touch-manipulation"
               >
                 {chip}
               </button>
@@ -785,14 +746,14 @@ export default function ChatRoomPage() {
             {!isPoster && gig.listing_type === 'MARKET' && gig.status === 'open' && (
               <button
                 onClick={() => setIsOfferModalOpen(true)}
-                className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-green-400 border border-white/5 transition-all shrink-0"
+                className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-green-400 border border-white/5 transition-all shrink-0 touch-manipulation"
                 title="Make an Offer"
               >
                 <IndianRupee size={20} />
               </button>
             )}
 
-            {/* 🚀 THE FIX: HIDDEN INPUT AND CLIP BUTTON */}
+            {/* File upload */}
             <input
               type="file"
               ref={fileInputRef}
@@ -803,7 +764,7 @@ export default function ChatRoomPage() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-white/70 border border-white/5 transition-all shrink-0 disabled:opacity-50"
+              className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-white/70 border border-white/5 transition-all shrink-0 disabled:opacity-50 touch-manipulation"
               title="Attach Image"
             >
               {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
@@ -823,7 +784,7 @@ export default function ChatRoomPage() {
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() || isSending || isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="w-12 h-12 rounded-full bg-brand-purple hover:bg-brand-purple/90 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:hover:bg-brand-purple shrink-0 shadow-[0_0_20px_rgba(136,37,245,0.3)]"
+              className="w-12 h-12 rounded-full bg-brand-purple hover:bg-brand-purple/90 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:hover:bg-brand-purple shrink-0 shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation"
             >
               <Send size={18} className="ml-1" />
             </button>
@@ -833,7 +794,7 @@ export default function ChatRoomPage() {
 
       {/* Lightbox */}
       {selectedImage && (
-        <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
+        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
           <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
           <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
             <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />

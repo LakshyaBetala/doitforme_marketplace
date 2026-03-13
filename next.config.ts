@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  // Fix: tells Next.js this project is the root, ignoring the parent lockfile
+  outputFileTracingRoot: path.join(__dirname),
   images: {
     remotePatterns: [
       {

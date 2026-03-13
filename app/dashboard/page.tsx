@@ -48,63 +48,47 @@ export default function Dashboard() {
       if (!session) return router.push("/login");
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        const { data: dbUser } = await supabase.from("users").select("*").eq("id", authUser.id).single();
-        setUser({ ...authUser, user_metadata: { ...authUser.user_metadata, ...dbUser } });
+      if (!authUser) { setLoading(false); return; }
 
-        // Check for unread messages (received in last 24h, not sent by me)
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const { data: unread } = await supabase
-          .from("messages")
-          .select("id")
-          .eq("receiver_id", authUser.id)
-          .gt("created_at", oneDayAgo)
-          .limit(1);
-        setHasUnreadMessages((unread?.length || 0) > 0);
+      const nowIso = new Date().toISOString();
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        // Show preferences modal if user has no preferences set
-        if (!dbUser?.preferences || dbUser.preferences.length === 0) {
-          setShowPreferencesModal(true);
-        }
-
-        // Load Feed
-        const nowIso = new Date().toISOString();
-        let query = supabase
-          .from("gigs")
+      // ⚡ Run all DB fetches in parallel instead of sequentially
+      const [dbUserRes, unreadRes, gigsRes, refsRes, ptsRes] = await Promise.all([
+        supabase.from("users").select("*").eq("id", authUser.id).single(),
+        supabase.from("messages").select("id").eq("receiver_id", authUser.id).gt("created_at", oneDayAgo).limit(1),
+        supabase.from("gigs")
           .select("*, users:poster_id(college, name, rating, rating_count)")
           .neq("poster_id", authUser.id)
           .eq("status", "open")
+          .or(`deadline.is.null,deadline.gt.${nowIso}`)
           .order("created_at", { ascending: false })
-          .limit(20);
-
-        query = query.or(`deadline.is.null,deadline.gt.${nowIso}`);
-        const { data: gigsData } = await query;
-        setGigs(gigsData || []);
-
-        // Fetch referral data
-        if (dbUser?.referral_code) {
-          setReferralCode(dbUser.referral_code);
-        }
-        setPointsBalance(dbUser?.points_balance || 0);
-
-        // Fetch referral count
-        const { data: refs } = await supabase
-          .from("referrals")
-          .select("id")
-          .eq("referrer_id", authUser.id);
-        setReferralCount(refs?.length || 0);
-
-        // Fetch active (non-expired) points
-        const { data: pts } = await supabase
-          .from("points_transactions")
+          .limit(20),
+        supabase.from("referrals").select("id").eq("referrer_id", authUser.id),
+        supabase.from("points_transactions")
           .select("amount, expires_at, reason")
           .eq("user_id", authUser.id)
           .eq("type", "EARN")
           .eq("redeemed", false)
-          .gt("expires_at", new Date().toISOString())
-          .order("expires_at", { ascending: true });
-        setActivePoints(pts || []);
+          .gt("expires_at", nowIso)
+          .order("expires_at", { ascending: true }),
+      ]);
+
+      const dbUser = dbUserRes.data;
+      setUser({ ...authUser, user_metadata: { ...authUser.user_metadata, ...dbUser } });
+      setHasUnreadMessages((unreadRes.data?.length || 0) > 0);
+      setGigs(gigsRes.data || []);
+      setReferralCount(refsRes.data?.length || 0);
+      setActivePoints(ptsRes.data || []);
+      if (dbUser?.referral_code) setReferralCode(dbUser.referral_code);
+      setPointsBalance(dbUser?.points_balance || 0);
+
+      // Show preferences modal only if: no prefs set AND user hasn't dismissed it before
+      const dismissed = localStorage.getItem(`doitforme_prefs_dismissed_${authUser.id}`);
+      if ((!dbUser?.preferences || dbUser.preferences.length === 0) && !dismissed) {
+        setShowPreferencesModal(true);
       }
+
       setLoading(false);
     };
     loadUserAndGigs();
@@ -503,7 +487,11 @@ export default function Dashboard() {
         <PreferencesModal
           user={user}
           supabase={supabase}
-          onClose={() => setShowPreferencesModal(false)}
+          onClose={() => {
+            // Persist dismissal so it never pops up again on this device
+            if (user?.id) localStorage.setItem(`doitforme_prefs_dismissed_${user.id}`, '1');
+            setShowPreferencesModal(false);
+          }}
         />
       )}
     </div>
@@ -568,18 +556,16 @@ function FeedTab({ label, active, onClick }: any) {
   );
 }
 
-function FeedCard({ gig, index }: { gig: any, index?: number }) {
+function FeedCard({ gig }: { gig: any, index?: number }) {
   const isMarket = gig.listing_type === 'MARKET';
   const isHighlighted = gig.is_highlighted && gig.highlight_expires_at && new Date(gig.highlight_expires_at) > new Date();
-  const delay = index !== undefined ? `${index * 50}ms` : '0ms';
   return (
     <Link href={`/gig/${gig.id}`} className="block">
       <div
-        className={`bg-[#0F172A] border rounded-2xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-xl transition-all min-h-[170px] h-full relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both ${isHighlighted
+        className={`bg-[#0F172A] border rounded-2xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-xl transition-all min-h-[170px] h-full relative overflow-hidden ${isHighlighted
           ? 'border-brand-purple/50 shadow-[0_0_25px_rgba(136,37,245,0.15)] hover:shadow-[0_0_35px_rgba(136,37,245,0.3)]'
           : 'border-[#1E293B] hover:border-[#334155]'
           }`}
-        style={{ animationDelay: delay }}
       >
         {isHighlighted && (
           <div className="absolute top-3 right-3 px-2 py-0.5 bg-brand-purple/20 border border-brand-purple/30 rounded-md text-[8px] font-bold text-brand-purple uppercase tracking-widest z-20">
@@ -655,11 +641,11 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
     if (selected.length === 0) return;
     setLoading(true);
     await supabase.from("users").update({ preferences: selected }).eq("id", user.id);
-    onClose();
+    onClose(); // onClose also saves the localStorage flag
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 animate-in fade-in">
       <div className="w-full max-w-md max-h-[90vh] flex flex-col bg-[#0F172A] border border-[#1E293B] rounded-[24px] md:rounded-3xl p-5 md:p-8 pt-8 relative shadow-2xl overflow-y-auto scrollbar-hide">
         <button onClick={onClose} className="absolute top-3 right-3 md:top-4 md:right-4 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
           <X size={20} />
@@ -678,7 +664,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
             <button
               key={cat}
               onClick={() => handleToggle(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${selected.includes(cat) ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.4)]' : 'bg-[#1E293B]/50 border-[#1E293B] text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all touch-manipulation ${selected.includes(cat) ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.4)]' : 'bg-[#1E293B]/50 border-[#1E293B] text-zinc-400 hover:text-white hover:border-zinc-600'}`}
             >
               {cat}
             </button>
@@ -687,9 +673,16 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
         <button
           onClick={handleSave}
           disabled={loading || selected.length === 0}
-          className="w-full bg-brand-purple hover:bg-[#7D5FFF] text-white py-3.5 md:py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center shrink-0"
+          className="w-full bg-brand-purple hover:bg-[#7D5FFF] text-white py-3.5 md:py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center shrink-0 touch-manipulation"
         >
           {loading ? "Saving..." : `Save Preferences (${selected.length}/5)`}
+        </button>
+        {/* Skip option — saves dismissal flag so it never appears again */}
+        <button
+          onClick={onClose}
+          className="mt-3 w-full text-zinc-500 hover:text-zinc-300 text-xs font-medium py-2 transition-colors"
+        >
+          Skip for now
         </button>
       </div>
     </div>
