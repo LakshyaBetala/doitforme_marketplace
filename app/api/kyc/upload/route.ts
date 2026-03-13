@@ -54,9 +54,9 @@ export async function POST(req: Request) {
     // 4. Upload to Storage
     console.log("Starting KYC upload to bucket 'kyc-ids' for user:", user.id);
     const fileExt = file.name.split('.').pop() || 'jpg';
-    const filePath = `${user.id}/${user.id}_student_id_${Date.now()}.${fileExt}`;
+    const filePath = `kyc/${user.id}/${user.id}_student_id_${Date.now()}.${fileExt}`;
     const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
-      .from('kyc-ids')
+      .from('gig-images')
       .upload(filePath, file, {
         contentType: file.type,
         upsert: true

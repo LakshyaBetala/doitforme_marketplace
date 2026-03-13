@@ -48,7 +48,7 @@ export async function POST(req: Request) {
         // FETCH GIG
         const { data: gig, error: gigError } = await supabaseAdmin
             .from("gigs")
-            .select("status, poster_id, price")
+            .select("status, poster_id, price, market_type, handshake_code") // Added handshake_code
             .eq("id", gigId)
             .single();
 
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Gig not found" }, { status: 404 });
         }
 
-        if (gig.status !== 'open') {
+        if (gig.status !== 'open' && gig.status !== 'assigned') {
             return NextResponse.json({ error: "Item is already sold or assigned." }, { status: 400 });
         }
 
@@ -65,35 +65,39 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "You cannot buy your own listing." }, { status: 400 });
         }
 
+        const isRent = gig.market_type === 'RENT';
         const handshakeCode = Math.floor(1000 + Math.random() * 9000).toString();
 
         // UPDATE GIG STATUS (ADMIN)
         const { error: updateError } = await supabaseAdmin.from("gigs").update({
             status: 'assigned',
             assigned_worker_id: workerId,
-            escrow_status: 'HELD'
+            escrow_status: isRent ? 'HELD' : null,
+            handshake_code: isRent ? null : handshakeCode // Store in gig if not rent
         }).eq("id", gigId);
 
         if (updateError) throw updateError;
 
-        // CREATE ESCROW RECORD (ADMIN)
-        const { error: escrowError } = await supabaseAdmin.from("escrow").insert({
-            gig_id: gigId,
-            worker_id: workerId,
-            poster_id: gig.poster_id,
-            original_amount: gig.price || 0,
-            amount_held: gig.price || 0,
-            platform_fee: 0,
-            gateway_fee: 0,
-            release_date: new Date().toISOString(),
-            status: 'HELD',
-            handshake_code: handshakeCode,
-            escrow_category: 'MARKETPLACE'
-        });
+        // CREATE ESCROW RECORD ONLY FOR RENT
+        if (isRent) {
+            const { error: escrowError } = await supabaseAdmin.from("escrow").insert({
+                gig_id: gigId,
+                worker_id: workerId,
+                poster_id: gig.poster_id,
+                original_amount: gig.price || 0,
+                amount_held: gig.price || 0,
+                platform_fee: 0,
+                gateway_fee: 0,
+                release_date: new Date().toISOString(),
+                status: 'HELD',
+                handshake_code: handshakeCode,
+                escrow_category: 'MARKETPLACE'
+            });
 
-        if (escrowError) {
-            console.error("Escrow creation failed:", escrowError);
-            throw new Error("Failed to initialize secure handover.");
+            if (escrowError) {
+                console.error("Escrow creation failed:", escrowError);
+                throw new Error("Failed to initialize secure handover.");
+            }
         }
 
         // CREATE APPLICATION RECORD (ADMIN - using 'pitch')

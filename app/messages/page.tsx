@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
-import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X } from "lucide-react";
+import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X, CheckCircle2 } from "lucide-react";
 
 export default function ChatPage() {
     return (
@@ -64,7 +64,6 @@ function MessagesContent() {
     // RTsub cleanup ref
     const channelRef = useRef<any>(null);
 
-    // 1. Initialize User
     // 1. Initialize User & Real-time Conversation List
     useEffect(() => {
         let channel: any;
@@ -117,7 +116,7 @@ function MessagesContent() {
                 .from('messages')
                 .select(`
                   *,
-                  gig:gigs!gig_id(title, listing_type, poster_id, assigned_worker_id, status, price)
+                  gig:gigs!gig_id(title, listing_type, market_type, poster_id, assigned_worker_id, status, price, is_physical)
                 `)
                 .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
                 .order('created_at', { ascending: false });
@@ -436,7 +435,6 @@ function MessagesContent() {
 
             if (res.ok) {
                 toast.success("Offer accepted! This gig is now assigned.");
-                // Force refresh or optimistic update
                 window.location.reload();
             } else {
                 const json = await res.json();
@@ -445,6 +443,32 @@ function MessagesContent() {
         } catch (e) {
             console.error(e);
             toast.error("Network error");
+        }
+    };
+
+    const approveWork = async (gigId: string) => {
+        if (!confirm("Approve the work and release funds? This will complete the deal.")) return;
+
+        try {
+            const res = await fetch("/api/gig/complete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    gigId: gigId,
+                    rating: 5, // Default rating for quick approval
+                    review: "Work approved via chat."
+                })
+            });
+
+            if (res.ok) {
+                toast.success("Work approved! Payout initiated.");
+                window.location.reload();
+            } else {
+                const data = await res.json();
+                toast.error(data.error || "Failed to approve work.");
+            }
+        } catch (err) {
+            toast.error("Network error. Please try again.");
         }
     };
 
@@ -519,7 +543,7 @@ function MessagesContent() {
                                                     alt=""
                                                     fill
                                                     className="object-cover"
-                                                    unoptimized // Google avatars often fail with Next.js image optimization if not configured correctly
+                                                    unoptimized
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center bg-zinc-800">
@@ -539,7 +563,7 @@ function MessagesContent() {
                                         {gigStatus && gigStatus !== 'open' && (
                                             <span className={`text-[10px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded-full ${gigStatus === 'completed' ? 'text-green-400 bg-green-500/10' : 'text-yellow-400 bg-yellow-500/10'
                                                 }`}>
-                                                {gigStatus === 'completed' ? '✓ Completed' : (chat.gig?.listing_type === 'MARKET' ? '● In Deal' : '● Hired')}
+                                                {gigStatus === 'completed' ? '✓ Completed' : ((gigStatus === 'assigned' || gigStatus === 'delivered') ? (chat.gig?.listing_type === 'MARKET' ? '● In Deal' : '● Hired') : gigStatus)}
                                             </span>
                                         )}
                                     </div>
@@ -584,28 +608,21 @@ function MessagesContent() {
                                     {activeConversation?.gig?.title && <span className="opacity-50 truncate">{activeConversation.gig.title}</span>}
                                     {activeGigStatus && (
                                         <span className={`font-bold px-1.5 py-0.5 rounded-full ${activeGigStatus === 'completed' ? 'text-green-400 bg-green-500/10' :
-                                                activeGigStatus === 'assigned' ? 'text-yellow-400 bg-yellow-500/10' :
+                                                (activeGigStatus === 'assigned' || activeGigStatus === 'delivered') ? 'text-yellow-400 bg-yellow-500/10' :
                                                     'text-white/30'
-                                            }`}>{activeGigStatus === 'completed' ? '✓ Completed' : activeGigStatus === 'assigned' ? (activeConversation?.gig?.listing_type === 'MARKET' ? '● In Deal' : '● Hired') : activeGigStatus}
+                                            }`}>{activeGigStatus === 'completed' ? '✓ Completed' : (activeGigStatus === 'assigned' || activeGigStatus === 'delivered') ? (activeConversation?.gig?.listing_type === 'MARKET' ? '● In Deal' : '● Hired') : activeGigStatus}
                                         </span>
                                     )}
                                 </div>
                             </div>
 
                             {/* Approve Button for Poster if status is delivered/assigned (remote) */}
-                            {activeConversation?.gig?.poster_id === user?.id && (activeGigStatus === 'delivered' || activeGigStatus === 'assigned') && !activeConversation?.gig?.is_physical && (
-                                <button 
-                                    onClick={() => {
-                                        if (confirm("Approve the work and release funds?")) {
-                                            acceptOffer({ 
-                                                gig_id: activeConversation.gig_id, 
-                                                sender_id: activeConversation.otherUserId,
-                                                offer_amount: activeConversation.gig.price 
-                                            });
-                                        }
-                                    }}
-                                    className="px-3 py-1.5 bg-green-500 hover:bg-green-400 text-black text-[10px] font-bold rounded-lg transition-colors whitespace-nowrap"
+                            {activeConversation && activeConversation.gig_status !== 'completed' && activeConversation.role === 'poster' && (activeConversation.gig_status === 'delivered' || (activeConversation.gig_status === 'assigned' && activeConversation.listing_type !== 'MARKET')) && !activeConversation.gig?.is_physical && (
+                                <button
+                                    onClick={() => approveWork(activeConversation.gig_id)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-green-500/20 active:scale-95 whitespace-nowrap"
                                 >
+                                    <CheckCircle2 size={16} />
                                     Approve Work
                                 </button>
                             )}

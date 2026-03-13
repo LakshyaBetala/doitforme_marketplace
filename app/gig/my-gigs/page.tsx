@@ -90,7 +90,14 @@ export default function ActivityHubPage() {
     }
   };
 
-  const getAppStatusBadge = (status: string) => {
+  const getAppStatusBadge = (status: string, gigStatus?: string) => {
+    if (gigStatus?.toLowerCase() === 'completed') {
+      return (
+        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] font-black uppercase tracking-widest">
+          <CheckCircle2 className="w-3 h-3" /> Completed
+        </span>
+      );
+    }
     switch (status) {
       case "accepted":
         return (
@@ -301,7 +308,7 @@ function ApplicationCard({ app, gig, getAppStatusBadge, delay }: { app: any, gig
         <div className="p-2.5 bg-[#1E293B] rounded-xl border border-white/5 text-brand-pink group-hover:scale-110 transition-transform shadow-inner">
           {isMarket ? <ShoppingBag className="w-4 h-4" /> : <Briefcase className="w-4 h-4" />}
         </div>
-        {getAppStatusBadge(app.status)}
+        {getAppStatusBadge(app.status, gig.status)}
       </div>
 
       <h3 className="text-[16px] font-bold text-white mb-2 line-clamp-2 group-hover:text-brand-pink transition-colors">

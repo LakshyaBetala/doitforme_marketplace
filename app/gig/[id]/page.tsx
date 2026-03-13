@@ -282,15 +282,20 @@ export default function GigDetailPage() {
           // Handshake code logic:
           // Poster (isOwner === true) DISPLAYS the code.
           // Worker (assigned_worker_id === user.id) INPUTS the code.
-          // The RLS policy should allow both to see the escrow record.
-          const { data: escrowData } = await supabase
-            .from('escrow')
-            .select('handshake_code')
-            .eq('gig_id', id)
-            .maybeSingle();
+          
+          let hCode = gigData.handshake_code; // Try gig table first (P2P sell)
 
-          if (escrowData?.handshake_code) {
-            setHandshakeCode(escrowData.handshake_code);
+          if (!hCode) {
+            const { data: escrowData } = await supabase
+              .from('escrow')
+              .select('handshake_code')
+              .eq('gig_id', id)
+              .maybeSingle();
+            hCode = escrowData?.handshake_code;
+          }
+
+          if (hCode) {
+            setHandshakeCode(hCode);
           }
         }
 
@@ -1238,7 +1243,7 @@ export default function GigDetailPage() {
         )}
 
         {/* HANDSHAKE SECTION — Physical Deals only */}
-        {gig.escrow_status === 'HELD' && (status === 'assigned' || status === 'delivered') && gig.is_physical === true && (
+        {handshakeCode && (status === 'assigned' || status === 'delivered') && (isOwner || isWorker) && gig.is_physical === true && (
           <div className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -1555,7 +1560,11 @@ export default function GigDetailPage() {
                   {isOwner ? (
                     <div className="space-y-3">
                       <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
-                        <p className="text-sm text-white/60">You are the owner of this post.</p>
+                        <p className="text-sm text-white/60">
+                          {isMarket 
+                            ? (gig.market_type === "RENT" ? "You are the Renter (Owner)" : "You are the Seller") 
+                            : "You are the Poster of this hustle."}
+                        </p>
                       </div>
 
                       {(status === "assigned" || status === "delivered") && (
@@ -1579,7 +1588,7 @@ export default function GigDetailPage() {
                             disabled={isCancelling}
                             className="w-full py-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-sm transition-all"
                           >
-                            {isCancelling ? "Processing..." : "Request Cancellation"}
+                            {isCancelling ? "Processing..." : (isMarket ? "Cancel Deal" : "Request Cancellation")}
                           </button>
                         </>
                       )}
@@ -1590,7 +1599,7 @@ export default function GigDetailPage() {
                           disabled={isCancelling}
                           className="w-full py-4 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold text-lg transition-all active:scale-[0.98]"
                         >
-                          {isCancelling ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Cancel Listing"}
+                          {isCancelling ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (isMarket ? "Remove Listing" : "Cancel Request")}
                         </button>
                       )}
 
@@ -1613,13 +1622,13 @@ export default function GigDetailPage() {
                             }`}
                         >
                           {isBuying ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (
-                            hasApplied ? "Offer Pending" : (isMarket ? (gig.market_type === 'RENT' ? "Rent Item" : "Make Offer") : "Apply Now")
+                            hasApplied ? (isMarket ? "Offer Sent" : "Application Sent") : (isMarket ? (gig.market_type === 'RENT' ? "Rent Item" : "Make Offer") : "Apply Now")
                           )}
                         </button>
                       ) : (
                         <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
                           <p className="text-sm text-white/60">
-                            {status === "completed" ? "This listing is closed." : "This listing is currently assigned."}
+                            {status === "completed" ? "This listing is closed." : (isMarket ? "This item is currently in a deal." : "This hustle is currently assigned.")}
                           </p>
                         </div>
                       )}

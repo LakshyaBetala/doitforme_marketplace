@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     // 2. Fetch Gig
     const { data: gig } = await supabaseAdmin
       .from('gigs')
-      .select('assigned_worker_id, poster_id, listing_type, market_type, title')
+      .select('assigned_worker_id, poster_id, listing_type, market_type, title, handshake_code')
       .eq('id', gigId)
       .single();
 
@@ -56,17 +56,21 @@ export async function POST(req: Request) {
       }, { status: 403 });
     }
 
-    // 4. Fetch Escrow
+    // 4. Fetch Escrow (Optional for SELL)
     const { data: escrow } = await supabaseAdmin
       .from('escrow')
       .select('*')
       .eq('gig_id', gigId)
-      .single();
+      .maybeSingle();
 
-    if (!escrow) return NextResponse.json({ error: "Escrow record not found" }, { status: 404 });
+    if (!escrow && !(gig.listing_type === 'MARKET' && gig.market_type === 'SELL')) {
+        return NextResponse.json({ error: "Escrow record not found" }, { status: 404 });
+    }
 
     // 5. Verify Code
-    if (escrow.handshake_code !== code) {
+    const correctCode = escrow?.handshake_code || gig.handshake_code;
+    if (!correctCode) return NextResponse.json({ error: "No handshake code established" }, { status: 500 });
+    if (correctCode !== code) {
       return NextResponse.json({ error: "Invalid Handshake Code" }, { status: 400 });
     }
 
@@ -118,11 +122,13 @@ export async function POST(req: Request) {
       });
     }
 
-    // 7. Update Escrow → RELEASED
-    await supabaseAdmin
-      .from('escrow')
-      .update({ status: 'RELEASED', released_at: new Date().toISOString() })
-      .eq('id', escrow.id);
+    // 7. Update Escrow → RELEASED (Only if it exists)
+    if (escrow) {
+        await supabaseAdmin
+          .from('escrow')
+          .update({ status: 'RELEASED', released_at: new Date().toISOString() })
+          .eq('id', escrow.id);
+    }
 
     // 8. Update Gig → completed
     await supabaseAdmin
