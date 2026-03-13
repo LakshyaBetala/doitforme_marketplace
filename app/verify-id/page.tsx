@@ -33,19 +33,16 @@ export default function VerifyIDPage() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from("users")
-          .select("kyc_verified, id_card_url")
-          .eq("id", user.id)
-          .single();
-        
-        if (data?.kyc_verified) {
-          router.push("/profile");
-        } else if (data?.id_card_url) {
-          // Already uploaded but not yet verified
-          setAlreadySubmitted(true);
-        }
+      if (!user) return;
+      const { data } = await supabase
+        .from("users")
+        .select("kyc_verified, id_card_url")
+        .eq("id", user.id)
+        .single();
+      if (data?.kyc_verified) {
+        router.push("/profile");
+      } else if (data?.id_card_url) {
+        setAlreadySubmitted(true);
       }
     })();
   }, [supabase, router]);
@@ -89,48 +86,34 @@ export default function VerifyIDPage() {
     if (!file) return;
     setUploading(true);
     setError("");
-    
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      // Upload via server-side API (uses service role key → bypasses Storage RLS)
+      const formData = new FormData();
+      formData.append("file", file);
 
-      const fileExt = file.name.split('.').pop();
-      // Using a unique timestamp to prevent caching issues if they re-upload
-      const fileName = `${user.id}_student_id_${Date.now()}.${fileExt}`;
-      const path = `${user.id}/${fileName}`;
+      const res = await fetch("/api/kyc/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-      // 1. Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from("kyc-ids") 
-        .upload(path, file, { upsert: true });
+      const data = await res.json();
 
-      if (uploadError) throw uploadError;
-
-      // 2. FIX: Link the uploaded file path to the User Table
-      const { error: dbUpdateError } = await supabase
-        .from("users")
-        .update({ 
-          id_card_url: path, // Save the path in the id_card_url column
-          updated_at: new Date().toISOString() 
-        })
-        .eq("id", user.id);
-
-      if (dbUpdateError) throw dbUpdateError;
+      if (!res.ok) {
+        throw new Error(data.error || "Upload failed. Try again.");
+      }
 
       setStatus("success");
       setTimeout(() => router.push("/profile"), 3000);
 
     } catch (err: any) {
       console.error(err);
-      if (err.message.includes("new row violates row-level security") || err.message.includes("403")) {
-         setError("Upload failed: Permission denied. Please contact admin to fix Storage Policies.");
-      } else {
-         setError(err.message || "Upload failed. Try again.");
-      }
+      setError(err.message || "Upload failed. Please try again.");
     } finally {
       setUploading(false);
     }
   };
+
 
   if (status === "success") {
     return (
