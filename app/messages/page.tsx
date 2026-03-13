@@ -2,7 +2,7 @@
 
 import { toast } from "sonner";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
@@ -10,6 +10,18 @@ import Link from "next/link";
 import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X } from "lucide-react";
 
 export default function ChatPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-[100dvh] bg-[#0B0B11] text-white items-center justify-center">
+                <Loader2 className="animate-spin text-white/60" />
+            </div>
+        }>
+            <MessagesContent />
+        </Suspense>
+    );
+}
+
+function MessagesContent() {
     const supabase = supabaseBrowser();
     const router = useRouter();
     const searchParams = useSearchParams();
