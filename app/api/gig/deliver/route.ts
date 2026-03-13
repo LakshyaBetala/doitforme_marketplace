@@ -58,8 +58,8 @@ export async function POST(req: Request) {
          return NextResponse.json({ error: `Gig is not in progress (Status: ${gig.status})` }, { status: 400 });
     }
 
-    // 5. Calculate 24 Hour Auto-Release Time
-    const autoReleaseTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    // 5. Calculate 12-hour auto-release time (poster gets 12h to review)
+    const autoReleaseTime = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
 
     // 6. Perform Update
     const { error: updateError } = await supabaseAdmin

@@ -36,7 +36,8 @@ import {
   HelpCircle,
   Flag,
   Key,
-  Eye
+  Eye,
+  UploadCloud
 } from "lucide-react";
 
 // --- UTILITY ---
@@ -64,6 +65,7 @@ interface GigData {
   poster_id: string;
   assigned_worker_id?: string;
   delivery_link?: string;
+  delivery_files?: string[];
   delivered_at?: string;
   images?: string[];
   dispute_reason?: string;
@@ -156,6 +158,13 @@ export default function GigDetailPage() {
     const mode = process.env.NODE_ENV === "production" ? "production" : "sandbox";
     load({ mode }).then((sdk: any) => setCashfree(sdk));
   }, []);
+
+  // Delivery state
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [deliveryFiles, setDeliveryFiles] = useState<File[]>([]);
+  const [deliveryLinkInput, setDeliveryLinkInput] = useState("");
+  const [isDelivering, setIsDelivering] = useState(false);
+  const [deliveryDragOver, setDeliveryDragOver] = useState(false);
 
   // --- PAYMENT VERIFICATION ---
   const verifyPayment = useCallback(async (orderId: string, workerId: string, attempt = 1) => {
@@ -465,7 +474,6 @@ export default function GigDetailPage() {
 
   const handleDeliver = async () => {
     if (gig?.listing_type === "MARKET" && gig.market_type === "RENT") {
-      // if (!confirm("Confirm you have returned the item? This will notify the owner.")) return;
       setIsCompleting(true);
       try {
         const res = await fetch("/api/rental/return", {
@@ -480,21 +488,52 @@ export default function GigDetailPage() {
       return;
     }
 
-    if (!gig?.is_physical && !deliveryLink.trim()) return toast.error("Please enter a submission link.");
-    // if (!confirm("Notify the poster that the work is finished?")) return;
-    setIsCompleting(true);
+    // Physical Hustle: simple link submit (handshake handles the rest)
+    if (gig?.is_physical && gig?.listing_type !== 'MARKET') {
+      if (!deliveryLink.trim()) return toast.error("Please enter a delivery note or link.");
+      setIsCompleting(true);
+      try {
+        const res = await fetch("/api/gig/deliver", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gigId: id, workerId: user?.id, deliveryLink }),
+        });
+        if (res.ok) window.location.reload();
+        else throw new Error("Submission failed");
+      } catch (e: any) {
+        toast.error(e.message);
+      } finally {
+        setIsCompleting(false);
+      }
+      return;
+    }
+
+    // Remote/online Hustle: open rich delivery modal
+    setShowDeliveryModal(true);
+  };
+
+  const handleDeliverWork = async () => {
+    if (deliveryFiles.length === 0 && !deliveryLinkInput.trim()) {
+      return toast.error("Please upload at least one file or provide a link.");
+    }
+    setIsDelivering(true);
     try {
-      const res = await fetch("/api/gig/deliver", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ gigId: id, workerId: user?.id, deliveryLink }),
-      });
-      if (res.ok) window.location.reload();
-      else throw new Error("Submission failed");
+      const formData = new FormData();
+      formData.append("gigId", id);
+      formData.append("deliveryLink", deliveryLinkInput.trim());
+      deliveryFiles.forEach(f => formData.append("files", f));
+
+      const res = await fetch("/api/gig/deliver-files", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Submission failed");
+
+      toast.success("Work submitted! Poster has 12 hours to review.");
+      setShowDeliveryModal(false);
+      window.location.reload();
     } catch (e: any) {
       toast.error(e.message);
     } finally {
-      setIsCompleting(false);
+      setIsDelivering(false);
     }
   };
 
@@ -736,6 +775,99 @@ export default function GigDetailPage() {
               <button onClick={handleReport} disabled={isReporting} className="w-full py-4 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_0_20px_rgba(239,68,68,0.3)]">
                 {isReporting ? <Loader2 className="animate-spin w-5 h-5" /> : <Flag className="w-5 h-5" />} Submit Report
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELIVERY MODAL (Remote Hustle) */}
+      {showDeliveryModal && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-8 max-w-lg w-full animate-in zoom-in-95 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setShowDeliveryModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
+
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-brand-purple/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-brand-purple/20">
+                <Send className="w-7 h-7 text-brand-purple" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">Submit Your Work</h2>
+              <p className="text-white/50 text-sm mt-1">Upload files or share a link to your completed work.</p>
+            </div>
+
+            <div className="space-y-5">
+              {/* Link input */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-white/60">Delivery Link (GitHub, Figma, Drive, etc.)</label>
+                <input
+                  type="url"
+                  value={deliveryLinkInput}
+                  onChange={e => setDeliveryLinkInput(e.target.value)}
+                  placeholder="https://github.com/... or https://figma.com/..."
+                  className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-purple/50 transition-all font-mono text-sm"
+                />
+              </div>
+
+              <div className="flex items-center gap-3 text-white/30 text-sm font-bold">
+                <div className="flex-1 h-px bg-white/10" />OR<div className="flex-1 h-px bg-white/10" />
+              </div>
+
+              {/* File Dropzone */}
+              <div
+                onDragOver={e => { e.preventDefault(); setDeliveryDragOver(true); }}
+                onDragLeave={() => setDeliveryDragOver(false)}
+                onDrop={e => {
+                  e.preventDefault();
+                  setDeliveryDragOver(false);
+                  const dropped = Array.from(e.dataTransfer.files);
+                  setDeliveryFiles(prev => [...prev, ...dropped].slice(0, 5));
+                }}
+                onClick={() => { const inp = document.getElementById('delivery-file-input') as HTMLInputElement; inp?.click(); }}
+                className={`cursor-pointer border-2 border-dashed rounded-2xl p-8 text-center transition-all ${deliveryDragOver ? 'border-brand-purple bg-brand-purple/10' : 'border-white/10 hover:border-brand-purple/50 hover:bg-white/5'}`}
+              >
+                <input
+                  id="delivery-file-input"
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,image/*"
+                  className="hidden"
+                  onChange={e => {
+                    const picked = Array.from(e.target.files || []);
+                    setDeliveryFiles(prev => [...prev, ...picked].slice(0, 5));
+                  }}
+                />
+                <UploadCloud className="w-10 h-10 text-white/30 mx-auto mb-3" />
+                <p className="font-bold text-white/70">Click or drag files here</p>
+                <p className="text-xs text-white/40 mt-1">PDF, Word, PPTX, Images — up to 5 files, 10MB each</p>
+              </div>
+
+              {/* File list */}
+              {deliveryFiles.length > 0 && (
+                <div className="space-y-2">
+                  {deliveryFiles.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between bg-[#0B0B11] border border-white/5 rounded-xl px-4 py-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileText className="w-4 h-4 text-brand-purple shrink-0" />
+                        <span className="text-sm text-white/80 truncate">{f.name}</span>
+                        <span className="text-xs text-white/40 shrink-0">{(f.size / 1024).toFixed(0)}KB</span>
+                      </div>
+                      <button onClick={() => setDeliveryFiles(prev => prev.filter((_, j) => j !== i))} className="text-white/40 hover:text-red-400 transition-colors ml-3">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={handleDeliverWork}
+                disabled={isDelivering || (deliveryFiles.length === 0 && !deliveryLinkInput.trim())}
+                className="w-full py-4 bg-brand-purple hover:bg-[#7D5FFF] text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-[0_0_20px_rgba(136,37,245,0.3)] disabled:opacity-50"
+              >
+                {isDelivering ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
+                {isDelivering ? "Submitting..." : "Submit Work"}
+              </button>
+
+              <p className="text-center text-xs text-white/40">The poster has 12 hours to review. After that, funds are auto-released to you.</p>
             </div>
           </div>
         </div>
@@ -1038,20 +1170,62 @@ export default function GigDetailPage() {
           </div>
         )}
 
-        {isDelivered && !isCompleted && !isDisputed && (
-          <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 flex items-center gap-4 text-blue-400 animate-in slide-in-from-top-4">
-            <CheckCircle2 className="w-6 h-6" />
+        {isCompleted && isWorker && (
+          <div className="mb-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-5 flex items-center gap-4 text-green-400 animate-in slide-in-from-top-4">
+            <CheckCircle2 className="w-6 h-6 shrink-0" />
             <div>
-              <h4 className="font-bold">{isMarket && gig.market_type === 'RENT' ? "Item Returned" : "Task Delivered!"}</h4>
-              <p className="text-sm opacity-80">
-                {isMarket && gig.market_type === 'RENT' ? "Renter has marked the item as returned. Please check condition." : "Review the work and release the payment if satisfied."}
-              </p>
+              <h4 className="font-bold">Payment Released! 🎉</h4>
+              <p className="text-sm opacity-80">Escrow funds have been released. Your earnings will arrive in your UPI account within <strong>24 hours</strong>. Check your payouts dashboard.</p>
             </div>
           </div>
         )}
 
-        {/* HANDSHAKE SECTION */}
-        {gig.escrow_status === 'HELD' && (status === 'assigned' || status === 'delivered') && (
+        {isDelivered && !isCompleted && !isDisputed && isWorker && (
+          <div className="mb-8 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-5 flex items-center gap-4 text-yellow-400 animate-in slide-in-from-top-4">
+            <Clock className="w-6 h-6 shrink-0" />
+            <div>
+              <h4 className="font-bold">Work Submitted — Awaiting Review</h4>
+              <p className="text-sm opacity-80">The poster has <strong>12 hours</strong> to approve. If no action is taken, payment is auto-released to you.</p>
+            </div>
+          </div>
+        )}
+
+        {isDelivered && !isCompleted && !isDisputed && isOwner && (
+          <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 flex flex-col gap-3 text-blue-400 animate-in slide-in-from-top-4">
+            <div className="flex items-center gap-4">
+              <CheckCircle2 className="w-6 h-6 shrink-0" />
+              <div>
+                <h4 className="font-bold">Work Delivered — Review Required</h4>
+                <p className="text-sm opacity-80">You have <strong>12 hours</strong> to review and approve. If no action is taken, payment is auto-released to the worker.</p>
+              </div>
+            </div>
+            {/* Show submitted work */}
+            {(gig.delivery_link || (gig.delivery_files && (gig.delivery_files as string[]).length > 0)) && (
+              <div className="mt-1 pl-10 space-y-2">
+                {gig.delivery_link && (
+                  <a href={gig.delivery_link} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-brand-purple underline underline-offset-2 hover:text-white transition-colors">
+                    <ArrowUpRight size={14} /> {gig.delivery_link}
+                  </a>
+                )}
+                {(gig.delivery_files as string[] || []).map((path: string, i: number) => {
+                  const url = supabase.storage.from("gig-images").getPublicUrl(path).data.publicUrl;
+                  return (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors">
+                      <FileText size={14} />
+                      <span className="truncate">{path.split("/").pop()}</span>
+                      <Download size={12} className="shrink-0" />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* HANDSHAKE SECTION — Physical Hustle only */}
+        {gig.escrow_status === 'HELD' && (status === 'assigned' || status === 'delivered') && !isMarket && gig.is_physical === true && (
           <div className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
