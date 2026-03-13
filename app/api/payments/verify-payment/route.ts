@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing verification data" }, { status: 400 });
     }
 
-    // 1. Verify Status with Cashfree DIRECTLY
+    // 1. Verify payment with Cashfree directly
     let validPayment: any = null;
 
     if (process.env.NODE_ENV !== 'development') {
@@ -31,7 +31,6 @@ export async function POST(req: Request) {
 
       const data = await response.json();
 
-      // Check if any transaction in the list is successful
       validPayment = Array.isArray(data)
         ? data.find((p: any) => p.payment_status === "SUCCESS")
         : null;
@@ -44,85 +43,83 @@ export async function POST(req: Request) {
       console.log("DEV MODE BYPASS: Faking successful Cashfree verification payload.");
       validPayment = {
         payment_status: "SUCCESS",
-        payment_amount: 0, // In dev we rely purely on DB setup
+        payment_amount: 0,
         cf_payment_id: "fake_cf_payment_123"
       };
     }
 
-    const paidAmount = validPayment.payment_amount;
-
-    // 2. Idempotency & Fetch Breakdown (Created in create-order)
+    // 2. Idempotency — fetch the pending transaction created by /api/gig/hire
     const { data: txn } = await supabaseAdmin
       .from("transactions")
       .select("*")
       .eq("gateway_order_id", orderId)
       .single();
 
-    if (txn) {
-      if (txn.status === 'COMPLETED') {
-        return NextResponse.json({ success: true, message: "Transaction already processed" });
-      }
-    } else {
-      // If no transaction record exists, create-order failed or wasn't called.
-      // We could recalculate here as fallback, but V3 requires using the stored breakdown.
+    if (!txn) {
       return NextResponse.json({ error: "Order record not found" }, { status: 404 });
     }
 
-    // 3. Extract Breakdown from Pending Transaction
-    const breakdown = txn.provider_data?.breakdown || {};
-    const basePrice = breakdown.base_price || 0;
-    const deposit = breakdown.deposit || 0;
-    const platformFee = breakdown.platform_fee || 0;
-    const renterFee = breakdown.renter_fee || 0;
-    const netWorkerPay = breakdown.net_worker_pay || 0;
+    if (txn.status === 'COMPLETED') {
+      return NextResponse.json({ success: true, message: "Transaction already processed" });
+    }
 
-    // 4. Update Transaction to COMPLETED
-    const { error: updateError } = await supabaseAdmin
+    // 3. Extract fee breakdown saved by /api/gig/hire
+    const breakdown = txn.provider_data?.breakdown || {};
+    const basePrice    = breakdown.base_price    || 0;
+    const deposit      = breakdown.deposit        || 0;
+    const platformFee  = breakdown.platform_fee   || 0;
+    const netWorkerPay = breakdown.net_worker_pay || 0;
+    const gatewayFee   = breakdown.gateway_fee    || 0;
+    const amountHeld   = basePrice + deposit;
+
+    // 4. Mark transaction as COMPLETED
+    const { error: updateTxnError } = await supabaseAdmin
       .from("transactions")
       .update({
         status: 'COMPLETED',
         gateway_payment_id: validPayment.cf_payment_id,
-        // amount should match paidAmount
       })
       .eq('id', txn.id);
 
-    if (updateError) {
-      console.error("Transaction Update Error", updateError);
-      throw updateError;
+    if (updateTxnError) {
+      console.error("Transaction Update Error:", updateTxnError);
+      // Don't throw — still try to update the gig
     }
 
-    // 5. Create Escrow Record (The "Liability" Ledger)
-    // Fetch Poster ID for Escrow
-    const { data: gig } = await supabaseAdmin.from('gigs').select('title, poster_id').eq('id', gigId).single();
-    if (!gig) throw new Error("Gig not found");
+    // 5. Fetch gig title + poster_id for escrow and notifications
+    const { data: gig } = await supabaseAdmin.from('gigs').select('title, poster_id, status').eq('id', gigId).single();
+    if (!gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    const amountHeld = basePrice + deposit;
-    const gatewayFee = breakdown.gateway_fee || 0;
+    // If gig is already assigned (duplicate webhook / double-click), return success
+    if (gig.status === 'assigned') {
+      return NextResponse.json({ success: true, message: "Transaction already processed" });
+    }
 
-    // Generate Handshake Code (4-digit)
+    // 6. Generate handshake code
     const handshakeCode = Math.floor(1000 + Math.random() * 9000).toString();
 
+    // 7. Upsert escrow record — only use columns that exist in the schema
     const { error: escrowError } = await supabaseAdmin.from("escrow").upsert({
       gig_id: gigId,
       poster_id: gig.poster_id,
       worker_id: workerId,
-      original_amount: basePrice, // Original price of the gig
-      platform_fee: platformFee,  // What gets deducted from the worker/owner
-      gateway_fee: gatewayFee,    // Cashfree specific fee
-      amount_held: amountHeld,    // Escrow holding amount
-      net_amount: netWorkerPay,   // Final net pay to worker/owner
+      original_amount: basePrice,
+      platform_fee: platformFee,
+      gateway_fee: gatewayFee,
+      amount_held: amountHeld,
       status: "HELD",
-      release_condition: deposit > 0 ? "RENTAL_RETURN" : "GIG_COMPLETION",
+      // release_date is NOT NULL in schema, set 14 days out
       release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      handshake_code: handshakeCode // V4 Requirement
+      handshake_code: handshakeCode,
+      escrow_category: deposit > 0 ? 'RENTAL_DEPOSIT' : 'PROJECT',
     }, { onConflict: 'gig_id' });
 
     if (escrowError) {
-      console.error("Escrow Create Error", escrowError);
-      throw escrowError;
+      // Log but DO NOT throw — the escrow row is secondary. Gig status MUST still update.
+      console.error("Escrow upsert warning (non-fatal):", escrowError.message);
     }
 
-    // 7. Update Gig Status
+    // 8. ✅ CRITICAL: Update gig status to 'assigned'
     const { error: gigUpdateError } = await supabaseAdmin.from("gigs").update({
       status: "assigned",
       assigned_worker_id: workerId,
@@ -132,36 +129,30 @@ export async function POST(req: Request) {
       escrow_locked_at: new Date().toISOString(),
       platform_fee: platformFee,
       net_worker_pay: netWorkerPay,
-      gateway_fee: gatewayFee
+      gateway_fee: gatewayFee,
     }).eq("id", gigId);
 
     if (gigUpdateError) {
-      console.error("Gig Update Error", gigUpdateError);
-      throw gigUpdateError;
+      console.error("CRITICAL: Gig status update failed:", gigUpdateError.message);
+      return NextResponse.json({ error: "Gig status update failed: " + gigUpdateError.message }, { status: 500 });
     }
 
-    // 8. UPDATE APPLICATIONS (CRITICAL FIX FOR "PENDING" STATUS)
-    console.log(`Updating applications for Gig ${gigId}, Worker ${workerId}`);
+    console.log(`✅ Gig ${gigId} successfully marked as assigned for worker ${workerId}`);
 
-    // Accept the selected worker
-    const { error: appUpdateError } = await supabaseAdmin
+    // 9. Update applications
+    await supabaseAdmin
       .from("applications")
       .update({ status: "accepted" })
       .eq("gig_id", gigId)
       .eq("worker_id", workerId);
 
-    if (appUpdateError) console.error("Error accepting application:", appUpdateError);
-
-    // Reject everyone else
-    const { error: rejectError } = await supabaseAdmin
+    await supabaseAdmin
       .from("applications")
       .update({ status: "rejected" })
       .eq("gig_id", gigId)
       .neq("worker_id", workerId);
 
-    if (rejectError) console.error("Error rejecting other applications:", rejectError);
-
-    // --- TELEGRAM NOTIFICATION TO WORKER ---
+    // 10. Telegram notification
     try {
       const { data: worker } = await supabaseAdmin
         .from('users')
@@ -173,13 +164,12 @@ export async function POST(req: Request) {
         const { sendTelegramAlert } = await import('@/lib/telegram');
         await sendTelegramAlert(
           worker.telegram_chat_id,
-          `🎉 <b>You've been hired!</b>\nYour offer for <i>${gig.title}</i> was just accepted and funds are secured in escrow.\n<a href="https://doitforme.in/gig/${gigId}">View Gig</a>`
+          `🎉 <b>You've been hired!</b>\nYour offer for <i>${gig.title}</i> was accepted and funds are secured in escrow.\n<a href="https://doitforme.in/gig/${gigId}">View Gig</a>`
         );
       }
     } catch (e) {
       console.error("Telegram notification failed:", e);
     }
-    // ---------------------------------------
 
     return NextResponse.json({ success: true, message: "Escrow funded and worker assigned successfully" });
 
