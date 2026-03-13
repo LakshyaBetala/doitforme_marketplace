@@ -1961,6 +1961,90 @@ export default function GigDetailPage() {
                 </button>
               )}
             </div>
+
+            {/* HOW THIS WORKS — 3-step role-specific flow card */}
+            {status === 'open' || status === 'assigned' ? (
+              <div className="bg-[#121217] border border-white/10 p-5 rounded-[24px] space-y-4">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/60">How This Works</h3>
+
+                {/* BUY / SELL */}
+                {isMarket && gig.market_type === 'SELL' && (
+                  <div className="space-y-3">
+                    {[
+                      { n: 1, icon: '💬', title: isOwner ? 'Make Your Offer' : 'Receive Offers', desc: isOwner ? 'Buyer submits an offer. You review and accept.' : 'Submit your offer. Wait for seller acceptance.' },
+                      { n: 2, icon: '🤝', title: 'Meet & Inspect', desc: 'You exchange contact info and meet in person. Buyer inspects the item thoroughly.' },
+                      { n: 3, icon: '🔑', title: isOwner ? 'Seller Enters Code' : 'Share Your Code', desc: isOwner ? 'Once buyer is satisfied, they share a 4-digit code. Enter it to complete the deal.' : 'If satisfied, share your 4-digit code with the seller to confirm the deal.' },
+                    ].map(step => (
+                      <div key={step.n} className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-brand-pink/10 border border-brand-pink/20 text-brand-pink text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{step.n}</div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-white">{step.icon} {step.title}</p>
+                          <p className="text-[11px] text-white/50 leading-relaxed mt-0.5">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* RENTAL */}
+                {isMarket && gig.market_type === 'RENT' && (
+                  <div className="space-y-3">
+                    {[
+                      { n: 1, icon: '📋', title: isOwner ? 'Approve Rental' : 'Request Rental', desc: isOwner ? 'Review and accept a rental application.' : 'Submit a rental offer with your duration.' },
+                      { n: 2, icon: '💳', title: 'Escrow Payment', desc: 'Renter pays rental fee + security deposit into escrow. Secure and protected.' },
+                      { n: 3, icon: '✅', title: isOwner ? 'Confirm Return' : 'Return Item', desc: isOwner ? 'Inspect item on return. Confirm with OTP to release deposit back to renter.' : 'Return the item. Deposit is refunded minus any agreed deductions.' },
+                    ].map(step => (
+                      <div key={step.n} className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-brand-purple/10 border border-brand-purple/20 text-brand-purple text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{step.n}</div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-white">{step.icon} {step.title}</p>
+                          <p className="text-[11px] text-white/50 leading-relaxed mt-0.5">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* HUSTLE — Physical */}
+                {!isMarket && gig.is_physical && (
+                  <div className="space-y-3">
+                    {[
+                      { n: 1, icon: '📝', title: isOwner ? 'Accept a Hustler' : 'Apply & Get Hired', desc: isOwner ? 'Review applications and accept the best Hustler.' : 'Apply with a pitch. Get hired by the Poster.' },
+                      { n: 2, icon: '🤝', title: 'Meet & Complete Task', desc: 'Poster pays into escrow. Meet in person and complete the task together.' },
+                      { n: 3, icon: '🔑', title: isOwner ? 'Share Your Code' : 'Enter Poster\'s Code', desc: isOwner ? 'Share your 4-digit code with the Hustler to confirm completion and release payment.' : 'Get the Poster\'s code after task is done. Enter it to receive your payment.' },
+                    ].map(step => (
+                      <div key={step.n} className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{step.n}</div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-white">{step.icon} {step.title}</p>
+                          <p className="text-[11px] text-white/50 leading-relaxed mt-0.5">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* HUSTLE — Remote */}
+                {!isMarket && !gig.is_physical && (
+                  <div className="space-y-3">
+                    {[
+                      { n: 1, icon: '📝', title: isOwner ? 'Accept a Hustler' : 'Apply & Get Hired', desc: isOwner ? 'Review applications and accept the best Hustler. Funds go into escrow.' : 'Apply with a pitch. Get hired and start working.' },
+                      { n: 2, icon: '💻', title: isOwner ? 'Review Submitted Work' : 'Submit Your Work', desc: isOwner ? 'Hustler submits work files/link for review. You have 12 hours to approve.' : 'Complete the task and submit files or a link for the Poster to review.' },
+                      { n: 3, icon: '💰', title: isOwner ? 'Approve & Release' : 'Get Paid', desc: isOwner ? 'Approve the work to release payment. Disapprove to raise a dispute.' : 'Poster approves → funds released within 24 hours. Auto-release after 12h of no action.' },
+                    ].map(step => (
+                      <div key={step.n} className="flex items-start gap-3">
+                        <div className="w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{step.n}</div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-white">{step.icon} {step.title}</p>
+                          <p className="text-[11px] text-white/50 leading-relaxed mt-0.5">{step.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
           </div>
         </div>
       </div>
