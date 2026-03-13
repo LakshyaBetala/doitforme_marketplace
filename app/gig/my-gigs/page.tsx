@@ -259,10 +259,22 @@ function PostCard({ gig, getStatusDot, delay }: { gig: any, getStatusDot: any, d
   const isMarket = gig.listing_type === 'MARKET';
   const isRent = gig.market_type === 'RENT';
 
+  const [handshakeCode, setHandshakeCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only fetch code for Posters of physical hustles
+    if (!isMarket && (gig.status === 'assigned' || gig.status === 'delivered')) {
+      fetch(`/api/gig/handshake?gigId=${gig.id}`)
+        .then(res => res.json())
+        .then(data => { if (data.code) setHandshakeCode(data.code); })
+        .catch(console.error);
+    }
+  }, [gig, isMarket]);
+
   return (
     <Link
       href={`/gig/${gig.id}`}
-      className="bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-6 flex flex-col group hover:border-brand-purple/50 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(136,37,245,0.2)] transition-all h-[190px] relative overflow-hidden fill-mode-both animate-in fade-in"
+      className="bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-6 flex flex-col group hover:border-brand-purple/50 hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(136,37,245,0.2)] transition-all min-h-[190px] relative overflow-hidden fill-mode-both animate-in fade-in"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex justify-between items-start mb-3 relative z-10">
@@ -283,6 +295,20 @@ function PostCard({ gig, getStatusDot, delay }: { gig: any, getStatusDot: any, d
         )}
       </div>
 
+      {/* Inline Handshake Code View for Poster */}
+      {handshakeCode && (
+        <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center">
+          <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest mb-1.5">Your Secure Code</p>
+          <div className="flex justify-center gap-1.5">
+            {handshakeCode.split('').map((digit, i) => (
+              <span key={i} className="text-sm font-mono font-bold text-yellow-400 bg-black/40 px-2 py-1 rounded-md border border-yellow-500/30">
+                {digit}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-auto pt-4 border-t border-[#1E293B] flex items-center justify-between relative z-10">
         <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
           <span className="flex items-center gap-1"><Clock size={12} className="text-zinc-600" /> {timeAgo(gig.created_at)}</span>
@@ -297,6 +323,18 @@ function PostCard({ gig, getStatusDot, delay }: { gig: any, getStatusDot: any, d
 
 function ApplicationCard({ app, gig, getAppStatusBadge, delay }: { app: any, gig: any, getAppStatusBadge: any, delay: number }) {
   const isMarket = gig.listing_type === 'MARKET';
+
+  const [handshakeCode, setHandshakeCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only fetch code for workers of MARKET assigned items where they are the buyer.
+    if (isMarket && (gig.status === 'assigned' || gig.status === 'delivered') && (gig.market_type === 'SELL' || gig.market_type === 'REQUEST')) {
+      fetch(`/api/gig/handshake?gigId=${gig.id}`)
+        .then(res => res.json())
+        .then(data => { if (data.code) setHandshakeCode(data.code); })
+        .catch(console.error);
+    }
+  }, [gig, isMarket]);
 
   return (
     <Link
@@ -319,6 +357,20 @@ function ApplicationCard({ app, gig, getAppStatusBadge, delay }: { app: any, gig
         <IndianRupee className="w-4 h-4" />
         <span className="font-black text-white text-lg">{gig.price?.toLocaleString()}</span>
       </div>
+
+      {/* Inline Handshake Code View for Buyer/Worker */}
+      {handshakeCode && (
+        <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center">
+          <p className="text-[10px] font-bold text-yellow-500 uppercase tracking-widest mb-1.5">Your Secure Code</p>
+          <div className="flex justify-center gap-1.5">
+            {handshakeCode.split('').map((digit, i) => (
+              <span key={i} className="text-sm font-mono font-bold text-yellow-400 bg-black/40 px-2 py-1 rounded-md border border-yellow-500/30">
+                {digit}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="pt-4 mt-3 border-t border-[#1E293B] flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-1">
