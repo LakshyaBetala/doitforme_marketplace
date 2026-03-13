@@ -97,29 +97,41 @@ export async function POST(req: Request) {
         if (updateAppError) throw updateAppError;
 
         // 2. UPDATE GIG -> ASSIGNED (Lock it)
+        const gigUpdateData: any = {
+            status: 'assigned',
+            assigned_worker_id: application.worker_id,
+            escrow_status: 'HELD' // Conceptual hold, even if amount is 0
+        };
+
+        // For SELL type: store handshake_code directly on gig (no escrow payment)
+        if (gig.market_type === 'SELL' || gig.market_type === 'REQUEST') {
+            gigUpdateData.handshake_code = handshakeCode;
+        }
+
         const { error: updateGigError } = await supabaseAdmin
             .from("gigs")
-            .update({
-                status: 'assigned',
-                assigned_worker_id: application.worker_id,
-                escrow_status: 'HELD' // Conceptual hold, even if amount is 0
-            })
+            .update(gigUpdateData)
             .eq("id", gig.id);
 
         if (updateGigError) throw updateGigError;
 
-        // 3. CREATE ESCROW RECORD (For Handshake)
-        const { error: escrowError } = await supabaseAdmin.from("escrow").insert({
+        // 3. CREATE ESCROW RECORD (For Handshake / tracking)
+        const escrowInsert: any = {
             gig_id: gig.id,
             worker_id: application.worker_id,
             poster_id: user.id,
-            // Use negotiated price if available, else original price
             original_amount: application.negotiated_price || gig.price,
             amount_held: 0, // No real money held yet for P2P/Cash
             status: 'HELD',
-            handshake_code: handshakeCode,
-            escrow_category: 'PROJECT' // or P2P
-        });
+            escrow_category: 'PROJECT'
+        };
+
+        // For non-SELL types, store handshake in escrow too
+        if (gig.market_type !== 'SELL' && gig.market_type !== 'REQUEST') {
+            escrowInsert.handshake_code = handshakeCode;
+        }
+
+        const { error: escrowError } = await supabaseAdmin.from("escrow").insert(escrowInsert);
 
         if (escrowError) console.error("Escrow setup warning:", escrowError);
 

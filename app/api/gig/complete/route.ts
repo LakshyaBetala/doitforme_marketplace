@@ -41,6 +41,8 @@ export async function POST(request: Request) {
     const listingType = gig.listing_type || 'HUSTLE';
     const marketType = gig.market_type;
     const deposit = gig.security_deposit || 0;
+    const isP2PSell = listingType === 'MARKET' && (marketType === 'SELL' || marketType === 'REQUEST');
+
 
     // Default: Hustle -> Payout to Worker
     let payoutDestination = gig.assigned_worker_id;
@@ -55,9 +57,12 @@ export async function POST(request: Request) {
       .eq("gig_id", gigId)
       .single();
 
-    if (!escrowRecord) return NextResponse.json({ error: "Escrow record not found" }, { status: 500 });
+    // For P2P Buy/Sell, escrow has no funds — just skip payout logic
+    const totalHeld = isP2PSell ? 0 : Number(escrowRecord?.amount_held || 0);
 
-    const totalHeld = Number(escrowRecord.amount_held);
+    if (!escrowRecord && !isP2PSell) {
+      return NextResponse.json({ error: "Escrow record not found" }, { status: 500 });
+    }
 
     if (listingType === 'MARKET') {
       if (marketType === 'SELL') {

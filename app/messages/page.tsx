@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
-import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X, CheckCircle2 } from "lucide-react";
+import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X, CheckCircle2, FileText, Download } from "lucide-react";
 
 export default function ChatPage() {
     return (
@@ -63,6 +63,11 @@ function MessagesContent() {
 
     // RTsub cleanup ref
     const channelRef = useRef<any>(null);
+
+    // Dispute state (for poster in messages)
+    const [showDisputeModal, setShowDisputeModal] = useState(false);
+    const [disputeReason, setDisputeReason] = useState("");
+    const [isDisputing, setIsDisputing] = useState(false);
 
     // 1. Initialize User & Real-time Conversation List
     useEffect(() => {
@@ -455,8 +460,8 @@ function MessagesContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     gigId: gigId,
-                    rating: 5, // Default rating for quick approval
-                    review: "Work approved via chat."
+                    rating: 5,
+                    review: "Work approved via messages."
                 })
             });
 
@@ -469,6 +474,30 @@ function MessagesContent() {
             }
         } catch (err) {
             toast.error("Network error. Please try again.");
+        }
+    };
+
+    const raiseDispute = async (gigId: string) => {
+        if (!disputeReason.trim()) return toast.error("Please provide a reason.");
+        setIsDisputing(true);
+        try {
+            const res = await fetch("/api/gig/dispute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ gigId, reason: disputeReason })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                toast.success("Dispute raised. Escrow is frozen.");
+                setShowDisputeModal(false);
+                window.location.reload();
+            } else {
+                toast.error(data.error || "Failed to raise dispute.");
+            }
+        } catch (err) {
+            toast.error("Network error.");
+        } finally {
+            setIsDisputing(false);
         }
     };
 
@@ -507,7 +536,12 @@ function MessagesContent() {
     };
 
 
-    const isCompleted = activeGigStatus === 'completed' || activeGigStatus === 'cancelled';
+    const isCompleted = activeGigStatus === 'completed' || activeGigStatus === 'cancelled' || activeGigStatus === 'disputed';
+    const isPosterView = activeConversation?.gig?.poster_id === user?.id;
+    const isPhysicalGig = activeConversation?.gig?.is_physical === true;
+    const isMarketGig = activeConversation?.gig?.listing_type === 'MARKET';
+    // Approve/disapprove only valid for: poster, non-physical, non-market (Hustle remote), when delivered
+    const canApproveOrDispute = isPosterView && !isPhysicalGig && !isMarketGig && activeGigStatus === 'delivered';
 
     return (
         <div className="flex h-[100dvh] bg-[#0B0B11] text-white overflow-hidden font-sans selection:bg-brand-purple">
@@ -616,15 +650,24 @@ function MessagesContent() {
                                 </div>
                             </div>
 
-                            {/* Approve Button for Poster if status is delivered/assigned (remote) */}
-                            {activeConversation && activeConversation.gig_status !== 'completed' && activeConversation.role === 'poster' && (activeConversation.gig_status === 'delivered' || (activeConversation.gig_status === 'assigned' && activeConversation.listing_type !== 'MARKET')) && !activeConversation.gig?.is_physical && (
-                                <button
-                                    onClick={() => approveWork(activeConversation.gig_id)}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-green-500/20 active:scale-95 whitespace-nowrap"
-                                >
-                                    <CheckCircle2 size={16} />
-                                    Approve Work
-                                </button>
+                            {/* Approve/Disapprove — Poster only, remote Hustle, status=delivered */}
+                            {canApproveOrDispute && (
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => approveWork(activeConversation.gig_id)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-green-500/20 active:scale-95 whitespace-nowrap"
+                                    >
+                                        <CheckCircle2 size={13} />
+                                        Approve
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDisputeModal(true)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-xs font-bold transition-all active:scale-95 whitespace-nowrap"
+                                    >
+                                        <AlertTriangle size={13} />
+                                        Dispute
+                                    </button>
+                                </div>
                             )}
                         </div>
 
@@ -803,6 +846,36 @@ function MessagesContent() {
                     <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
                     <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
                         <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" unoptimized quality={100} />
+                    </div>
+                </div>
+            )}
+
+            {/* Dispute Modal — Poster only, for remote hustle gigs */}
+            {showDisputeModal && activeConversation && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-[#1A1A24] border border-red-500/30 rounded-3xl p-6 max-w-sm w-full animate-in zoom-in-95 relative shadow-[0_0_40px_rgba(239,68,68,0.15)]">
+                        <button onClick={() => setShowDisputeModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white">
+                            <X size={18} />
+                        </button>
+                        <div className="w-10 h-10 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <h3 className="text-lg font-bold text-center mb-1">Raise a Dispute</h3>
+                        <p className="text-center text-white/50 text-xs mb-4">Escrow will be frozen. Our team reviews within 24h.</p>
+                        <textarea
+                            value={disputeReason}
+                            onChange={(e) => setDisputeReason(e.target.value)}
+                            placeholder="Describe what was not delivered as agreed..."
+                            className="w-full bg-black/20 text-white text-sm p-4 rounded-xl border border-white/10 focus:border-red-500/50 outline-none resize-none h-28 mb-4"
+                        />
+                        <button
+                            onClick={() => raiseDispute(activeConversation.gig_id)}
+                            disabled={isDisputing || !disputeReason.trim()}
+                            className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                        >
+                            {isDisputing ? <Loader2 size={16} className="animate-spin" /> : <AlertTriangle size={16} />}
+                            Freeze & Raise Dispute
+                        </button>
                     </div>
                 </div>
             )}

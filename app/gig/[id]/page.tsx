@@ -143,6 +143,17 @@ export default function GigDetailPage() {
   const [reviewText, setReviewText] = useState("");
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
+  // Dispute State (Poster only, after delivery)
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [isDisputing, setIsDisputing] = useState(false);
+
+  // Worker Review State (after handshake, worker rates the poster)
+  const [showWorkerReviewModal, setShowWorkerReviewModal] = useState(false);
+  const [workerRating, setWorkerRating] = useState(5);
+  const [workerReviewText, setWorkerReviewText] = useState("");
+  const [isSubmittingWorkerReview, setIsSubmittingWorkerReview] = useState(false);
+
   // Handshake State
   const [handshakeCode, setHandshakeCode] = useState<string | null>(null);
   const [inputCode, setInputCode] = useState(["", "", "", ""]);
@@ -616,12 +627,66 @@ export default function GigDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ gigId: id, rating, review: reviewText }),
       });
-      if (res.ok) window.location.reload();
+      if (res.ok) {
+        // After poster rates worker, show worker review modal too if worker is viewing
+        if (isWorker) setShowWorkerReviewModal(true);
+        else window.location.reload();
+      }
       else throw new Error("Completion failed");
     } catch (e: any) {
       toast.error(e.message);
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const submitWorkerReview = async () => {
+    if (!workerRating) return toast.error("Select a rating.");
+    setIsSubmittingWorkerReview(true);
+    try {
+      // Worker rates the poster via ratings API
+      const res = await fetch("/api/gig/rate-poster", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gigId: id, rating: workerRating, review: workerReviewText }),
+      });
+      if (res.ok) {
+        toast.success("Rating submitted! Thank you.");
+        window.location.reload();
+      } else {
+        const data = await res.json();
+        // Non-critical — just reload
+        toast.success("Deal Complete!");
+        window.location.reload();
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsSubmittingWorkerReview(false);
+    }
+  };
+
+  const handleDispute = async () => {
+    if (!disputeReason.trim()) return toast.error("Please provide a reason for the dispute.");
+    setIsDisputing(true);
+    try {
+      const res = await fetch("/api/gig/dispute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gigId: id, reason: disputeReason }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Dispute raised. Our team will review within 24 hours.");
+        setShowDisputeModal(false);
+        window.location.reload();
+      } else {
+        throw new Error(data.error || "Failed to raise dispute");
+      }
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setIsDisputing(false);
     }
   };
 
@@ -687,9 +752,11 @@ export default function GigDetailPage() {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([50, 30, 50, 30, 100]);
         }
-        toast.success("Handshake Confirmed! Funds Released.");
-        setShowReviewModal(true); // Open rating modal automatically
-        // window.location.reload(); // Don't reload, let user rate
+        toast.success("Handshake Confirmed! Deal Complete.");
+        // For Market (SELL): Seller entered code -> show worker review (they rate buyer/poster)
+        // For Hustle (physical): Worker entered code -> show worker review (they rate poster)
+        // Both cases: the code-entering party uses the worker review modal
+        setShowWorkerReviewModal(true);
       } else {
         toast.error(data.error || "Verification Failed");
       }
@@ -1071,6 +1138,80 @@ export default function GigDetailPage() {
         </div>
       )}
 
+      {/* DISPUTE MODAL — Poster only, after reviewing delivered work */}
+      {showDisputeModal && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1A24] border border-red-500/30 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-[0_0_50px_rgba(239,68,68,0.2)]">
+            <button onClick={() => setShowDisputeModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white"><X className="w-5 h-5" /></button>
+            <div className="w-12 h-12 bg-red-500/10 text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <h2 className="text-2xl font-bold text-center mb-1">Raise a Dispute</h2>
+            <p className="text-center text-white/50 text-sm mb-4">The escrow will be frozen and our team will review within 24 hours.</p>
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-5">
+              <p className="text-xs text-red-400 text-center">⚠️ Only raise a dispute if the work is genuinely not up to the agreed standard. Misuse may affect your account.</p>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2 block">Reason for Dispute</label>
+                <textarea
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  placeholder="Describe specifically what was not delivered as agreed..."
+                  className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 h-32 outline-none text-white resize-none focus:border-red-500/50 transition-all text-sm"
+                />
+              </div>
+              <button
+                onClick={handleDispute}
+                disabled={isDisputing || !disputeReason.trim()}
+                className="w-full py-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {isDisputing ? <Loader2 className="animate-spin w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                Freeze Escrow & Raise Dispute
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WORKER REVIEW MODAL — Shows after handshake verify (code-entering party rates poster/buyer) */}
+      {showWorkerReviewModal && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1A24] border border-brand-purple/20 rounded-3xl p-8 max-w-md w-full animate-in zoom-in-95 relative shadow-2xl">
+            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8 text-green-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-center mb-1">Deal Complete! 🎉</h2>
+            <p className="text-center text-white/50 text-sm mb-6">
+              {isMarket
+                ? "Rate your experience with the Buyer."
+                : "Rate your experience with the Poster."}
+            </p>
+            <div className="flex justify-center gap-3 mb-6">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setWorkerRating(star)}>
+                  <Star className={`w-10 h-10 ${star <= workerRating ? "fill-yellow-500 text-yellow-500" : "text-white/10"}`} />
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={workerReviewText}
+              onChange={(e) => setWorkerReviewText(e.target.value)}
+              placeholder="Share your experience..."
+              className="w-full bg-[#0B0B11] border border-white/10 rounded-xl p-4 mb-6 h-28 outline-none text-white resize-none"
+            />
+            <button
+              onClick={submitWorkerReview}
+              disabled={isSubmittingWorkerReview}
+              className="w-full py-4 bg-brand-purple text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-all"
+            >
+              {isSubmittingWorkerReview ? <Loader2 className="animate-spin" /> : <Star className="w-5 h-5" />}
+              Submit Rating
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="relative z-10 max-w-5xl mx-auto px-4 py-8 md:py-12 pb-28 md:pb-12">
 
         {/* HEADER: Back & Title */}
@@ -1208,37 +1349,58 @@ export default function GigDetailPage() {
           </div>
         )}
 
-        {isDelivered && !isCompleted && !isDisputed && isOwner && (
-          <div className="mb-8 bg-blue-500/10 border border-blue-500/20 rounded-2xl p-5 flex flex-col gap-3 text-blue-400 animate-in slide-in-from-top-4">
-            <div className="flex items-center gap-4">
-              <CheckCircle2 className="w-6 h-6 shrink-0" />
+        {isDelivered && !isCompleted && !isDisputed && isOwner && !gig.is_physical && !isMarket && (
+          <div className="mb-8 bg-gradient-to-br from-blue-500/10 to-[#121217] border border-blue-500/30 rounded-3xl p-6 flex flex-col gap-5 animate-in slide-in-from-top-4 shadow-[0_0_30px_rgba(59,130,246,0.08)]">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
               <div>
-                <h4 className="font-bold">Work Delivered — Review Required</h4>
-                <p className="text-sm opacity-80">You have <strong>12 hours</strong> to review and approve. If no action is taken, payment is auto-released to the worker.</p>
+                <h4 className="font-bold text-blue-400 text-lg">Work Submitted — Your Review Required</h4>
+                <p className="text-sm text-blue-400/70 mt-0.5">You have <strong>12 hours</strong> to review and approve. If no action is taken, payment is auto-released to the worker.</p>
               </div>
             </div>
-            {/* Show submitted work */}
+
+            {/* Submitted Work */}
             {(gig.delivery_link || (gig.delivery_files && (gig.delivery_files as string[]).length > 0)) && (
-              <div className="mt-1 pl-10 space-y-2">
+              <div className="bg-black/30 rounded-2xl p-4 border border-white/5 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-3">Submitted Work</p>
                 {gig.delivery_link && (
                   <a href={gig.delivery_link} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-brand-purple underline underline-offset-2 hover:text-white transition-colors">
-                    <ArrowUpRight size={14} /> {gig.delivery_link}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-brand-purple/10 border border-brand-purple/20 hover:bg-brand-purple/20 transition-all group">
+                    <ArrowUpRight size={16} className="text-brand-purple shrink-0" />
+                    <span className="text-sm text-brand-purple font-medium truncate">{gig.delivery_link}</span>
                   </a>
                 )}
                 {(gig.delivery_files as string[] || []).map((path: string, i: number) => {
                   const url = supabase.storage.from("gig-images").getPublicUrl(path).data.publicUrl;
                   return (
-                    <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors">
-                      <FileText size={14} />
-                      <span className="truncate">{path.split("/").pop()}</span>
-                      <Download size={12} className="shrink-0" />
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" download
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
+                      <FileText size={16} className="text-white/60 shrink-0" />
+                      <span className="text-sm text-white/80 truncate flex-1">{path.split("/").pop()}</span>
+                      <Download size={14} className="shrink-0 text-white/40 group-hover:text-white transition-colors" />
                     </a>
                   );
                 })}
               </div>
             )}
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                onClick={() => setShowReviewModal(true)}
+                className="py-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-98 transition-all shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+              >
+                <CheckCircle2 className="w-5 h-5" /> Approve & Release Funds
+              </button>
+              <button
+                onClick={() => setShowDisputeModal(true)}
+                className="py-4 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-98 transition-all"
+              >
+                <AlertTriangle className="w-5 h-5" /> Disapprove / Raise Dispute
+              </button>
+            </div>
           </div>
         )}
 
