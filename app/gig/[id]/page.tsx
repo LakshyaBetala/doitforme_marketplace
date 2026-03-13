@@ -1338,19 +1338,19 @@ export default function GigDetailPage() {
 
         {/* STATUS BANNERS */}
         {contactRevealed && (
-          <div className="mb-8 bg-brand-pink/10 border border-brand-pink/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink shrink-0">
-                <User size={20} />
+          <div className="mb-4 bg-brand-pink/10 border border-brand-pink/20 rounded-2xl p-4 flex items-center justify-between gap-3 animate-in slide-in-from-top-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-brand-pink/20 flex items-center justify-center text-brand-pink shrink-0">
+                <User size={16} />
               </div>
-              <div>
-                <h4 className="font-bold text-brand-pink">Deal in Progress</h4>
-                <p className="text-sm text-brand-pink/70">You have exchanged contact info. Finish the deal offline.</p>
+              <div className="min-w-0">
+                <h4 className="font-bold text-brand-pink text-sm">Deal in Progress</h4>
+                <p className="text-xs text-brand-pink/70 truncate">Contact exchanged — meet offline to complete.</p>
               </div>
             </div>
             <button
               onClick={() => setShowContactModal(true)}
-              className="px-6 py-2 bg-brand-pink text-white font-bold rounded-full text-sm hover:bg-brand-pink/90 transition-all shadow-lg shadow-brand-pink/20 whitespace-nowrap"
+              className="px-4 py-2 bg-brand-pink text-white font-bold rounded-full text-xs hover:bg-brand-pink/90 transition-all shadow-lg shadow-brand-pink/20 whitespace-nowrap shrink-0"
             >
               View Contact
             </button>
@@ -1358,11 +1358,11 @@ export default function GigDetailPage() {
         )}
 
         {isCompleted && isWorker && (
-          <div className="mb-8 bg-green-500/10 border border-green-500/30 rounded-2xl p-5 flex items-center gap-4 text-green-400 animate-in slide-in-from-top-4">
-            <CheckCircle2 className="w-6 h-6 shrink-0" />
+          <div className="mb-4 bg-green-500/10 border border-green-500/30 rounded-2xl p-4 flex items-center gap-3 text-green-400 animate-in slide-in-from-top-4">
+            <CheckCircle2 className="w-5 h-5 shrink-0" />
             <div>
-              <h4 className="font-bold">Payment Released! 🎉</h4>
-              <p className="text-sm opacity-80">Escrow funds have been released. Your earnings will arrive in your UPI account within <strong>24 hours</strong>. Check your payouts dashboard.</p>
+              <h4 className="font-bold text-sm">Payment Released! 🎉</h4>
+              <p className="text-xs opacity-80">Funds arrive in your UPI within <strong>24 hours</strong>.</p>
             </div>
           </div>
         )}
@@ -1530,11 +1530,11 @@ export default function GigDetailPage() {
           </div>
         )}
 
-        {/* MAIN CONTENT GRID */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* MAIN CONTENT GRID — on mobile, action card comes first (flex-col-reverse) */}
+        <div className="flex flex-col-reverse md:grid md:grid-cols-3 gap-6 md:gap-8">
 
           {/* LEFT COLUMN: Details */}
-          <div className="md:col-span-2 space-y-8">
+          <div className="md:col-span-2 space-y-6">
 
             {/* Images */}
             {gig.images && gig.images.length > 0 && (
@@ -1733,22 +1733,28 @@ export default function GigDetailPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Actions */}
-          <div className="space-y-6">
+          {/* RIGHT COLUMN: Actions — shows FIRST on mobile due to flex-col-reverse */}
+          <div className="space-y-4">
 
-            {/* Price Card (Mobile Only) */}
-            <div className="md:hidden bg-[#121217] border border-white/10 p-6 rounded-3xl flex justify-between items-center">
+            {/* Mobile-only price pill at top of action column */}
+            <div className="md:hidden flex items-center justify-between bg-[#121217] border border-white/10 px-5 py-3 rounded-2xl">
               <div>
-                <p className="text-white/60 text-xs uppercase tracking-widest font-bold">
+                <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold">
                   {isMarket ? gig.market_type === "RENT" ? "Rental Fee" : "Price" : "Budget"}
                 </p>
-                <p className="text-3xl font-mono font-bold text-white">₹{gig.price}</p>
+                <p className="text-2xl font-mono font-bold text-white">₹{gig.price}</p>
               </div>
+              {isMarket && gig.market_type === "RENT" && (
+                <div className="text-right">
+                  <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold">Deposit</p>
+                  <p className="text-lg font-mono text-white/80">₹{gig.security_deposit || 0}</p>
+                </div>
+              )}
             </div>
 
-            {/* Action Card (Desktop) */}
-            <div className="bg-[#121217] border border-white/10 p-6 rounded-[32px] space-y-6 shadow-2xl sticky top-8">
-              <h3 className="text-lg font-bold">Action Required</h3>
+            {/* Action Card - sticky only on desktop */}
+            <div className="bg-[#121217] border border-white/10 p-5 md:p-6 rounded-[28px] space-y-5 shadow-2xl md:sticky md:top-8">
+              <h3 className="text-base font-bold">Action Required</h3>
 
               {user ? (
                 <>
@@ -2073,6 +2079,60 @@ export default function GigDetailPage() {
               </div>
             ) : null}
 
+          </div>
+        </div>
+      </div>
+
+      {/* MOBILE STICKY BOTTOM BAR — primary CTA always accessible */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B0B11]/95 backdrop-blur-xl border-t border-white/10 px-4 py-3 safe-area-inset-bottom">
+        <div className="flex items-center gap-3 max-w-lg mx-auto">
+          {/* Price */}
+          <div className="shrink-0">
+            <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold leading-none">
+              {isMarket ? (gig.market_type === "RENT" ? "Fee" : "Price") : "Budget"}
+            </p>
+            <p className="text-xl font-mono font-bold text-white leading-tight">₹{gig.price}</p>
+          </div>
+
+          {/* Primary Action Button */}
+          <div className="flex-1">
+            {!user ? (
+              <button onClick={() => router.push('/login')} className="w-full py-3 rounded-2xl bg-brand-purple text-white font-bold text-sm active:scale-95 transition-all">
+                Login to interact
+              </button>
+            ) : isCompleted ? (
+              <div className="w-full py-3 rounded-2xl bg-white/10 text-white/60 text-sm font-bold text-center">
+                {status === 'completed' ? '✓ Deal Completed' : '✕ Cancelled'}
+              </div>
+            ) : contactRevealed && (status === 'assigned' || status === 'delivered') ? (
+              <button onClick={() => setShowContactModal(true)} className="w-full py-3 rounded-2xl bg-brand-pink text-white font-bold text-sm active:scale-95 transition-all">
+                👤 View Contact Info
+              </button>
+            ) : isOwner && isMarket && (gig.market_type === 'SELL' || gig.market_type === 'REQUEST') && (status === 'assigned' || status === 'delivered') ? (
+              <button onClick={() => document.getElementById('action-digit-0')?.focus()} className="w-full py-3 rounded-2xl bg-yellow-500 text-black font-bold text-sm active:scale-95 transition-all">
+                🔑 Enter Buyer's OTP
+              </button>
+            ) : isOwner && isDelivered && !gig.is_physical && !isMarket ? (
+              <button onClick={() => setShowReviewModal(true)} className="w-full py-3 rounded-2xl bg-green-500 text-black font-bold text-sm active:scale-95 transition-all">
+                ✓ Approve Work
+              </button>
+            ) : !isOwner && !isWorker && status === 'open' ? (
+              <button
+                onClick={isMarket ? handleBuy : handleApplyNavigation}
+                disabled={isBuying || hasApplied}
+                className={`w-full py-3 rounded-2xl font-bold text-sm active:scale-95 transition-all ${hasApplied ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white text-black'}`}
+              >
+                {hasApplied ? '✓ Offer Sent' : (isMarket ? (gig.market_type === 'RENT' ? 'Rent Item' : 'Make Offer') : 'Apply Now')}
+              </button>
+            ) : isWorker && status === 'assigned' && !gig.is_physical && !isMarket ? (
+              <button onClick={() => document.getElementById('submit-work-section')?.scrollIntoView({ behavior: 'smooth' })} className="w-full py-3 rounded-2xl bg-brand-purple text-white font-bold text-sm active:scale-95 transition-all">
+                📤 Submit Work
+              </button>
+            ) : (
+              <div className="w-full py-3 rounded-2xl bg-white/5 text-white/40 text-sm font-bold text-center border border-white/5">
+                {status === 'open' ? 'You own this listing' : 'Deal in Progress'}
+              </div>
+            )}
           </div>
         </div>
       </div>
