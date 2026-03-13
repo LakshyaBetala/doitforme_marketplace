@@ -843,6 +843,15 @@ export default function GigDetailPage() {
   const isCompleted = status === 'completed';
   const isDisputed = status === 'disputed';
 
+  // --- DERIVED UX STATES FOR OTP/ROLES ---
+  const isActualBuyer = isMarket && (gig.market_type === 'SELL' || gig.market_type === 'REQUEST') && (gig.market_type === 'SELL' ? isWorker : isOwner);
+  const isActualSeller = isMarket && (gig.market_type === 'SELL' || gig.market_type === 'REQUEST') && (gig.market_type === 'SELL' ? isOwner : isWorker);
+  const isPhysicalPoster = !isMarket && gig.is_physical && isOwner;
+  const isPhysicalWorker = !isMarket && gig.is_physical && isWorker;
+
+  const shouldEnterCode = isActualSeller || isPhysicalWorker;
+  const shouldShowCode = isActualBuyer || isPhysicalPoster;
+
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white font-sans selection:bg-brand-purple">
 
@@ -1434,9 +1443,8 @@ export default function GigDetailPage() {
 
         {/* HANDSHAKE SECTION — Physical Hustle OR Buy/Sell Marketplace */}
         {/* Physical Hustle: Poster shows code, Worker enters */}
-        {/* Buy/Sell: Buyer (worker) shows code, Seller (poster) enters */}
-        {handshakeCode && (status === 'assigned' || status === 'delivered') && (isOwner || isWorker) &&
-          (gig.is_physical === true || (isMarket && (gig.market_type === 'SELL' || gig.market_type === 'REQUEST'))) && (
+        {/* Buy/Sell: Buyer (worker or poster) shows code, Seller enters */}
+        {handshakeCode && (status === 'assigned' || status === 'delivered') && (shouldShowCode || shouldEnterCode) && (
           <div className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
@@ -1479,9 +1487,7 @@ export default function GigDetailPage() {
               </div>
 
               <div className="bg-black/40 p-6 rounded-2xl border border-white/10 backdrop-blur-sm min-w-[280px]">
-                {/* Buy/Sell: Buyer (worker) shows code, Seller (poster/owner) enters */}
-                {/* Hustle: Poster (owner) shows code, Worker enters */}
-                {(isMarket ? isWorker : isOwner) ? (
+                {shouldShowCode ? (
                   <div className="text-center">
                     <p className="text-white/60 text-xs font-bold uppercase tracking-widest mb-4">Secret Code</p>
                     <div className="flex justify-center gap-3">
@@ -1770,12 +1776,11 @@ export default function GigDetailPage() {
 
                       {(status === "assigned" || status === "delivered") && (
                         <>
-                          {/* Buy/Sell: Seller enters OTP from buyer directly in action card */}
-                          {isMarket && (gig.market_type === "SELL" || gig.market_type === "REQUEST") ? (
+                          {shouldEnterCode && isOwner ? (
                             <div className="space-y-3">
                               <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
-                                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Step: Enter Buyer's Code</p>
-                                <p className="text-yellow-400/70 text-xs">Ask the buyer for their 4-digit code after they're satisfied with the item.</p>
+                                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Step: Enter {isMarket ? "Buyer's" : "Poster's"} Code</p>
+                                <p className="text-yellow-400/70 text-xs">Ask the {isMarket ? "buyer" : "poster"} for their 4-digit code after they're satisfied.</p>
                               </div>
                               <div className="flex justify-center gap-2">
                                 {(inputCode || ["", "", "", ""]).map((digit, i) => (
@@ -1812,8 +1817,8 @@ export default function GigDetailPage() {
                               </button>
                             </div>
                           ) : (
-                            /* Non-Buy/Sell seller actions */
-                            (!isMarket || !gig.is_physical) && (
+                            /* Non-Buy/Sell/Physical seller actions */
+                            (!isMarket || !gig.is_physical) && !shouldEnterCode && (
                               <button
                                 onClick={handleComplete}
                                 disabled={isCompleting}
@@ -1871,12 +1876,11 @@ export default function GigDetailPage() {
                           )}
                         </button>
                       ) : (
-                        /* Buyer (isWorker) in assigned Buy/Sell: show their OTP code */
-                        isWorker && isMarket && (gig.market_type === "SELL" || gig.market_type === "REQUEST") && handshakeCode && (status === "assigned" || status === "delivered") ? (
+                        shouldShowCode && !isOwner && handshakeCode && (status === "assigned" || status === "delivered") ? (
                           <div className="space-y-3">
                             <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-center">
                               <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Your Verification Code</p>
-                              <p className="text-yellow-400/70 text-xs">Show this to the Seller after you verify the item.</p>
+                              <p className="text-yellow-400/70 text-xs">Show this to the {isMarket ? "Seller" : "Hustler"} after you verify.</p>
                             </div>
                             <div className="flex justify-center gap-3">
                               {(handshakeCode || "").split("").map((digit, i) => (
@@ -1885,7 +1889,47 @@ export default function GigDetailPage() {
                                 </div>
                               ))}
                             </div>
-                            <p className="text-center text-[10px] text-white/40">Only share this after inspecting the item in person.</p>
+                            <p className="text-center text-[10px] text-white/40">Only share this after inspecting {isMarket ? "the item" : "the completed work"} in person.</p>
+                          </div>
+                        ) : shouldEnterCode && !isOwner && (status === "assigned" || status === "delivered") ? (
+                          <div className="space-y-3">
+                            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
+                              <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Step: Enter {isMarket ? "Buyer's" : "Poster's"} Code</p>
+                              <p className="text-yellow-400/70 text-xs">Ask the {isMarket ? "buyer" : "poster"} for their 4-digit code after they're satisfied.</p>
+                            </div>
+                            <div className="flex justify-center gap-2">
+                              {(inputCode || ["", "", "", ""]).map((digit, i) => (
+                                <input
+                                  key={i}
+                                  id={`action-digit-${i}`}
+                                  type="text"
+                                  inputMode="numeric"
+                                  maxLength={1}
+                                  value={digit}
+                                  onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, "").slice(-1);
+                                    const newCode = [...inputCode];
+                                    newCode[i] = val;
+                                    setInputCode(newCode);
+                                    if (val && i < 3) document.getElementById(`action-digit-${i + 1}`)?.focus();
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Backspace" && !inputCode[i] && i > 0) {
+                                      document.getElementById(`action-digit-${i - 1}`)?.focus();
+                                    }
+                                  }}
+                                  className="w-14 h-16 text-center text-2xl font-mono font-bold bg-[#0B0B11] border-2 border-yellow-500/40 focus:border-yellow-500 rounded-xl text-yellow-400 outline-none transition-all"
+                                />
+                              ))}
+                            </div>
+                            <button
+                              onClick={onVerifyHandshake}
+                              disabled={verifyingHandshake || inputCode.join("").length !== 4}
+                              className="w-full py-4 rounded-2xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(234,179,8,0.3)] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                              {verifyingHandshake ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
+                              Confirm & Complete Deal
+                            </button>
                           </div>
                         ) : (
                           <div className="p-4 rounded-2xl bg-white/10 border border-white/5 text-center">
@@ -2108,9 +2152,9 @@ export default function GigDetailPage() {
               <button onClick={() => setShowContactModal(true)} className="w-full py-3 rounded-2xl bg-brand-pink text-white font-bold text-sm active:scale-95 transition-all">
                 👤 View Contact Info
               </button>
-            ) : isOwner && isMarket && (gig.market_type === 'SELL' || gig.market_type === 'REQUEST') && (status === 'assigned' || status === 'delivered') ? (
+            ) : shouldEnterCode && (status === 'assigned' || status === 'delivered') ? (
               <button onClick={() => document.getElementById('action-digit-0')?.focus()} className="w-full py-3 rounded-2xl bg-yellow-500 text-black font-bold text-sm active:scale-95 transition-all">
-                🔑 Enter Buyer's OTP
+                🔑 Enter {isMarket ? "Buyer's" : "Poster's"} OTP
               </button>
             ) : isOwner && isDelivered && !gig.is_physical && !isMarket ? (
               <button onClick={() => setShowReviewModal(true)} className="w-full py-3 rounded-2xl bg-green-500 text-black font-bold text-sm active:scale-95 transition-all">
@@ -2136,8 +2180,6 @@ export default function GigDetailPage() {
           </div>
         </div>
       </div>
-
-
 
       {/* Lightbox - Scrollable Multi-Image Gallery */}
       {selectedImageIndex !== null && gig.images && gig.images.length > 0 && (() => {

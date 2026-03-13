@@ -301,7 +301,7 @@ function ApplicationCard({ app, gig, getAppStatusBadge, delay }: { app: any, gig
   return (
     <Link
       href={`/gig/${gig.id}`}
-      className="group bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-6 hover:border-brand-pink/40 transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(236,72,153,0.15)] overflow-hidden h-[190px] flex flex-col fill-mode-both animate-in fade-in"
+      className="group bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-6 hover:border-brand-pink/40 transition-all hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(236,72,153,0.15)] overflow-hidden min-h-[190px] flex flex-col fill-mode-both animate-in fade-in"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="flex justify-between items-start mb-4">
@@ -315,10 +315,9 @@ function ApplicationCard({ app, gig, getAppStatusBadge, delay }: { app: any, gig
         {gig.title}
       </h3>
 
-      <div className="flex items-center gap-2 text-zinc-400 text-sm mt-auto">
+      <div className="flex items-center gap-2 text-zinc-400 text-sm mt-auto pb-1">
         <IndianRupee className="w-4 h-4" />
-        <span className="font-black text-white">{gig.price?.toLocaleString()}</span>
-        <span className="text-[10px] font-bold uppercase tracking-widest opacity-50 ml-2">Offered: ₹{app.offer_price || gig.price}</span>
+        <span className="font-black text-white text-lg">{gig.price?.toLocaleString()}</span>
       </div>
 
       <div className="pt-4 mt-3 border-t border-[#1E293B] flex items-center justify-between">
