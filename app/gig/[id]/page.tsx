@@ -100,6 +100,7 @@ export default function GigDetailPage() {
   // --- STATE ---
   const [gig, setGig] = useState<GigData | null>(null);
   const [posterDetails, setPosterDetails] = useState<any>(null);
+  const [workerDetails, setWorkerDetails] = useState<any>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
@@ -326,8 +327,24 @@ export default function GigDetailPage() {
   }, [id, supabase]);
 
   useEffect(() => {
-    if (gig?.status === 'assigned' && gig.assigned_worker_id === user?.id && gig.listing_type === 'MARKET' && gig.market_type !== 'RENT') {
-      setContactRevealed(true);
+    const isSellDeal = gig?.listing_type === 'MARKET' && (gig.market_type === 'SELL' || gig.market_type === 'REQUEST');
+    const isAssigned = gig?.status === 'assigned' || gig?.status === 'delivered';
+
+    if (isAssigned && isSellDeal) {
+      // Both buyer (worker) and seller (poster/owner) can see each other's contact
+      if (gig.assigned_worker_id === user?.id || gig.poster_id === user?.id) {
+        setContactRevealed(true);
+
+        // Fetch the BUYER's (worker's) contact details for the seller to view
+        if (gig.poster_id === user?.id && gig.assigned_worker_id) {
+          supabase
+            .from('users')
+            .select('name, phone, email, avatar_url')
+            .eq('id', gig.assigned_worker_id)
+            .maybeSingle()
+            .then(({ data }) => setWorkerDetails(data));
+        }
+      }
     }
   }, [gig, user]);
 
@@ -1040,27 +1057,38 @@ export default function GigDetailPage() {
 
               <h2 className="text-2xl font-bold text-white">Contact Revealed!</h2>
               <p className="text-white/50 text-sm">
-                Connect directly with the poster to finalize the deal.
+                {isOwner
+                  ? "Connect with the Buyer to arrange the handover."
+                  : "Connect with the Seller to arrange the handover."}
                 <br /><span className="text-brand-pink font-bold">Meet in a safe public place.</span>
               </p>
 
-              <div className="bg-black/40 rounded-xl p-6 border border-white/5 space-y-4">
+              {/* Seller (isOwner) sees BUYER's details; Buyer sees SELLER's details */}
+              <div className="bg-black/40 rounded-xl p-6 border border-white/5 space-y-4 text-left">
                 <div>
                   <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">Name</label>
-                  <p className="text-lg font-bold text-white">{posterDetails?.name || "Poster"}</p>
+                  <p className="text-lg font-bold text-white">
+                    {isOwner ? (workerDetails?.name || "Buyer") : (posterDetails?.name || "Seller")}
+                  </p>
                 </div>
 
-                {posterDetails?.phone && (
+                {(isOwner ? workerDetails?.phone : posterDetails?.phone) && (
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">Phone</label>
-                    <p className="text-xl font-mono text-brand-pink tracking-wider select-all">{posterDetails.phone}</p>
+                    <p className="text-xl font-mono text-brand-pink tracking-wider select-all">
+                      {isOwner ? workerDetails.phone : posterDetails.phone}
+                    </p>
                   </div>
                 )}
 
-                {posterDetails?.upi_id && (
+                {(isOwner ? workerDetails?.email : posterDetails?.upi_id) && (
                   <div>
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">UPI ID</label>
-                    <p className="text-base font-mono text-white/80 select-all">{posterDetails.upi_id}</p>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+                      {isOwner ? "Email" : "UPI ID"}
+                    </label>
+                    <p className="text-base font-mono text-white/80 select-all">
+                      {isOwner ? workerDetails.email : posterDetails.upi_id}
+                    </p>
                   </div>
                 )}
               </div>
