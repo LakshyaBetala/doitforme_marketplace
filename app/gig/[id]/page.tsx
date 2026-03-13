@@ -291,19 +291,20 @@ export default function GigDetailPage() {
         }
 
         if (gigData.status === 'assigned' || gigData.status === 'delivered' || gigData.escrow_status === 'HELD') {
-          // Handshake code logic:
-          // For Buy/Sell (SELL): Buyer (worker) DISPLAYS code, Seller (poster) INPUTS it.
-          // For Physical Hustle: Poster (isOwner) DISPLAYS code, Worker INPUTS it.
-          
-          let hCode = gigData.handshake_code; // Try gig table first (P2P sell — stored directly)
+          // Handshake code logic: Try directly from gig_data (Seller/Poster might see it)
+          let hCode = gigData.handshake_code;
 
+          // If blocked by RLS (e.g., Buyer/Worker view), fetch from secure server route
           if (!hCode) {
-            const { data: escrowData } = await supabase
-              .from('escrow')
-              .select('handshake_code')
-              .eq('gig_id', id)
-              .maybeSingle();
-            hCode = escrowData?.handshake_code;
+            try {
+              const hsRes = await fetch(`/api/gig/handshake?gigId=${id}`);
+              if (hsRes.ok) {
+                const hsData = await hsRes.json();
+                hCode = hsData.code;
+              }
+            } catch (e) {
+              console.error("Error fetching handshake code:", e);
+            }
           }
 
           if (hCode) {
@@ -1445,7 +1446,7 @@ export default function GigDetailPage() {
         {/* Physical Hustle: Poster shows code, Worker enters */}
         {/* Buy/Sell: Buyer (worker or poster) shows code, Seller enters */}
         {handshakeCode && (status === 'assigned' || status === 'delivered') && (shouldShowCode || shouldEnterCode) && (
-          <div className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
+          <div id="handshake-section" className="mb-12 bg-gradient-to-r from-[#1A1A24] to-[#121217] border border-yellow-500/30 rounded-[32px] p-8 md:p-10 relative overflow-hidden shadow-[0_0_40px_rgba(234,179,8,0.1)]">
             <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="text-center md:text-left max-w-lg">
@@ -1778,42 +1779,15 @@ export default function GigDetailPage() {
                         <>
                           {shouldEnterCode && isOwner ? (
                             <div className="space-y-3">
-                              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl">
-                                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Step: Enter {isMarket ? "Buyer's" : "Poster's"} Code</p>
-                                <p className="text-yellow-400/70 text-xs">Ask the {isMarket ? "buyer" : "poster"} for their 4-digit code after they're satisfied.</p>
-                              </div>
-                              <div className="flex justify-center gap-2">
-                                {(inputCode || ["", "", "", ""]).map((digit, i) => (
-                                  <input
-                                    key={i}
-                                    id={`action-digit-${i}`}
-                                    type="text"
-                                    inputMode="numeric"
-                                    maxLength={1}
-                                    value={digit}
-                                    onChange={(e) => {
-                                      const val = e.target.value.replace(/\D/g, "").slice(-1);
-                                      const newCode = [...inputCode];
-                                      newCode[i] = val;
-                                      setInputCode(newCode);
-                                      if (val && i < 3) document.getElementById(`action-digit-${i + 1}`)?.focus();
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Backspace" && !inputCode[i] && i > 0) {
-                                        document.getElementById(`action-digit-${i - 1}`)?.focus();
-                                      }
-                                    }}
-                                    className="w-14 h-16 text-center text-2xl font-mono font-bold bg-[#0B0B11] border-2 border-yellow-500/40 focus:border-yellow-500 rounded-xl text-yellow-400 outline-none transition-all"
-                                  />
-                                ))}
+                              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-center">
+                                <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest mb-1">Waiting for Verification</p>
+                                <p className="text-yellow-400/70 text-xs">A 4-digit code is required to complete this deal. Use the <strong>Handshake Verification</strong> section to securely enter the code.</p>
                               </div>
                               <button
-                                onClick={onVerifyHandshake}
-                                disabled={verifyingHandshake || inputCode.join("").length !== 4}
-                                className="w-full py-4 rounded-2xl bg-yellow-500 hover:bg-yellow-400 text-black font-bold text-lg transition-all shadow-[0_0_20px_rgba(234,179,8,0.3)] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                                onClick={() => document.getElementById('handshake-section')?.scrollIntoView({ behavior: 'smooth' })}
+                                className="w-full py-4 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-all shadow-[0_0_20px_rgba(255,255,255,0.05)] active:scale-[0.98] flex items-center justify-center gap-2"
                               >
-                                {verifyingHandshake ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldCheck className="w-5 h-5" />}
-                                Confirm & Complete Deal
+                                <ShieldCheck className="w-4 h-4" /> Go to Handshake Section
                               </button>
                             </div>
                           ) : (
@@ -2153,8 +2127,8 @@ export default function GigDetailPage() {
                 👤 View Contact Info
               </button>
             ) : shouldEnterCode && (status === 'assigned' || status === 'delivered') ? (
-              <button onClick={() => document.getElementById('action-digit-0')?.focus()} className="w-full py-3 rounded-2xl bg-yellow-500 text-black font-bold text-sm active:scale-95 transition-all">
-                🔑 Enter {isMarket ? "Buyer's" : "Poster's"} OTP
+              <button onClick={() => document.getElementById('handshake-section')?.scrollIntoView({ behavior: 'smooth' })} className="w-full py-3 rounded-2xl bg-yellow-500 text-black font-bold text-sm active:scale-95 transition-all flex items-center justify-center gap-2">
+                <ShieldCheck className="w-4 h-4" /> Go to Handshake Section
               </button>
             ) : isOwner && isDelivered && !gig.is_physical && !isMarket ? (
               <button onClick={() => setShowReviewModal(true)} className="w-full py-3 rounded-2xl bg-green-500 text-black font-bold text-sm active:scale-95 transition-all">
