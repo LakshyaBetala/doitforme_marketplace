@@ -68,9 +68,14 @@ export async function POST(req: Request) {
     }
 
     // 5. Verify Code
-    const correctCode = escrow?.handshake_code || gig.handshake_code;
-    if (!correctCode) return NextResponse.json({ error: "No handshake code established" }, { status: 500 });
-    if (correctCode !== code) {
+    const correctCode = gig.handshake_code || escrow?.handshake_code;
+    
+    // Convert both to strings and trim just to be absolutely safe against type mismatches
+    const safeCorrectCode = correctCode ? String(correctCode).trim() : null;
+    const safeInputCode = code ? String(code).trim() : null;
+
+    if (!safeCorrectCode) return NextResponse.json({ error: "No handshake code established" }, { status: 500 });
+    if (safeCorrectCode !== safeInputCode) {
       return NextResponse.json({ error: "Invalid Handshake Code" }, { status: 400 });
     }
 
