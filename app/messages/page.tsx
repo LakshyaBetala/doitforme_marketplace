@@ -69,6 +69,44 @@ function MessagesContent() {
     const [disputeReason, setDisputeReason] = useState("");
     const [isDisputing, setIsDisputing] = useState(false);
 
+    // Location Alert State
+    const [hasSentLocationAlert, setHasSentLocationAlert] = useState(false);
+
+    // Telegram connection check
+    const [hasTelegramLinked, setHasTelegramLinked] = useState<boolean | null>(null);
+    const [showTelegramBanner, setShowTelegramBanner] = useState(true);
+
+    // Audio synthesizer
+    const playRingtone = () => {
+        try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+
+            for (let i = 0; i < 4; i++) {
+                const time = ctx.currentTime + i * 1.5;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, time);
+                osc.frequency.exponentialRampToValueAtTime(600, time + 0.1);
+                
+                gain.gain.setValueAtTime(0, time);
+                gain.gain.linearRampToValueAtTime(0.5, time + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + 1);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start(time);
+                osc.stop(time + 1);
+            }
+        } catch (e) {
+            console.warn("AudioContext error", e);
+        }
+    };
+
     // 1. Initialize User & Real-time Conversation List
     useEffect(() => {
         let channel: any;
@@ -77,6 +115,11 @@ function MessagesContent() {
                 const userId = data.user.id;
                 setUser(data.user);
                 fetchInitialData(userId);
+
+                // Check Telegram Status
+                supabase.from('users').select('telegram_chat_id').eq('id', userId).single().then(({data: profile}) => {
+                    if(profile) setHasTelegramLinked(!!profile.telegram_chat_id);
+                });
 
                 // Handle deep linking from URL
                 const chatParam = searchParams.get('chat');
@@ -314,6 +357,15 @@ function MessagesContent() {
                             : c
                     ));
                     scrollToBottom();
+
+                    // Check for location alert
+                    if (newMsg.message_type === 'system' && newMsg.content === 'LOCATION_ALERT' && newMsg.sender_id !== user.id) {
+                        toast.success("🚨 The other user has arrived at the location!", { duration: 10000, position: 'top-center' });
+                        playRingtone();
+                        if ("vibrate" in navigator) {
+                            navigator.vibrate([1000, 500, 1000, 500, 1000]);
+                        }
+                    }
                 }
             })
             .on('postgres_changes', {
@@ -340,7 +392,7 @@ function MessagesContent() {
 
 
     // 4. Send Message Logic
-    const sendMessage = async (e?: React.FormEvent, type: 'text' | 'image' | 'offer' = 'text', contentUrl?: string, amount?: number) => {
+    const sendMessage = async (e?: React.FormEvent, type: 'text' | 'image' | 'offer' | 'system' = 'text', contentUrl?: string, amount?: number) => {
         if (e) e.preventDefault();
         if (isSending) return; // Prevent double-send
 
@@ -543,6 +595,12 @@ function MessagesContent() {
     // Approve/disapprove only valid for: poster, non-physical, non-market (Hustle remote), when delivered
     const canApproveOrDispute = isPosterView && !isPhysicalGig && !isMarketGig && activeGigStatus === 'delivered';
 
+    // Update hasSentLocationAlert
+    useEffect(() => {
+        const sent = messages.some(m => m.sender_id === user?.id && m.content === 'LOCATION_ALERT' && m.message_type === 'system');
+        setHasSentLocationAlert(sent);
+    }, [messages, user?.id]);
+
     return (
         <div className="flex h-[100dvh] bg-[#0B0B11] text-white overflow-hidden font-sans selection:bg-brand-purple">
 
@@ -671,6 +729,31 @@ function MessagesContent() {
                             )}
                         </div>
 
+                        {/* Telegram Alert Banner */}
+                        {hasTelegramLinked === false && showTelegramBanner && activeGigStatus === 'open' && (
+                            <div className="mx-4 mt-4 p-3 bg-brand-purple/10 border border-brand-purple/20 rounded-xl flex items-start gap-3 relative animate-in slide-in-from-top-2">
+                                <button onClick={() => setShowTelegramBanner(false)} className="absolute top-2 right-2 text-brand-purple/70 hover:text-white transition-colors">
+                                    <X size={14} />
+                                </button>
+                                <div className="p-1.5 bg-brand-purple/20 rounded-lg text-brand-purple shrink-0">
+                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                                </div>
+                                <div className="pr-6">
+                                    <h3 className="text-brand-purple text-sm font-bold mb-0.5 flex items-center gap-2">
+                                        Never miss a reply!
+                                        <div className="group relative hidden md:block">
+                                            <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[10px] cursor-help">?</span>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[#1A1A24] border border-white/10 rounded-lg text-[10px] text-white/70 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all text-center z-50">
+                                                Web notifications only work when the app is open. Telegram ensures you get instantly notified.
+                                            </div>
+                                        </div>
+                                    </h3>
+                                    <p className="text-white/60 text-xs mb-2">Connect Telegram to get instant notifications even when you're away.</p>
+                                    <Link href="/dashboard/settings" className="inline-block px-3 py-1.5 bg-brand-purple hover:bg-brand-purple/90 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-brand-purple/20 active:scale-95">Link Telegram Now</Link>
+                                </div>
+                            </div>
+                        )}
+
                         {/* OFFER MODAL */}
                         {isOfferModalOpen && (
                             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -751,6 +834,16 @@ function MessagesContent() {
                                                     {formatSmartDate(msg.created_at)}
                                                 </div>
                                             </div>
+                                        ) : msg.message_type === 'system' && msg.content === 'LOCATION_ALERT' ? (
+                                            <div className={`max-w-[85%] md:max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${isMe ? 'bg-red-500/20 border border-red-500/30 text-white rounded-tr-sm' : 'bg-red-500/10 border border-red-500/20 text-red-400 rounded-tl-sm'}`}>
+                                                <div className="flex items-center gap-2 font-bold mb-1">
+                                                    <AlertTriangle size={16} className={isMe ? 'text-white' : 'text-red-400'} />
+                                                    {isMe ? "You arrived at the location" : "User arrived at the location"}
+                                                </div>
+                                                <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-white/60' : 'text-red-400/50'}`}>
+                                                    {formatSmartDate(msg.created_at)}
+                                                </div>
+                                            </div>
                                         ) : (
                                             <div className={`max-w-[85%] md:max-w-[65%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words ${isMe
                                                 ? 'bg-[#8825F5] text-white rounded-tr-sm'
@@ -799,6 +892,20 @@ function MessagesContent() {
                                             </span>
                                         </div>
                                     )}
+
+                                    {(isPhysicalGig || isMarketGig) && (activeGigStatus === 'assigned' || activeGigStatus === 'delivered') && !hasSentLocationAlert && user && (
+                                        <div className="mb-3 px-1">
+                                            <button
+                                                type="button"
+                                                onClick={() => sendMessage(undefined, 'system', 'LOCATION_ALERT')}
+                                                disabled={isSending}
+                                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-colors animate-pulse disabled:opacity-50"
+                                            >
+                                                📍 I'm Here at the Location (Notify)
+                                            </button>
+                                        </div>
+                                    )}
+
                                     <form onSubmit={(e) => sendMessage(e)} className="flex gap-2 max-w-4xl mx-auto relative items-center">
                                         <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/jpeg,image/png,image/webp" />
                                         {activeConversation?.gig?.listing_type === 'MARKET' && activeConversation?.gig?.poster_id !== user?.id && (
@@ -831,11 +938,39 @@ function MessagesContent() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-white/50 gap-4">
-                        <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center mb-2 animate-pulse">
-                            <Send size={40} className="opacity-50" />
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#050505] relative overflow-hidden">
+                        {/* Subtle background glow */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-purple/5 rounded-full blur-[100px] pointer-events-none"></div>
+                        
+                        <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6 relative z-10 shadow-xl shadow-black/50">
+                            <Send size={32} className="text-brand-purple opacity-80 translate-x-1" />
                         </div>
-                        <p>Select a chat to start messaging</p>
+                        <h2 className="text-xl font-bold text-white mb-2 relative z-10">Your Messages</h2>
+                        <p className="text-white/50 text-sm mb-10 max-w-sm text-center relative z-10 leading-relaxed">
+                            Select a conversation from the sidebar or post a new Hustle to begin chatting.
+                        </p>
+
+                        {!hasTelegramLinked && hasTelegramLinked !== null && (
+                            <div className="max-w-md w-full bg-[#121217] border border-white/10 rounded-2xl p-5 relative z-10 hover:border-brand-purple/30 transition-colors group">
+                                <div className="flex flex-col sm:flex-row items-start gap-4">
+                                    <div className="bg-brand-purple/10 p-3 rounded-xl shrink-0">
+                                        <Send className="w-6 h-6 text-brand-purple" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-white font-bold text-sm mb-1 flex items-center gap-2 flex-wrap">
+                                            Never miss a message
+                                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-brand-purple/20 text-brand-purple uppercase tracking-wider shrink-0">Recommended</span>
+                                        </h3>
+                                        <p className="text-xs text-white/50 mb-3 leading-relaxed">
+                                            Connect your Telegram to get instant notifications when someone messages you or arrives at a location.
+                                        </p>
+                                        <Link href="/dashboard/settings" className="inline-flex items-center justify-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg transition-colors group-hover:bg-brand-purple w-full sm:w-auto">
+                                            Connect Telegram
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

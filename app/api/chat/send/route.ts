@@ -174,9 +174,16 @@ export async function POST(req: Request) {
         // Chat room ID is gigId_workerId
         const workerId = isPoster ? receiverId : user.id;
         const chatLink = `https://doitforme.in/messages?chat=${gigId}_${workerId}`;
+        
+        let telegramMessage = `💬 <b>New Message!</b>\nYou received a new message regarding a gig: <i>${gig.title}</i>.\n<a href="${chatLink}">Click to reply</a>`;
+        
+        if (type === 'system' && content === 'LOCATION_ALERT') {
+          telegramMessage = `🚨 <b>They are here!</b>\nThe other user has arrived at the location for: <i>${gig.title}</i>.\n<a href="${chatLink}">Open Chat</a>`;
+        }
+
         await sendTelegramAlert(
           receiver.telegram_chat_id,
-          `💬 <b>New Message!</b>\nYou received a new message regarding a gig: <i>${gig.title}</i>.\n<a href="${chatLink}">Click to reply</a>`
+          telegramMessage
         );
       }
     } catch (e) {

@@ -13,6 +13,8 @@ import {
   Home, ShoppingBag, Inbox, Star, Settings, LogOut, Bell, ChevronDown, CheckCircle2,
   DollarSign, ArrowRight, Zap, ShieldCheck, AlertTriangle, X, Gift, Copy, Clock, Filter, Tags
 } from "lucide-react";
+import InstallAppButton from "@/components/InstallAppButton";
+import EnableNotificationsButton from "@/components/EnableNotificationsButton";
 
 export default function Dashboard() {
   const supabase = supabaseBrowser();
@@ -200,11 +202,17 @@ export default function Dashboard() {
             </button>
 
             {isProfileDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden py-1 z-50">
-                <Link href="/profile" className="flex items-center px-4 py-2 hover:bg-white/10 text-sm text-zinc-300 hover:text-white"><User size={14} className="mr-3" /> Profile</Link>
+              <div className="absolute top-full right-0 mt-2 w-56 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden py-1 z-50">
+                <Link href="/profile" className="flex items-center px-4 py-3 hover:bg-white/10 text-sm text-zinc-300 hover:text-white transition-colors">
+                  <User size={16} className="mr-3 shrink-0" />
+                  <span className="font-medium">Profile</span>
+                </Link>
+                <InstallAppButton />
+                <EnableNotificationsButton />
                 <div className="h-px bg-[#1E293B] my-1"></div>
-                <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 hover:bg-red-500/10 text-sm text-red-400 transition-colors">
-                  <LogOut size={14} className="mr-3" /> Logout
+                <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 hover:bg-red-500/10 text-sm text-red-400 transition-colors">
+                  <LogOut size={16} className="mr-3 shrink-0" />
+                  <span className="font-medium">Logout</span>
                 </button>
               </div>
             )}
