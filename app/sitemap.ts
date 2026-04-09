@@ -13,6 +13,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 1.0,
         },
         {
+            url: `${baseUrl}/about`,
+            lastModified: now,
+            changeFrequency: 'monthly',
+            priority: 0.8,
+        },
+        {
+            url: `${baseUrl}/pricing`,
+            lastModified: now,
+            changeFrequency: 'monthly',
+            priority: 0.8,
+        },
+        {
+            url: `${baseUrl}/contact`,
+            lastModified: now,
+            changeFrequency: 'monthly',
+            priority: 0.7,
+        },
+        {
             url: `${baseUrl}/login`,
             lastModified: now,
             changeFrequency: 'monthly',
@@ -25,53 +43,38 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'daily',
             priority: 0.9,
         },
-        // Post a gig / marketplace listing
+        // Post a hustle / gig
         {
             url: `${baseUrl}/post`,
             lastModified: now,
             changeFrequency: 'weekly',
             priority: 0.8,
         },
-        // Profile / onboarding
+        // Public feed
         {
-            url: `${baseUrl}/onboarding`,
-            lastModified: now,
-            changeFrequency: 'monthly',
-            priority: 0.6,
-        },
-        {
-            url: `${baseUrl}/profile`,
-            lastModified: now,
-            changeFrequency: 'weekly',
-            priority: 0.6,
-        },
-        // Activity hub
-        {
-            url: `${baseUrl}/gig/my-gigs`,
+            url: `${baseUrl}/feed`,
             lastModified: now,
             changeFrequency: 'daily',
-            priority: 0.7,
+            priority: 0.8,
         },
-        // Messages
+        // Legal pages
         {
-            url: `${baseUrl}/messages`,
+            url: `${baseUrl}/terms`,
             lastModified: now,
-            changeFrequency: 'daily',
-            priority: 0.6,
+            changeFrequency: 'yearly',
+            priority: 0.4,
         },
-        // Payouts / wallet
         {
-            url: `${baseUrl}/payouts`,
+            url: `${baseUrl}/privacy-policy`,
             lastModified: now,
-            changeFrequency: 'weekly',
-            priority: 0.5,
+            changeFrequency: 'yearly',
+            priority: 0.4,
         },
-        // Verify ID
         {
-            url: `${baseUrl}/verify`,
+            url: `${baseUrl}/refund-policy`,
             lastModified: now,
-            changeFrequency: 'monthly',
-            priority: 0.5,
+            changeFrequency: 'yearly',
+            priority: 0.4,
         },
     ];
 }

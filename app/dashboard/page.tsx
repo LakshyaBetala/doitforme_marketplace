@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import InstallAppButton from "@/components/InstallAppButton";
 import EnableNotificationsButton from "@/components/EnableNotificationsButton";
+import CrossDomainLink from "@/components/CrossDomainLink";
 
 export default function Dashboard() {
   const supabase = supabaseBrowser();
@@ -24,7 +25,7 @@ export default function Dashboard() {
   const [gigs, setGigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [feedType, setFeedType] = useState<'ALL' | 'HUSTLE' | 'MARKET'>('ALL');
+  const [feedType, setFeedType] = useState<'ALL' | 'HUSTLE' | 'COMPANY_TASK'>('ALL');
   const [campusFilter, setCampusFilter] = useState<'ALL' | 'MY_CAMPUS'>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -77,6 +78,9 @@ export default function Dashboard() {
       ]);
 
       const dbUser = dbUserRes.data;
+      if (dbUser?.role === 'COMPANY') {
+         return router.push('/company/dashboard');
+      }
       setUser({ ...authUser, user_metadata: { ...authUser.user_metadata, ...dbUser } });
       setHasUnreadMessages((unreadRes.data?.length || 0) > 0);
       setGigs(gigsRes.data || []);
@@ -115,21 +119,26 @@ export default function Dashboard() {
     const bHighlighted = b.is_highlighted && b.highlight_expires_at && new Date(b.highlight_expires_at) > new Date();
     if (aHighlighted && !bHighlighted) return -1;
     if (!aHighlighted && bHighlighted) return 1;
+
+    const aCompany = a.listing_type === 'COMPANY_TASK';
+    const bCompany = b.listing_type === 'COMPANY_TASK';
+    if (aCompany && !bCompany) return -1;
+    if (!aCompany && bCompany) return 1;
+
     return 0;
   });
 
   // Dynamic opportunity counts (computed from ALL gigs, ignoring search/type filters)
   const hustleCount = gigs.filter(g => g.listing_type === 'HUSTLE').length;
-  const marketCount = gigs.filter(g => g.listing_type === 'MARKET').length;
+  const companyTaskCount = gigs.filter(g => g.listing_type === 'COMPANY_TASK').length;
 
-  const handleFeedTypeChange = (type: 'ALL' | 'HUSTLE' | 'MARKET') => {
+  const handleFeedTypeChange = (type: 'ALL' | 'HUSTLE' | 'COMPANY_TASK') => {
     setFeedType(type);
     setCategoryFilter('ALL'); // Reset category filter when switching tabs
   };
 
   const activeCategories = Array.from(new Set([
-    ...(feedType === 'ALL' || feedType === 'HUSTLE' ? ["Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content", "Tutoring", "Other"] : []),
-    ...(feedType === 'ALL' || feedType === 'MARKET' ? ["Electronics", "Furniture", "Books & Study Material", "Vehicles", "Fashion & Clothing", "Appliances", "Accessories", "Sports & Fitness", "Subscriptions & Tickets", "Other"] : [])
+    ...(feedType === 'ALL' || feedType === 'HUSTLE' || feedType === 'COMPANY_TASK' ? ["Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content", "Marketing & PR", "Data & Research", "Tutoring", "Other"] : [])
   ]));
 
   const username = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Partner";
@@ -168,7 +177,7 @@ export default function Dashboard() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
-              placeholder="Search tasks, items, or students"
+              placeholder="Search hustles, tasks, or students"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#0F172A] border border-[#1E293B] rounded-full py-2 pl-9 pr-4 text-sm text-white placeholder:text-zinc-500 focus:border-brand-purple/50 focus:outline-none transition-colors shadow-inner"
@@ -282,8 +291,8 @@ export default function Dashboard() {
                     </div>
                     <div className="w-px h-6 bg-[#334155] self-center"></div>
                     <div>
-                      <span className="text-xl font-black text-white">{marketCount}</span>
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase ml-1.5">Items</span>
+                      <span className="text-xl font-black text-white">{companyTaskCount}</span>
+                      <span className="text-[10px] font-bold text-zinc-500 uppercase ml-1.5">Company</span>
                     </div>
                   </div>
                 </div>
@@ -299,11 +308,11 @@ export default function Dashboard() {
                 <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Create Post</span>
                 <span className="text-[10px] text-zinc-500 mt-1 text-center leading-tight">Post a task or find help on campus</span>
               </Link>
-              <Link href="/post?type=market" className="flex flex-col items-center justify-center py-6 px-4 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-2xl hover:opacity-95 active:scale-95 group hover:-translate-y-1 transition-all shadow-[0_0_20px_rgba(136,37,245,0.2)] hover:shadow-[0_0_30px_rgba(136,37,245,0.6)]">
+              <CrossDomainLink targetDomain="https://marketforme.in" redirectTo="/" className="flex flex-col items-center justify-center py-6 px-4 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-2xl hover:opacity-95 active:scale-95 group hover:-translate-y-1 transition-all shadow-[0_0_20px_rgba(136,37,245,0.2)] hover:shadow-[0_0_30px_rgba(136,37,245,0.6)]">
                 <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><ShoppingBag size={24} /></div>
-                <span className="font-black tracking-wide">Sell Item</span>
-                <span className="text-[10px] text-white/60 mt-1 text-center leading-tight">List items to sell, rent, or request</span>
-              </Link>
+                <span className="font-black tracking-wide">Campus Market</span>
+                <span className="text-[10px] text-white/60 mt-1 text-center leading-tight">Buy & Sell on MarketForMe</span>
+              </CrossDomainLink>
               <Link href="/gig/my-gigs" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
                 <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all relative">
                   <Briefcase size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
@@ -329,10 +338,10 @@ export default function Dashboard() {
 
                 <div className="flex items-center gap-3">
                   {/* Type Filters */}
-                  <div className="flex items-center bg-[#0F172A] rounded-full p-1 border border-[#1E293B]">
+                  <div className="flex items-center bg-[#0F172A] rounded-full p-1 border border-[#1E293B] overflow-x-auto scrollbar-hide shrink-0 max-w-[calc(100vw-100px)] md:max-w-none">
                     <FeedTab label="All" active={feedType === 'ALL'} onClick={() => handleFeedTypeChange('ALL')} />
                     <FeedTab label="Hustles" active={feedType === 'HUSTLE'} onClick={() => handleFeedTypeChange('HUSTLE')} />
-                    <FeedTab label="Marketplace" active={feedType === 'MARKET'} onClick={() => handleFeedTypeChange('MARKET')} />
+                    <FeedTab label="Company Tasks" active={feedType === 'COMPANY_TASK'} onClick={() => handleFeedTypeChange('COMPANY_TASK')} />
                   </div>
 
                   {/* Campus Filter */}
@@ -581,8 +590,8 @@ function FeedCard({ gig }: { gig: any, index?: number }) {
           </div>
         )}
         <div className="mb-2 relative z-10">
-          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${gig.listing_type === 'HUSTLE' ? 'bg-brand-purple/20 text-brand-purple' : 'bg-brand-pink/20 text-brand-pink'}`}>
-            {gig.listing_type === 'HUSTLE' ? 'HUSTLE' : gig.market_type}
+          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${gig.listing_type === 'HUSTLE' ? 'bg-brand-purple/20 text-brand-purple' : gig.listing_type === 'COMPANY_TASK' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-brand-pink/20 text-brand-pink'}`}>
+            {gig.listing_type === 'HUSTLE' ? 'HUSTLE' : gig.listing_type === 'COMPANY_TASK' ? 'COMPANY TASK' : gig.market_type}
           </span>
         </div>
         <div className="flex justify-between items-start mb-3 relative z-10">

@@ -2,10 +2,10 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'DoItForMe – Student Hustle & Marketplace',
+        name: 'DoItForMe – Student Hustle Platform',
         short_name: 'DoItForMe',
         description:
-            "India's first student-to-student gig platform. Post a Hustle to outsource tasks or buy, sell, and rent on the campus Marketplace. Verified students, escrow payments, instant UPI.",
+            "India's first student-to-student gig platform. Post a Hustle to outsource tasks like coding, design, tutoring, and errands. Verified students, escrow payments, instant UPI.",
         start_url: '/',
         display: 'standalone',
         background_color: '#0B0B11',
@@ -31,12 +31,12 @@ export default function manifest(): MetadataRoute.Manifest {
             {
                 name: 'Browse Feed',
                 url: '/dashboard',
-                description: 'See live Hustles and Marketplace listings',
+                description: 'See live Hustles and gig opportunities',
             },
             {
                 name: 'Post a Hustle',
                 url: '/post',
-                description: 'Post a task or sell an item',
+                description: 'Post a task and find student freelancers',
             },
         ],
     };

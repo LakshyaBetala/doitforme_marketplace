@@ -33,5 +33,5 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 2. Bind trigger to auth.users (fires on every new signup)
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
   AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();''
 CREATE TRIGGER on_auth_user_created
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();

@@ -294,32 +294,16 @@ export default function PostGigWizard() {
                 <p className="text-sm text-white/50 leading-relaxed">Request services or chores from peers on campus.</p>
               </button>
 
-              <button onClick={() => { store.setField('listingType', 'MARKET'); store.setField('category', ''); }} className={`group relative p-8 rounded-[32px] border transition-all text-left overflow-hidden ${listingType === 'MARKET' ? 'border-brand-pink bg-brand-pink/10 shadow-[0_0_30px_rgba(236,72,153,0.15)] ring-1 ring-brand-pink/50' : 'border-white/5 bg-[#121217] hover:bg-[#1A1A24] hover:border-white/10'}`}>
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all ${listingType === 'MARKET' ? 'bg-brand-pink text-white shadow-lg' : 'bg-white/10 text-white/50 group-hover:bg-white/10 group-hover:text-white'}`}>
+              <a href="https://marketforme.in/post" className={`group relative p-8 rounded-[32px] border transition-all text-left overflow-hidden border-white/5 bg-[#121217] hover:bg-[#1A1A24] hover:border-brand-pink/50 block`}>
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all bg-white/10 text-white/50 group-hover:bg-brand-pink/20 group-hover:text-brand-pink`}>
                   <ShoppingBagIcon className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Marketplace</h2>
-                <p className="text-sm text-white/50 leading-relaxed">Buy, sell, or rent items efficiently.</p>
-              </button>
+                <h2 className="text-2xl font-bold mb-2 text-white">Marketplace</h2>
+                <p className="text-sm text-white/50 leading-relaxed">Buy, sell, or rent items. Opens MarketForMe.in.</p>
+              </a>
             </div >
 
-            {listingType === "MARKET" && (
-              <div className="pt-8 border-t border-white/5 animate-in slide-in-from-bottom-4">
-                <label className="text-xs font-bold uppercase tracking-widest text-white/60 mb-4 block text-center">Market Sub-Type</label>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {[
-                    { id: "SELL", label: "Sell Item", c: "border-brand-pink" },
-                    { id: "RENT", label: "Rent Out", c: "border-brand-purple" },
-                    { id: "REQUEST", label: "Request Item", c: "border-blue-400" }
-                  ].map(t => (
-                    <button key={t.id} onClick={() => store.setField('marketType', t.id as any)} className={`px-6 py-3 rounded-full text-sm font-bold border transition-all ${marketType === t.id ? `${t.c} bg-white/10` : 'border-white/10 text-white/50 hover:border-white/20 hover:text-white'}`}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </div >
-            )
-            }
+
           </div >
         )}
 

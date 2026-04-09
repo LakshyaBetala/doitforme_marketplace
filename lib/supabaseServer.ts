@@ -1,28 +1,23 @@
 import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/ssr";
 
 export async function supabaseServer() {
-  const cookieStore = await cookies(); // Required for Next.js 16
+  const cookieStore = await cookies(); // Required for Next.js 15+
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: any) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set(name, value, options);
-          } catch (err) {
-            // ignore
-          }
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set(name, "", { ...options, maxAge: 0 });
-          } catch (err) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
             // ignore
           }
         },

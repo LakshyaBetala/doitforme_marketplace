@@ -10,6 +10,8 @@ import {
   DollarSign, ChevronDown, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock,
   Linkedin, Instagram, Briefcase, ShoppingBag as ShoppingBagIcon
 } from "lucide-react";
+import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import CrossDomainLink from "@/components/CrossDomainLink";
 
 // -------------------------------------------------------
 // 1. "VOGUE" PRELOADER (Updated with Asset Awareness)
@@ -155,13 +157,10 @@ const gigsMock = [
 // Live Feed items for mobile hero
 const liveFeedItems = [
   { id: 1, type: "Gig" as const, title: "Fix React Hydration Bug", price: "₹500" },
-  { id: 2, type: "Item" as const, title: "TI-84 Calculator — Like New", price: "₹1,800" },
-  { id: 3, type: "Gig" as const, title: "Design Poster for Hackathon", price: "₹750" },
-  { id: 4, type: "Item" as const, title: "Data Structures Textbook", price: "₹350" },
-  { id: 5, type: "Gig" as const, title: "Deliver Assignment to Block 4", price: "₹150" },
-  { id: 6, type: "Item" as const, title: "Wireless Earbuds — Unused", price: "₹1,200" },
-  { id: 7, type: "Gig" as const, title: "Build Discord Bot for Server", price: "₹2,000" },
-  { id: 8, type: "Item" as const, title: "Lab Coat — Size M", price: "₹200" },
+  { id: 2, type: "Gig" as const, title: "Design Poster for Hackathon", price: "₹750" },
+  { id: 3, type: "Gig" as const, title: "Deliver Assignment to Block 4", price: "₹150" },
+  { id: 4, type: "Gig" as const, title: "Build Discord Bot for Server", price: "₹2,000" },
+  { id: 5, type: "Gig" as const, title: "Tutoring for Data Structures", price: "₹650" },
 ];
 
 const useScrollPosition = () => {
@@ -192,6 +191,16 @@ export default function LandingPage() {
   // --- NEW: Preloader and Cooldown Logic ---
   const [isAssetReady, setIsAssetReady] = useState(false);
   const [shouldShowPreloader, setShouldShowPreloader] = useState(true);
+  
+  // Auth state for Admin link
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const supabase = supabaseBrowser();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUserEmail(data.user.email || null);
+    });
+  }, [supabase]);
 
   // 1. Session & Cooldown Check (5 mins)
   useEffect(() => {
@@ -356,12 +365,19 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-3">
             <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">How it works</button>
             <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">FAQ</button>
-            <Link href="/contact" className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">Support</Link>
+            <Link href="/company/onboarding" className="text-sm font-medium font-bold text-[#A855F7] hover:text-white transition-colors px-4 py-2 rounded-full bg-[#8825F5]/10 border border-[#8825F5]/30 hover:bg-[#8825F5]/30 shadow-[0_0_10px_rgba(136,37,245,0.2)]">Register as Company</Link>
+            
+            {(userEmail === "betala911@gmail.com" || userEmail === "doitforme.in@gmail.com") && (
+              <Link href="/admin" className="text-sm font-bold text-red-400 hover:text-white transition-colors px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]">Admin</Link>
+            )}
           </nav>
 
-          <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95">
-            Login
-          </button>
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:ml-4">
+            <Link href="/company/onboarding" className="md:hidden text-xs font-bold text-[#A855F7] text-center border border-[#8825F5]/30 py-2 rounded-full mb-1 bg-[#8825F5]/10 px-4">Register as Company</Link>
+            <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 w-full md:w-auto">
+              Login
+            </button>
+          </div>
         </div>
       </header>
 
@@ -428,14 +444,14 @@ export default function LandingPage() {
                 </span>
               </h1>
               <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white mt-1">
-                Trade.
+                Succeed.
               </h1>
             </div>
           </div>
 
           {/* Subheadline */}
           <p className="text-[15px] text-[#B8A9D4] leading-relaxed mb-7">
-            The campus marketplace where students earn, outsource &amp; trade — all in one place.
+            The student hustle platform where you earn and outsource skills — all in one place.
           </p>
 
           {/* CTA Buttons — Stacked */}
@@ -474,17 +490,17 @@ export default function LandingPage() {
 
             {/* Heading */}
             <h1 className="text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8825F5] via-[#A855F7] to-[#C084FC]">Outsource.</span><br /> Trade.
+              Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8825F5] via-[#A855F7] to-[#C084FC]">Outsource.</span><br /> Succeed.
             </h1>
 
             {/* Subheading */}
             <p className="text-2xl text-white/85 leading-snug mb-4 w-full">
-              All in One <span className="font-bold">Campus Marketplace</span>
+              Your Campus <span className="font-bold">Hustle Platform</span>
             </p>
 
             {/* Description */}
             <p className="text-base text-zinc-400 leading-relaxed max-w-md mb-10 pr-4">
-              Earn money, outsource tasks, and trade items all within your campus.
+              Earn money and outsource tasks easily within your campus.
             </p>
 
             {/* Desktop: Two Buttons */}
@@ -653,7 +669,7 @@ export default function LandingPage() {
               Everything you need. Inside <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80">your campus.</span>
             </h2>
             <p className="text-sm md:text-base lg:text-lg text-zinc-400 max-w-lg mx-auto">
-              Earn money, outsource tasks, and trade items effortlessly.
+              Earn money and outsource tasks effortlessly.
             </p>
           </div>
 
@@ -741,7 +757,7 @@ export default function LandingPage() {
               <p className="text-sm text-zinc-400 leading-relaxed">Get your work done quickly by trusted students.</p>
             </div>
 
-            {/* Card 3: Buy & Sell */}
+            {/* Card 3: Switch to Marketplace */}
             <div
               className="relative rounded-2xl p-5 pb-6 overflow-hidden group"
               style={{
@@ -754,15 +770,18 @@ export default function LandingPage() {
               <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
                 <Image
                   src="/marketsloth.png"
-                  alt="Buy and Sell Sloth"
+                  alt="Marketplace Sloth"
                   width={280}
                   height={280}
                   className="object-contain relative z-10"
                   style={{ filter: 'drop-shadow(0 0 20px rgba(136, 37, 245, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
                 />
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Buy & Sell</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">Trade items easily within your campus.</p>
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Buy & Sell Items</h3>
+              <p className="text-sm text-zinc-400 leading-relaxed mb-4">Trade items easily within your campus on our sister site.</p>
+              <CrossDomainLink targetDomain="https://marketforme.in" redirectTo="/" className="inline-flex items-center gap-2 text-sm font-bold text-[#C084FC] hover:text-white transition-colors">
+                Go to MarketForMe <ArrowRight size={16} />
+              </CrossDomainLink>
             </div>
           </div>
 
@@ -822,7 +841,7 @@ export default function LandingPage() {
 
             {/* Supporting Text */}
             <p className="text-sm md:text-lg text-zinc-400 leading-relaxed mb-5 md:mb-8 max-w-md">
-              Browse real tasks and marketplace listings from your campus.
+              Browse real gigs and tasks posted by students on your campus.
             </p>
 
             {/* CTA Button */}
@@ -873,7 +892,7 @@ export default function LandingPage() {
                       <Lock size={20} className="text-[#C084FC]" />
                     </div>
                     <span className="text-sm font-bold text-white max-w-[200px] text-center drop-shadow-md">
-                      Login to access campus marketplace
+                      Login to access campus gigs
                     </span>
                   </div>
                 </div>
@@ -886,10 +905,10 @@ export default function LandingPage() {
                   >
                     {[
                       { title: "Logo Design Needed", price: "₹800", category: "Freelance", time: "2 min ago" },
-                      { title: "Calculator for Sale", price: "₹450", category: "Marketplace", time: "5 min ago" },
-                      { title: "Drop Lab Record", price: "₹150", category: "Errand", time: "12 min ago" },
-                      { title: "Engineering Drawing Sheet", price: "₹50", category: "Marketplace", time: "18 min ago" },
-                      { title: "Need help with Python Assignment", price: "₹500", category: "Freelance", time: "24 min ago" },
+                      { title: "Drop Lab Record to Block 4", price: "₹150", category: "Errand", time: "5 min ago" },
+                      { title: "Teach DSA for Placement Prep", price: "₹600", category: "Tutoring", time: "12 min ago" },
+                      { title: "Build Discord Bot for Server", price: "₹2,000", category: "Dev", time: "18 min ago" },
+                      { title: "Write Blog for College Newsletter", price: "₹500", category: "Content", time: "24 min ago" },
                     ].map((item, i) => (
                       <div key={i} className="bg-white/10 border border-white/10 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
                         <div className="flex justify-between items-start gap-4">
@@ -907,10 +926,10 @@ export default function LandingPage() {
                     {/* Duplicate list to create seamless scrolling */}
                     {[
                       { title: "Logo Design Needed", price: "₹800", category: "Freelance", time: "2 min ago" },
-                      { title: "Calculator for Sale", price: "₹450", category: "Marketplace", time: "5 min ago" },
-                      { title: "Drop Lab Record", price: "₹150", category: "Errand", time: "12 min ago" },
-                      { title: "Engineering Drawing Sheet", price: "₹50", category: "Marketplace", time: "18 min ago" },
-                      { title: "Need help with Python Assignment", price: "₹500", category: "Freelance", time: "24 min ago" },
+                      { title: "Drop Lab Record to Block 4", price: "₹150", category: "Errand", time: "5 min ago" },
+                      { title: "Teach DSA for Placement Prep", price: "₹600", category: "Tutoring", time: "12 min ago" },
+                      { title: "Build Discord Bot for Server", price: "₹2,000", category: "Dev", time: "18 min ago" },
+                      { title: "Write Blog for College Newsletter", price: "₹500", category: "Content", time: "24 min ago" },
                     ].map((item, i) => (
                       <div key={`dup-${i}`} className="bg-white/10 border border-white/10 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
                         <div className="flex justify-between items-start gap-4">
@@ -942,11 +961,11 @@ export default function LandingPage() {
       < section className="max-w-7xl mx-auto px-6 pt-12 md:pt-20 mb-20 md:mb-32 relative z-10" >
         <div className="mb-12 text-center md:text-left">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Why DoItForMe?</h2>
-          <p className="text-zinc-500 text-sm md:text-base">Built for speed, trust, and the dual-campus economy.</p>
+          <p className="text-zinc-500 text-sm md:text-base">Built for speed, trust, and the campus gig economy.</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[
-            { title: "Dual Economy", desc: "Earn by completing gigs, or buy/sell textbooks and gear in one place.", icon: Briefcase },
+            { title: "Campus Gigs", desc: "Post or complete gigs — from quick errands to freelance projects — all on campus.", icon: Briefcase },
             { title: "Zero Friction", desc: "No CVs. No Interviews. Just verified students getting things done.", icon: Zap },
             { title: "Escrow Protected", desc: "Your money is held safely until the job is done or item is delivered.", icon: ShieldCheck },
             { title: "Lightning Payouts", desc: "Instant transfers to UPI. No minimum withdrawal limits.", icon: Wallet }
@@ -1030,7 +1049,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Card 2: Marketplace */}
+            {/* Card 2: MarketForMe Promo */}
             <div className="relative rounded-3xl p-8 lg:p-10 border border-white/10 bg-[#0A0A0A] overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-bl from-[#EC4899]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -1038,9 +1057,8 @@ export default function LandingPage() {
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Marketplace</h3>
-                    <p className="text-zinc-400 font-medium">Buy and Sell Freely</p>
+                    <p className="text-zinc-400 font-medium">Buy, Sell & Rent Items</p>
                   </div>
-                  {/* Small assisting sloth */}
                   <div className="-mt-8 -mr-4 md:-mr-6 shrink-0 relative z-20">
                     <Image src="/marketsloth.png" alt="Marketplace Sloth" width={140} height={140} className="object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
                   </div>
@@ -1049,26 +1067,29 @@ export default function LandingPage() {
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center gap-3">
                     <CheckCircle2 size={18} className="text-green-500" />
-                    <span className="text-white font-medium flex-1">Sell items → <span className="text-green-400 font-bold px-2 py-0.5 rounded bg-green-500/10 border border-green-500/20">0% fee</span></span>
+                    <span className="text-white font-medium">Zero commission on all sales</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle2 size={18} className="text-green-500" />
-                    <span className="text-white font-medium">Keep 100% of what you sell</span>
+                    <span className="text-white font-medium">Rent items with escrow protection</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 size={18} className="text-green-500" />
+                    <span className="text-white font-medium">Verified campus-only community</span>
                   </div>
                 </div>
 
-                {/* Rental Fee block */}
-                <div className="bg-white/10 border border-white/10 rounded-2xl p-5 mb-8">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-zinc-300 font-medium">Rent out items</span>
-                    <span className="font-bold text-white bg-white/10 px-3 py-1 rounded-full text-sm">3% escrow fee</span>
-                  </div>
-                  <p className="text-xs text-zinc-500 mt-2">Covers holding deposits and securing rentals securely.</p>
-                </div>
+                <p className="text-sm text-zinc-400 leading-relaxed mb-8">
+                  Looking to buy or sell textbooks, electronics, or gear? Head over to our sister platform — MarketForMe — built exclusively for campus trading.
+                </p>
 
-                <div className="mt-auto bg-white/10 border border-white/10 rounded-xl py-3 px-4 text-center">
-                  <span className="text-sm font-bold text-white">No commission. No hidden charges.</span>
-                </div>
+                <CrossDomainLink
+                  targetDomain="https://marketforme.in"
+                  redirectTo="/"
+                  className="mt-auto w-full py-3 px-4 rounded-xl text-center text-sm font-bold text-white bg-gradient-to-r from-[#8825F5] to-[#6D28D9] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                >
+                  Go to MarketForMe <ArrowRight size={16} />
+                </CrossDomainLink>
               </div>
             </div>
 
@@ -1194,8 +1215,8 @@ export default function LandingPage() {
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Common Questions</h2>
           <div className="inline-flex bg-white/10 rounded-full p-1 border border-white/10">
-            <button onClick={() => setFaqTab("students")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "students" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>Hustle</button>
-            <button onClick={() => setFaqTab("posters")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "posters" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>Marketplace</button>
+            <button onClick={() => setFaqTab("students")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "students" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>For Hustlers</button>
+            <button onClick={() => setFaqTab("posters")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "posters" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>For Task Posters</button>
           </div>
         </div>
 
@@ -1274,8 +1295,8 @@ const studentFaq = [
 ];
 
 const posterFaq = [
-  { q: "What is the Campus Marketplace?", a: "The Marketplace is an exclusive campus-only space where you can buy, sell, or rent items securely with other verified students." },
-  { q: "What are the Marketplace fees?", a: "Selling items is 100% FREE. We don't take any commission on your sales. For rentals, there is a small 3% escrow fee to ensure the items and deposits are handled safely." },
-  { q: "How do transactions work in the Marketplace?", a: "We keep all funds protected in Escrow until both parties approve the exchange. Payment gateway charges (~2%) apply as standard." },
-  { q: "Can I sell or rent old books and gadgets?", a: "Absolutely! You can easily list academic books, calculators, lab coats, and electronics. The Campus Marketplace is built right into DoItForMe." },
+  { q: "How do I post a task on DoItForMe?", a: "Simply go to Dashboard → Post a Task. Describe what you need, set a budget, and students near you will apply within minutes." },
+  { q: "How does payment work for posters?", a: "You pay upfront into escrow. The money is only released to the worker after you approve their work. If they don't deliver, you get a full refund." },
+  { q: "What kind of tasks can I post?", a: "Anything campus-related! Errands, assignments, design work, coding help, event setup, tutoring — you name it." },
+  { q: "Where is the Marketplace?", a: "The Buy/Sell/Rent marketplace has moved to MarketForMe.in — our dedicated campus marketplace. Same login, same community!" },
 ];

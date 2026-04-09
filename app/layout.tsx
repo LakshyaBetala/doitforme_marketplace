@@ -9,20 +9,19 @@ import { SpeedInsights } from "@vercel/speed-insights/next"// Request notificati
 
 export const metadata: Metadata = {
   title: {
-    default: "DoItForMe – Student Hustle & Marketplace | India",
+    default: "DoItForMe – Student Hustle Platform | India",
     template: "%s | DoItForMe",
   },
   description:
-    "DoItForMe is India's first student-to-student platform with two products: Hustle — outsource tasks (coding, design, tutoring, errands) to verified student freelancers; and Marketplace — buy, sell, or rent items within your campus. Escrow-protected payments, instant UPI payouts.",
+    "DoItForMe is India's first student-to-student platform. Post tasks (coding, design, tutoring, errands) to verified student freelancers. Escrow-protected payments, instant UPI payouts.",
   keywords: [
     "DoItForMe", "doitforme.in",
-    "student hustle platform", "student freelance India", "campus gig marketplace",
+    "student hustle platform", "student freelance India", "campus gig platform",
     "hire student freelancer", "outsource task student", "earn money student India",
-    "student marketplace India", "buy sell campus", "rent items college",
+    "student gig India", "college task outsourcing", "campus freelance work",
     "peer-to-peer student services", "college task app", "student side hustle India",
     "affordable gig India", "instant upi payout freelance", "escrow payment student gig",
     "student tutoring app", "campus coding help", "student errand service",
-    "sell textbooks online India", "college second-hand marketplace",
   ],
   authors: [{ name: "DoItForMe Team", url: "https://www.doitforme.in" }],
   creator: "DoItForMe",
@@ -30,20 +29,20 @@ export const metadata: Metadata = {
   formatDetection: { email: false, address: false, telephone: false },
   icons: { icon: "/Doitforme_logo.png", shortcut: "/Doitforme_logo.png", apple: "/Doitforme_logo.png" },
   openGraph: {
-    title: "DoItForMe – Student Hustle & Campus Marketplace",
+    title: "DoItForMe – Student Hustle Platform",
     description:
-      "Post a Hustle to outsource tasks to verified student freelancers, or buy, sell & rent on the campus Marketplace. India's #1 student gig platform.",
+      "Post a Hustle to outsource tasks to verified student freelancers. India's #1 student gig platform.",
     url: "https://www.doitforme.in",
     siteName: "DoItForMe",
-    images: [{ url: "/Doitforme_logo.png", width: 1200, height: 630, alt: "DoItForMe – Student Hustle & Marketplace" }],
+    images: [{ url: "/Doitforme_logo.png", width: 1200, height: 630, alt: "DoItForMe – Student Hustle Platform" }],
     type: "website",
     locale: "en_IN",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DoItForMe – Student Hustle & Campus Marketplace",
+    title: "DoItForMe – Student Hustle Platform",
     description:
-      "Hustle: outsource tasks to student freelancers. Marketplace: buy/sell/rent campus items. Verified IDs, escrow, instant UPI.",
+      "Hustle: outsource tasks to student freelancers. Verified IDs, escrow, instant UPI.",
     images: ["/Doitforme_logo.png"],
     creator: "@doitformein",
   },
@@ -63,8 +62,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
   themeColor: "#0B0B11",
   interactiveWidget: "resizes-content", // Fix for Android keyboard covering inputs
 };
@@ -76,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
     "logo": "https://www.doitforme.in/Doitforme_logo.png",
-    "description": "DoItForMe is India's first verified student gig and marketplace platform. Hustle lets students outsource & earn from tasks (coding, design, tutoring, errands). Marketplace lets students buy, sell, and rent campus items.",
+    "description": "DoItForMe is India's first verified student gig platform. Hustle lets students outsource & earn from tasks (coding, design, tutoring, errands).",
     "foundingDate": "2024",
     "areaServed": "IN",
     "sameAs": ["https://www.instagram.com/doitforme.in/", "https://www.linkedin.com/company/doitforme1/"],
@@ -84,8 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       "@type": "OfferCatalog",
       "name": "DoItForMe Services",
       "itemListElement": [
-        { "@type": "OfferCatalog", "name": "Hustle – Student Freelance Gigs", "description": "Post tasks like coding, design, tutoring, and errands. Verified student freelancers apply, work is escrow-protected." },
-        { "@type": "OfferCatalog", "name": "Marketplace – Campus Buy/Sell/Rent", "description": "List or find second-hand textbooks, electronics, furniture, clothing, and subscriptions within your campus community." }
+        { "@type": "OfferCatalog", "name": "Hustle – Student Freelance Gigs", "description": "Post tasks like coding, design, tutoring, and errands. Verified student freelancers apply, work is escrow-protected." }
       ]
     }
   };

@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     }
 
     // 5. Fetch gig title + poster_id for escrow and notifications
-    const { data: gig } = await supabaseAdmin.from('gigs').select('title, poster_id, status').eq('id', gigId).single();
+    const { data: gig } = await supabaseAdmin.from('gigs').select('title, poster_id, status, max_workers').eq('id', gigId).single();
     if (!gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
     // If gig is already assigned (duplicate webhook / double-click), return success
@@ -112,45 +112,74 @@ export async function POST(req: Request) {
       release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
       handshake_code: handshakeCode,
       escrow_category: deposit > 0 ? 'RENTAL_DEPOSIT' : 'PROJECT',
-    }, { onConflict: 'gig_id' });
+    }, { onConflict: 'gig_id,worker_id' });
 
     if (escrowError) {
       // Log but DO NOT throw — the escrow row is secondary. Gig status MUST still update.
       console.error("Escrow upsert warning (non-fatal):", escrowError.message);
     }
 
-    // 8. ✅ CRITICAL: Update gig status to 'assigned'
-    const { error: gigUpdateError } = await supabaseAdmin.from("gigs").update({
-      status: "assigned",
-      assigned_worker_id: workerId,
-      payment_status: "ESCROW_FUNDED",
-      escrow_status: "HELD",
-      escrow_amount: amountHeld,
-      escrow_locked_at: new Date().toISOString(),
-      platform_fee: platformFee,
-      net_worker_pay: netWorkerPay,
-      gateway_fee: gatewayFee,
-    }).eq("id", gigId);
-
-    if (gigUpdateError) {
-      console.error("CRITICAL: Gig status update failed:", gigUpdateError.message);
-      return NextResponse.json({ error: "Gig status update failed: " + gigUpdateError.message }, { status: 500 });
-    }
-
-    console.log(`✅ Gig ${gigId} successfully marked as assigned for worker ${workerId}`);
-
-    // 9. Update applications
+    // 8. Update applications FIRST to count them properly
     await supabaseAdmin
       .from("applications")
       .update({ status: "accepted" })
       .eq("gig_id", gigId)
       .eq("worker_id", workerId);
 
-    await supabaseAdmin
+    // 9. Now count accepted applications and calculate total escrow
+    const { count: acceptedCountResponse } = await supabaseAdmin
       .from("applications")
-      .update({ status: "rejected" })
+      .select("*", { count: 'exact', head: true })
       .eq("gig_id", gigId)
-      .neq("worker_id", workerId);
+      .eq("status", "accepted");
+      
+    const acceptedCount = acceptedCountResponse || 1;
+    const maxWorkers = gig.max_workers || 1;
+    const isFull = acceptedCount >= maxWorkers;
+
+    const { data: allEscrows } = await supabaseAdmin.from('escrow').select('amount_held, platform_fee, gateway_fee, original_amount').eq('gig_id', gigId);
+    
+    let totalAmountHeld = 0, totalPlatformFee = 0, totalGatewayFee = 0, totalOriginalAmount = 0;
+    if (allEscrows) {
+      allEscrows.forEach(e => {
+         totalAmountHeld += Number(e.amount_held || 0);
+         totalPlatformFee += Number(e.platform_fee || 0);
+         totalGatewayFee += Number(e.gateway_fee || 0);
+         totalOriginalAmount += Number(e.original_amount || 0);
+      });
+    }
+
+    // 10. Update gig status with aggregated totals
+    const gigUpdatePayload: any = {
+      assigned_worker_id: workerId, // keeps backward compatibility for single-worker UI
+      payment_status: "ESCROW_FUNDED",
+      escrow_status: "HELD",
+      escrow_amount: totalAmountHeld,
+      escrow_locked_at: new Date().toISOString(),
+      platform_fee: totalPlatformFee,
+      net_worker_pay: totalOriginalAmount - totalPlatformFee,
+      gateway_fee: totalGatewayFee,
+    };
+
+    if (isFull) {
+      gigUpdatePayload.status = "assigned";
+      
+      // Reject remaining pending applications
+      await supabaseAdmin
+        .from("applications")
+        .update({ status: "rejected" })
+        .eq("gig_id", gigId)
+        .eq("status", "applied");
+    }
+
+    const { error: gigUpdateError } = await supabaseAdmin.from("gigs").update(gigUpdatePayload).eq("id", gigId);
+
+    if (gigUpdateError) {
+      console.error("CRITICAL: Gig status update failed:", gigUpdateError.message);
+      return NextResponse.json({ error: "Gig status update failed: " + gigUpdateError.message }, { status: 500 });
+    }
+
+    console.log(`✅ Gig ${gigId} successfully processed for worker ${workerId}. Full? ${isFull}`);
 
     // 10. Telegram notification
     try {

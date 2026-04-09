@@ -4,9 +4,9 @@ import LandingPage from "@/components/home/LandingPage";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
 
 export const metadata: Metadata = {
-  title: "DoItForMe – India's #1 Student Hustle & Marketplace Platform",
+  title: "DoItForMe – India's #1 Student Hustle & Gig Platform",
   description:
-    "DoItForMe is India's first student-to-student gig platform. Post a Hustle to outsource tasks (design, coding, errands, tutoring) or buy/sell/rent items on the campus Marketplace. Verified university students, escrow payments, instant UPI withdrawals.",
+    "DoItForMe is India's first student-to-student gig platform. Post a Hustle to outsource tasks (design, coding, errands, tutoring). Verified university students, escrow payments, instant UPI withdrawals.",
   keywords: [
     // Core product
     "DoItForMe", "doitforme.in", "student gig platform India",
@@ -14,14 +14,11 @@ export const metadata: Metadata = {
     "student freelance", "hire students India", "campus gigs", "student hustle",
     "outsource tasks to students", "find student freelancer", "college freelance work",
     "micro-internship India", "student side hustle", "earn money as student India",
-    // Marketplace vertical
-    "student marketplace India", "buy sell campus", "college marketplace",
-    "sell second-hand products college", "rent items campus", "student buy sell app",
     // Category-specific
     "student tutoring platform", "college coding help", "design gig for student",
     "errand service campus", "student writing jobs", "homework help student",
     // Geographic / audience
-    "SRM student marketplace", "IIT marketplace", "BITS student gig",
+    "SRM student gigs", "VIT student freelance", "BITS student gig",
     "find work university India", "college community app India",
     // LLM/AI friendly
     "get tasks done by students", "student task outsourcing", "peer-to-peer student services",
@@ -42,15 +39,15 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: BASE_URL,
     siteName: "DoItForMe",
-    title: "DoItForMe – Student Hustle & Marketplace | Get It Done",
+    title: "DoItForMe – Student Hustle Platform | Get It Done",
     description:
-      "Post a Hustle or list on the Marketplace. India's only verified student gig platform with escrow protection and instant UPI payouts. Hustle pays, Marketplace saves.",
+      "Post a Hustle to outsource tasks. India's only verified student gig platform with escrow protection and instant UPI payouts.",
     images: [
       {
         url: `${BASE_URL}/Doitforme_logo.png`,
         width: 1200,
         height: 630,
-        alt: "DoItForMe – Student Hustle & Marketplace Platform",
+        alt: "DoItForMe – Student Hustle Platform",
       },
     ],
   },
@@ -58,7 +55,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@doitformein",
     creator: "@doitformein",
-    title: "DoItForMe – Student Hustle & Marketplace",
+    title: "DoItForMe – Student Hustle Platform",
     description:
       "India's #1 platform for students to earn from their skills and outsource tasks. Verified IDs, Escrow payments, Instant UPI.",
     images: [`${BASE_URL}/Doitforme_logo.png`],
@@ -85,7 +82,7 @@ export default function Home() {
       name: "DoItForMe",
       url: BASE_URL,
       description:
-        "DoItForMe is India's first verified student gig and marketplace platform. Students post Hustles (freelance tasks) or list items to buy, sell, or rent on the campus Marketplace.",
+        "DoItForMe is India's first verified student gig platform. Students post Hustles (freelance tasks) to outsource work.",
       potentialAction: {
         "@type": "SearchAction",
         target: {
@@ -103,7 +100,7 @@ export default function Home() {
       url: BASE_URL,
       logo: `${BASE_URL}/Doitforme_logo.png`,
       description:
-        "DoItForMe connects Indian university students who need tasks done (Hustles) with skilled student freelancers, and also runs a campus Marketplace for buying, selling, and renting items.",
+        "DoItForMe connects Indian university students who need tasks done (Hustles) with skilled student freelancers.",
       foundingDate: "2025",
       areaServed: "IN",
       audience: { "@type": "Audience", audienceType: "University Students, India" },
@@ -119,7 +116,7 @@ export default function Home() {
         availableLanguage: ["English", "Hindi"],
       },
     },
-    // 3. Two Services: Hustle + Marketplace
+    // 3. Service: Hustle
     {
       "@context": "https://schema.org",
       "@type": "Service",
@@ -137,18 +134,6 @@ export default function Home() {
         description: "Students set their own price per gig. Platform fee: 7.5–10%.",
       },
     },
-    {
-      "@context": "https://schema.org",
-      "@type": "Service",
-      name: "DoItForMe Marketplace",
-      serviceType: "Campus Buy-Sell-Rent Marketplace",
-      description:
-        "The DoItForMe Marketplace lets students buy, sell, and rent second-hand items within their campus community — textbooks, electronics, furniture, subscriptions, clothing, and more. Peer-to-peer with zero fees for direct sales.",
-      provider: { "@type": "Organization", name: "DoItForMe", url: BASE_URL },
-      areaServed: "IN",
-      audience: { "@type": "Audience", audienceType: "Indian University Students" },
-      url: `${BASE_URL}/dashboard`,
-    },
     // 4. FAQPage — helps LLMs and Google directly answer queries about DoItForMe
     {
       "@context": "https://schema.org",
@@ -159,7 +144,7 @@ export default function Home() {
           name: "What is DoItForMe?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "DoItForMe (doitforme.in) is India's first student-to-student gig and marketplace platform. It has two products: Hustle — where students can post freelance tasks (coding, design, tutoring, errands) and hire other students to complete them; and Marketplace — a campus buy-sell-rent platform for second-hand goods like textbooks, electronics, and furniture.",
+            text: "DoItForMe (doitforme.in) is India's first student-to-student gig platform where students can post freelance tasks (coding, design, tutoring, errands) and hire other students to complete them.",
           },
         },
         {
@@ -172,18 +157,10 @@ export default function Home() {
         },
         {
           "@type": "Question",
-          name: "What is the DoItForMe Marketplace?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "The DoItForMe Marketplace is a campus-level platform where students can list items to sell, buy second-hand goods, or rent items from other students. Categories include textbooks, electronics, furniture, clothing, subscriptions, and more.",
-          },
-        },
-        {
-          "@type": "Question",
           name: "How do students earn money on DoItForMe?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Students earn by completing Hustles (freelance tasks) posted by other students, or by selling or renting items on the Marketplace. Earnings are paid directly to their UPI ID. The platform charges a 7.5–10% service fee on Hustles and zero fees on direct P2P Marketplace sales.",
+            text: "Students earn by completing Hustles (freelance tasks) posted by other students. Earnings are paid directly to their UPI ID. The platform charges a 7.5–10% service fee on Hustles.",
           },
         },
         {

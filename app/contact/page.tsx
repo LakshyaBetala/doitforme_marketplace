@@ -1,66 +1,24 @@
-"use client";
+import type { Metadata } from "next";
+import ContactContent from "./ContactContent";
 
-import Link from "next/link";
-import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
+
+export const metadata: Metadata = {
+  title: "Contact Us – DoItForMe Student Platform Support",
+  description:
+    "Get in touch with DoItForMe support for help with tasks, payments, disputes, or general queries. Email doitforme.in@gmail.com or call +91 93441 10272. Based in Chennai, India.",
+  alternates: { canonical: `${BASE_URL}/contact` },
+  openGraph: {
+    title: "Contact DoItForMe – Student Platform Support",
+    description:
+      "Need help? Reach out to DoItForMe via email or phone. We resolve queries within 24 hours.",
+    url: `${BASE_URL}/contact`,
+    siteName: "DoItForMe",
+    type: "website",
+    locale: "en_IN",
+  },
+};
 
 export default function ContactPage() {
-  return (
-    <div className="min-h-screen bg-[#0B0B11] text-white p-6 md:p-12 selection:bg-[#8825F5] selection:text-white">
-      <Link href="/" className="flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors w-fit group">
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Home
-      </Link>
-
-      <div className="max-w-2xl mx-auto space-y-8">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Contact Us</h1>
-          <p className="text-white/60 leading-relaxed text-lg">
-            We are here to help. If you have any questions regarding the platform, payments, or gigs, please reach out to us.
-          </p>
-        </div>
-
-        <div className="space-y-6 bg-white/10 p-8 rounded-3xl border border-white/10">
-
-          {/* Email Support */}
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-[#8825F5]/20 rounded-xl text-[#8825F5]">
-              <Mail className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-white text-lg">Email Support</h3>
-              <p className="text-white/60 text-sm mb-1">For general queries, bug reports, and disputes:</p>
-              <a href="mailto:doitforme@gmail.com" className="text-[#8825F5] font-medium hover:underline">doitforme@gmail.com</a>
-            </div>
-          </div>
-
-          {/* Phone Support */}
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-green-500/20 rounded-xl text-green-500">
-              <Phone className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-white text-lg">Phone Support</h3>
-              <p className="text-white/60 text-sm mb-1">For urgent queries and assistance:</p>
-              <a href="tel:+919344110272" className="text-green-500 font-medium hover:underline">+91 93441 10272</a>
-            </div>
-          </div>
-
-          {/* Office Address */}
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-[#0097FF]/20 rounded-xl text-[#0097FF]">
-              <MapPin className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-white text-lg">Registered Office</h3>
-              <p className="text-white/60 text-sm leading-relaxed">
-                DoItForMe HQ<br />
-                Chennai, Tamil Nadu, India.<br />
-                <span className="opacity-50 text-xs">(Full address provided upon request or invoice generation)</span>
-              </p>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
+  return <ContactContent />;
 }

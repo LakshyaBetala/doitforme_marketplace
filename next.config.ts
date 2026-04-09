@@ -4,6 +4,25 @@ import path from "path";
 const nextConfig: NextConfig = {
   // Fix: tells Next.js this project is the root, ignoring the parent lockfile
   outputFileTracingRoot: path.join(__dirname),
+  async redirects() {
+    return [
+      {
+        source: '/marketplace/:path*',
+        destination: 'https://marketforme.in/marketplace/:path*',
+        permanent: true,
+      },
+      {
+        source: '/store/:path*',
+        destination: 'https://marketforme.in/store/:path*',
+        permanent: true,
+      },
+      {
+        source: '/marketplace',
+        destination: 'https://marketforme.in',
+        permanent: true,
+      },
+    ]
+  },
   images: {
     remotePatterns: [
       {

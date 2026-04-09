@@ -785,6 +785,23 @@ export default function ProfilePage() {
           </div>
         </section>
 
+        {/* Worker Setup Link */}
+        <div className="rounded-[28px] md:rounded-[32px] border border-[#8825F5]/20 bg-gradient-to-r from-[#121217] to-[#1a1a24] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#8825F5]/5 to-transparent pointer-events-none group-hover:from-[#8825F5]/10 transition-colors"></div>
+            <div className="flex items-center gap-4 relative z-10">
+              <div className="p-4 bg-[#8825F5]/20 text-[#8825F5] rounded-2xl shrink-0 border border-[#8825F5]/30 flex items-center justify-center">
+                <Briefcase size={28} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white flex items-center gap-2">Worker Profile</h3>
+                <p className="text-white/60 text-sm mt-1">Add skills, portfolio links, and your resume to stand out.</p>
+              </div>
+            </div>
+            <Link href="/profile/worker-setup" className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] text-white font-bold rounded-xl text-center active:scale-95 transition-transform hover:opacity-90 shadow-[0_0_15px_rgba(136,37,245,0.3)] relative z-10">
+              {profile.skills && profile.skills.length > 0 ? "Edit Details" : "Setup Now"}
+            </Link>
+        </div>
+
         {/* Financials & Reviews Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
           <div className="rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-8 space-y-6">

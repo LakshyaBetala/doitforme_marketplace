@@ -46,7 +46,7 @@ export default function FeedPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [feedType, setFeedType] = useState<"MARKET" | "HUSTLE">("MARKET");
+  const [feedType, setFeedType] = useState<"MARKET" | "HUSTLE">("HUSTLE");
   const [campusFilter, setCampusFilter] = useState<"ALL" | "MY_CAMPUS">("ALL");
 
   const ITEMS_PER_PAGE = 12;
@@ -230,11 +230,11 @@ export default function FeedPage() {
         </div>
 
         <div className="flex bg-white/10 p-1 rounded-2xl relative">
-          <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white/10 rounded-xl transition-all duration-300 ease-out ${feedType === 'HUSTLE' ? 'left-[calc(50%+2px)]' : 'left-1'}`}></div>
-          <button onClick={() => { setFeedType("MARKET"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "MARKET" ? "text-pink-400" : "text-white/60 hover:text-white"}`}>
+          <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white/10 rounded-xl transition-all duration-300 ease-out left-[calc(50%+2px)]`}></div>
+          <a href="https://marketforme.in" className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors text-white/60 hover:text-white`}>
             <ShoppingBagIcon size={16} /> Campus Market
-          </button>
-          <button onClick={() => { setFeedType("HUSTLE"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${feedType === "HUSTLE" ? "text-brand-purple" : "text-white/60 hover:text-white"}`}>
+          </a>
+          <button onClick={() => { setFeedType("HUSTLE"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors text-brand-purple`}>
             <Briefcase size={16} /> The Hustle
           </button>
         </div>
