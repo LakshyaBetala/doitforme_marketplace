@@ -10,18 +10,7 @@ export async function POST(req: Request) {
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return cookieStore.get(name)?.value },
-        set(name: string, value: string, options: CookieOptions) {
-          try { cookieStore.set({ name, value, ...options }) } catch (error) { }
-        },
-        remove(name: string, options: CookieOptions) {
-          // FIX: 'value' is not in scope here, so we must explicitly set it to empty string
-          try { cookieStore.set({ name, value: '', ...options }) } catch (error) { }
-        }
-      },
-    }
+    { cookies: { getAll: () => cookieStore.getAll() } }
   )
 
   try {
