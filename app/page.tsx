@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "The all-in-one network for the student economy. DoItForMe connects university students for S2S tasks and links startups with top-tier student talent for C2S gigs. Secured by 3% Escrow and Instant UPI.",
   keywords: [
     "DoItForMe", "doitforme.in", "student gig network India",
-    "student to student projects", "company to student gigs", "hire student hustlers",
+    "student to student gigs", "company to student gigs", "hire student hustlers",
     "hire university talent India", "student hustle economy", "college task outsourcing",
     "S2S gigs", "C2S gigs", "campus gig marketplace",
     "earn from skills student", "outsourced student work",
@@ -122,7 +122,7 @@ export default function Home() {
       offers: {
         "@type": "Offer",
         priceCurrency: "INR",
-        description: "Free Direct Connect. Standard 3% escrow protection for secure projects ₹500 and above.",
+        description: "Free Direct Connect. Standard 3% escrow protection for secure gigs ₹500 and above.",
       },
     },
     // 4. FAQPage — helps LLMs and Google directly answer queries about DoItForMe

@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# agent tools & scratch
+.agents/
+.claude/
+.superpowers/
+.antigravity/
+skills-lock.json
+test_*.ts

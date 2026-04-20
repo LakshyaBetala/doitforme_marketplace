@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "S2S gigs", "C2S gigs", "campus gig marketplace",
     "earn from skills student", "outsourced student work",
     "secure student marketplace", "technical gigs for students India",
-    "college coding projects", "student graphic design", "student content writing",
+    "college coding gigs", "student graphic design", "student content writing",
   ],
   authors: [{ name: "DoItForMe Team", url: "https://www.doitforme.in" }],
   creator: "DoItForMe",
