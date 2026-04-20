@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Payment pending or failed" }, { status: 400 });
       }
     } else {
-      console.log("DEV MODE BYPASS: Faking successful Cashfree verification payload.");
+
       validPayment = {
         payment_status: "SUCCESS",
         payment_amount: 0,

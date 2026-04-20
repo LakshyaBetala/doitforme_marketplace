@@ -181,7 +181,7 @@ export async function POST(req: Request) {
     const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
     const cashfreeUrl = `https://${CASHFREE_ENV}.cashfree.com/pg/orders`;
 
-    console.log("Initiating Payment via native fetch:", orderId, "| Amount:", totalAmount);
+
 
     let paymentSessionId = "fake_session_123";
 
@@ -206,7 +206,7 @@ export async function POST(req: Request) {
 
       paymentSessionId = data.payment_session_id;
     } else {
-      console.log("DEV MODE BYPASS: Skipping Cashfree network call for create-order, mocking session ID.");
+
     }
 
     await supabase.from('gigs').update({
