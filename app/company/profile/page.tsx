@@ -149,8 +149,11 @@ export default function CompanyProfilePage() {
                 <ArrowLeft size={16} /> Dashboard
             </Link>
             <div className="flex items-center gap-3">
-                <Building2 size={16} className="text-white" />
-                <span className="text-xs font-black text-white uppercase italic tracking-tighter">Enterprise Clearance</span>
+                <Image src="/Doitforme_logo.png" alt="DoItForMe" width={24} height={24} className="invert opacity-30" />
+                <div className="flex flex-col">
+                  <span className="font-black text-xs tracking-tighter text-white leading-none">DoItForMe</span>
+                  <span className="text-[9px] font-bold text-[#333] uppercase tracking-[0.2em]">Enterprise Clearance</span>
+                </div>
             </div>
         </div>
 

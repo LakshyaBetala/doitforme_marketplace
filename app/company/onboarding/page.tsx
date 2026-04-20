@@ -170,9 +170,19 @@ export default function CompanyOnboardingPage() {
         <div className="flex bg-[#050505] min-h-[100dvh] text-white font-sans selection:bg-white selection:text-black">
             {/* Left Side: Brand Image/Stark Graphic */}
             <div className="hidden lg:flex flex-col justify-between w-1/3 bg-[#0a0a0a] border-r border-[#222] p-12">
-                <div className="flex items-center gap-3">
-                    <Building2 size={24} className="text-white" />
-                    <span className="text-xl font-black tracking-tighter">B2B.Registration</span>
+                <div className="space-y-12">
+                    <div className="flex items-center gap-4">
+                        <Image src="/Doitforme_logo.png" alt="Sloth Logo" width={40} height={40} className="invert" />
+                        <div className="flex flex-col">
+                            <span className="text-xl font-black tracking-tighter leading-none">DoItForMe</span>
+                            <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.3em]">Hustle Network</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <Building2 size={20} className="text-white opacity-50" />
+                        <span className="text-xs font-black tracking-tight text-[#888] uppercase tracking-[0.2em]">B2B.Registration</span>
+                    </div>
                 </div>
                 <div>
                     <h2 className="text-4xl font-black leading-none tracking-tighter mb-4">Scale with<br />Student<br />Talent.</h2>
@@ -196,7 +206,11 @@ export default function CompanyOnboardingPage() {
                         >
                             <ArrowLeft size={14} /> Back
                         </button>
-                        <span className="text-[10px] font-bold text-[#666] uppercase tracking-widest border border-[#333] px-2 py-1">Secure Connection</span>
+                        <div className="flex items-center gap-2">
+                            <Image src="/Doitforme_logo.png" alt="Sloth Logo" width={20} height={20} className="invert opacity-50" />
+                            <span className="text-[10px] font-bold text-[#666] uppercase tracking-widest leading-none">DoItForMe</span>
+                            <span className="text-[10px] font-bold text-[#333] uppercase tracking-widest border border-[#333] px-2 py-1 ml-2">Secure Hub</span>
+                        </div>
                     </div>
 
                     <div className="mb-12">

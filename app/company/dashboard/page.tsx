@@ -74,11 +74,14 @@ export default function CompanyDashboard() {
             {/* Header */}
             <header className="h-[70px] md:h-[80px] bg-[#0a0a0a] border-b border-[#222] flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
                 <div className="flex items-center gap-8">
-                    <Link href="/company/dashboard" className="flex items-center gap-3">
+                    <Link href="/" className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white flex items-center justify-center">
                             <Image src="/Doitforme_logo.png" alt="DoItForMe" width={28} height={28} className="object-contain" />
                         </div>
-                        <span className="font-black text-xl tracking-tighter hidden md:block text-white uppercase italic">Enterprise</span>
+                        <div className="flex flex-col">
+                            <span className="font-black text-lg tracking-tighter text-white leading-none">DoItForMe</span>
+                            <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.2em]">Enterprise Hub</span>
+                        </div>
                     </Link>
 
                     <div className="hidden lg:flex relative w-80">
