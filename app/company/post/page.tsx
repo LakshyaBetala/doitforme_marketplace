@@ -38,7 +38,7 @@ export default function CompanyPostTask() {
 
   const categories = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", 
-    "Commerce & Finance", "Academics & Projects", "Data & Research", "Writing & Content", 
+    "Commerce & Finance", "Academics & Gigs", "Data & Research", "Writing & Content", 
     "Marketing & PR", "Other"
   ];
 
@@ -49,13 +49,14 @@ export default function CompanyPostTask() {
       if (!u) return router.push("/login");
 
       const { data: dbUser } = await supabase.from("users").select("role, is_verified_company").eq("id", u.id).single();
+      const { data: companyData } = await supabase.from("companies").select("id").eq("user_id", u.id).single();
       
       if (dbUser?.role !== 'COMPANY' || !dbUser?.is_verified_company) {
           toast.error("Access denied. Only verified companies can post company tasks.");
           return router.push('/company/dashboard');
       }
 
-      setUser({ ...u, user_metadata: { ...u.user_metadata, ...dbUser } });
+      setUser({ ...u, user_metadata: { ...u.user_metadata, ...dbUser, company_id: companyData?.id } });
       setLoadingInitial(false);
       setDeadlineDate(new Date().toISOString().split("T")[0]);
     })();
@@ -124,6 +125,7 @@ export default function CompanyPostTask() {
         listing_type: "COMPANY_TASK",
         category,
         poster_id: user.id,
+        company_id: user.user_metadata?.company_id || null,
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
@@ -151,164 +153,166 @@ export default function CompanyPostTask() {
 
   if (loadingInitial) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#070B1A]">
-        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+        <Loader2 className="w-10 h-10 text-white animate-spin" />
       </div>
     );
   }
 
+  const labelClass = "block text-[10px] font-bold text-[#888] uppercase tracking-widest mb-3";
+  const inputClass = "w-full bg-[#0a0a0a] border border-[#222] rounded-none p-5 text-sm font-medium text-white outline-none focus:border-white transition-all placeholder:text-[#333]";
+
   return (
-    <div className="min-h-screen bg-[#070B1A] text-white pt-8 pb-24 px-4 flex justify-center relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-600/10 blur-[150px] rounded-full"></div>
+    <div className="min-h-screen bg-[#050505] text-white pt-12 pb-24 px-4 flex justify-center relative font-sans selection:bg-white selection:text-black">
+      
+      {/* Editorial side marker */}
+      <div className="fixed left-6 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-12 pointer-events-none">
+        <div className="rotate-90 origin-left text-[10px] font-bold tracking-[0.5em] text-[#222] uppercase whitespace-nowrap">
+          DEPLOYMENT // PROTOCOL 04-X
+        </div>
       </div>
 
-      <div className="w-full max-w-3xl relative z-10 space-y-8">
+      <div className="w-full max-w-4xl relative z-10 space-y-12">
         
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button onClick={() => router.push('/company/dashboard')} className="text-white/60 hover:text-white transition w-10 h-10 flex items-center justify-center rounded-full bg-white/10 border border-white/5">
-            <ArrowLeft size={20} />
+        <div className="flex items-center justify-between border-b border-[#222] pb-8">
+          <button onClick={() => router.push('/company/dashboard')} className="text-[#666] hover:text-white transition flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+            <ArrowLeft size={16} /> Dashboard
           </button>
           
-          <div className="flex items-center gap-3 bg-indigo-500/10 border border-indigo-500/20 px-4 py-2 rounded-full">
-            <Building2 size={16} className="text-indigo-400" />
-            <span className="text-sm font-bold text-indigo-400 uppercase tracking-widest">New Company Task</span>
+          <div className="flex items-center gap-3">
+            <Building2 size={16} className="text-white" />
+            <span className="text-xs font-black text-white uppercase italic tracking-tighter">Initialize Task</span>
           </div>
         </div>
 
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm font-medium">
+          <div className="p-5 bg-red-950/30 border border-red-500/50 text-red-500 text-xs font-bold uppercase tracking-widest text-center">
             {error}
           </div>
         )}
 
-        <div className="bg-[#0F172A] border border-[#1E293B] rounded-[32px] p-6 md:p-10 space-y-8 shadow-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-12">
           
-          {/* Title & Category */}
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest">Task Title</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="e.g. Need 5 Campus Ambassadors for TechFest" className="w-full bg-[#1A1A24] border border-[#1E293B] rounded-2xl p-5 text-lg text-white outline-none focus:border-indigo-500/50 transition-all focus:ring-1 focus:ring-indigo-500/50" />
+          {/* Primary Section */}
+          <div className="space-y-10">
+            <div className="space-y-4">
+               <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">Task Definition</h1>
+               <p className="text-[#666] text-sm">Provide precise technical specifications for the required student resource units.</p>
             </div>
 
-            <div className="space-y-3">
-              <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest">Category</label>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((cat) => (
-                  <button key={cat} onClick={() => setCategory(cat)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${category === cat ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "bg-[#1A1A24] border border-[#1E293B] text-zinc-400 hover:bg-white/10 hover:text-white"}`}>
-                    {cat}
-                  </button>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className={labelClass}>Deployment Title</label>
+                <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="E.G. CAMPUS AMBASSADOR PROGRAM..." className={inputClass} />
+              </div>
+
+              <div className="space-y-3">
+                <label className={labelClass}>Classification</label>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
+                  {categories.map(cat => <option key={cat} value={cat}>{cat.toUpperCase()}</option>)}
+                </select>
               </div>
             </div>
 
             <div className="space-y-3">
-              <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest">Detailed Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="Clear details about the job responsibilities, skills required, etc." className="w-full bg-[#1A1A24] border border-[#1E293B] rounded-2xl p-5 text-base text-white outline-none focus:border-indigo-500/50 transition-all resize-none h-40 focus:ring-1 focus:ring-indigo-500/50" />
+              <label className={labelClass}>Operational Description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="DETAILED OBJECTIVES, EXPECTATIONS, AND DELIVERABLES..." className={`${inputClass} h-48 resize-none`} />
             </div>
-          </div>
 
-          <hr className="border-[#1E293B]" />
-
-          {/* Logistics */}
-          <div className="space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest">Required Workers</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+               <div className="space-y-3">
+                  <label className={labelClass}>Resource Units (Workers)</label>
                   <div className="relative">
-                    <User size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                    <input type="number" min="1" max="50" value={maxWorkers} onChange={(e) => setMaxWorkers(parseInt(e.target.value) || 1)} className="w-full bg-[#1A1A24] border border-[#1E293B] rounded-2xl py-4 pl-12 pr-5 text-xl font-bold text-white outline-none focus:border-indigo-500/50 transition-all" />
+                    <User size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#444]" />
+                    <input type="number" min="1" max="50" value={maxWorkers} onChange={(e) => setMaxWorkers(parseInt(e.target.value) || 1)} className={`${inputClass} pl-12 font-mono text-lg`} />
                   </div>
-                  <p className="text-[10px] text-zinc-500">Max limit per task is 50 workers.</p>
-                </div>
+               </div>
 
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest">Budget (Per Worker)</label>
+               <div className="space-y-3">
+                  <label className={labelClass}>Budget / Unit (INR)</label>
                   <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl text-zinc-500 font-mono">₹</span>
-                    <input type="number" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="500" className="w-full bg-[#1A1A24] border border-[#1E293B] rounded-2xl py-4 pl-10 pr-5 text-xl font-black text-white outline-none focus:border-indigo-500/50 transition-all font-mono" />
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-bold text-[#444]">₹</span>
+                    <input type="number" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="500" className={`${inputClass} pl-10 font-mono text-lg font-black`} />
                   </div>
-                  <p className="text-[10px] text-zinc-500">Total estimated budget: ₹{(Number(price) || 0) * (maxWorkers || 1)}</p>
-                </div>
-             </div>
+               </div>
 
-             <div className="space-y-3">
-                <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest">Format</label>
-                <div className="flex flex-wrap gap-2">
-                  {["Online", "Offline (On-Site)"].map((m) => (
-                    <button key={m} onClick={() => setMode(m)} className={`px-4 py-3 rounded-xl text-sm font-bold transition-all ${mode === m ? "bg-indigo-600 text-white" : "bg-[#1A1A24] border border-[#1E293B] text-zinc-400"}`}>
-                      {m}
-                    </button>
-                  ))}
+               <div className="space-y-3">
+                  <label className={labelClass}>Operational Format</label>
+                  <div className="flex gap-px bg-[#222] border border-[#222]">
+                    {["Online", "Offline (On-Site)"].map((m) => (
+                      <button key={m} onClick={() => setMode(m)} className={`flex-1 px-4 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${mode === m ? "bg-white text-black" : "bg-[#0a0a0a] text-[#444] hover:text-white"}`}>
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+               </div>
+            </div>
+
+            {mode !== "Online" && (
+              <div className="space-y-3 pt-4 border-t border-[#222]">
+                <label className={labelClass}>Physical Vector (Location)</label>
+                <div className="relative">
+                  <MapPin size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#444]" />
+                  <input
+                    className={`${inputClass} pl-12`}
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="FULL ADDRESS OR CAMPUS VENUE..."
+                  />
                 </div>
               </div>
+            )}
 
-              {mode !== "Online" && (
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold text-indigo-400 uppercase tracking-widest">Location</label>
-                  <div className="relative">
-                    <MapPin size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                    <input
-                      className="w-full bg-[#1A1A24] border border-[#1E293B] rounded-2xl py-4 pl-12 pr-4 text-white outline-none focus:border-indigo-500/50 transition-all"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Enter full address or venue"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Deadline Date</label>
-                  <input type="date" value={deadlineDate} onChange={(e) => setDeadlineDate(e.target.value)} className="w-full bg-[#1A1A24] border border-[#1E293B] rounded-xl p-4 text-sm text-white outline-none focus:border-indigo-500/50" style={{colorScheme: 'dark'}} />
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Deadline Time</label>
-                  <input type="time" value={deadlineTime} onChange={(e) => setDeadlineTime(e.target.value)} className="w-full bg-[#1A1A24] border border-[#1E293B] rounded-xl p-4 text-sm text-white outline-none focus:border-indigo-500/50" style={{colorScheme: 'dark'}} />
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className={labelClass}>Termination Date (Deadline)</label>
+                <input type="date" value={deadlineDate} onChange={(e) => setDeadlineDate(e.target.value)} className={inputClass} style={{colorScheme: 'dark'}} />
               </div>
-          </div>
+              <div className="space-y-3">
+                <label className={labelClass}>Termination Time</label>
+                <input type="time" value={deadlineTime} onChange={(e) => setDeadlineTime(e.target.value)} className={inputClass} style={{colorScheme: 'dark'}} />
+              </div>
+            </div>
 
-          <hr className="border-[#1E293B]" />
+            <div className="pt-8 border-t border-[#222] space-y-6">
+              <label className={labelClass}>Technical Attachments</label>
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                <input ref={fileInputRef} type="file" accept="image/*, .pdf" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+                
+                <button onClick={() => fileInputRef.current?.click()} className="w-32 h-32 bg-[#0a0a0a] border border-[#222] hover:border-white flex flex-col items-center justify-center shrink-0 transition-all group">
+                  <FileText className="w-6 h-6 text-[#444] group-hover:text-white mb-3" />
+                  <span className="text-[9px] text-[#444] group-hover:text-white font-bold uppercase tracking-[0.2em]">Add Files</span>
+                </button>
 
-          {/* Media */}
-          <div className="space-y-3">
-            <label className="text-xs font-bold text-indigo-400 uppercase tracking-widest flex justify-between items-center">
-              <span>Attachments <span className="text-zinc-500 normal-case ml-1">(Optional)</span></span>
-            </label>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-              <input ref={fileInputRef} type="file" accept="image/*, .pdf" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
-              
-              <button onClick={() => fileInputRef.current?.click()} className="w-24 h-24 rounded-2xl border-2 border-dashed border-[#1E293B] hover:border-indigo-500/50 hover:bg-indigo-500/10 flex flex-col items-center justify-center shrink-0 transition-all group">
-                <FileText className="w-6 h-6 text-zinc-500 group-hover:text-indigo-400 mb-2" />
-                <span className="text-[10px] text-zinc-500 group-hover:text-indigo-400 font-bold uppercase tracking-widest">Upload files</span>
+                {imagePreviews.map((src, i) => {
+                  const isImage = images[i]?.type.startsWith("image/");
+                  return (
+                    <div key={i} className="relative w-32 h-32 border border-[#222] shrink-0 group bg-[#0a0a0a]">
+                      {isImage ? (
+                        <Image src={src} alt="Preview" fill className="object-cover grayscale hover:grayscale-0 transition-all" />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full p-4 text-center">
+                          <FileText size={24} className="mb-2 text-white" />
+                          <span className="text-[8px] text-[#444] leading-tight truncate w-full uppercase font-bold">{images[i]?.name}</span>
+                        </div>
+                      )}
+                      <button onClick={() => removeImage(i)} className="absolute -top-2 -right-2 bg-white text-black p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-500 hover:text-white"><X size={12} /></button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pt-12">
+               <button onClick={handleSubmit} disabled={loading} className={`w-full p-6 font-black text-xs uppercase tracking-[0.4em] transition-all flex justify-center items-center gap-3 ${loading ? 'bg-[#111] text-[#333]' : 'bg-white text-black hover:bg-gray-200'}`}>
+                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <><CheckCircle size={18} /> Deploy to Ecosystem</>}
               </button>
-
-              {imagePreviews.map((src, i) => {
-                const isImage = images[i]?.type.startsWith("image/");
-                return (
-                  <div key={i} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-[#1E293B] shrink-0 group bg-[#1A1A24]">
-                    {isImage ? (
-                      <Image src={src} alt="Preview" fill className="object-cover" />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full p-2 text-center text-indigo-400">
-                        <FileText size={24} className="mb-1 opacity-80" />
-                        <span className="text-[8px] text-zinc-400 leading-tight truncate w-full">{images[i]?.name}</span>
-                      </div>
-                    )}
-                    <button onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/80 backdrop-blur-md p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-red-500"><X size={12} /></button>
-                  </div>
-                );
-              })}
+              <div className="mt-4 text-center">
+                <p className="text-[10px] font-bold text-[#333] uppercase tracking-widest">Total Deployment Budget: ₹{(Number(price) || 0) * (maxWorkers || 1)}</p>
+              </div>
             </div>
           </div>
-
-          <button onClick={handleSubmit} disabled={loading} className={`w-full p-5 rounded-2xl font-black text-lg transition-all flex justify-center items-center gap-2 active:scale-95 shadow-[0_0_30px_rgba(79,70,229,0.2)] mt-8 ${loading ? 'bg-[#1E293B] text-zinc-500' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white'}`}>
-            {loading ? <Loader2 className="animate-spin w-6 h-6" /> : <><CheckCircle size={22} /> Publish Company Task</>}
-          </button>
         </div>
       </div>
     </div>

@@ -43,11 +43,8 @@ export async function GET(req: Request) {
       const recipient = (gig.listing_type === 'MARKET') ? gig.poster : gig.worker;
       const recipientId = (gig.listing_type === 'MARKET') ? gig.poster_id : gig.assigned_worker_id;
 
-      // ADAPTIVE FEE LOGIC (Phase 4)
-      // Base Fee: 10%
-      // Experienced (>10 jobs): 7.5%
-      const completedJobs = recipient?.jobs_completed || 0;
-      const feeRate = completedJobs > 10 ? 0.075 : 0.10;
+      // Flat 3% escrow fee deducted from worker/seller payout
+      const feeRate = 0.03;
       const platformFee = Math.ceil(gig.price * feeRate);
 
       const payoutAmount = gig.price - platformFee;
@@ -70,7 +67,7 @@ export async function GET(req: Request) {
         amount: platformFee,
         type: "PLATFORM_FEE",
         status: "COMPLETED",
-        description: `Auto-Release Fee (${(feeRate * 100).toFixed(1)}%)`
+        description: `Auto-Release Escrow Fee (3%)`
       });
 
       console.log(`[AUTO-RELEASE] Fee: ₹${platformFee} | Payout: ₹${payoutAmount} | Recipient: ${recipient?.upi_id}`);

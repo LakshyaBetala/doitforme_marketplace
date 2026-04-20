@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
-import { Eye, EyeOff, Wallet, Gift } from "lucide-react";
+import { Eye, EyeOff, Wallet, Gift, ArrowRight } from "lucide-react";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 
 // --- BACKGROUND COMPONENT ---
@@ -443,6 +444,12 @@ function AuthPage() {
               </button>
             </p>
           )}
+          
+          <div className="mt-6 pt-6 border-t border-white/5">
+            <Link href="/company/login" className="text-white/50 hover:text-white transition-colors flex items-center justify-center gap-2 font-bold text-[10px] uppercase tracking-widest">
+               Company Account? Enterprise Login
+            </Link>
+          </div>
         </div>
 
       </div>

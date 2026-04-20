@@ -177,7 +177,7 @@ export default function WorkerSetupPage() {
 
                         {/* Portfolio Links */}
                         <div>
-                            <label className={labelStyle}>Portfolio / Project Links (Max 3)</label>
+                            <label className={labelStyle}>Portfolio / Gig Links (Max 3)</label>
                             <div className="flex gap-2 mb-2">
                                 <input
                                     type="url"

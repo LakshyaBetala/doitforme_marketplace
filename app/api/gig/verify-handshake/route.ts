@@ -100,14 +100,8 @@ export async function POST(req: Request) {
         payoutAmount = totalHeld - refundAmount;
       }
     } else {
-      // Hustle: After handshake, pay worker
-      const { data: workerStats } = await supabaseAdmin
-        .from('users')
-        .select('jobs_completed')
-        .eq('id', gig.assigned_worker_id)
-        .single();
-      const jobsDone = workerStats?.jobs_completed || 0;
-      const feeRate = jobsDone > 10 ? 0.075 : 0.10;
+      // Hustle: Flat 3% escrow fee deducted from hustler payout
+      const feeRate = 0.03;
       const platformFee = Math.ceil(totalHeld * feeRate);
       payoutAmount = totalHeld - platformFee;
 
@@ -117,7 +111,7 @@ export async function POST(req: Request) {
         amount: platformFee,
         type: 'PLATFORM_FEE',
         status: 'COMPLETED',
-        description: `Platform Fee (${(feeRate * 100).toFixed(1)}%) for ${gig.title}`
+        description: `Escrow Fee (3%) for ${gig.title}`
       });
     }
 

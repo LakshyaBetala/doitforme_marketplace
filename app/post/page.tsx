@@ -185,7 +185,7 @@ export default function PostGigWizard() {
         location: (listingType === "MARKET" || mode !== "Online") ? (location.trim() || "Campus") : null,
         images: uploadedPaths,
         deadline: listingType === "HUSTLE" ? deadlineISO : null,
-        github_link: (listingType === "HUSTLE" && (category === "Tech & Engineering" || category === "Academics & Projects") && githubLink.trim()) ? githubLink.trim() : null,
+        github_link: (listingType === "HUSTLE" && (category === "Tech & Engineering" || category === "Academics & Gigs") && githubLink.trim()) ? githubLink.trim() : null,
         status: "open",
         created_at: new Date().toISOString()
       };
@@ -231,7 +231,7 @@ export default function PostGigWizard() {
 
   // Categories helper
   const availableCategories = listingType === "HUSTLE" ? [
-    "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content", "Tutoring", "Other"
+    "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Gigs", "Errands & Manual Labor", "Writing & Content", "Tutoring", "Other"
   ] : [
     "Electronics", "Furniture", "Books & Study Material", "Vehicles", "Fashion & Clothing", "Appliances", "Accessories", "Sports & Fitness", "Subscriptions & Tickets", "Other"
   ];
@@ -285,24 +285,19 @@ export default function PostGigWizard() {
               <p className="text-white/50 text-sm">Select the type of listing you want to create.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button onClick={() => { store.setField('listingType', 'HUSTLE'); store.setField('category', ''); }} className={`group relative p-8 rounded-[32px] border transition-all text-left overflow-hidden ${listingType === 'HUSTLE' ? 'border-brand-purple bg-brand-purple/10 shadow-[0_0_30px_rgba(136,37,245,0.15)] ring-1 ring-brand-purple/50' : 'border-white/5 bg-[#121217] hover:bg-[#1A1A24] hover:border-white/10'}`}>
+            <div className="max-w-md mx-auto">
+              <button onClick={() => { store.setField('listingType', 'HUSTLE'); store.setField('category', ''); }} className={`group relative w-full p-8 rounded-[32px] border transition-all text-left overflow-hidden ${listingType === 'HUSTLE' ? 'border-brand-purple bg-brand-purple/10 shadow-[0_0_30px_rgba(136,37,245,0.15)] ring-1 ring-brand-purple/50' : 'border-white/5 bg-[#121217] hover:bg-[#1A1A24] hover:border-white/10'}`}>
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all ${listingType === 'HUSTLE' ? 'bg-brand-purple text-white shadow-lg' : 'bg-white/10 text-white/50 group-hover:bg-white/10 group-hover:text-white'}`}>
                   <BriefcaseIcon className="w-6 h-6" />
                 </div>
-                <h2 className="text-2xl font-bold mb-2">Hustle</h2>
-                <p className="text-sm text-white/50 leading-relaxed">Request services or chores from peers on campus.</p>
+                <h2 className="text-2xl font-bold mb-2">Post a Hustle</h2>
+                <p className="text-sm text-white/50 leading-relaxed">Request services, chores, or tasks from peers on campus.</p>
               </button>
 
-              <a href="https://marketforme.in/post" className={`group relative p-8 rounded-[32px] border transition-all text-left overflow-hidden border-white/5 bg-[#121217] hover:bg-[#1A1A24] hover:border-brand-pink/50 block`}>
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all bg-white/10 text-white/50 group-hover:bg-brand-pink/20 group-hover:text-brand-pink`}>
-                  <ShoppingBagIcon className="w-6 h-6" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2 text-white">Marketplace</h2>
-                <p className="text-sm text-white/50 leading-relaxed">Buy, sell, or rent items. Opens MarketForMe.in.</p>
-              </a>
-            </div >
-
+              <p className="text-center text-xs text-white/30 mt-6">
+                Looking to buy or sell items? Visit <a href="https://marketforme.in/post" className="text-brand-purple hover:underline font-bold">MarketForMe.in</a>
+              </p>
+            </div>
 
           </div >
         )}
@@ -338,7 +333,7 @@ export default function PostGigWizard() {
                 <div className="space-y-3">
                   <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Title</label>
                   <input value={title} onChange={(e) => store.setField('title', e.target.value)} maxLength={80} placeholder={
-                    listingType === 'HUSTLE' ? "e.g. Need help making an project" :
+                    listingType === 'HUSTLE' ? "e.g. Need help with a lab report" :
                       marketType === 'SELL' ? "e.g. iPad Pro (M1) 128GB - Like New" :
                         marketType === 'RENT' ? "e.g. Scientific Calculator for Rent" :
                           marketType === 'REQUEST' ? "e.g. Looking to buy/borrow an umbrella" :
@@ -351,7 +346,7 @@ export default function PostGigWizard() {
                   <textarea value={description} onChange={(e) => store.setField('description', e.target.value)} maxLength={500} placeholder="Clear details..." className="w-full bg-[#1A1A24] border border-white/10 rounded-2xl p-5 text-base text-white outline-none focus:border-brand-purple/50 transition-all resize-none h-32 shadow-inner" />
                 </div>
 
-                {listingType === "HUSTLE" && (category === "Tech & Engineering" || category === "Academics & Projects") && (
+                {listingType === "HUSTLE" && (category === "Tech & Engineering" || category === "Academics & Gigs") && (
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-white/60 uppercase tracking-widest flex items-center gap-2">GitHub <span className="text-[10px] text-white/60 normal-case">(Optional)</span></label>
                     <input type="url" value={githubLink} onChange={(e) => store.setField('githubLink', e.target.value)} placeholder="https://github.com/..." className="w-full bg-[#1A1A24] border border-white/10 rounded-2xl p-4 text-sm text-white outline-none focus:border-brand-purple/50" />

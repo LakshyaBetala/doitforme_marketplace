@@ -138,7 +138,7 @@ export default function Dashboard() {
   };
 
   const activeCategories = Array.from(new Set([
-    ...(feedType === 'ALL' || feedType === 'HUSTLE' || feedType === 'COMPANY_TASK' ? ["Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content", "Marketing & PR", "Data & Research", "Tutoring", "Other"] : [])
+    ...(feedType === 'ALL' || feedType === 'HUSTLE' || feedType === 'COMPANY_TASK' ? ["Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Gigs", "Errands & Manual Labor", "Writing & Content", "Marketing & PR", "Data & Research", "Tutoring", "Other"] : [])
   ]));
 
   const username = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Partner";
@@ -313,7 +313,7 @@ export default function Dashboard() {
                 <span className="font-black tracking-wide">Campus Market</span>
                 <span className="text-[10px] text-white/60 mt-1 text-center leading-tight">Buy & Sell on MarketForMe</span>
               </CrossDomainLink>
-              <Link href="/gig/my-gigs" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
+              <Link href="/activity" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
                 <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all relative">
                   <Briefcase size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
                   {/* Subtle notification dot for active applications */}
@@ -457,7 +457,7 @@ export default function Dashboard() {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-3 px-1">
                 <h3 className="text-[10px] font-black tracking-widest text-zinc-500 uppercase">Active Tasks</h3>
-                <Link href="/gig/my-gigs" className="text-[10px] text-brand-purple uppercase font-bold hover:underline">View All</Link>
+                <Link href="/activity" className="text-[10px] text-brand-purple uppercase font-bold hover:underline">View All</Link>
               </div>
               <div className="space-y-2">
                 <div className="bg-[#0F172A] border border-[#1E293B] rounded-xl p-3 flex justify-between items-center group cursor-pointer hover:border-brand-purple/50 transition-colors hover:-translate-y-0.5">
@@ -640,7 +640,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
 
   const categories = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
-    "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content",
+    "Commerce & Finance", "Academics & Gigs", "Errands & Manual Labor", "Writing & Content",
     "Tutoring", "Other"
   ];
 

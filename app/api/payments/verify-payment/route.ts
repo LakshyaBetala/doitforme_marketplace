@@ -111,7 +111,7 @@ export async function POST(req: Request) {
       // release_date is NOT NULL in schema, set 14 days out
       release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
       handshake_code: handshakeCode,
-      escrow_category: deposit > 0 ? 'RENTAL_DEPOSIT' : 'PROJECT',
+      escrow_category: deposit > 0 ? 'RENTAL_DEPOSIT' : 'GIG',
     }, { onConflict: 'gig_id,worker_id' });
 
     if (escrowError) {

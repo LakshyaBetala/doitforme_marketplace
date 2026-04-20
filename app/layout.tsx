@@ -9,19 +9,19 @@ import { SpeedInsights } from "@vercel/speed-insights/next"// Request notificati
 
 export const metadata: Metadata = {
   title: {
-    default: "DoItForMe – Student Hustle Platform | India",
+    default: "DoItForMe – India's Leading Student Gig & Hustle Network",
     template: "%s | DoItForMe",
   },
   description:
-    "DoItForMe is India's first student-to-student platform. Post tasks (coding, design, tutoring, errands) to verified student freelancers. Escrow-protected payments, instant UPI payouts.",
+    "DoItForMe is India's leading student-to-student (S2S) and company-to-student (C2S) gig network. Connect with verified student hustlers for technical tasks, creative work, and campus errands.",
   keywords: [
-    "DoItForMe", "doitforme.in",
-    "student hustle platform", "student freelance India", "campus gig platform",
-    "hire student freelancer", "outsource task student", "earn money student India",
-    "student gig India", "college task outsourcing", "campus freelance work",
-    "peer-to-peer student services", "college task app", "student side hustle India",
-    "affordable gig India", "instant upi payout freelance", "escrow payment student gig",
-    "student tutoring app", "campus coding help", "student errand service",
+    "DoItForMe", "doitforme.in", "student gig network India",
+    "student to student gigs", "company to student gigs", "hire student hustlers",
+    "hire university talent India", "student hustle economy", "college task outsourcing",
+    "S2S gigs", "C2S gigs", "campus gig marketplace",
+    "earn from skills student", "outsourced student work",
+    "secure student marketplace", "technical gigs for students India",
+    "college coding projects", "student graphic design", "student content writing",
   ],
   authors: [{ name: "DoItForMe Team", url: "https://www.doitforme.in" }],
   creator: "DoItForMe",
@@ -29,9 +29,9 @@ export const metadata: Metadata = {
   formatDetection: { email: false, address: false, telephone: false },
   icons: { icon: "/Doitforme_logo.png", shortcut: "/Doitforme_logo.png", apple: "/Doitforme_logo.png" },
   openGraph: {
-    title: "DoItForMe – Student Hustle Platform",
+    title: "DoItForMe – Student Gig & Hustle Hub",
     description:
-      "Post a Hustle to outsource tasks to verified student freelancers. India's #1 student gig platform.",
+      "Outsource technical gigs and creative tasks to verified student hustlers. Secure, fast, and student-powered.",
     url: "https://www.doitforme.in",
     siteName: "DoItForMe",
     images: [{ url: "/Doitforme_logo.png", width: 1200, height: 630, alt: "DoItForMe – Student Hustle Platform" }],
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DoItForMe – Student Hustle Platform",
     description:
-      "Hustle: outsource tasks to student freelancers. Verified IDs, escrow, instant UPI.",
+      "Hustle: outsource tasks to student hustlers. Verified IDs, escrow, instant UPI.",
     images: ["/Doitforme_logo.png"],
     creator: "@doitformein",
   },
@@ -74,15 +74,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
     "logo": "https://www.doitforme.in/Doitforme_logo.png",
-    "description": "DoItForMe is India's first verified student gig platform. Hustle lets students outsource & earn from tasks (coding, design, tutoring, errands).",
+    "description": "DoItForMe is India's leading student gig network, connecting university talent with students and corporate clients for technical, creative, and campus gigs.",
     "foundingDate": "2024",
     "areaServed": "IN",
     "sameAs": ["https://www.instagram.com/doitforme.in/", "https://www.linkedin.com/company/doitforme1/"],
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
-      "name": "DoItForMe Services",
+      "name": "DoItForMe Solutions",
       "itemListElement": [
-        { "@type": "OfferCatalog", "name": "Hustle – Student Freelance Gigs", "description": "Post tasks like coding, design, tutoring, and errands. Verified student freelancers apply, work is escrow-protected." }
+        { "@type": "OfferCatalog", "name": "Student Gigs", "description": "Technical and creative tasks including coding, design, and research. Secured by 3% Escrow protection." }
       ]
     }
   };

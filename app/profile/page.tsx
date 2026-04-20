@@ -38,7 +38,7 @@ export default function ProfilePage() {
 
   const PREFERENCE_OPTIONS = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
-    "Commerce & Finance", "Academics & Projects", "Errands & Manual Labor", "Writing & Content",
+    "Commerce & Finance", "Academics & Gigs", "Errands & Manual Labor", "Writing & Content",
     "Tutoring", "Other"
   ];
 
@@ -82,11 +82,27 @@ export default function ProfilePage() {
             college: userData?.college || meta.college || "",
           };
 
-          const { data: newProfile, error } = await supabase
-            .from("users")
-            .upsert(updates)
-            .select()
-            .single();
+          let newProfile = null;
+          let error = null;
+
+          if (userData) {
+              const res = await supabase
+                .from("users")
+                .update(updates)
+                .eq("id", user.id)
+                .select()
+                .single();
+              newProfile = res.data;
+              error = res.error;
+          } else {
+              const res = await supabase
+                .from("users")
+                .upsert(updates)
+                .select()
+                .single();
+              newProfile = res.data;
+              error = res.error;
+          }
 
           if (!error && newProfile) {
             userData = newProfile;

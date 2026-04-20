@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     )
 
     try {
-        const { gigId, offerPitch, offerPrice } = await req.json();
+        const { gigId, offerPitch, offerPrice, paymentPreference } = await req.json();
 
         // 1. Auth Check
         const { data: { user } } = await supabase.auth.getUser();
@@ -52,13 +52,17 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "This item is no longer available." }, { status: 400 });
         }
 
+        // Validate Escrow preference
+        const finalPaymentPref = (paymentPreference === 'ESCROW' && gig.price >= 500) ? 'ESCROW' : 'DIRECT';
+
         // 3. Create Application (Offer)
         const { error: appError } = await supabase.from("applications").upsert({
             gig_id: gigId,
             worker_id: user.id,
             status: 'pending',
             pitch: offerPitch || "I'm interested in this item!",
-            negotiated_price: offerPrice || null // Use offered price
+            negotiated_price: offerPrice || null, // Use offered price
+            payment_preference: finalPaymentPref
         }, { onConflict: 'gig_id, worker_id' });
 
         if (appError) throw appError;

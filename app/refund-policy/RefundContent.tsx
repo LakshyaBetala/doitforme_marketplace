@@ -5,12 +5,12 @@ import { ArrowLeft, Receipt, RotateCcw, Scale, Banknote } from "lucide-react";
 
 export default function RefundContent() {
   return (
-    <div className="min-h-screen bg-[#020202] text-white selection:bg-[#8825F5] selection:text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[#020202] text-white selection:bg-[#00f2ff] selection:text-black relative overflow-hidden">
 
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-brand-purple/10 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-10%] right-[20%] w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-[#00f2ff]/10 blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-10%] right-[20%] w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full"></div>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-12 md:py-20 relative z-10">
@@ -55,11 +55,11 @@ export default function RefundContent() {
                   </div>
                   <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
                     <strong className="block text-white mb-2 text-sm flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-brand-purple"></span> The Hustle
+                      <span className="w-2 h-2 rounded-full bg-[#00f2ff]"></span> Student Gigs
                     </strong>
                     <ul className="space-y-2 text-xs text-zinc-400">
-                      <li className="flex justify-between"><span>Standard Tier</span> <span className="text-white font-mono">10% Fee</span></li>
-                      <li className="flex justify-between"><span>Pro Tier (&gt;10 Gigs)</span> <span className="text-white font-mono">7.5% Fee</span></li>
+                      <li className="justify-between flex"><span>Direct Connect</span> <span className="text-green-400 font-mono">FREE</span></li>
+                      <li className="justify-between flex"><span>Escrow Protection (₹500+)</span> <span className="text-white font-mono">3% Fee</span></li>
                     </ul>
                   </div>
                 </div>
@@ -75,11 +75,11 @@ export default function RefundContent() {
           {/* Section 2: Refunds */}
           <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-brand-purple shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-[#00f2ff] shrink-0">
                 <RotateCcw size={20} />
               </div>
               <div className="space-y-3">
-                <h3 className="text-xl font-bold text-white">2. Refunds for Posters</h3>
+                <h3 className="text-xl font-bold text-white">2. Refunds for Clients</h3>
                 <p className="text-zinc-400 leading-relaxed">
                   Funds are held in secure Escrow. You are eligible for a 100% refund to your wallet if:
                 </p>
@@ -90,11 +90,11 @@ export default function RefundContent() {
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 border border-white/5">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                    <span className="text-sm text-zinc-300">Worker misses deadline</span>
+                    <span className="text-sm text-zinc-300">Hustler misses deadline</span>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 border border-white/5">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                    <span className="text-sm text-zinc-300">Unsatisfactory work (verified by dispute)</span>
+                    <span className="text-sm text-zinc-300">Unsatisfactory delivery (verified by dispute)</span>
                   </div>
                 </div>
               </div>
@@ -104,7 +104,7 @@ export default function RefundContent() {
           {/* Section 3: Disputes */}
           <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-[#00f2ff]/10 flex items-center justify-center text-[#00f2ff] shrink-0">
                 <Scale size={20} />
               </div>
               <div className="space-y-3">

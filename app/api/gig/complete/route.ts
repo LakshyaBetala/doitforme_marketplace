@@ -72,17 +72,8 @@ export async function POST(request: Request) {
         payoutAmount = totalHeld - deposit;
       }
     } else {
-      // Hustle
-      // ADAPTIVE FEE LOGIC
-      // Fetch user stats to determine fee tier
-      const { data: workerStats } = await supabaseAdmin
-        .from("users")
-        .select("jobs_completed")
-        .eq("id", gig.assigned_worker_id)
-        .single();
-
-      const jobsDone = workerStats?.jobs_completed || 0;
-      const feeRate = jobsDone > 10 ? 0.075 : 0.10; // 7.5% for experienced, 10% for new
+      // Hustle — Flat 3% escrow fee deducted from worker payout
+      const feeRate = 0.03;
       const platformFee = Math.ceil(totalHeld * feeRate);
 
       payoutAmount = totalHeld - platformFee;
@@ -90,12 +81,11 @@ export async function POST(request: Request) {
       // Log Fee Transaction
       await supabaseAdmin.from("transactions").insert({
         gig_id: gigId,
-        user_id: user.id, // Log under admin/system? Or just no user_id for system? 
-        // Better: user_id = null usually means system, but let's just log description
+        user_id: user.id,
         amount: platformFee,
         type: "PLATFORM_FEE",
         status: "COMPLETED",
-        description: `Platform Fee (${(feeRate * 100).toFixed(1)}%) for ${gig.title}`
+        description: `Escrow Fee (3%) for ${gig.title}`
       });
     }
 

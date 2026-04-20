@@ -4,25 +4,16 @@ import LandingPage from "@/components/home/LandingPage";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
 
 export const metadata: Metadata = {
-  title: "DoItForMe – India's #1 Student Hustle & Gig Platform",
+   title: "DoItForMe – India's Leading Student Gig & Hustle Network",
   description:
-    "DoItForMe is India's first student-to-student gig platform. Post a Hustle to outsource tasks (design, coding, errands, tutoring). Verified university students, escrow payments, instant UPI withdrawals.",
+    "The all-in-one network for the student economy. DoItForMe connects university students for S2S tasks and links startups with top-tier student talent for C2S gigs. Secured by 3% Escrow and Instant UPI.",
   keywords: [
-    // Core product
-    "DoItForMe", "doitforme.in", "student gig platform India",
-    // Hustle vertical
-    "student freelance", "hire students India", "campus gigs", "student hustle",
-    "outsource tasks to students", "find student freelancer", "college freelance work",
-    "micro-internship India", "student side hustle", "earn money as student India",
-    // Category-specific
-    "student tutoring platform", "college coding help", "design gig for student",
-    "errand service campus", "student writing jobs", "homework help student",
-    // Geographic / audience
-    "SRM student gigs", "VIT student freelance", "BITS student gig",
-    "find work university India", "college community app India",
-    // LLM/AI friendly
-    "get tasks done by students", "student task outsourcing", "peer-to-peer student services",
-    "affordable freelance India", "quick gig solution India",
+    "DoItForMe", "doitforme.in", "student gig network India",
+    "student to student projects", "company to student gigs", "hire student hustlers",
+    "hire university talent India", "student hustle economy", "college task outsourcing",
+    "S2S gigs", "C2S gigs", "campus gig marketplace",
+    "earn from skills student", "outsourced student work",
+    "secure student marketplace", "technical gigs for students India",
   ],
   authors: [{ name: "DoItForMe", url: BASE_URL }],
   creator: "DoItForMe",
@@ -35,13 +26,13 @@ export const metadata: Metadata = {
     shortcut: "/Doitforme_logo.png",
   },
   openGraph: {
-    type: "website",
-    locale: "en_IN",
-    url: BASE_URL,
-    siteName: "DoItForMe",
-    title: "DoItForMe – Student Hustle Platform | Get It Done",
-    description:
-      "Post a Hustle to outsource tasks. India's only verified student gig platform with escrow protection and instant UPI payouts.",
+     type: "website",
+     locale: "en_IN",
+     url: BASE_URL,
+     siteName: "DoItForMe",
+     title: "DoItForMe – Student Gig & Hustle Network | S2S & C2S",
+     description:
+       "India's leading network for student gigs. Connect university talent with startups and other students. Secure 3% escrow protection.",
     images: [
       {
         url: `${BASE_URL}/Doitforme_logo.png`,
@@ -79,10 +70,10 @@ export default function Home() {
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      name: "DoItForMe",
+       name: "DoItForMe",
       url: BASE_URL,
       description:
-        "DoItForMe is India's first verified student gig platform. Students post Hustles (freelance tasks) to outsource work.",
+        "DoItForMe is India's leading verified student gig network. Connect for S2S tasks or hire top university talent for C2S gigs.",
       potentialAction: {
         "@type": "SearchAction",
         target: {
@@ -96,11 +87,11 @@ export default function Home() {
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "DoItForMe",
+       name: "DoItForMe",
       url: BASE_URL,
       logo: `${BASE_URL}/Doitforme_logo.png`,
       description:
-        "DoItForMe connects Indian university students who need tasks done (Hustles) with skilled student freelancers.",
+        "DoItForMe facilitates India's leading student gig economy, enabling S2S and C2S connections for university talent.",
       foundingDate: "2025",
       areaServed: "IN",
       audience: { "@type": "Audience", audienceType: "University Students, India" },
@@ -121,17 +112,17 @@ export default function Home() {
       "@context": "https://schema.org",
       "@type": "Service",
       name: "DoItForMe Hustle",
-      serviceType: "Student Freelance Gig Platform",
+      serviceType: "Student Gig & Hustle Platform",
       description:
-        "Hustle is DoItForMe's peer-to-peer task platform where students post jobs (coding, design, tutoring, errands, writing, lab work) and verified student freelancers apply to complete them. Payments are secured in escrow and released on delivery.",
+        "DoItForMe is a secure ecosystem where Clients (Students and Companies) outsource gigs to verified student hustlers. Payments are held in a 3% protected escrow and released upon completion.",
       provider: { "@type": "Organization", name: "DoItForMe", url: BASE_URL },
       areaServed: "IN",
-      audience: { "@type": "Audience", audienceType: "Indian University Students" },
+      audience: { "@type": "Audience", audienceType: "Students & Organizations" },
       url: `${BASE_URL}/dashboard`,
       offers: {
         "@type": "Offer",
         priceCurrency: "INR",
-        description: "Students set their own price per gig. Platform fee: 7.5–10%.",
+        description: "Free Direct Connect. Standard 3% escrow protection for secure projects ₹500 and above.",
       },
     },
     // 4. FAQPage — helps LLMs and Google directly answer queries about DoItForMe
@@ -144,7 +135,7 @@ export default function Home() {
           name: "What is DoItForMe?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "DoItForMe (doitforme.in) is India's first student-to-student gig platform where students can post freelance tasks (coding, design, tutoring, errands) and hire other students to complete them.",
+            text: "DoItForMe (doitforme.in) is India's first student-to-student gig platform where students can post gigs (coding, design, tutoring, errands) and hire other students to complete them.",
           },
         },
         {
@@ -152,7 +143,7 @@ export default function Home() {
           name: "What is a Hustle on DoItForMe?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "A Hustle is a short-term task or freelance gig posted by a student on DoItForMe. Examples include graphic design, coding, tutoring, writing, delivery errands, and lab help. Student freelancers apply, negotiate price, and complete the task. Payments are held in escrow and released on delivery.",
+            text: "A Hustle is a short-term task or gig posted by a student on DoItForMe. Examples include graphic design, coding, tutoring, writing, delivery errands, and lab help. Student hustlers apply, negotiate price, and complete the task. Payments are held in escrow and released on delivery.",
           },
         },
         {
@@ -160,23 +151,23 @@ export default function Home() {
           name: "How do students earn money on DoItForMe?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Students earn by completing Hustles (freelance tasks) posted by other students. Earnings are paid directly to their UPI ID. The platform charges a 7.5–10% service fee on Hustles.",
+            text: "Students earn by completing technical tasks and gigs posted by other students or companies. Earnings are paid directly to their UPI ID. The platform is free to use with Direct Connect, while a 3% escrow fee applies for protected gigs ₹500 and above.",
           },
         },
         {
           "@type": "Question",
-          name: "Is DoItForMe safe for payments?",
+          name: "Is DoItForMe safe for gigs?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes. DoItForMe uses an escrow system — money is held securely on the platform and only released to the worker after the task is delivered and accepted by the poster. Student IDs are verified via KYC. All transactions use Razorpay or Cashfree secure payment gateways.",
+            text: "Yes. DoItForMe uses a 3% protected escrow system — funds are held securely and only released to the hustler after the gig is delivered and accepted by the Client. All hustlers are student ID verified.",
           },
         },
         {
           "@type": "Question",
-          name: "Which universities use DoItForMe?",
+          name: "Which universities are on DoItForMe?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "DoItForMe is used by students from universities across India including SRM, VIT, BITS, NIT, IIT, Manipal, Amity, Christ, Symbiosis, Anna University, and many more.",
+            text: "DoItForMe is available for students across all major Indian universities including SRM, VIT, BITS, NITs, IITs, Manipal, and many more, fostering an inclusive gig economy.",
           },
         },
       ],

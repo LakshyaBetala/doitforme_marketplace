@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Gig not found or invalid" }, { status: 404 });
     }
 
-    // NEW: Check for Negotiated Price in Applications
+    // Check for Negotiated Price in Applications
     const { data: application } = await supabase
       .from("applications")
       .select("negotiated_price")
@@ -43,32 +43,23 @@ export async function POST(req: Request) {
       .eq("worker_id", workerId)
       .single();
 
-    // 3. Calculate Total Amount (Including 2% Gateway Fee)
+    // 3. Calculate Total Amount
     // Use negotiated price if available, otherwise base gig price
     const basePrice = application?.negotiated_price ? Number(application.negotiated_price) : Number(gig.price);
     const deposit = Number(gig.security_deposit) || 0;
 
-    // Fetch Worker Stats for Platform Fee Tier
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
-    const { data: workerProfile } = await supabaseAdmin.from('users').select('jobs_completed').eq('id', workerId).single();
-    const jobsCompleted = workerProfile?.jobs_completed || 0;
 
-    // Platform Fee Logic (Same as create-order)
-    let platformFee = 0;
-    let discountApplied = false;
-    if (jobsCompleted > 10) {
-      platformFee = Math.ceil(basePrice * 0.075);
-      discountApplied = true;
-    } else {
-      platformFee = Math.ceil(basePrice * 0.10);
-    }
+    // Hustle: Flat 3% escrow fee deducted from hustler payout
+    // Client pays exact listed price — hustler receives 97%
+    const platformFee = Math.ceil(basePrice * 0.03);
 
     // Payer (Hiring Client) Subtotal is just Price + Deposit
     const subtotal = basePrice + deposit;
-    const gatewayFee = Math.ceil(subtotal * 0.02); // 2% Surcharge on total
+    const gatewayFee = Math.ceil(subtotal * 0.02); // 2% Gateway surcharge
     const totalAmountToCharge = subtotal + gatewayFee;
 
     // 4. Prepare Cashfree Order Data
@@ -80,9 +71,9 @@ export async function POST(req: Request) {
       subtotal: subtotal,
       renter_fee: 0,
       gateway_fee: gatewayFee,
-      discount_applied: discountApplied,
+      discount_applied: false,
       total: totalAmountToCharge,
-      platform_fee: platformFee, // Stores the Deduction Amount
+      platform_fee: platformFee, // 3% deducted from hustler payout
       base_price: basePrice,
       deposit: deposit,
       net_worker_pay: basePrice - platformFee

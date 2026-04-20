@@ -16,7 +16,10 @@ import CrossDomainLink from "@/components/CrossDomainLink";
 // -------------------------------------------------------
 // 1. "VOGUE" PRELOADER (Updated with Asset Awareness)
 // -------------------------------------------------------
-const words = ["HUSTLE", "EARN", "BUILD", "SCALE", "RELAX"];
+// -------------------------------------------------------
+// 1. "VOGUE" PRELOADER (Updated with Asset Awareness)
+// -------------------------------------------------------
+const words = ["GIG", "SCALE", "BUILD", "HUSTLE", "DEPLOY"];
 
 const Preloader = ({
   onComplete,
@@ -66,7 +69,7 @@ const Preloader = ({
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 0.9, filter: "blur(5px)" }}
             transition={{ duration: 0.15 }}
-            style={{ color: '#8825F5' }}
+            style={{ color: '#00f2ff' }}
             className="text-6xl md:text-9xl font-black tracking-tighter"
           >
             {words[index]}
@@ -85,7 +88,7 @@ const Preloader = ({
               initial={{ width: 0 }}
               animate={{ width: "100%" }}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="h-1 bg-gradient-to-r from-brand-purple to-brand-blue mt-4 w-full shadow-[0_0_30px_rgba(136,37,245,0.8)]"
+              className="h-1 bg-gradient-to-r from-[#00f2ff] to-[#4F46E5] mt-4 w-full shadow-[0_0_30px_rgba(0,242,255,0.8)]"
             />
             {/* Subtle indicator if assets are still fetching */}
             {!isAssetReady && (
@@ -108,59 +111,59 @@ const gigsMock = [
     id: 1,
     user: "Aarav P.",
     role: "Engineering",
-    title: "Fix Next.js Hydration Error",
-    price: "₹500",
+    title: "Technical Architecture Audit",
+    price: "₹5,000",
     gender: "male",
   },
   {
     id: 2,
     user: "Sneha K.",
     role: "Design",
-    title: "Logo for Tech Fest Startup",
-    price: "₹1,200",
+    title: "Brand Identity for Fintech",
+    price: "₹3,500",
     gender: "female",
   },
   {
     id: 3,
     user: "Rohan M.",
-    role: "Errand",
-    title: "Drop Lab Record to Block 4",
-    price: "₹150",
+    role: "Dev",
+    title: "Secure API Implementation",
+    price: "₹8,000",
     gender: "male",
   },
   {
     id: 4,
     user: "Priya S.",
     role: "Content",
-    title: "Write Blog for College Newsletter",
-    price: "₹800",
+    title: "Technical Product Whitepaper",
+    price: "₹4,200",
     gender: "female",
   },
   {
     id: 5,
     user: "Arjun D.",
     role: "Dev",
-    title: "Build a Discord Bot for Server",
-    price: "₹2,000",
+    title: "Cloud Infrastructure Setup",
+    price: "₹12,000",
     gender: "male",
   },
   {
     id: 6,
     user: "Meera R.",
     role: "Tutoring",
-    title: "Teach DSA for Placement Prep",
-    price: "₹600",
+    title: "Advanced System Design Coaching",
+    price: "₹2,500",
     gender: "female",
   },
 ];
 
 // Live Feed items for mobile hero
 const liveFeedItems = [
-  { id: 1, type: "Gig" as const, title: "Fix React Hydration Bug", price: "₹500" },
-  { id: 2, type: "Gig" as const, title: "Design Poster for Hackathon", price: "₹750" },
-  { id: 3, type: "Gig" as const, title: "Deliver Assignment to Block 4", price: "₹150" },
-  { id: 4, type: "Gig" as const, title: "Build Discord Bot for Server", price: "₹2,000" },
-  { id: 5, type: "Gig" as const, title: "Tutoring for Data Structures", price: "₹650" },
+  { id: 1, type: "Gig" as const, title: "React Performance Audit", price: "₹4,500" },
+  { id: 2, type: "Gig" as const, title: "Mobile App Logic Review", price: "₹6,000" },
+  { id: 3, type: "Gig" as const, title: "Database Migration Script", price: "₹3,200" },
+  { id: 4, type: "Gig" as const, title: "UI Components Library", price: "₹10,000" },
+  { id: 5, type: "Gig" as const, title: "SEO Performance Audit", price: "₹2,800" },
 ];
 
 const useScrollPosition = () => {
@@ -329,18 +332,18 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* --- ATMOSPHERE: LIGHTER BLUE & DEEP PURPLE --- */}
+      {/* --- ATMOSPHERE: LIGHTER BLUE & DEEP CYAN --- */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
         <motion.div
           animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.15, 0.1] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-[#8825F5] rounded-full blur-[150px] opacity-10 will-change-transform"
+          className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-[#00f2ff] rounded-full blur-[150px] opacity-10 will-change-transform"
           style={{ transform: 'translateZ(0)' }}
         />
         <motion.div
           animate={{ scale: [1, 1.25, 1], opacity: [0.08, 0.12, 0.08] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="absolute top-[10%] right-[-10%] w-[50vw] h-[50vw] bg-[#93C5FD] rounded-full blur-[180px] opacity-10 will-change-transform"
+          className="absolute top-[10%] right-[-10%] w-[50vw] h-[50vw] bg-[#4F46E5] rounded-full blur-[180px] opacity-10 will-change-transform"
           style={{ transform: 'translateZ(0)' }}
         />
       </div>
@@ -363,17 +366,17 @@ export default function LandingPage() {
           </Link>
 
           <nav className="hidden md:flex items-center gap-3">
-            <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">How it works</button>
+            <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">Process</button>
             <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">FAQ</button>
-            <Link href="/company/onboarding" className="text-sm font-medium font-bold text-[#A855F7] hover:text-white transition-colors px-4 py-2 rounded-full bg-[#8825F5]/10 border border-[#8825F5]/30 hover:bg-[#8825F5]/30 shadow-[0_0_10px_rgba(136,37,245,0.2)]">Register as Company</Link>
+            <Link href="/company/onboarding" className="text-sm font-bold text-[#00f2ff] hover:text-white transition-colors px-4 py-2 rounded-full bg-[#00f2ff]/10 border border-[#00f2ff]/30 hover:bg-[#00f2ff]/30 shadow-[0_0_10px_rgba(0,242,255,0.2)]">Corporate Hub</Link>
             
             {(userEmail === "betala911@gmail.com" || userEmail === "doitforme.in@gmail.com") && (
-              <Link href="/admin" className="text-sm font-bold text-red-400 hover:text-white transition-colors px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]">Admin</Link>
+              <Link href="/admin" className="text-sm font-bold text-red-500 hover:text-white transition-colors px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]">Access Admin</Link>
             )}
           </nav>
 
           <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:ml-4">
-            <Link href="/company/onboarding" className="md:hidden text-xs font-bold text-[#A855F7] text-center border border-[#8825F5]/30 py-2 rounded-full mb-1 bg-[#8825F5]/10 px-4">Register as Company</Link>
+            <Link href="/company/onboarding" className="md:hidden text-xs font-bold text-[#00f2ff] text-center border border-[#00f2ff]/30 py-2 rounded-full mb-1 bg-[#00f2ff]/10 px-4">Corporate Hub</Link>
             <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 w-full md:w-auto">
               Login
             </button>
@@ -402,13 +405,13 @@ export default function LandingPage() {
           <div
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-5 w-fit"
             style={{
-              background: 'linear-gradient(135deg, rgba(136, 37, 245, 0.15) 0%, rgba(136, 37, 245, 0.05) 100%)',
-              border: '1px solid rgba(136, 37, 245, 0.3)',
+              background: 'linear-gradient(135deg, rgba(0, 242, 255, 0.15) 0%, rgba(0, 242, 255, 0.05) 100%)',
+              border: '1px solid rgba(0, 242, 255, 0.3)',
               backdropFilter: 'blur(12px)',
             }}
           >
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_6px_rgba(34,197,94,0.6)]"></span>
-            <span className="text-[10px] font-bold tracking-[0.15em] text-[#C084FC] uppercase">Live on your campus</span>
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_6px_rgba(34,211,238,0.6)]"></span>
+            <span className="text-[10px] font-bold tracking-[0.15em] text-[#00f2ff] uppercase">Nationwide Hustle Network</span>
           </div>
 
           {/* Headline Block with Floating Sloth */}
@@ -428,7 +431,7 @@ export default function LandingPage() {
                 width={105}
                 height={105}
                 className="object-contain"
-                style={{ filter: 'drop-shadow(0 0 15px rgba(136, 37, 245, 0.4)) drop-shadow(0 10px 20px rgba(0,0,0,0.3))' }}
+                style={{ filter: 'drop-shadow(0 0 15px rgba(0, 242, 255, 0.4)) drop-shadow(0 10px 20px rgba(0,0,0,0.3))' }}
                 priority
               />
             </motion.div>
@@ -436,11 +439,11 @@ export default function LandingPage() {
             {/* Stacked Headline — Space Grotesk Display */}
             <div style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white">
-                Earn.
+                Launch.
               </h1>
               <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] mt-1">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8825F5] via-[#A855F7] to-[#C084FC]">
-                  Outsource.
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] via-[#4F46E5] to-[#818CF8]">
+                  Deploy.
                 </span>
               </h1>
               <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white mt-1">
@@ -459,20 +462,20 @@ export default function LandingPage() {
             <motion.button
               onClick={handleLogin}
               whileTap={{ scale: 0.97 }}
-              className="group w-full py-[14px] rounded-full text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-300"
+              className="group w-full py-[14px] rounded-full text-sm font-bold text-black flex items-center justify-center gap-2 transition-all duration-300"
               style={{
-                background: 'linear-gradient(135deg, #8825F5 0%, #6D28D9 100%)',
-                boxShadow: '0 0 25px rgba(136, 37, 245, 0.35), 0 4px 15px rgba(0, 0, 0, 0.3)',
+                background: 'linear-gradient(135deg, #00f2ff 0%, #4F46E5 100%)',
+                boxShadow: '0 0 25px rgba(0, 242, 255, 0.35), 0 4px 15px rgba(0, 0, 0, 0.3)',
               }}
             >
-              Explore Campus
+              Start Hustling
               <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
             </motion.button>
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="w-full py-[14px] rounded-full text-sm font-bold text-white/90 border border-[#8825F5]/40 hover:border-[#8825F5]/70 transition-all flex items-center justify-center gap-2 active:scale-[0.97] bg-transparent"
+              className="w-full py-[14px] rounded-full text-sm font-bold text-white/90 border border-[#00f2ff]/40 hover:border-[#00f2ff]/70 transition-all flex items-center justify-center gap-2 active:scale-[0.97] bg-transparent"
             >
-              How it works
+              Technical Process
             </button>
           </div>
         </motion.div>
@@ -490,17 +493,17 @@ export default function LandingPage() {
 
             {/* Heading */}
             <h1 className="text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8825F5] via-[#A855F7] to-[#C084FC]">Outsource.</span><br /> Succeed.
+              Launch. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] via-[#4F46E5] to-[#818CF8]">Deploy.</span><br /> Succeed.
             </h1>
 
             {/* Subheading */}
             <p className="text-2xl text-white/85 leading-snug mb-4 w-full">
-              Your Campus <span className="font-bold">Hustle Platform</span>
+              High-Tech <span className="font-bold text-[#00f2ff]">Student Gig & Hustle Network</span>
             </p>
 
             {/* Description */}
             <p className="text-base text-zinc-400 leading-relaxed max-w-md mb-10 pr-4">
-              Earn money and outsource tasks easily within your campus.
+              Connect skills with opportunities. Join India's leading student network for S2S gigs and C2S technical hiring.
             </p>
 
             {/* Desktop: Two Buttons */}
@@ -527,16 +530,16 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="relative flex items-center justify-center h-[580px] w-full lg:order-2 -ml-16"
           >
-            {/* Multi-layer purple glow */}
-            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#8825F5]/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-[#8825F5]/20 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute top-[55%] left-[45%] -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-[#A855F7]/25 rounded-full blur-[60px] pointer-events-none" />
-            <div className="absolute bottom-[60px] left-[40%] -translate-x-1/2 w-[300px] h-[80px] bg-[#8825F5]/15 rounded-full blur-[40px] pointer-events-none" />
+            {/* Multi-layer cyan glow */}
+            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#00f2ff]/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-[#00f2ff]/20 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute top-[55%] left-[45%] -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-[#4F46E5]/25 rounded-full blur-[60px] pointer-events-none" />
+            <div className="absolute bottom-[60px] left-[40%] -translate-x-1/2 w-[300px] h-[80px] bg-[#00f2ff]/15 rounded-full blur-[40px] pointer-events-none" />
 
             {/* Sparkle particles */}
             <div className="absolute top-[15%] left-[30%] w-1.5 h-1.5 bg-white/40 rounded-full animate-pulse pointer-events-none" />
             <div className="absolute top-[25%] right-[15%] w-1 h-1 bg-white/30 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '0.5s' }} />
-            <div className="absolute bottom-[30%] left-[20%] w-1 h-1 bg-[#A855F7]/50 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
+            <div className="absolute bottom-[30%] left-[20%] w-1 h-1 bg-[#00f2ff]/50 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
             <div className="absolute top-[40%] right-[30%] w-1.5 h-1.5 bg-white/20 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '1.5s' }} />
 
             {/* Sloth Mascot */}
@@ -549,12 +552,12 @@ export default function LandingPage() {
             >
               <Image
                 src="/hisloth.png"
-                alt="Sloth mascot"
+                alt="Hustler mascot"
                 width={440}
                 height={440}
                 className="object-contain"
                 style={{
-                  filter: 'drop-shadow(0 0 30px rgba(136, 37, 245, 0.35)) drop-shadow(0 0 60px rgba(136, 37, 245, 0.2)) drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4))'
+                  filter: 'drop-shadow(0 0 30px rgba(0, 242, 255, 0.35)) drop-shadow(0 0 60px rgba(0, 242, 255, 0.2)) drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4))'
                 }}
                 priority
               />
@@ -593,7 +596,7 @@ export default function LandingPage() {
                     </div>
                     <p className="text-[11px] text-white/60 font-medium leading-snug mb-2.5">{activeGig.title}</p>
                     <div className="text-right">
-                      <span className="text-lg font-bold text-[#C084FC]">{activeGig.price}</span>
+                      <span className="text-lg font-bold text-[#00f2ff]">{activeGig.price}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -643,7 +646,7 @@ export default function LandingPage() {
                 }}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]"></span>
+                  <span className="w-2 h-2 rounded-full bg-[#00f2ff] shadow-[0_0_6px_rgba(0,242,255,0.5)]"></span>
                   <span className="text-xs font-medium text-white/50">Total Earnings</span>
                 </div>
                 <div className="text-3xl font-bold text-white">₹12,450</div>
@@ -666,10 +669,10 @@ export default function LandingPage() {
           {/* Heading */}
           <div className="text-center mb-10 md:mb-14">
             <h2 className="text-[1.75rem] sm:text-4xl md:text-[2.75rem] lg:text-5xl xl:text-6xl lg:whitespace-nowrap font-black italic leading-[1.1] tracking-tight text-white mb-4 md:mb-5">
-              Everything you need. Inside <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80">your campus.</span>
+              Secure Architecture. <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80">Scalable Talent.</span>
             </h2>
             <p className="text-sm md:text-base lg:text-lg text-zinc-400 max-w-lg mx-auto">
-              Earn money and outsource tasks effortlessly.
+              Execute mission-critical projects with verified expertise.
             </p>
           </div>
 
@@ -684,15 +687,15 @@ export default function LandingPage() {
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
               }}
             >
-              <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[#8825F5]/10 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[#00f2ff]/10 rounded-full blur-[80px] pointer-events-none" />
               <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
                 <Image
                   src="/moneysloth.png"
-                  alt="Earn Money Sloth"
+                  alt="Earn Money"
                   width={280}
                   height={280}
                   className="object-contain relative z-10"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(136, 37, 245, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
+                  style={{ filter: 'drop-shadow(0 0 20px rgba(0, 242, 255, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
                 />
                 <motion.div
                   animate={{ y: [0, -5, 0] }}
@@ -702,17 +705,17 @@ export default function LandingPage() {
                   <div
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.3) 0%, rgba(34, 197, 94, 0.1) 100%)',
+                      background: 'linear-gradient(135deg, rgba(0, 242, 255, 0.3) 0%, rgba(0, 242, 255, 0.1) 100%)',
                       backdropFilter: 'blur(12px)',
-                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      border: '1px solid rgba(0, 242, 255, 0.3)',
                     }}
                   >
-                    <span className="text-green-400">₹</span>450 earned
+                    <span className="text-[#00f2ff]">₹</span>4,500 Payout
                   </div>
                 </motion.div>
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Earn Money</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">Complete small campus tasks and get paid instantly.</p>
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Build & Earn</h3>
+              <p className="text-sm text-zinc-400 leading-relaxed">Monetize your technical skills by solving real-world challenges.</p>
             </div>
 
             {/* Card 2: Outsource Tasks */}
@@ -724,15 +727,15 @@ export default function LandingPage() {
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
               }}
             >
-              <div className="absolute top-0 left-0 w-[200px] h-[200px] bg-[#6D28D9]/10 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute top-0 left-0 w-[200px] h-[200px] bg-[#4F46E5]/10 rounded-full blur-[80px] pointer-events-none" />
               <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
                 <Image
                   src="/tasksloth.png"
-                  alt="Outsource Tasks Sloth"
+                  alt="Deploy Projects"
                   width={280}
                   height={280}
                   className="object-contain relative z-10"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(136, 37, 245, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
+                  style={{ filter: 'drop-shadow(0 0 20px rgba(0, 242, 255, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
                 />
                 <motion.div
                   animate={{ y: [0, -6, 0] }}
@@ -747,14 +750,14 @@ export default function LandingPage() {
                     }}
                   >
                     <div className="flex items-center gap-1 text-zinc-600 font-medium mb-0.5">
-                      <ArrowRight size={8} className="rotate-[-45deg]" /> Deliver assignment
+                      <ArrowRight size={8} className="rotate-[-45deg]" /> Review App Logic
                     </div>
-                    <div className="text-right text-sm font-bold text-[#8825F5]">₹150</div>
+                    <div className="text-right text-sm font-bold text-[#4F46E5]">₹6,500</div>
                   </div>
                 </motion.div>
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Outsource Tasks</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">Get your work done quickly by trusted students.</p>
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Deploy Projects</h3>
+              <p className="text-sm text-zinc-400 leading-relaxed">Outsource mission-critical work to a verified talent pool.</p>
             </div>
 
             {/* Card 3: Switch to Marketplace */}
@@ -766,21 +769,21 @@ export default function LandingPage() {
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
               }}
             >
-              <div className="absolute bottom-0 right-0 w-[200px] h-[200px] bg-[#8825F5]/10 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute bottom-0 right-0 w-[200px] h-[200px] bg-[#00f2ff]/10 rounded-full blur-[80px] pointer-events-none" />
               <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
                 <Image
                   src="/marketsloth.png"
-                  alt="Marketplace Sloth"
+                  alt="Marketplace"
                   width={280}
                   height={280}
                   className="object-contain relative z-10"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(136, 37, 245, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
+                  style={{ filter: 'drop-shadow(0 0 20px rgba(0, 242, 255, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
                 />
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Buy & Sell Items</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed mb-4">Trade items easily within your campus on our sister site.</p>
-              <CrossDomainLink targetDomain="https://marketforme.in" redirectTo="/" className="inline-flex items-center gap-2 text-sm font-bold text-[#C084FC] hover:text-white transition-colors">
-                Go to MarketForMe <ArrowRight size={16} />
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Campus Market</h3>
+              <p className="text-sm text-zinc-400 leading-relaxed mb-4">Trade university essentials with local students safely.</p>
+              <CrossDomainLink targetDomain="https://marketforme.in" redirectTo="/" className="inline-flex items-center gap-2 text-sm font-bold text-[#00f2ff] hover:text-white transition-colors">
+                Go to Marketplace <ArrowRight size={16} />
               </CrossDomainLink>
             </div>
           </div>
@@ -796,7 +799,7 @@ export default function LandingPage() {
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
               }}
             >
-              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-[#8825F5]/30">
+              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-[#00f2ff]/30">
                 <Image src="/Doitforme_logo.png" alt="Avatar" width={32} height={32} className="object-cover" />
               </div>
               <AnimatePresence mode="wait">
@@ -965,9 +968,9 @@ export default function LandingPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {[
-            { title: "Campus Gigs", desc: "Post or complete gigs — from quick errands to freelance projects — all on campus.", icon: Briefcase },
+            { title: "Campus Gigs", desc: "Post or complete gigs — from quick errands to specialized tasks — all on campus.", icon: Briefcase },
             { title: "Zero Friction", desc: "No CVs. No Interviews. Just verified students getting things done.", icon: Zap },
-            { title: "Escrow Protected", desc: "Your money is held safely until the job is done or item is delivered.", icon: ShieldCheck },
+            { title: "Escrow Protected", desc: "Your money is held safely until the gig is done or item is delivered.", icon: ShieldCheck },
             { title: "Lightning Payouts", desc: "Instant transfers to UPI. No minimum withdrawal limits.", icon: Wallet }
           ].map((item, i) => (
             <div key={i} className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-brand-purple/50 transition-colors group active:scale-95 touch-manipulation">
@@ -1000,8 +1003,8 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* 2 Column Cards: Services & Marketplace */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-16">
+          {/* Pricing Card */}
+          <div className="max-w-xl mx-auto mb-16">
 
             {/* Card 1: Services */}
             <div className="relative rounded-3xl p-8 lg:p-10 border border-white/10 bg-[#0A0A0A] overflow-hidden group">
@@ -1026,73 +1029,28 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <CheckCircle2 size={18} className="text-green-500" />
-                    <span className="text-white font-medium">Complete tasks → Small service fee</span>
+                    <span className="text-white font-medium">Complete tasks → <span className="text-green-400">Free (Direct Connect)</span></span>
                   </div>
                 </div>
 
                 {/* Fee Ladder */}
                 <div className="bg-white/10 border border-white/10 rounded-2xl p-5 mb-8">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm text-zinc-400">First 10 jobs</span>
-                    <span className="font-bold text-white bg-white/10 px-3 py-1 rounded-full text-sm">10% fee</span>
+                    <span className="text-sm text-zinc-400">Direct Connect</span>
+                    <span className="font-bold text-green-400 bg-green-500/10 px-3 py-1 rounded-full text-sm">FREE</span>
                   </div>
                   <div className="w-full h-px bg-white/10 mb-3" />
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-[#C084FC] font-medium flex items-center gap-1"><Star size={14} className="fill-[#C084FC]" /> After 10 jobs</span>
-                    <span className="font-bold text-[#C084FC] bg-[#C084FC]/10 border border-[#C084FC]/20 px-3 py-1 rounded-full text-sm">7.5% fee</span>
+                    <span className="text-sm text-[#C084FC] font-medium flex items-center gap-1"><ShieldCheck size={14} /> Escrow Protection (₹500+)</span>
+                    <span className="font-bold text-[#C084FC] bg-[#C084FC]/10 border border-[#C084FC]/20 px-3 py-1 rounded-full text-sm">3% fee</span>
                   </div>
                 </div>
 
                 <div className="mt-auto bg-[#8825F5]/10 border border-[#8825F5]/20 rounded-xl py-3 px-4 text-center">
-                  <span className="text-sm font-bold text-[#C084FC]">We only earn when you earn.</span>
+                  <span className="text-sm font-bold text-[#C084FC]">Free to connect. 3% only when you use Escrow.</span>
                 </div>
               </div>
             </div>
-
-            {/* Card 2: MarketForMe Promo */}
-            <div className="relative rounded-3xl p-8 lg:p-10 border border-white/10 bg-[#0A0A0A] overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-bl from-[#EC4899]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-              <div className="relative z-10 flex flex-col h-full">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Marketplace</h3>
-                    <p className="text-zinc-400 font-medium">Buy, Sell & Rent Items</p>
-                  </div>
-                  <div className="-mt-8 -mr-4 md:-mr-6 shrink-0 relative z-20">
-                    <Image src="/marketsloth.png" alt="Marketplace Sloth" width={140} height={140} className="object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
-                  </div>
-                </div>
-
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 size={18} className="text-green-500" />
-                    <span className="text-white font-medium">Zero commission on all sales</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 size={18} className="text-green-500" />
-                    <span className="text-white font-medium">Rent items with escrow protection</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 size={18} className="text-green-500" />
-                    <span className="text-white font-medium">Verified campus-only community</span>
-                  </div>
-                </div>
-
-                <p className="text-sm text-zinc-400 leading-relaxed mb-8">
-                  Looking to buy or sell textbooks, electronics, or gear? Head over to our sister platform — MarketForMe — built exclusively for campus trading.
-                </p>
-
-                <CrossDomainLink
-                  targetDomain="https://marketforme.in"
-                  redirectTo="/"
-                  className="mt-auto w-full py-3 px-4 rounded-xl text-center text-sm font-bold text-white bg-gradient-to-r from-[#8825F5] to-[#6D28D9] hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                >
-                  Go to MarketForMe <ArrowRight size={16} />
-                </CrossDomainLink>
-              </div>
-            </div>
-
           </div>
 
           {/* Pricing Examples */}
@@ -1125,18 +1083,18 @@ export default function LandingPage() {
                 <div className="absolute top-0 left-0 w-1 h-full bg-[#8825F5]" />
                 <div className="flex justify-between items-end mb-4">
                   <div>
-                    <h4 className="text-white font-bold mb-1">Complete Task</h4>
+                    <h4 className="text-white font-bold mb-1">Complete Task (Escrow)</h4>
                     <span className="text-2xl font-black text-white">₹500</span>
                   </div>
                 </div>
                 <div className="space-y-2 pt-4 border-t border-white/10">
                   <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Platform fee (10%)</span>
-                    <span className="text-red-400 text-sm">-₹50</span>
+                    <span className="text-zinc-500 text-sm">Escrow fee (3%)</span>
+                    <span className="text-red-400 text-sm">-₹15</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-zinc-300 font-medium">You receive</span>
-                    <span className="text-[#C084FC] font-bold bg-[#8825F5]/20 px-2 py-1 rounded">₹450</span>
+                    <span className="text-[#C084FC] font-bold bg-[#8825F5]/20 px-2 py-1 rounded">₹485</span>
                   </div>
                 </div>
               </div>
@@ -1288,10 +1246,10 @@ export default function LandingPage() {
 // STATIC DATA (FAQs)
 // -------------------------------------------------------
 const studentFaq = [
-  { q: "What is the Hustle platform?", a: "Hustle is where users post short-term campus gigs. You can either post tasks to get help from your peers, or apply to complete tasks and earn money instantly." },
-  { q: "How do I get paid for my Hustle?", a: "Once your work is approved by the poster, funds are released immediately to your linked UPI or bank account. No minimum withdrawal limits." },
-  { q: "What if the poster doesn't pay?", a: "They already paid! Funds are held in Escrow before you start working. If you do the work properly, you are 100% guaranteed to get paid." },
-  { q: "What are the fees for Hustle?", a: "Posting tasks is totally FREE. For completing tasks, we charge a 10% platform fee (which drops to 7.5% after you complete 10 gigs)." },
+  { q: "What is the Hustle platform?", a: "Hustle is where users post short-term campus gigs. You can either post gigs to get help from your peers, or apply to complete them and earn money instantly as a Hustler." },
+  { q: "How do I get paid for my Hustle?", a: "Once your work is approved by the client, funds are released immediately to your linked UPI or bank account. No minimum withdrawal limits." },
+  { q: "What if the client doesn't pay?", a: "They already paid! Funds are held in Escrow before you start working. If you do the work properly, you are 100% guaranteed to get paid." },
+  { q: "What are the fees for Hustling?", a: "Posting and completing gigs is completely FREE with Direct Connect mode. If you opt for Escrow Protection (available for gigs ₹500 and above), a small 3% fee is deducted from your earnings. That's it — no hidden charges." },
 ];
 
 const posterFaq = [

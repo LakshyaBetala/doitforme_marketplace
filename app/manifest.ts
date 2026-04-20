@@ -36,7 +36,7 @@ export default function manifest(): MetadataRoute.Manifest {
             {
                 name: 'Post a Hustle',
                 url: '/post',
-                description: 'Post a task and find student freelancers',
+                description: 'Post a task and find verified student hustlers',
             },
         ],
     };

@@ -96,11 +96,11 @@ export async function POST(req: Request) {
 
         if (updateAppError) throw updateAppError;
 
-        // 2. UPDATE GIG -> ASSIGNED (Lock it)
+        // 2. UPDATE GIG -> ASSIGNED or AWAITING_FUNDS
         const gigUpdateData: any = {
-            status: 'assigned',
+            status: application.payment_preference === 'ESCROW' ? 'AWAITING_FUNDS' : 'assigned',
             assigned_worker_id: application.worker_id,
-            escrow_status: 'HELD' // Conceptual hold, even if amount is 0
+            escrow_status: application.payment_preference === 'ESCROW' ? 'PENDING_FUNDS' : 'NONE'
         };
 
         // For SELL type: store handshake_code directly on gig (no escrow payment)
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
             original_amount: application.negotiated_price || gig.price,
             amount_held: 0, // No real money held yet for P2P/Cash
             status: 'HELD',
-            escrow_category: 'PROJECT'
+            escrow_category: 'GIG'
         };
 
         // For non-SELL types, store handshake in escrow too
@@ -154,6 +154,31 @@ export async function POST(req: Request) {
             console.error("Telegram notification failed:", e);
         }
         // ---------------------------------------
+
+        // --- PHONE/WHATSAPP AUTO-EXCHANGE (System Message) ---
+        try {
+            const [posterData, workerData] = await Promise.all([
+                supabaseAdmin.from('users').select('name, phone').eq('id', user.id).single(),
+                supabaseAdmin.from('users').select('name, phone').eq('id', application.worker_id).single(),
+            ]);
+
+            const posterPhone = posterData.data?.phone || 'Not provided';
+            const workerPhone = workerData.data?.phone || 'Not provided';
+            const posterName = posterData.data?.name || 'Poster';
+            const workerName = workerData.data?.name || 'Hustler';
+
+            await supabaseAdmin.from('messages').insert({
+                gig_id: gig.id,
+                sender_id: user.id,
+                receiver_id: application.worker_id,
+                content: `🔓 Connection Established!\n\n${posterName}: ${posterPhone}\n${workerName}: ${workerPhone}\n\nYou can now contact each other directly via WhatsApp or Phone.`,
+                message_type: 'system',
+                is_pre_agreement: false
+            });
+        } catch (e) {
+            console.error("Phone exchange system message failed:", e);
+        }
+        // -----------------------------------------------
 
         return NextResponse.json({ success: true, gigId: gig.id, workerId: application.worker_id });
 

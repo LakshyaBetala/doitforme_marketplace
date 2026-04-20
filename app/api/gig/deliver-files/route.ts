@@ -88,8 +88,8 @@ export async function POST(req: Request) {
       uploadedPaths.push(path);
     }
 
-    // 12-hour auto-release window (poster gets 12h to review or it auto-accepts)
-    const autoReleaseTime = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
+    // 24-hour auto-release window (poster gets 24h to review or it auto-accepts)
+    const autoReleaseTime = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
     const { error: updateError } = await supabaseAdmin
       .from("gigs")
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
         const { sendTelegramAlert } = await import("@/lib/telegram");
         await sendTelegramAlert(
           poster.telegram_chat_id,
-          `📦 <b>Work Delivered!</b>\nThe worker has submitted their work for <i>${gig.title}</i>.\nYou have <b>12 hours</b> to review and approve. If no action is taken, payment will be auto-released.\n<a href="https://doitforme.in/gig/${gigId}">Review Now →</a>`
+          `📦 <b>Work Delivered!</b>\nThe worker has submitted their work for <i>${gig.title}</i>.\nYou have <b>24 hours</b> to review and approve. If no action is taken, payment will be auto-released.\n<a href="https://doitforme.in/gig/${gigId}">Review Now →</a>`
         );
       }
     } catch (e) {

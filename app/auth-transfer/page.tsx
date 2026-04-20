@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-export default function AuthTransferPage() {
+function AuthTransferContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -71,5 +71,17 @@ export default function AuthTransferPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function AuthTransferPage() {
+  return (
+    <Suspense fallback={
+       <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center">
+         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#8825F5]"></div>
+       </div>
+    }>
+      <AuthTransferContent />
+    </Suspense>
   );
 }

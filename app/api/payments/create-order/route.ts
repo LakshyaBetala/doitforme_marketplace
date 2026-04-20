@@ -93,27 +93,22 @@ export async function POST(req: Request) {
       deposit = Number(gig.security_deposit) || 0;
     }
 
-    // Platform Fee Logic
-    let platformFee = 0; // The deduction taken from the Seller/Worker
-    let renterFee = 0;   // The upfront fee added to the Subtotal for the Renter
+    // Platform Fee Logic — Flat 3% escrow fee deducted from worker/seller payout
+    // Poster/Buyer pays exact listed price. Worker/Seller receives 97%.
+    let platformFee = 0;
+    let renterFee = 0;
     let netWorkerPay = 0;
-    let discountApplied = false;
+    const discountApplied = false;
 
     if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
-      // Rental Fee: 1% added to the Upfront Renter Price, 2% deducted from the Owner Output
+      // Rental: 1% added to renter upfront, 3% deducted from owner
       renterFee = Math.ceil((price + deposit) * 0.01);
-      platformFee = Math.ceil(price * 0.02);
+      platformFee = Math.ceil(price * 0.03);
       netWorkerPay = price - platformFee;
     } else {
-      // Hustle/Sell Tiered: 7.5% if jobs > 10, else 10%
-      // This is purely a deduction from Net Pay. The buyer DOES NOT pay this fee upfront.
+      // Hustle / Sell: Flat 3% deducted from worker/seller payout
       renterFee = 0;
-      if (jobsCompleted > 10) {
-        platformFee = Math.ceil(price * 0.075);
-        discountApplied = true;
-      } else {
-        platformFee = Math.ceil(price * 0.10);
-      }
+      platformFee = Math.ceil(price * 0.03);
       netWorkerPay = price - platformFee;
     }
 
