@@ -18,16 +18,18 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 1. TERMINOLOGY NORMALIZATION (PROJECT -> GIG)
 -- ==========================================
 
--- 1.1 Update Escrow Category Constraints
+-- 1.1 Drop existing constraint to allow data modification
 ALTER TABLE public.escrow DROP CONSTRAINT IF EXISTS escrow_escrow_category_check;
-ALTER TABLE public.escrow ADD CONSTRAINT escrow_escrow_category_check 
-  CHECK (escrow_category = ANY (ARRAY['GIG'::text, 'RENTAL_DEPOSIT'::text, 'MARKETPLACE'::text]));
 
--- 1.2 Update Escrow Defaults
+-- 1.2 Data Migration: Update legacy names to the new standard FIRST
+UPDATE public.escrow SET escrow_category = 'GIG' WHERE escrow_category = 'PROJECT';
+
+-- 1.3 Update Escrow column defaults
 ALTER TABLE public.escrow ALTER COLUMN escrow_category SET DEFAULT 'GIG'::text;
 
--- 1.3 Migrate Existing Data
-UPDATE public.escrow SET escrow_category = 'GIG' WHERE escrow_category = 'PROJECT';
+-- 1.4 Add the new constraint (this will now pass as data is updated)
+ALTER TABLE public.escrow ADD CONSTRAINT escrow_escrow_category_check 
+  CHECK (escrow_category = ANY (ARRAY['GIG'::text, 'RENTAL_DEPOSIT'::text, 'MARKETPLACE'::text]));
 
 -- ==========================================
 -- 2. PERFORMANCE OPTIMIZATION (INDICES)
