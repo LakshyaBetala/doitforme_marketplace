@@ -172,7 +172,7 @@ export default function CompanyOnboardingPage() {
             <div className="hidden lg:flex flex-col justify-between w-1/3 bg-[#0a0a0a] border-r border-[#222] p-12">
                 <div className="space-y-12">
                     <div className="flex items-center gap-4">
-                        <Image src="/Doitforme_logo.png" alt="Sloth Logo" width={40} height={40} className="invert" />
+                        <Image src="/Doitforme_logo.png" alt="Sloth Logo" width={40} height={40} className="object-contain" />
                         <div className="flex flex-col">
                             <span className="text-xl font-black tracking-tighter leading-none">DoItForMe</span>
                             <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.3em]">Hustle Network</span>
@@ -207,7 +207,7 @@ export default function CompanyOnboardingPage() {
                             <ArrowLeft size={14} /> Back
                         </button>
                         <div className="flex items-center gap-2">
-                            <Image src="/Doitforme_logo.png" alt="Sloth Logo" width={20} height={20} className="invert opacity-50" />
+                            <Image src="/Doitforme_logo.png" alt="Sloth Logo" width={20} height={20} className="object-contain opacity-50" />
                             <span className="text-[10px] font-bold text-[#666] uppercase tracking-widest leading-none">DoItForMe</span>
                             <span className="text-[10px] font-bold text-[#333] uppercase tracking-widest border border-[#333] px-2 py-1 ml-2">Secure Hub</span>
                         </div>
