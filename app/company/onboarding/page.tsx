@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowRight, ArrowLeft, Building2, CheckCircle, Image as ImageIcon, X, UploadCloud } from "lucide-react";
+import Link from "next/link";
+import { Loader2, ArrowRight, ArrowLeft, Building2, CheckCircle, Image as ImageIcon, X, UploadCloud, Users, ShieldCheck, Zap, Clock } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 
@@ -168,25 +169,84 @@ export default function CompanyOnboardingPage() {
 
     return (
         <div className="flex bg-[#050505] min-h-[100dvh] text-white font-sans selection:bg-white selection:text-black">
-            {/* Left Side: Brand Image/Stark Graphic */}
-            <div className="hidden lg:flex flex-col justify-between w-1/3 bg-[#0a0a0a] border-r border-[#222] p-12">
-                <div className="space-y-12">
-                    <div className="flex items-center gap-4">
-                        <Image src="/Doitforme_logo.png" alt="Sloth Logo" width={40} height={40} className="object-contain" />
+            {/* Left Side: Persuasive Value Pitch */}
+            <div className="hidden lg:flex flex-col justify-between w-[42%] bg-[#0a0a0a] border-r border-[#222] p-12 relative overflow-hidden">
+                {/* Subtle background glow */}
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#00f2ff]/5 rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#4F46E5]/5 rounded-full blur-[100px] pointer-events-none" />
+
+                <div className="relative z-10 space-y-10">
+                    {/* Brand */}
+                    <Link href="/" className="flex items-center gap-4 group">
+                        <Image src="/Doitforme_logo.png" alt="DoItForMe" width={44} height={44} className="object-contain transition-transform group-hover:rotate-12" />
                         <div className="flex flex-col">
                             <span className="text-xl font-black tracking-tighter leading-none">DoItForMe</span>
-                            <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.3em]">Hustle Network</span>
+                            <span className="text-[10px] font-bold text-[#555] uppercase tracking-[0.3em]">Enterprise</span>
                         </div>
+                    </Link>
+
+                    {/* Headline */}
+                    <div>
+                        <h2 className="text-[2.5rem] font-black leading-[1.05] tracking-tight mb-5">
+                            Access India&apos;s<br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] to-[#4F46E5]">Largest Student</span><br />
+                            Talent Pool.
+                        </h2>
+                        <p className="text-[#777] text-sm leading-relaxed max-w-sm">
+                            Post tasks. Get verified student applications within hours. Pay only for completed work. Zero recruitment overhead.
+                        </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <Building2 size={20} className="text-white opacity-50" />
-                        <span className="text-xs font-black tracking-tight text-[#888] uppercase tracking-[0.2em]">B2B.Registration</span>
+                    {/* Value Props */}
+                    <div className="space-y-5">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 bg-[#00f2ff]/10 border border-[#00f2ff]/20 flex items-center justify-center shrink-0">
+                                <Zap size={18} className="text-[#00f2ff]" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-white mb-1">Hire in Hours, Not Weeks</h4>
+                                <p className="text-[11px] text-[#666] leading-relaxed">Post a task, receive applications from verified students, and deploy talent the same day. No agencies, no job boards.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 bg-[#4F46E5]/10 border border-[#4F46E5]/20 flex items-center justify-center shrink-0">
+                                <Users size={18} className="text-[#818CF8]" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-white mb-1">Scale: 1 to 50 Workers Per Task</h4>
+                                <p className="text-[11px] text-[#666] leading-relaxed">Need 1 developer or 50 campus ambassadors? Deploy at any scale with a single post. Perfect for campaigns and sprints.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
+                                <ShieldCheck size={18} className="text-green-400" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-white mb-1">3% Escrow Protection</h4>
+                                <p className="text-[11px] text-[#666] leading-relaxed">Funds are held securely and released only when the work is delivered and accepted. Risk-free hiring with verified students.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <h2 className="text-4xl font-black leading-none tracking-tighter mb-4">Scale with<br />Student<br />Talent.</h2>
-                    <p className="text-[#666] text-sm">Strictly verified corporate entities only.</p>
+
+                {/* Trust Footer */}
+                <div className="relative z-10 pt-8 border-t border-[#222]">
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <div className="text-2xl font-black text-white">50+</div>
+                            <div className="text-[9px] font-bold text-[#555] uppercase tracking-widest">Universities</div>
+                        </div>
+                        <div className="w-px h-8 bg-[#222]" />
+                        <div>
+                            <div className="text-2xl font-black text-white">24hr</div>
+                            <div className="text-[9px] font-bold text-[#555] uppercase tracking-widest">Avg. First Apply</div>
+                        </div>
+                        <div className="w-px h-8 bg-[#222]" />
+                        <div>
+                            <div className="text-2xl font-black text-white">₹0</div>
+                            <div className="text-[9px] font-bold text-[#555] uppercase tracking-widest">Signup Fee</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -198,8 +258,11 @@ export default function CompanyOnboardingPage() {
                     <div className="mb-10 flex items-center justify-between">
                         <button
                             onClick={() => {
-                                if (step === "otp" || step === "conflict") setStep("form");
-                                else router.back();
+                                if (step === "otp" || step === "conflict") {
+                                    setStep("form");
+                                } else {
+                                    router.push("/");
+                                }
                                 setError("");
                             }}
                             className="text-[#666] hover:text-white transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
@@ -207,15 +270,33 @@ export default function CompanyOnboardingPage() {
                             <ArrowLeft size={14} /> Back
                         </button>
                         <div className="flex items-center gap-2">
-                            <Image src="/Doitforme_logo.png" alt="Sloth Logo" width={20} height={20} className="object-contain opacity-50" />
+                            <Image src="/Doitforme_logo.png" alt="DoItForMe" width={20} height={20} className="object-contain opacity-50" />
                             <span className="text-[10px] font-bold text-[#666] uppercase tracking-widest leading-none">DoItForMe</span>
-                            <span className="text-[10px] font-bold text-[#333] uppercase tracking-widest border border-[#333] px-2 py-1 ml-2">Secure Hub</span>
+                        </div>
+                    </div>
+
+                    {/* Mobile-only value pitch (visible when left panel is hidden) */}
+                    <div className="lg:hidden mb-8 p-5 bg-[#0a0a0a] border border-[#222]">
+                        <h2 className="text-lg font-black tracking-tight mb-2">Why Register?</h2>
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-[11px] text-[#888]">
+                                <Zap size={12} className="text-[#00f2ff] shrink-0" />
+                                <span>Post tasks, get verified student applications in hours</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-[#888]">
+                                <Users size={12} className="text-[#818CF8] shrink-0" />
+                                <span>Deploy 1–50 student workers per task</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-[11px] text-[#888]">
+                                <ShieldCheck size={12} className="text-green-400 shrink-0" />
+                                <span>3% escrow protection — pay only for completed work</span>
+                            </div>
                         </div>
                     </div>
 
                     <div className="mb-12">
-                        <h1 className="text-3xl font-black tracking-tight mb-2">Establish Profile</h1>
-                        <p className="text-[#888] text-sm">Please provide accurate organizational details.</p>
+                        <h1 className="text-3xl font-black tracking-tight mb-2">Register Your Company</h1>
+                        <p className="text-[#888] text-sm">Start hiring verified student talent. Free to register.</p>
                     </div>
 
                     {success ? (
@@ -224,7 +305,7 @@ export default function CompanyOnboardingPage() {
                                 <CheckCircle className="w-8 h-8 text-black" />
                             </div>
                             <h2 className="text-2xl font-black mb-2 text-white">Application Received</h2>
-                            <p className="text-[#888] text-sm mb-6">Your organizational profile has been submitted for manual review by our administrators.</p>
+                            <p className="text-[#888] text-sm mb-6">Your company profile has been submitted for review. Our team will verify your credentials and activate your account within 24 hours.</p>
                             <Loader2 className="w-6 h-6 animate-spin text-white opacity-50" />
                         </div>
                     ) : (
@@ -233,7 +314,7 @@ export default function CompanyOnboardingPage() {
                                 <form onSubmit={handleSubmit} className="space-y-6">
                                     {/* Logo Upload Dropzone */}
                                     <div>
-                                        <label className={labelClass}>Company Identity (Logo)</label>
+                                        <label className={labelClass}>Company Logo</label>
                                         <div className="flex items-center gap-4">
                                             <div className="w-20 h-20 bg-[#111] border border-[#333] flex items-center justify-center overflow-hidden shrink-0">
                                                 {logoPreview ? (
@@ -274,18 +355,18 @@ export default function CompanyOnboardingPage() {
                                     </div>
 
                                     <div>
-                                        <label className={labelClass}>Corporate Email</label>
+                                        <label className={labelClass}>Business Email</label>
                                         <input type="email" className={inputClass} value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} disabled={loading} placeholder="founder@acme.com" />
                                     </div>
 
                                     <div>
-                                        <label className={labelClass}>Direct Contact Phone</label>
+                                        <label className={labelClass}>Contact Phone</label>
                                         <input type="tel" className={inputClass} value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} disabled={loading} placeholder="+91 9876543210" />
                                     </div>
 
                                     <div>
-                                        <label className={labelClass}>Organizational Overview</label>
-                                        <textarea className={`${inputClass} resize-none h-24`} value={companyDetails} onChange={e => setCompanyDetails(e.target.value)} disabled={loading} placeholder="Briefly describe what your organization does and what talent you seek..." />
+                                        <label className={labelClass}>What talent are you looking for?</label>
+                                        <textarea className={`${inputClass} resize-none h-24`} value={companyDetails} onChange={e => setCompanyDetails(e.target.value)} disabled={loading} placeholder="E.g. We need campus ambassadors for our app launch across 10 universities..." />
                                     </div>
 
                                     {error && (
@@ -299,8 +380,9 @@ export default function CompanyOnboardingPage() {
                                         disabled={loading}
                                         className="w-full bg-white text-black p-4 text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <>Request Verification <ArrowRight size={16} /></>}
+                                        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <>Register & Get Verified <ArrowRight size={16} /></>}
                                     </button>
+                                    <p className="text-[10px] text-[#444] text-center">Free registration. No credit card required. Admin approval within 24hrs.</p>
                                 </form>
                             )}
 
@@ -314,7 +396,7 @@ export default function CompanyOnboardingPage() {
                                             The email <strong>{companyEmail}</strong> is already connected to the student profile <strong>{existingUserName}</strong>.
                                         </p>
                                         <p className="text-[#888] text-sm mt-2 leading-relaxed">
-                                            Proceeding will permanently upgrade this account to a <strong>Corporate Entity</strong>. Student features will be disabled.
+                                            Proceeding will permanently upgrade this account to a <strong>Company Account</strong>. Student features will be disabled.
                                         </p>
                                     </div>
 
@@ -333,9 +415,9 @@ export default function CompanyOnboardingPage() {
                             {step === "otp" && (
                                 <div className="space-y-6 animate-in slide-in-from-right-8 fade-in">
                                     <div className="p-8 bg-[#111] border border-[#333] text-center">
-                                        <h2 className="text-2xl font-black tracking-tight mb-2">Verification Sent</h2>
+                                        <h2 className="text-2xl font-black tracking-tight mb-2">Verify Your Email</h2>
                                         <p className="text-[#888] text-sm mb-8">
-                                            Enter the 6-digit access code sent to <strong className="text-white">{companyEmail}</strong>
+                                            Enter the 6-digit code sent to <strong className="text-white">{companyEmail}</strong>
                                         </p>
 
                                         <form onSubmit={handleVerifyOtp} className="space-y-6">
@@ -358,7 +440,7 @@ export default function CompanyOnboardingPage() {
                                                 disabled={loading || otp.length !== 6}
                                                 className="w-full bg-white text-black p-4 text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
                                             >
-                                                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Verify Identity"}
+                                                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Verify & Complete"}
                                             </button>
                                         </form>
                                     </div>

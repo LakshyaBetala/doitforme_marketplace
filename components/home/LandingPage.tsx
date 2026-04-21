@@ -368,7 +368,7 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-3">
             <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">Process</button>
             <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">FAQ</button>
-            <Link href="/company/onboarding" className="text-sm font-bold text-[#00f2ff] hover:text-white transition-colors px-4 py-2 rounded-full bg-[#00f2ff]/10 border border-[#00f2ff]/30 hover:bg-[#00f2ff]/30 shadow-[0_0_10px_rgba(0,242,255,0.2)]">Corporate Hub</Link>
+            <Link href="/company/onboarding" className="text-sm font-bold text-[#00f2ff] hover:text-white transition-colors px-4 py-2 rounded-full bg-[#00f2ff]/10 border border-[#00f2ff]/30 hover:bg-[#00f2ff]/30 shadow-[0_0_10px_rgba(0,242,255,0.2)]">Hire Talent</Link>
             
             {(userEmail === "betala911@gmail.com" || userEmail === "doitforme.in@gmail.com") && (
               <Link href="/admin" className="text-sm font-bold text-red-500 hover:text-white transition-colors px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]">Access Admin</Link>
@@ -376,7 +376,7 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:ml-4">
-            <Link href="/company/onboarding" className="md:hidden text-xs font-bold text-[#00f2ff] text-center border border-[#00f2ff]/30 py-2 rounded-full mb-1 bg-[#00f2ff]/10 px-4">Corporate Hub</Link>
+            <Link href="/company/onboarding" className="md:hidden text-xs font-bold text-[#00f2ff] text-center border border-[#00f2ff]/30 py-2 rounded-full mb-1 bg-[#00f2ff]/10 px-4">Hire Talent</Link>
             <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 w-full md:w-auto">
               Login
             </button>

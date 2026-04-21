@@ -184,7 +184,7 @@ export default function CompanyPostTask() {
             <Image src="/Doitforme_logo.png" alt="DoItForMe" width={24} height={24} className="object-contain opacity-50" />
             <div className="flex flex-col">
               <span className="font-black text-xs tracking-tighter text-white leading-none">DoItForMe</span>
-              <span className="text-[9px] font-bold text-[#444] uppercase tracking-[0.2em]">Corporate Hub</span>
+              <span className="text-[9px] font-bold text-[#444] uppercase tracking-[0.2em]">Enterprise</span>
             </div>
           </div>
         </div>
