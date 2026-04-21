@@ -164,13 +164,13 @@ export default function CompanyOnboardingPage() {
         }
     };
 
-    const inputClass = "w-full p-4 bg-[#0a0a0a] border border-[#333] text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all text-sm font-medium rounded-none";
-    const labelClass = "block text-[10px] font-bold text-[#888] uppercase tracking-widest mb-2";
+    const inputClass = "w-full px-5 py-4 bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all text-sm font-medium rounded-2xl shadow-inner shadow-black/20";
+    const labelClass = "block text-xs font-medium text-zinc-400 mb-2 pl-1";
 
     return (
         <div className="flex bg-[#050505] min-h-[100dvh] text-white font-sans selection:bg-white selection:text-black">
             {/* Left Side: Persuasive Value Pitch */}
-            <div className="hidden lg:flex flex-col justify-between w-[42%] bg-[#0a0a0a] border-r border-[#222] p-12 relative overflow-hidden">
+            <div className="hidden lg:flex flex-col justify-between w-[45%] bg-[#050505] p-16 relative overflow-hidden">
                 {/* Subtle background glow */}
                 <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#00f2ff]/5 rounded-full blur-[120px] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#4F46E5]/5 rounded-full blur-[100px] pointer-events-none" />
@@ -180,20 +180,19 @@ export default function CompanyOnboardingPage() {
                     <Link href="/" className="flex items-center gap-4 group">
                         <Image src="/Doitforme_logo.png" alt="DoItForMe" width={44} height={44} className="object-contain transition-transform group-hover:rotate-12" />
                         <div className="flex flex-col">
-                            <span className="text-xl font-black tracking-tighter leading-none">DoItForMe</span>
-                            <span className="text-[10px] font-bold text-[#555] uppercase tracking-[0.3em]">Enterprise</span>
+                            <span className="text-2xl font-bold tracking-tight leading-none text-white">DoItForMe</span>
+                            <span className="text-[11px] font-medium text-zinc-500 mt-1">Enterprise Registration</span>
                         </div>
                     </Link>
 
                     {/* Headline */}
                     <div>
-                        <h2 className="text-[2.5rem] font-black leading-[1.05] tracking-tight mb-5">
-                            Access India&apos;s<br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] to-[#4F46E5]">Largest Student</span><br />
-                            Talent Pool.
+                        <h2 className="text-[2.75rem] font-medium leading-[1.1] tracking-tight mb-6">
+                            Tap into India&apos;s most <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 font-bold">verified student network.</span>
                         </h2>
-                        <p className="text-[#777] text-sm leading-relaxed max-w-sm">
-                            Post tasks. Get verified student applications within hours. Pay only for completed work. Zero recruitment overhead.
+                        <p className="text-zinc-400 text-[15px] leading-relaxed max-w-md font-medium">
+                            Hire 1 to 50 vetted student workers instantly. Pay seamlessly via 3% Escrow protection only when the task is delivered.
                         </p>
                     </div>
 
@@ -265,9 +264,9 @@ export default function CompanyOnboardingPage() {
                                 }
                                 setError("");
                             }}
-                            className="text-[#666] hover:text-white transition-colors flex items-center gap-2 text-xs font-bold uppercase tracking-widest"
+                            className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2 text-sm font-medium"
                         >
-                            <ArrowLeft size={14} /> Back
+                            <ArrowLeft size={16} /> Return to Home
                         </button>
                         <div className="flex items-center gap-2">
                             <Image src="/Doitforme_logo.png" alt="DoItForMe" width={20} height={20} className="object-contain opacity-50" />
@@ -300,7 +299,7 @@ export default function CompanyOnboardingPage() {
                     </div>
 
                     {success ? (
-                        <div className="bg-[#111] border border-[#333] p-12 text-center flex flex-col items-center">
+                        <div className="bg-white/[0.03] backdrop-blur-xl border border-white/10 p-12 rounded-3xl text-center flex flex-col items-center">
                             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-6">
                                 <CheckCircle className="w-8 h-8 text-black" />
                             </div>
@@ -315,8 +314,8 @@ export default function CompanyOnboardingPage() {
                                     {/* Logo Upload Dropzone */}
                                     <div>
                                         <label className={labelClass}>Company Logo</label>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-20 h-20 bg-[#111] border border-[#333] flex items-center justify-center overflow-hidden shrink-0">
+                                        <div className="flex items-center gap-6">
+                                            <div className="w-24 h-24 bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden rounded-2xl shrink-0 shadow-inner shadow-black/20">
                                                 {logoPreview ? (
                                                     <Image src={logoPreview} alt="Logo" width={80} height={80} className="object-cover w-full h-full" />
                                                 ) : (
@@ -328,11 +327,11 @@ export default function CompanyOnboardingPage() {
                                                 <button
                                                     type="button"
                                                     onClick={() => fileInputRef.current?.click()}
-                                                    className="px-4 py-3 bg-[#111] hover:bg-[#222] border border-[#333] text-xs font-bold uppercase tracking-widest transition-colors flex items-center gap-2 w-full justify-center"
+                                                    className="px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors flex items-center gap-2 w-full justify-center rounded-2xl"
                                                 >
-                                                    {logoPreview ? "Change Logo" : "Upload Logo"} <UploadCloud size={14} />
+                                                    {logoPreview ? "Change Logo" : "Upload High-Res Logo"} <UploadCloud size={16} />
                                                 </button>
-                                                <p className="text-[10px] text-[#666] mt-2">Square format recommended. Max 2MB.</p>
+                                                <p className="text-[11px] text-zinc-500 mt-3 pl-1">Square format (1:1) required. Max size 2MB.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -370,7 +369,7 @@ export default function CompanyOnboardingPage() {
                                     </div>
 
                                     {error && (
-                                        <div className="p-4 bg-red-950/30 border border-red-500/50 text-red-500 text-xs font-bold uppercase tracking-widest text-center">
+                                        <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium text-center rounded-2xl">
                                             {error}
                                         </div>
                                     )}
@@ -378,19 +377,19 @@ export default function CompanyOnboardingPage() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full bg-white text-black p-4 text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                        className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition-all rounded-full disabled:opacity-50 flex items-center justify-center gap-2 mt-8 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
                                     >
-                                        {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <>Register & Get Verified <ArrowRight size={16} /></>}
+                                        {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <>Complete Registration <ArrowRight size={18} /></>}
                                     </button>
-                                    <p className="text-[10px] text-[#444] text-center">Free registration. No credit card required. Admin approval within 24hrs.</p>
+                                    <p className="text-xs text-zinc-500 text-center font-medium mt-4">No credit card required. Fast verification within 24 hours.</p>
                                 </form>
                             )}
 
                             {step === "conflict" && (
                                 <div className="space-y-6 animate-in slide-in-from-right-8 fade-in">
-                                    <div className="p-6 bg-[#111] border border-[#333]">
-                                        <h3 className="text-xl font-black mb-2 flex items-center gap-2 border-b border-[#333] pb-4">
-                                            Account Collision
+                                    <div className="p-8 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md">
+                                        <h3 className="text-xl font-bold mb-2 flex items-center gap-2 border-b border-white/5 pb-5">
+                                            Account Collision Detected
                                         </h3>
                                         <p className="text-[#888] text-sm mt-4 leading-relaxed">
                                             The email <strong>{companyEmail}</strong> is already connected to the student profile <strong>{existingUserName}</strong>.
@@ -405,17 +404,17 @@ export default function CompanyOnboardingPage() {
                                     <button
                                         onClick={handleConflictProceed}
                                         disabled={loading}
-                                        className="w-full bg-white text-black p-4 text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                        className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition-all rounded-full disabled:opacity-50 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
                                     >
-                                        {loading ? <Loader2 className="animate-spin" /> : "Acknowledge & Proceed"}
+                                        {loading ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "Acknowledge & Upgrade Account"}
                                     </button>
                                 </div>
                             )}
 
                             {step === "otp" && (
                                 <div className="space-y-6 animate-in slide-in-from-right-8 fade-in">
-                                    <div className="p-8 bg-[#111] border border-[#333] text-center">
-                                        <h2 className="text-2xl font-black tracking-tight mb-2">Verify Your Email</h2>
+                                    <div className="p-10 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md text-center">
+                                        <h2 className="text-2xl font-bold tracking-tight mb-2">Check Your Email</h2>
                                         <p className="text-[#888] text-sm mb-8">
                                             Enter the 6-digit code sent to <strong className="text-white">{companyEmail}</strong>
                                         </p>
@@ -428,7 +427,7 @@ export default function CompanyOnboardingPage() {
                                                     placeholder="• • • • • •"
                                                     value={otp}
                                                     onChange={(e) => setOtp(e.target.value)}
-                                                    className="w-full bg-[#050505] border border-[#333] p-4 text-center text-3xl font-mono tracking-[1em] focus:border-white focus:outline-none transition-colors"
+                                                    className="w-full bg-black/50 border border-white/10 p-5 rounded-2xl text-center text-3xl font-mono tracking-[1em] focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 transition-colors"
                                                     disabled={loading}
                                                 />
                                             </div>
@@ -438,9 +437,9 @@ export default function CompanyOnboardingPage() {
                                             <button
                                                 type="submit"
                                                 disabled={loading || otp.length !== 6}
-                                                className="w-full bg-white text-black p-4 text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                                                className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition-all rounded-full disabled:opacity-50 flex justify-center items-center gap-2 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
                                             >
-                                                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Verify & Complete"}
+                                                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Verify Code"}
                                             </button>
                                         </form>
                                     </div>

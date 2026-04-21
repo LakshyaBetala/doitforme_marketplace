@@ -973,9 +973,9 @@ export default function LandingPage() {
             { title: "Escrow Protected", desc: "Your money is held safely until the gig is done or item is delivered.", icon: ShieldCheck },
             { title: "Lightning Payouts", desc: "Instant transfers to UPI. No minimum withdrawal limits.", icon: Wallet }
           ].map((item, i) => (
-            <div key={i} className="p-6 rounded-2xl bg-[#0A0A0A] border border-white/10 hover:border-brand-purple/50 transition-colors group active:scale-95 touch-manipulation">
-              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform">
-                <item.icon size={24} />
+            <div key={i} className="p-8 rounded-[32px] bg-white/[0.03] backdrop-blur-md border border-white/10 hover:bg-white/[0.05] transition-all duration-300 group active:scale-95 touch-manipulation hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
+              <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform shadow-inner shadow-black/30">
+                <item.icon size={28} className="drop-shadow-md" />
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
               <p className="text-sm text-zinc-500 leading-relaxed">{item.desc}</p>
@@ -1007,7 +1007,7 @@ export default function LandingPage() {
           <div className="max-w-xl mx-auto mb-16">
 
             {/* Card 1: Services */}
-            <div className="relative rounded-3xl p-8 lg:p-10 border border-white/10 bg-[#0A0A0A] overflow-hidden group">
+            <div className="relative rounded-[40px] p-8 lg:p-12 border border-white/10 bg-white/[0.02] backdrop-blur-3xl overflow-hidden group shadow-[0_8px_40px_rgb(0,0,0,0.5)]">
               <div className="absolute inset-0 bg-gradient-to-br from-[#8825F5]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
               <div className="relative z-10 flex flex-col h-full">
@@ -1058,8 +1058,8 @@ export default function LandingPage() {
             <h3 className="text-center font-mono text-zinc-500 uppercase tracking-widest text-sm mb-6">Real Examples</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
               {/* Example 1 - Sell Book */}
-              <div className="bg-[#121212] border border-white/10 rounded-2xl p-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-green-500" />
+              <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-[32px] p-8 relative overflow-hidden shadow-lg shadow-black/20">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500/80 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <h4 className="text-white font-bold mb-1">Sell Book</h4>
@@ -1079,8 +1079,8 @@ export default function LandingPage() {
               </div>
 
               {/* Example 2 - Complete Task */}
-              <div className="bg-[#121212] border border-white/10 rounded-2xl p-6 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1 h-full bg-[#8825F5]" />
+              <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-[32px] p-8 relative overflow-hidden shadow-lg shadow-black/20">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500/80 shadow-[0_0_12px_rgba(99,102,241,0.8)]" />
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <h4 className="text-white font-bold mb-1">Complete Task (Escrow)</h4>
@@ -1180,8 +1180,8 @@ export default function LandingPage() {
 
         <div className="space-y-3 md:space-y-4">
           {(faqTab === "students" ? studentFaq : posterFaq).map((f, i) => (
-            <div key={i} className="border border-white/5 rounded-xl bg-[#0A0A0A] overflow-hidden">
-              <button onClick={() => toggleFAQ(i)} className="w-full flex items-center justify-between p-5 md:p-6 text-left hover:bg-white/10 transition-colors touch-manipulation active:bg-white/[0.02]">
+            <div key={i} className="border border-white/10 rounded-[24px] bg-white/[0.02] backdrop-blur-md overflow-hidden shadow-lg shadow-black/10">
+              <button onClick={() => toggleFAQ(i)} className="w-full flex items-center justify-between p-6 md:p-8 text-left hover:bg-white/[0.04] transition-colors touch-manipulation">
                 <span className="font-medium text-white text-sm md:text-base pr-4">{f.q}</span>
                 <ChevronDown size={18} className={`text-zinc-500 transition-transform duration-300 shrink-0 ${openFaq === i ? "rotate-180" : ""}`} />
               </button>
@@ -1202,7 +1202,7 @@ export default function LandingPage() {
               <div className="relative w-6 h-6 grayscale opacity-50"><Image src="/Doitforme_logo.png" alt="logo" fill className="object-contain" /></div>
               <span className="font-bold text-lg text-white">DoItForMe</span>
             </div>
-            <p className="text-[10px] md:text-xs text-zinc-600">© 2026 DoItForMe Inc.</p>
+            <p className="text-[10px] md:text-xs text-zinc-600">© 2026 Almmatix. All rights reserved. DoItForMe is a registered product of Almmatix.</p>
           </div>
 
           <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">

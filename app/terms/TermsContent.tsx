@@ -42,7 +42,7 @@ export default function TermsContent() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">1. Introduction</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  Welcome to DoItForMe. By using our website, you agree to comply with and be bound by the following terms. If you disagree with any part of these terms, please do not use our website.
+                  Welcome to DoItForMe, a product of Almmatix. By using our website, you agree to comply with and be bound by the following terms. If you disagree with any part of these terms, please do not use our website.
                 </p>
               </div>
             </div>
@@ -57,7 +57,7 @@ export default function TermsContent() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">2. User Accounts &amp; KYC</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  To ensure safety, DoItForMe requires users to verify their identity using a valid Student ID. You are responsible for maintaining the confidentiality of your account and password.
+                  To ensure safety, DoItForMe (operated by Almmatix) requires users to verify their identity using a valid Student ID. You are responsible for maintaining the confidentiality of your account and password.
                 </p>
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function TermsContent() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">5. Limitation of Liability</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  DoItForMe is an intermediary platform. We are not responsible for the quality of work provided by other students. We do, however, offer a dispute resolution mechanism to protect your funds.
+                  DoItForMe, a service by Almmatix, is an intermediary platform. We are not responsible for the quality of work provided by other students. We do, however, offer a dispute resolution mechanism to protect your funds.
                 </p>
               </div>
             </div>
