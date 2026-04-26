@@ -9,16 +9,16 @@ import { SpeedInsights } from "@vercel/speed-insights/next"// Request notificati
 
 export const metadata: Metadata = {
   title: {
-    default: "DoItForMe – India's Leading Student Gig & Hustle Network",
+    default: "DoItForMe – India's Campus Freelance Network",
     template: "%s | DoItForMe",
   },
   description:
-    "DoItForMe is India's leading student-to-student (S2S) and company-to-student (C2S) gig network. Connect with verified student hustlers for technical tasks, creative work, and campus errands.",
+    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Escrow-protected, instant UPI payouts.",
   keywords: [
     "DoItForMe", "doitforme.in", "student gig network India",
-    "student to student gigs", "company to student gigs", "hire student hustlers",
+    "campus freelance India", "student freelance network India", "hire student hustlers",
     "hire university talent India", "student hustle economy", "college task outsourcing",
-    "S2S gigs", "C2S gigs", "campus gig marketplace",
+    "campus gig marketplace",
     "earn from skills student", "outsourced student work",
     "secure student marketplace", "technical gigs for students India",
     "college coding gigs", "student graphic design", "student content writing",
@@ -29,20 +29,20 @@ export const metadata: Metadata = {
   formatDetection: { email: false, address: false, telephone: false },
   icons: { icon: "/Doitforme_logo.png", shortcut: "/Doitforme_logo.png", apple: "/Doitforme_logo.png" },
   openGraph: {
-    title: "DoItForMe – Student Gig & Hustle Hub",
+    title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "Outsource technical gigs and creative tasks to verified student hustlers. Secure, fast, and student-powered.",
+      "700+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
     url: "https://www.doitforme.in",
     siteName: "DoItForMe",
-    images: [{ url: "/Doitforme_logo.png", width: 1200, height: 630, alt: "DoItForMe – Student Hustle Platform" }],
+    images: [{ url: "/Doitforme_logo.png", width: 1200, height: 630, alt: "DoItForMe – India's Campus Freelance Network" }],
     type: "website",
     locale: "en_IN",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DoItForMe – Student Hustle Platform",
+    title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "Hustle: outsource tasks to student hustlers. Verified IDs, escrow, instant UPI.",
+      "700+ verified students earning by completing real tasks. Escrow-protected. Instant UPI payouts.",
     images: ["/Doitforme_logo.png"],
     creator: "@doitformein",
   },
@@ -74,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
     "logo": "https://www.doitforme.in/Doitforme_logo.png",
-    "description": "DoItForMe is India's leading student gig network, connecting university talent with students and corporate clients for technical, creative, and campus gigs.",
+    "description": "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies.",
     "foundingDate": "2024",
     "areaServed": "IN",
     "sameAs": ["https://www.instagram.com/doitforme.in/", "https://www.linkedin.com/company/doitforme1/"],

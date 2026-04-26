@@ -25,7 +25,7 @@ export default function PrivacyContent() {
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">
             Privacy Policy
           </h1>
-          <p className="text-sm font-bold text-brand-purple mb-4">DoItForMe is a product of Almmatix.</p>
+          <p className="text-sm font-bold text-brand-purple mb-4">DoItForMe – India's Campus Freelance Network.</p>
           <p className="text-zinc-500 text-lg">
             Last updated: <span className="text-zinc-300">December 31, 2025</span>
           </p>

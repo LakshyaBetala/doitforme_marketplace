@@ -15,10 +15,10 @@ export default function AboutContent() {
         {/* Hero Section */}
         <div className="text-center space-y-6">
            <h1 className="text-4xl md:text-6xl font-black tracking-tight">
-             About <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8825F5] to-[#0097FF]">DoItForMe</span> – India&apos;s Student Hustle Platform
+             About <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8825F5] to-[#0097FF]">DoItForMe</span> – India&apos;s Campus Freelance Network
            </h1>
            <p className="text-xl text-white/60 max-w-2xl mx-auto leading-relaxed">
-             India&apos;s first student-to-student hustle platform. We are building a community where students can outsource tasks to save time and hustle to earn money.
+             India&apos;s campus freelance network. We are building a community where students can outsource tasks to save time and earn money by completing real work.
            </p>
         </div>
 

@@ -6,7 +6,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
 export const metadata: Metadata = {
   title: "Terms & Conditions – DoItForMe Student Platform",
   description:
-    "Read DoItForMe's Terms & Conditions. Covers user accounts, KYC verification, escrow payments, platform fees (Free Direct Connect, optional 2% escrow), prohibited activities, and dispute resolution.",
+    "Read DoItForMe's Terms & Conditions. Covers user accounts, KYC verification, escrow payments, platform fees (Free Direct Connect, optional 3% escrow), prohibited activities, and dispute resolution.",
   alternates: { canonical: `${BASE_URL}/terms` },
   openGraph: {
     title: "Terms & Conditions – DoItForMe",

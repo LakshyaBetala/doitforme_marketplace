@@ -4,16 +4,16 @@ import LandingPage from "@/components/home/LandingPage";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
 
 export const metadata: Metadata = {
-   title: "DoItForMe – India's Leading Student Gig & Hustle Network",
+  title: "DoItForMe – India's Campus Freelance Network",
   description:
-    "The all-in-one network for the student economy. DoItForMe connects university students for S2S tasks and links startups with top-tier student talent for C2S gigs. Secured by 3% Escrow and Instant UPI.",
+    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Escrow-protected, instant UPI payouts.",
   keywords: [
-    "DoItForMe", "doitforme.in", "student gig network India",
-    "student to student gigs", "company to student gigs", "hire student hustlers",
-    "hire university talent India", "student hustle economy", "college task outsourcing",
-    "S2S gigs", "C2S gigs", "campus gig marketplace",
-    "earn from skills student", "outsourced student work",
-    "secure student marketplace", "technical gigs for students India",
+    "DoItForMe", "doitforme.in", "campus freelance India",
+    "student freelance network", "hire student talent India",
+    "student gigs India", "campus gig platform",
+    "earn from skills student", "student work India",
+    "secure campus marketplace", "student freelance tasks",
+    "college freelance India", "student earn UPI",
   ],
   authors: [{ name: "DoItForMe", url: BASE_URL }],
   creator: "DoItForMe",
@@ -26,19 +26,19 @@ export const metadata: Metadata = {
     shortcut: "/Doitforme_logo.png",
   },
   openGraph: {
-     type: "website",
-     locale: "en_IN",
-     url: BASE_URL,
-     siteName: "DoItForMe",
-     title: "DoItForMe – Student Gig & Hustle Network | S2S & C2S",
-     description:
-       "India's leading network for student gigs. Connect university talent with startups and other students. Secure 3% escrow protection.",
+    type: "website",
+    locale: "en_IN",
+    url: BASE_URL,
+    siteName: "DoItForMe",
+    title: "DoItForMe – India's Campus Freelance Network",
+    description:
+      "700+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
     images: [
       {
         url: `${BASE_URL}/Doitforme_logo.png`,
         width: 1200,
         height: 630,
-        alt: "DoItForMe – Student Hustle Platform",
+        alt: "DoItForMe – India's Campus Freelance Network",
       },
     ],
   },
@@ -46,9 +46,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@doitformein",
     creator: "@doitformein",
-    title: "DoItForMe – Student Hustle Platform",
+    title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "India's #1 platform for students to earn from their skills and outsource tasks. Verified IDs, Escrow payments, Instant UPI.",
+      "700+ verified students earning by completing real tasks. Escrow-protected. Instant UPI payouts. doitforme.in",
     images: [`${BASE_URL}/Doitforme_logo.png`],
   },
   robots: {
@@ -73,7 +73,7 @@ export default function Home() {
        name: "DoItForMe",
       url: BASE_URL,
       description:
-        "DoItForMe is India's leading verified student gig network. Connect for S2S tasks or hire top university talent for C2S gigs.",
+        "DoItForMe is India's campus freelance network. 700+ verified students completing real tasks for peers and companies.",
       potentialAction: {
         "@type": "SearchAction",
         target: {
@@ -91,7 +91,7 @@ export default function Home() {
       url: BASE_URL,
       logo: `${BASE_URL}/Doitforme_logo.png`,
       description:
-        "DoItForMe facilitates India's leading student gig economy, enabling S2S and C2S connections for university talent.",
+        "DoItForMe is India's campus freelance network connecting verified students with peers and companies for real tasks.",
       foundingDate: "2025",
       areaServed: "IN",
       audience: { "@type": "Audience", audienceType: "University Students, India" },
@@ -112,7 +112,7 @@ export default function Home() {
       "@context": "https://schema.org",
       "@type": "Service",
       name: "DoItForMe Hustle",
-      serviceType: "Student Gig & Hustle Platform",
+      serviceType: "Campus Freelance Platform",
       description:
         "DoItForMe is a secure ecosystem where Clients (Students and Companies) outsource gigs to verified student hustlers. Payments are held in a 3% protected escrow and released upon completion.",
       provider: { "@type": "Organization", name: "DoItForMe", url: BASE_URL },

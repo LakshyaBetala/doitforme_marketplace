@@ -8,10 +8,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, CheckCircle2, ShieldCheck, Zap, Lock,
   DollarSign, ChevronDown, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock,
-  Linkedin, Instagram, Briefcase, ShoppingBag as ShoppingBagIcon
+  Linkedin, Instagram, Briefcase
 } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import CrossDomainLink from "@/components/CrossDomainLink";
 
 // -------------------------------------------------------
 // 1. "VOGUE" PRELOADER (Updated with Asset Awareness)
@@ -411,7 +410,7 @@ export default function LandingPage() {
             }}
           >
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_6px_rgba(34,211,238,0.6)]"></span>
-            <span className="text-[10px] font-bold tracking-[0.15em] text-[#00f2ff] uppercase">Nationwide Hustle Network</span>
+            <span className="text-[10px] font-bold tracking-[0.15em] text-[#00f2ff] uppercase">India's Campus Freelance Network</span>
           </div>
 
           {/* Headline Block with Floating Sloth */}
@@ -439,22 +438,22 @@ export default function LandingPage() {
             {/* Stacked Headline — Space Grotesk Display */}
             <div style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white">
-                Launch.
+                Earn.
               </h1>
               <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] mt-1">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] via-[#4F46E5] to-[#818CF8]">
-                  Deploy.
+                  Outsource.
                 </span>
               </h1>
               <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white mt-1">
-                Succeed.
+                Get it done.
               </h1>
             </div>
           </div>
 
           {/* Subheadline */}
           <p className="text-[15px] text-[#B8A9D4] leading-relaxed mb-7">
-            The student hustle platform where you earn and outsource skills — all in one place.
+            The campus freelance network where you earn and outsource skills — all in one place.
           </p>
 
           {/* CTA Buttons — Stacked */}
@@ -493,17 +492,17 @@ export default function LandingPage() {
 
             {/* Heading */}
             <h1 className="text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Launch. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] via-[#4F46E5] to-[#818CF8]">Deploy.</span><br /> Succeed.
+              Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] via-[#4F46E5] to-[#818CF8]">Outsource.</span><br /> Get it done.
             </h1>
 
             {/* Subheading */}
             <p className="text-2xl text-white/85 leading-snug mb-4 w-full">
-              High-Tech <span className="font-bold text-[#00f2ff]">Student Gig & Hustle Network</span>
+              <span className="font-bold text-[#00f2ff]">India's Campus Freelance Network</span>
             </p>
 
             {/* Description */}
             <p className="text-base text-zinc-400 leading-relaxed max-w-md mb-10 pr-4">
-              Connect skills with opportunities. Join India's leading student network for S2S gigs and C2S technical hiring.
+              Connect skills with opportunities. Join India's campus freelance network for verified students and companies.
             </p>
 
             {/* Desktop: Two Buttons */}
@@ -676,8 +675,8 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Three Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 mb-10 md:mb-14">
+          {/* Two Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-10 md:mb-14">
             {/* Card 1: Earn Money */}
             <div
               className="relative rounded-2xl p-5 pb-6 overflow-hidden group"
@@ -760,32 +759,6 @@ export default function LandingPage() {
               <p className="text-sm text-zinc-400 leading-relaxed">Outsource mission-critical work to a verified talent pool.</p>
             </div>
 
-            {/* Card 3: Switch to Marketplace */}
-            <div
-              className="relative rounded-2xl p-5 pb-6 overflow-hidden group"
-              style={{
-                background: 'linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-              }}
-            >
-              <div className="absolute bottom-0 right-0 w-[200px] h-[200px] bg-[#00f2ff]/10 rounded-full blur-[80px] pointer-events-none" />
-              <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
-                <Image
-                  src="/marketsloth.png"
-                  alt="Marketplace"
-                  width={280}
-                  height={280}
-                  className="object-contain relative z-10"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(0, 242, 255, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
-                />
-              </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Campus Market</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed mb-4">Trade university essentials with local students safely.</p>
-              <CrossDomainLink targetDomain="https://marketforme.in" redirectTo="/" className="inline-flex items-center gap-2 text-sm font-bold text-[#00f2ff] hover:text-white transition-colors">
-                Go to Marketplace <ArrowRight size={16} />
-              </CrossDomainLink>
-            </div>
           </div>
 
           {/* Bottom Earnings Ticker */}
@@ -822,6 +795,50 @@ export default function LandingPage() {
 
         </div>
       </section >
+
+      {/* B2B Company Section */}
+      <section className="w-full max-w-5xl mx-auto px-4 py-16">
+        <div className="text-center mb-10">
+          <span className="text-xs font-semibold tracking-widest text-purple-400 uppercase mb-3 block">For Companies</span>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Built for companies too.
+          </h2>
+          <p className="text-gray-400 text-lg max-w-xl mx-auto">
+            Post tasks directly to verified campus talent. No recruiters. No CVs. Fast turnaround.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
+              <ShieldCheck className="w-5 h-5 text-purple-400" />
+            </div>
+            <h3 className="text-white font-semibold mb-2">Verified students</h3>
+            <p className="text-gray-400 text-sm">OTP-verified student IDs. Real campus locations. Every student is authenticated before they can work.</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
+              <Lock className="w-5 h-5 text-purple-400" />
+            </div>
+            <h3 className="text-white font-semibold mb-2">Escrow protected</h3>
+            <p className="text-gray-400 text-sm">Pay safely into escrow. Funds release only when work is approved. Zero payment risk.</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
+              <Zap className="w-5 h-5 text-purple-400" />
+            </div>
+            <h3 className="text-white font-semibold mb-2">Fast turnaround</h3>
+            <p className="text-gray-400 text-sm">Tasks completed within hours not days. Campus talent is always nearby and always available.</p>
+          </div>
+        </div>
+        <div className="text-center">
+          <Link
+            href="/company/onboarding"
+            className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-xl transition-colors"
+          >
+            Onboard Your Company <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
 
       {/* -------------------------------------------------------
           SECTION 3: LIVE CAMPUS FEED
@@ -1033,6 +1050,24 @@ export default function LandingPage() {
                   </div>
                 </div>
 
+                {/* Direct Connect vs Escrow Explanation */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Users className="w-4 h-4 text-green-400" />
+                      <span className="text-green-400 font-semibold text-sm">Direct Connect — FREE</span>
+                    </div>
+                    <p className="text-gray-400 text-sm">Connect directly with the student. Communicate, agree on terms, and pay however you choose. Best for trusted connections.</p>
+                  </div>
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ShieldCheck className="w-4 h-4 text-purple-400" />
+                      <span className="text-purple-400 font-semibold text-sm">Escrow Protection — 3% fee</span>
+                    </div>
+                    <p className="text-gray-400 text-sm">Payment held safely until work is approved. Guaranteed payout for students. Best for new connections and tasks ₹500 and above.</p>
+                  </div>
+                </div>
+
                 {/* Fee Ladder */}
                 <div className="bg-white/10 border border-white/10 rounded-2xl p-5 mb-8">
                   <div className="flex justify-between items-center mb-3">
@@ -1202,7 +1237,7 @@ export default function LandingPage() {
               <div className="relative w-6 h-6 grayscale opacity-50"><Image src="/Doitforme_logo.png" alt="logo" fill className="object-contain" /></div>
               <span className="font-bold text-lg text-white">DoItForMe</span>
             </div>
-            <p className="text-[10px] md:text-xs text-zinc-600">© 2026 Almmatix. All rights reserved. DoItForMe is a registered product of Almmatix.</p>
+            <p className="text-[10px] md:text-xs text-zinc-600">© 2026 DoItForMe. All rights reserved.</p>
           </div>
 
           <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">

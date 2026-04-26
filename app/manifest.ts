@@ -2,10 +2,10 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'DoItForMe – Student Hustle Platform',
+        name: 'DoItForMe – Campus Freelance Network',
         short_name: 'DoItForMe',
         description:
-            "India's first student-to-student gig platform. Post a Hustle to outsource tasks like coding, design, tutoring, and errands. Verified students, escrow payments, instant UPI.",
+            "India's campus freelance network. 700+ verified students completing real tasks for peers and companies. Escrow-protected, instant UPI payouts.",
         start_url: '/',
         display: 'standalone',
         background_color: '#0B0B11',
