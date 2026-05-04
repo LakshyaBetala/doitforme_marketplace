@@ -96,11 +96,11 @@ export async function POST(req: Request) {
 
         if (updateAppError) throw updateAppError;
 
-        // 2. UPDATE GIG -> ASSIGNED or AWAITING_FUNDS
+        // 2. UPDATE GIG -> ASSIGNED
         const gigUpdateData: any = {
-            status: application.payment_preference === 'ESCROW' ? 'AWAITING_FUNDS' : 'assigned',
+            status: 'assigned',
             assigned_worker_id: application.worker_id,
-            escrow_status: application.payment_preference === 'ESCROW' ? 'PENDING_FUNDS' : 'NONE'
+            escrow_status: 'NONE'
         };
 
         // For SELL type: store handshake_code directly on gig (no escrow payment)

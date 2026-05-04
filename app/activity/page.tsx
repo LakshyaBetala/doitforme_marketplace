@@ -234,14 +234,7 @@ export default function ActivityHubPage() {
                      <StatusBadge status={displayStatus} />
                   </div>
 
-                   {/* Payment preference badge */}
-                  {app.payment_preference && (
-                    <div className="mb-3">
-                      <span className={`px-2 py-1 rounded-lg text-[10px] uppercase font-black tracking-widest border ${app.payment_preference === 'ESCROW' ? 'bg-[#C084FC]/10 text-[#C084FC] border-[#C084FC]/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>
-                        {app.payment_preference === 'ESCROW' ? '🛡️ Escrow Protected' : '⚡ Direct Connect'}
-                      </span>
-                    </div>
-                  )}
+
 
                    {/* Poster contact info for active gigs */}
                   {app.status === 'approved' && gig.poster && ['assigned', 'AWAITING_FUNDS', 'SUBMITTED', 'delivered', 'completed'].includes(gig.status) && (

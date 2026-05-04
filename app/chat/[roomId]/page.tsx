@@ -139,7 +139,6 @@ function ChatRoomContent() {
             .select(`
               worker_id,
               status,
-              payment_preference,
               worker:users!worker_id(id, name, avatar_url, rating, phone)
             `)
             .eq("gig_id", roomId);
@@ -147,7 +146,6 @@ function ChatRoomContent() {
           let applicantList = apps?.map((a: any) => ({ 
              ...a.worker, 
              id: a.worker_id, 
-             paymentPreference: a.payment_preference, 
              appStatus: a.status 
           })) || [];
 
@@ -433,11 +431,6 @@ function ChatRoomContent() {
                         <div className="flex justify-between items-baseline mb-0.5 mt-1">
                           <p className={`font-medium truncate text-sm flex items-center gap-2 ${selectedApplicantId === app.id ? 'text-white' : 'text-white/80'}`}>
                             {app.name}
-                            {app.paymentPreference && (
-                              <span className={`px-1.5 py-[1px] rounded tracking-widest uppercase text-[8px] font-black border ${app.paymentPreference === 'ESCROW' ? 'bg-[#C9A9FF]/20 text-[#C9A9FF] border-[#C9A9FF]/30' : 'bg-white/10 text-white/50 border-white/10'}`}>
-                                {app.paymentPreference}
-                              </span>
-                            )}
                           </p>
                           {lastMsg && <span className="text-[9px] text-white/50 whitespace-nowrap ml-2">{new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
                         </div>
