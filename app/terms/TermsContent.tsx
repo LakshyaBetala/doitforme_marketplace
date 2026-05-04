@@ -5,11 +5,11 @@ import { ArrowLeft, ScrollText, UserCheck, DollarSign, Ban, AlertTriangle } from
 
 export default function TermsContent() {
   return (
-    <div className="min-h-screen bg-[#020202] text-white selection:bg-[#00f2ff] selection:text-black relative overflow-hidden">
+    <div className="min-h-screen bg-[#020202] text-white selection:bg-[#8825F5] selection:text-white relative overflow-hidden">
 
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#00f2ff]/10 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#C084FC]/10 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/10 blur-[120px] rounded-full"></div>
       </div>
 
@@ -51,7 +51,7 @@ export default function TermsContent() {
           {/* Section 2: User Accounts */}
           <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-[#00f2ff] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-[#C084FC] shrink-0">
                 <UserCheck size={20} />
               </div>
               <div className="space-y-3">
@@ -85,7 +85,7 @@ export default function TermsContent() {
                   </div>
                   <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
                     <strong className="block text-white mb-2 text-sm flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#00f2ff]"></span> Student Gigs
+                      <span className="w-2 h-2 rounded-full bg-[#C084FC]"></span> Student Gigs
                     </strong>
                     <ul className="space-y-2 text-xs text-zinc-400">
                       <li className="flex justify-between"><span>Direct Connect</span> <span className="text-green-400 font-mono">FREE</span></li>
@@ -148,9 +148,9 @@ export default function TermsContent() {
                 <p className="text-zinc-400 leading-relaxed">
                   If you have any questions or concerns regarding these Terms of Service, please contact us at:
                   <br /><br />
-                  <strong>Email:</strong> <a href="mailto:doitforme.in@gmail.com" className="text-white hover:text-[#00f2ff] transition-colors">doitforme.in@gmail.com</a>
+                  <strong>Email:</strong> <a href="mailto:doitforme.in@gmail.com" className="text-white hover:text-[#C084FC] transition-colors">doitforme.in@gmail.com</a>
                   <br />
-                  <strong>Phone:</strong> <a href="tel:+919344110272" className="text-white hover:text-[#00f2ff] transition-colors">+91 93441 10272</a>
+                  <strong>Phone:</strong> <a href="tel:+919344110272" className="text-white hover:text-[#C084FC] transition-colors">+91 93441 10272</a>
                 </p>
               </div>
             </div>

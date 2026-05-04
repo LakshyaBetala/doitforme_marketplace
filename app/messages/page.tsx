@@ -8,6 +8,10 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
 import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X, CheckCircle2, FileText, Download } from "lucide-react";
+import Avatar from "@/components/ui/Avatar";
+import StatusBadge, { statusToTone } from "@/components/ui/StatusBadge";
+import EmptyState from "@/components/ui/EmptyState";
+import { MessageSquare } from "lucide-react";
 
 export default function ChatPage() {
     return (
@@ -110,14 +114,14 @@ function MessagesContent() {
     // 1. Initialize User & Real-time Conversation List
     useEffect(() => {
         let channel: any;
-        supabase.auth.getUser().then(({ data }) => {
+        supabase.auth.getUser().then(({ data }: any) => {
             if (data.user) {
                 const userId = data.user.id;
                 setUser(data.user);
                 fetchInitialData(userId);
 
                 // Check Telegram Status
-                supabase.from('users').select('telegram_chat_id').eq('id', userId).single().then(({data: profile}) => {
+                supabase.from('users').select('telegram_chat_id').eq('id', userId).single().then(({data: profile}: any) => {
                     if(profile) setHasTelegramLinked(!!profile.telegram_chat_id);
                 });
 
@@ -222,7 +226,7 @@ function MessagesContent() {
 
                 if (userError) console.error("User fetch error:", userError);
 
-                const userMap = new Map((users || []).map(u => [u.id, u]));
+                const userMap = new Map((users || []).map((u: any) => [u.id, u]));
 
                 // D. Attach Profiles to Conversations
                 const derivedConversations = Array.from(conversationMap.values()).map(conv => {
@@ -337,7 +341,7 @@ function MessagesContent() {
                 schema: 'public',
                 table: 'messages',
                 filter: `gig_id=eq.${gigId}`,
-            }, (payload) => {
+            }, (payload: any) => {
                 const newMsg = payload.new as any;
                 if (
                     (newMsg.sender_id === user.id && newMsg.receiver_id === otherUserId) ||
@@ -373,7 +377,7 @@ function MessagesContent() {
                 schema: 'public',
                 table: 'gigs',
                 filter: `id=eq.${gigId}`,
-            }, (payload) => {
+            }, (payload: any) => {
                 setActiveGigStatus((payload.new as any).status);
             })
             .subscribe();
@@ -617,7 +621,15 @@ function MessagesContent() {
                     {loading && conversations.length === 0 ? (
                         <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/60" /></div>
                     ) : conversations.length === 0 ? (
-                        <div className="p-8 text-center text-white/60 text-sm">No messages yet.</div>
+                        <div className="p-4">
+                            <EmptyState
+                                icon={MessageSquare}
+                                title="No conversations yet"
+                                description="Apply to a gig or post one — chats with the other party will land here."
+                                actionLabel="Browse gigs"
+                                actionHref="/feed"
+                            />
+                        </div>
                     ) : (
                         conversations.map((chat) => {
                             const gigStatus = chat.gig?.status;
@@ -628,21 +640,12 @@ function MessagesContent() {
                                     className={`p-3 mx-2 my-1 rounded-xl cursor-pointer flex gap-3 transition-all hover:bg-white/5 ${activeChat === chat.conversationKey ? 'bg-white/10' : ''}`}
                                 >
                                     <div className="relative shrink-0">
-                                        <div className="w-10 h-10 rounded-full bg-[#2A2A35] flex items-center justify-center overflow-hidden border border-white/5">
-                                            {chat.otherUser.avatar_url ? (
-                                                <Image
-                                                    src={chat.otherUser.avatar_url}
-                                                    alt=""
-                                                    fill
-                                                    className="object-cover"
-                                                    unoptimized
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-zinc-800">
-                                                    <User className="w-4 h-4 text-white/40" />
-                                                </div>
-                                            )}
-                                        </div>
+                                        <Avatar
+                                            src={chat.otherUser.avatar_url}
+                                            fallback={chat.otherUser.name || "?"}
+                                            className="w-10 h-10"
+                                            textClassName="text-sm"
+                                        />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-baseline mb-0.5">
@@ -653,9 +656,14 @@ function MessagesContent() {
                                         </div>
                                         <p className="text-xs text-white/50 truncate">{chat.lastMessage.content}</p>
                                         {gigStatus && gigStatus !== 'open' && (
-                                            <span className={`text-[10px] font-bold mt-0.5 inline-block px-1.5 py-0.5 rounded-full ${gigStatus === 'completed' ? 'text-green-400 bg-green-500/10' : 'text-yellow-400 bg-yellow-500/10'
-                                                }`}>
-                                                {gigStatus === 'completed' ? '✓ Completed' : ((gigStatus === 'assigned' || gigStatus === 'delivered') ? (chat.gig?.listing_type === 'MARKET' ? '● In Deal' : '● Hired') : gigStatus)}
+                                            <span className="mt-0.5 inline-block">
+                                                <StatusBadge tone={statusToTone(gigStatus)}>
+                                                    {gigStatus === 'completed'
+                                                        ? 'Completed'
+                                                        : (gigStatus === 'assigned' || gigStatus === 'delivered')
+                                                            ? (chat.gig?.listing_type === 'MARKET' ? 'In deal' : 'Hired')
+                                                            : gigStatus}
+                                                </StatusBadge>
                                             </span>
                                         )}
                                     </div>
@@ -667,7 +675,7 @@ function MessagesContent() {
             </div>
 
             {/* CHAT AREA */}
-            <div className={`${!activeChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-[#050505] relative min-w-0`}>
+            <div className={`${!activeChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col bg-[#0B0B11] relative min-w-0`}>
                 {activeChat ? (
                     <>
                         {/* Header */}
@@ -676,21 +684,12 @@ function MessagesContent() {
                                 <ArrowLeft size={18} />
                             </button>
 
-                            <div className="w-8 h-8 rounded-full bg-[#2A2A35] flex items-center justify-center overflow-hidden border border-white/10 relative shrink-0">
-                                {activeConversation?.otherUser?.avatar_url ? (
-                                    <Image
-                                        src={activeConversation.otherUser.avatar_url}
-                                        alt=""
-                                        fill
-                                        className="object-cover"
-                                        unoptimized
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-zinc-800">
-                                        <User className="w-3 h-3 text-white/40" />
-                                    </div>
-                                )}
-                            </div>
+                            <Avatar
+                                src={activeConversation?.otherUser?.avatar_url}
+                                fallback={activeConversation?.otherUser?.name || "?"}
+                                className="w-8 h-8"
+                                textClassName="text-xs"
+                            />
 
                              <div className="min-w-0 flex-1">
                                 <h2 className="font-bold text-white text-sm leading-tight truncate">
@@ -788,7 +787,7 @@ function MessagesContent() {
                         )}
 
                         {/* Messages Feed */}
-                        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 bg-[#050505] relative">
+                        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-3 bg-[#0B0B11] relative">
                             {/* Chat Wallpaper Dots */}
                             <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
 
@@ -938,7 +937,7 @@ function MessagesContent() {
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#050505] relative overflow-hidden">
+                    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#0B0B11] relative overflow-hidden">
                         {/* Subtle background glow */}
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-brand-purple/5 rounded-full blur-[100px] pointer-events-none"></div>
                         

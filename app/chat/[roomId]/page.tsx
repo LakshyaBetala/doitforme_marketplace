@@ -208,7 +208,7 @@ function ChatRoomContent() {
           .on(
             "postgres_changes",
             { event: "INSERT", schema: "public", table: "messages", filter: `gig_id=eq.${roomId}` },
-            (payload) => {
+            (payload: any) => {
               const newMessage = payload.new as Message;
               setMessages((prev) => [...prev, newMessage]);
 
@@ -389,11 +389,11 @@ function ChatRoomContent() {
     : ["I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"];
 
   // --- RENDER ---
-  if (loading) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center"><Loader2 className="animate-spin text-[#00f2ff]" /></div>;
+  if (loading) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center"><Loader2 className="animate-spin text-[#C9A9FF]" /></div>;
   if (error || !gig) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center text-white">{error}</div>;
 
   return (
-    <div className="flex h-screen bg-[#0B0B11] text-white font-sans selection:bg-[#00f2ff] selection:text-black overflow-hidden">
+    <div className="flex h-screen bg-[#0B0B11] text-white font-sans selection:bg-[#C9A9FF] selection:text-black overflow-hidden">
 
       {/* POSTER SIDEBAR (Desktop: Visible, Mobile: Drawer) */}
       {isPoster && (
@@ -424,7 +424,7 @@ function ChatRoomContent() {
                     <button
                       key={app.id}
                       onClick={() => { setSelectedApplicantId(app.id); setSidebarOpen(false); }}
-                      className={`w-full p-4 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-white/5 ${selectedApplicantId === app.id ? 'bg-[#00f2ff]/10 border-l-2 border-l-[#00f2ff]' : ''}`}
+                      className={`w-full p-4 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-white/5 ${selectedApplicantId === app.id ? 'bg-[#C9A9FF]/10 border-l-2 border-l-[#C9A9FF]' : ''}`}
                     >
                       <div className="w-10 h-10 rounded-full bg-zinc-800 relative overflow-hidden shrink-0">
                         {app.avatar_url ? <Image src={app.avatar_url} alt={app.name} fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs">{app.name[0]}</div>}
@@ -434,7 +434,7 @@ function ChatRoomContent() {
                           <p className={`font-medium truncate text-sm flex items-center gap-2 ${selectedApplicantId === app.id ? 'text-white' : 'text-white/80'}`}>
                             {app.name}
                             {app.paymentPreference && (
-                              <span className={`px-1.5 py-[1px] rounded tracking-widest uppercase text-[8px] font-black border ${app.paymentPreference === 'ESCROW' ? 'bg-[#00f2ff]/20 text-[#00f2ff] border-[#00f2ff]/30' : 'bg-white/10 text-white/50 border-white/10'}`}>
+                              <span className={`px-1.5 py-[1px] rounded tracking-widest uppercase text-[8px] font-black border ${app.paymentPreference === 'ESCROW' ? 'bg-[#C9A9FF]/20 text-[#C9A9FF] border-[#C9A9FF]/30' : 'bg-white/10 text-white/50 border-white/10'}`}>
                                 {app.paymentPreference}
                               </span>
                             )}
@@ -444,7 +444,7 @@ function ChatRoomContent() {
 
                         {lastMsg ? (
                           <p className="text-xs text-white/60 truncate flex items-center gap-1">
-                            {lastMsg.sender_id === currentUser.id && <span className="text-[#00f2ff]">You:</span>}
+                            {lastMsg.sender_id === currentUser.id && <span className="text-[#C9A9FF]">You:</span>}
                             {lastMsg.content}
                           </p>
                         ) : (
@@ -476,7 +476,7 @@ function ChatRoomContent() {
                 {isPoster ? (applicantProfile?.name || "Select Applicant") : gig.title}
               </h1>
               <div className="flex items-center gap-2 text-[10px] text-zinc-500">
-                {isPoster ? <span className="text-[#00f2ff]">Hustler</span> : <span>Posted by Client</span>}
+                {isPoster ? <span className="text-[#C9A9FF]">Hustler</span> : <span>Posted by Client</span>}
                 <span className="w-1 h-1 rounded-full bg-zinc-600"></span>
                 <span className="flex items-center gap-1"><Shield size={10} className="text-green-500" /> Trust Verified</span>
               </div>
@@ -486,13 +486,13 @@ function ChatRoomContent() {
  
         {/* PHONE REVEAL BANNER */}
         {['assigned', 'AWAITING_FUNDS', 'SUBMITTED', 'completed'].includes(gig.status) && (
-           <div className="bg-[#00f2ff]/20 border-b border-[#00f2ff]/30 p-3 flex flex-col items-center justify-center gap-1 text-center shadow-lg relative z-10 px-4">
+           <div className="bg-[#C9A9FF]/20 border-b border-[#C9A9FF]/30 p-3 flex flex-col items-center justify-center gap-1 text-center shadow-lg relative z-10 px-4">
              <p className="text-xs font-bold text-white/80 uppercase tracking-widest flex items-center gap-2">
-               <Shield size={12} className="text-[#00f2ff]"/> Connection Established
+               <Shield size={12} className="text-[#C9A9FF]"/> Connection Established
              </p>
              <p className="text-sm">
                 You can now contact <span className="font-bold">{isPoster ? applicantProfile?.name : (gig as any).users?.name}</span> directly via WhatsApp/Phone: 
-                <span className="font-black text-[#00f2ff] tracking-widest ml-2 bg-black/40 px-3 py-1 rounded-lg border border-[#00f2ff]/20 selection:bg-[#00f2ff]/40">
+                <span className="font-black text-[#C9A9FF] tracking-widest ml-2 bg-black/40 px-3 py-1 rounded-lg border border-[#C9A9FF]/20 selection:bg-[#C9A9FF]/40">
                   {isPoster ? (applicantProfile as any)?.phone || 'No phone provided' : (gig as any).users?.phone || 'No phone provided'}
                 </span>
              </p>
@@ -549,7 +549,7 @@ function ChatRoomContent() {
                     value={offerAmount}
                     onChange={(e) => setOfferAmount(e.target.value)}
                     placeholder="Enter amount (₹)"
-                    className="w-full bg-black/20 text-white p-4 rounded-xl border border-white/10 focus:border-[#00f2ff] outline-none text-lg font-bold"
+                    className="w-full bg-black/20 text-white p-4 rounded-xl border border-white/10 focus:border-[#C9A9FF] outline-none text-lg font-bold"
                   />
                   {!isPoster && gig.listing_type === 'HUSTLE' && (
                     <div className="bg-white/10 rounded-lg p-3 text-xs space-y-1 my-4">
@@ -571,7 +571,7 @@ function ChatRoomContent() {
                   <button
                     onClick={sendOffer}
                     disabled={!offerAmount || Number(offerAmount) <= 0}
-                    className="w-full py-3 bg-[#00f2ff] text-black font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-[#00f2ff]/20 touch-manipulation"
+                    className="w-full py-3 bg-[#C9A9FF] text-black font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-[#C9A9FF]/20 touch-manipulation"
                   >
                     Send Offer
                   </button>
@@ -591,7 +591,7 @@ function ChatRoomContent() {
               className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             >
               <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#00f2ff] to-indigo-500"></div>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#C9A9FF] to-[#8825F5]"></div>
 
                 <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
                   <CheckCircle className="text-green-500" size={24} /> Accept Offer?
@@ -608,7 +608,7 @@ function ChatRoomContent() {
                   {gig.listing_type === 'MARKET' ? (
                     gig.market_type === 'RENT' ? (
                       <p>
-                        Note: At checkout, the <strong className="text-white">Renter</strong> will pay a <strong className="text-[#00f2ff]">3% Escrow + 2% Gateway Fee</strong> on top of this price.
+                        Note: At checkout, the <strong className="text-white">Renter</strong> will pay a <strong className="text-[#C9A9FF]">3% Escrow + 2% Gateway Fee</strong> on top of this price.
                       </p>
                     ) : (
                       <p>
@@ -710,7 +710,7 @@ function ChatRoomContent() {
                       </div>
                     </div>
                   ) : isImage ? (
-                    <div className={`max-w-[85%] md:max-w-[300px] rounded-2xl overflow-hidden border cursor-zoom-in ${isMe ? 'border-[#00f2ff]/50' : 'border-white/10'}`} onClick={() => setSelectedImage(m.content)}>
+                    <div className={`max-w-[85%] md:max-w-[300px] rounded-2xl overflow-hidden border cursor-zoom-in ${isMe ? 'border-[#C9A9FF]/50' : 'border-white/10'}`} onClick={() => setSelectedImage(m.content)}>
                       <div className="relative aspect-video bg-black/50">
                         <Image
                           src={m.content}
@@ -725,7 +725,7 @@ function ChatRoomContent() {
                       </div>
                     </div>
                   ) : (
-                    <div className={`max-w-[85%] md:max-w-[60%] px-4 py-2 rounded-2xl text-sm shadow-sm break-words ${isMe ? "bg-[#00f2ff] text-black rounded-tr-none" : "bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-none"}`}>
+                    <div className={`max-w-[85%] md:max-w-[60%] px-4 py-2 rounded-2xl text-sm shadow-sm break-words ${isMe ? "bg-[#C9A9FF] text-black rounded-tr-none" : "bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-none"}`}>
                       {m.content}
                       <div className="text-[9px] mt-1 text-right opacity-50 font-mono">
                         {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -758,7 +758,7 @@ function ChatRoomContent() {
           {!isPoster && gig.status === 'open' && (
             <div className="w-full bg-white/10 h-1 relative">
               <div
-                className={`h-full transition-all duration-500 ${msgCount >= msgLimit ? 'bg-red-500' : 'bg-[#00f2ff]'}`}
+                className={`h-full transition-all duration-500 ${msgCount >= msgLimit ? 'bg-red-500' : 'bg-[#C9A9FF]'}`}
                 style={{ width: `${Math.min((msgCount / msgLimit) * 100, 100)}%` }}
               />
               <div className="absolute -top-6 right-4 text-[10px] font-bold text-white/50 bg-[#121217] px-2 py-0.5 rounded border border-white/10">
@@ -850,7 +850,7 @@ export default function ChatRoomPage() {
   return (
     <Suspense fallback={
       <div className="h-screen bg-[#0B0B11] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#00f2ff]" />
+        <Loader2 className="animate-spin text-[#C9A9FF]" />
       </div>
     }>
       <ChatRoomContent />

@@ -16,6 +16,10 @@ import {
 import InstallAppButton from "@/components/InstallAppButton";
 import EnableNotificationsButton from "@/components/EnableNotificationsButton";
 import CrossDomainLink from "@/components/CrossDomainLink";
+import Avatar from "@/components/ui/Avatar";
+import GigCard from "@/components/ui/GigCard";
+import EmptyState from "@/components/ui/EmptyState";
+import Skeleton, { GigCardSkeleton } from "@/components/ui/Skeleton";
 
 export default function Dashboard() {
   const supabase = supabaseBrowser();
@@ -203,9 +207,7 @@ export default function Dashboard() {
           {/* Profile Dropdown */}
           <div className="relative">
             <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-[#1E293B] bg-white/10 hover:bg-white/10 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#8825F5] to-[#EC4899] flex items-center justify-center text-sm font-bold shadow-inner">
-                {username[0]?.toUpperCase()}
-              </div>
+              <Avatar fallback={username} className="w-8 h-8" textClassName="text-sm" />
               <span className="text-sm font-medium hidden md:block">{username}</span>
               <ChevronDown size={14} className="text-zinc-500" />
             </button>
@@ -258,15 +260,15 @@ export default function Dashboard() {
 
             {/* KYC Verification Prompt */}
             {user && !user.user_metadata?.kyc_verified && (
-              <Link href="/verify-id" className="block bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-4 flex items-center gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500 group hover:bg-yellow-500/15 transition-all active:scale-[0.99]">
-                <div className="p-2 bg-yellow-500/20 rounded-xl shrink-0">
-                  <ShieldCheck size={20} className="text-yellow-400" />
+              <Link href="/verify-id" className="block bg-purple-500/10 border border-purple-500/30 rounded-2xl p-4 flex items-center gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500 group hover:bg-purple-500/15 transition-all active:scale-[0.99]">
+                <div className="p-2 bg-purple-500/20 rounded-xl shrink-0">
+                  <ShieldCheck size={20} className="text-purple-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-yellow-300 mb-0.5">Verify your Student ID</p>
-                  <p className="text-xs text-yellow-300/60">Upload your college ID to unlock all features and build trust.</p>
+                  <p className="text-sm font-bold text-purple-300 mb-0.5">Verify your Student ID</p>
+                  <p className="text-xs text-purple-300/60">Upload your college ID to unlock all features and build trust.</p>
                 </div>
-                <span className="shrink-0 px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 text-xs font-bold rounded-xl group-hover:bg-yellow-500/30 transition-all">
+                <span className="shrink-0 px-4 py-2 bg-purple-600 border border-purple-500/30 text-white text-xs font-bold rounded-xl group-hover:bg-purple-700 transition-all">
                   Verify Now
                 </span>
               </Link>
@@ -413,14 +415,17 @@ export default function Dashboard() {
               </div>
 
               {filteredGigs.length === 0 ? (
-                <div className="text-center py-20 bg-[#0F172A] border border-[#1E293B] rounded-3xl">
-                  <Search size={32} className="mx-auto text-zinc-600 mb-4" />
-                  <p className="text-zinc-400 font-medium">No live items found right now.</p>
-                </div>
+                <EmptyState
+                  icon={Search}
+                  title="Nothing matches your filters yet"
+                  description="Try clearing a filter or switching campus scope. New gigs post throughout the day."
+                  actionLabel="Post a gig"
+                  actionHref="/post"
+                />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredGigs.map((gig: any, index: number) => (
-                    <FeedCard key={gig.id} gig={gig} index={index} />
+                  {filteredGigs.map((gig: any) => (
+                    <GigCard key={gig.id} gig={gig} variant="detailed" />
                   ))}
                 </div>
               )}
@@ -428,74 +433,6 @@ export default function Dashboard() {
           </div>
         </main>
 
-        {/* Right panel removed */}
-        {false && (
-          <aside className="hidden xl:flex flex-col w-[300px] shrink-0 bg-[#0A0F1A] border-l border-[#1E293B] overflow-y-auto p-6">
-
-            {/* Section A: Earnings & Escrow Summary */}
-            <div className="mb-8">
-              <h3 className="text-[10px] font-black tracking-widest text-zinc-500 uppercase mb-3 px-1">Vault</h3>
-              <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 hover:border-brand-purple/30 transition-colors mb-3 group hover:-translate-y-1 hover:shadow-xl transition-all">
-                <span className="text-xs text-zinc-400 font-bold block mb-1">Total Earned</span>
-                <div className="text-3xl font-black text-white mb-4 tracking-tight">₹{user?.user_metadata?.total_earned || 0}</div>
-                <button className="w-full py-2 bg-white/10 hover:bg-white/10 text-white text-sm font-bold rounded-xl transition-all active:scale-95 border border-white/10 flex items-center justify-center gap-2 group-hover:bg-brand-purple/10 group-hover:text-brand-purple group-hover:border-brand-purple/30">
-                  Withdraw <ArrowRight size={14} />
-                </button>
-              </div>
-
-              {/* Added Escrow to Right panel to maximize trust */}
-              <div className="bg-gradient-to-r from-brand-purple/10 to-transparent border border-brand-purple/20 rounded-2xl p-4 flex items-center justify-between group hover:-translate-y-0.5 transition-all cursor-default">
-                <div>
-                  <span className="text-[10px] text-brand-purple font-black uppercase tracking-widest block mb-0.5">Escrow Balance</span>
-                  <div className="text-xl font-black text-white">₹0</div>
-                </div>
-                <ShieldCheck size={24} className="text-brand-purple opacity-50 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </div>
-
-            {/* Section B: Active Tasks */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <h3 className="text-[10px] font-black tracking-widest text-zinc-500 uppercase">Active Tasks</h3>
-                <Link href="/activity" className="text-[10px] text-brand-purple uppercase font-bold hover:underline">View All</Link>
-              </div>
-              <div className="space-y-2">
-                <div className="bg-[#0F172A] border border-[#1E293B] rounded-xl p-3 flex justify-between items-center group cursor-pointer hover:border-brand-purple/50 transition-colors hover:-translate-y-0.5">
-                  <div className="flex-1 overflow-hidden pr-2">
-                    <h4 className="text-sm text-white font-bold truncate">Logo design</h4>
-                    <span className="text-[9px] text-zinc-400 uppercase tracking-widest font-bold flex items-center gap-1.5 mt-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> In progress
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-[#0F172A] border border-[#1E293B] rounded-xl p-3 flex justify-between items-center group cursor-pointer hover:border-brand-purple/50 transition-colors hover:-translate-y-0.5">
-                  <div className="flex-1 overflow-hidden pr-2">
-                    <h4 className="text-sm text-white font-bold truncate">Engineering Math Tutor</h4>
-                    <span className="text-[9px] text-zinc-400 uppercase tracking-widest font-bold flex items-center gap-1.5 mt-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-purple"></span> Assigned
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Section C: Latest Notification */}
-            <div className="mt-auto">
-              <h3 className="text-[10px] font-black tracking-widest text-zinc-500 uppercase mb-3 px-1">Notifications</h3>
-              <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-4 relative overflow-hidden group hover:border-blue-500/50 transition-all hover:shadow-lg hover:-translate-y-1">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bell size={14} className="text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-white mb-0.5 leading-tight group-hover:text-blue-400 transition-colors">KYC Verification pending</p>
-                    <p className="text-xs text-zinc-400">Complete verification via Settings to withdraw your safe earnings.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
-        )}
 
       </div>
 
@@ -573,63 +510,31 @@ function FeedTab({ label, active, onClick }: any) {
   );
 }
 
-function FeedCard({ gig }: { gig: any, index?: number }) {
-  const isMarket = gig.listing_type === 'MARKET';
-  const isHighlighted = gig.is_highlighted && gig.highlight_expires_at && new Date(gig.highlight_expires_at) > new Date();
-  return (
-    <Link href={`/gig/${gig.id}`} className="block">
-      <div
-        className={`bg-[#0F172A] border rounded-2xl p-6 flex flex-col group hover:-translate-y-1 hover:shadow-xl transition-all min-h-[170px] h-full relative overflow-hidden ${isHighlighted
-          ? 'border-brand-purple/50 shadow-[0_0_25px_rgba(136,37,245,0.15)] hover:shadow-[0_0_35px_rgba(136,37,245,0.3)]'
-          : 'border-[#1E293B] hover:border-[#334155]'
-          }`}
-      >
-        {isHighlighted && (
-          <div className="absolute top-3 right-3 px-2 py-0.5 bg-brand-purple/20 border border-brand-purple/30 rounded-md text-[8px] font-bold text-brand-purple uppercase tracking-widest z-20">
-            Featured
-          </div>
-        )}
-        <div className="mb-2 relative z-10">
-          <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${gig.listing_type === 'HUSTLE' ? 'bg-brand-purple/20 text-brand-purple' : gig.listing_type === 'COMPANY_TASK' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-brand-pink/20 text-brand-pink'}`}>
-            {gig.listing_type === 'HUSTLE' ? 'HUSTLE' : gig.listing_type === 'COMPANY_TASK' ? 'COMPANY TASK' : gig.market_type}
-          </span>
-        </div>
-        <div className="flex justify-between items-start mb-3 relative z-10">
-          <h3 className="font-bold text-white text-[17px] leading-snug group-hover:text-brand-purple transition-colors line-clamp-2 pr-4">{gig.title}</h3>
-        </div>
-
-        <div className="flex items-center gap-2 mb-auto relative z-10">
-          <span className="text-lg font-black text-brand-purple">₹{gig.price}</span>
-          {isMarket && gig.market_type === 'RENT' && <span className="text-[11px] text-zinc-500">/day</span>}
-        </div>
-
-        <div className="mt-6 pt-4 border-t border-[#1E293B] flex items-center justify-between relative z-10">
-          <div className="flex flex-col gap-1 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-            <span className="flex items-center gap-1"><MapPin size={10} className="text-zinc-600" /> {gig.is_physical ? "Physical" : "Online"} • {gig.users?.college || "Global"}</span>
-          </div>
-          <span className="text-[9px] text-zinc-400 font-bold uppercase">{timeAgo(gig.created_at)}</span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function timeAgo(dateString: string) {
-  if (!dateString) return "";
-  const safeDateString = dateString.endsWith("Z") || dateString.includes("+")
-    ? dateString
-    : `${dateString}Z`;
-  const seconds = Math.floor((Date.now() - new Date(safeDateString).getTime()) / 1000);
-  if (seconds < 60) return "Just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
-}
-
 function DashboardSkeleton() {
   return (
-    <div className="min-h-screen bg-[#070B1A] flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-brand-purple border-t-transparent rounded-full animate-spin"></div>
+    <div className="min-h-screen bg-[#0B0B11] text-white">
+      {/* Top nav skeleton */}
+      <div className="border-b border-white/[0.06] px-4 md:px-8 h-16 flex items-center justify-between">
+        <Skeleton className="h-6 w-28" />
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-8 w-8 rounded-full" />
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        {/* Filter bar skeleton */}
+        <div className="flex items-center gap-2 mb-6">
+          <Skeleton className="h-9 w-24 rounded-full" />
+          <Skeleton className="h-9 w-24 rounded-full" />
+          <Skeleton className="h-9 w-9 rounded-full ml-auto" />
+        </div>
+        {/* Gig grid skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <GigCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

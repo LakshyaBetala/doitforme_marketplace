@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Shield, Zap } from "lucide-react";
 
 export default function PricingContent() {
    return (
-      <div className="min-h-screen bg-[#0B0B11] text-white p-6 md:p-12 selection:bg-[#00f2ff] selection:text-black">
+      <div className="min-h-screen bg-[#0B0B11] text-white p-6 md:p-12 selection:bg-[#8825F5] selection:text-white">
          <Link href="/" className="flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors w-fit group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Home
          </Link>
@@ -60,9 +60,9 @@ export default function PricingContent() {
                </div>
 
                {/* Escrow Protection */}
-               <div className="bg-[#1A1A24] rounded-3xl p-8 border border-[#00f2ff]/30 flex flex-col">
+               <div className="bg-[#1A1A24] rounded-3xl p-8 border border-purple-500/30 flex flex-col">
                   <div className="flex items-center gap-3 mb-2">
-                     <Shield className="w-6 h-6 text-[#00f2ff]" />
+                     <Shield className="w-6 h-6 text-purple-400" />
                      <h3 className="text-2xl font-bold text-white">Escrow Protection</h3>
                   </div>
                   <p className="text-white/50 text-sm mb-6">For gigs ₹500 and above. Funds held until work is verified.</p>
@@ -73,19 +73,19 @@ export default function PricingContent() {
 
                   <ul className="space-y-4 mb-8 flex-1">
                      <li className="flex items-start gap-3 text-white/80">
-                        <Check className="w-5 h-5 text-[#00f2ff] shrink-0" />
+                        <Check className="w-5 h-5 text-purple-400 shrink-0" />
                         <span>Funds held in secure escrow until delivery</span>
                      </li>
                      <li className="flex items-start gap-3 text-white/80">
-                        <Check className="w-5 h-5 text-[#00f2ff] shrink-0" />
+                        <Check className="w-5 h-5 text-purple-400 shrink-0" />
                         <span>24-hour review window after submission</span>
                      </li>
                      <li className="flex items-start gap-3 text-white/80">
-                        <Check className="w-5 h-5 text-[#00f2ff] shrink-0" />
+                        <Check className="w-5 h-5 text-purple-400 shrink-0" />
                         <span>Dispute resolution by DoItForMe team</span>
                      </li>
                      <li className="flex items-start gap-3 text-white/80">
-                        <Check className="w-5 h-5 text-[#00f2ff] shrink-0" />
+                        <Check className="w-5 h-5 text-purple-400 shrink-0" />
                         <span>Available for gigs ₹500 and above</span>
                      </li>
                   </ul>
@@ -101,7 +101,7 @@ export default function PricingContent() {
             <div className="mt-12 bg-white/5 border border-white/10 rounded-2xl p-6 text-center max-w-2xl mx-auto">
                <p className="text-white/80 text-lg mb-2">Have a question about our pricing?</p>
                <p className="text-white/50 text-sm">
-                  Contact us at <a href="mailto:doitforme.in@gmail.com" className="text-[#00f2ff] font-medium hover:underline">doitforme.in@gmail.com</a> or call <a href="tel:+919344110272" className="text-green-500 font-medium hover:underline">+91 93441 10272</a>
+                  Contact us at <a href="mailto:doitforme.in@gmail.com" className="text-purple-400 font-medium hover:underline">doitforme.in@gmail.com</a> or call <a href="tel:+919344110272" className="text-green-500 font-medium hover:underline">+91 93441 10272</a>
                </p>
             </div>
 
@@ -109,3 +109,4 @@ export default function PricingContent() {
       </div>
    );
 }
+

@@ -120,19 +120,19 @@ export default function CompanyProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center">
         <Loader2 className="w-10 h-10 text-white animate-spin" />
       </div>
     );
   }
 
-  if (!company) return <div className="min-h-screen bg-[#050505] text-white flex justify-center items-center font-bold uppercase tracking-widest text-xs">Unit Profile Not Found.</div>;
+  if (!company) return <div className="min-h-screen bg-[#0B0B11] text-white flex justify-center items-center font-bold uppercase tracking-widest text-xs">Unit Profile Not Found.</div>;
 
   const labelClass = "text-[10px] font-bold text-[#444] uppercase tracking-widest mb-3 block";
   const inputClass = "w-full bg-[#0a0a0a] border border-[#222] rounded-none p-5 text-sm font-medium text-white outline-none focus:border-white transition-all placeholder:text-[#333] disabled:opacity-50";
 
   return (
-    <main className="min-h-[100dvh] bg-[#050505] p-6 lg:p-12 pb-36 text-white selection:bg-white selection:text-black font-sans relative">
+    <main className="min-h-[100dvh] bg-[#0B0B11] p-6 lg:p-12 pb-36 text-white selection:bg-white selection:text-black font-sans relative">
       
       {/* Side Marker */}
       <div className="fixed left-6 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-12 pointer-events-none">

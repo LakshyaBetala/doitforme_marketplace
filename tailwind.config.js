@@ -22,19 +22,23 @@ module.exports = {
         background: "var(--background)",
         foreground: "var(--foreground)",
 
-        // UI Components
+        // UI Components — match the surface scale in app/globals.css
         card: {
-          DEFAULT: "var(--card)",
+          DEFAULT: "var(--card)",          // #13131A
+          elevated: "var(--card-elevated)", // #1A1A24 (modals, popovers, hover)
           border: "var(--card-border)",
         },
 
-        // Brand Accents
+        // Brand Accents — only TWO hues. Anything else is drift.
         brand: {
-          purple: "var(--brand-purple)", // #8825F5
-          blue: "var(--brand-blue)",   // #0097FF
-          pink: "#D31CE7",             // Kept for legacy support
-          dark: "#0B0B11",
-          darker: "#06060A",
+          purple: "var(--brand-purple)",          // #8825F5 — primary CTA / fills
+          "purple-soft": "var(--brand-purple-soft)", // #C9A9FF — inline accent text
+          blue: "var(--brand-blue)",              // #0097FF — secondary, sparingly
+          // DEPRECATED: aliased to brand-purple so legacy `bg-brand-pink` / `text-brand-pink`
+          // call-sites render brand-correct without per-file edits. Migrate consumers,
+          // then delete this token entirely.
+          pink: "var(--brand-purple)",
+          dark: "var(--background)",              // #0B0B11
           glass: "rgba(255,255,255,0.05)",
         },
       },

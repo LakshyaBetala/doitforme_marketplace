@@ -11,7 +11,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   'open': { label: 'Open', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
   'assigned': { label: 'In Progress', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
   'AWAITING_FUNDS': { label: 'Awaiting Escrow', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
-  'SUBMITTED': { label: 'Work Submitted', color: 'text-[#00f2ff]', bg: 'bg-[#00f2ff]/10', border: 'border-[#00f2ff]/20' },
+  'SUBMITTED': { label: 'Work Submitted', color: 'text-[#C084FC]', bg: 'bg-[#C084FC]/10', border: 'border-[#C084FC]/20' },
   'delivered': { label: 'Delivered', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
   'completed': { label: 'Completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
   'cancelled': { label: 'Cancelled', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
@@ -129,10 +129,10 @@ export default function ActivityHubPage() {
       }
   };
 
-  if (loading) return <div className="min-h-screen bg-[#0B0B11] flex justify-center items-center"><Loader2 className="animate-spin text-[#00f2ff] w-8 h-8" /></div>;
+  if (loading) return <div className="min-h-screen bg-[#0B0B11] flex justify-center items-center"><Loader2 className="animate-spin text-[#C084FC] w-8 h-8" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#0B0B11] text-white p-4 md:p-8 cursor-default selection:bg-[#00f2ff] selection:text-black pb-32">
+    <div className="min-h-screen bg-[#0B0B11] text-white p-4 md:p-8 cursor-default selection:bg-[#8825F5] selection:text-white pb-32">
       <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-500">
         
         <div className="flex items-center justify-between">
@@ -142,10 +142,10 @@ export default function ActivityHubPage() {
 
         {/* TABS */}
         <div className="flex bg-white/5 p-1 rounded-2xl relative border border-white/5">
-           <button onClick={() => setActiveTab("HIRING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-all ${activeTab === 'HIRING' ? 'bg-[#00f2ff] text-black shadow-lg shadow-[#00f2ff]/20' : 'text-white/60 hover:text-white'}`}>
+           <button onClick={() => setActiveTab("HIRING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-all ${activeTab === 'HIRING' ? 'bg-purple-600 text-white shadow-lg shadow-[#C084FC]/20' : 'text-white/60 hover:text-white'}`}>
              <Briefcase size={14} /> Outsourcing ({hiringGigs.length})
            </button>
-           <button onClick={() => setActiveTab("WORKING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-all ${activeTab === 'WORKING' ? 'bg-[#00f2ff] text-black shadow-lg shadow-[#00f2ff]/20' : 'text-white/60 hover:text-white'}`}>
+           <button onClick={() => setActiveTab("WORKING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-all ${activeTab === 'WORKING' ? 'bg-purple-600 text-white shadow-lg shadow-[#C084FC]/20' : 'text-white/60 hover:text-white'}`}>
              <Zap size={14} /> Hustling ({workingGigs.length})
            </button>
         </div>
@@ -156,35 +156,35 @@ export default function ActivityHubPage() {
              <div className="text-center py-16">
                <Briefcase size={40} className="mx-auto text-white/20 mb-3" />
                <p className="text-white/50 text-sm">No gigs posted yet.</p>
-               <button onClick={() => router.push('/post')} className="mt-4 px-5 py-2 rounded-full bg-[#00f2ff] text-black text-xs font-bold">Post a Gig</button>
+               <button onClick={() => router.push('/post')} className="mt-4 px-5 py-2 rounded-full bg-purple-600 text-white text-xs font-bold">Post a Gig</button>
              </div>
            )}
            {activeTab === "WORKING" && workingGigs.length === 0 && (
              <div className="text-center py-16">
                <Zap size={40} className="mx-auto text-white/20 mb-3" />
                <p className="text-white/50 text-sm">No gigs found. Go find some work!</p>
-               <button onClick={() => router.push('/dashboard')} className="mt-4 px-5 py-2 rounded-full bg-[#00f2ff] text-black text-xs font-bold">Find Gigs</button>
+               <button onClick={() => router.push('/dashboard')} className="mt-4 px-5 py-2 rounded-full bg-purple-600 text-white text-xs font-bold">Find Gigs</button>
              </div>
            )}
 
            {activeTab === "HIRING" && hiringGigs.map(gig => (
-             <div key={gig.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#00f2ff]/30 transition-all group">
+             <div key={gig.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#C084FC]/30 transition-all group">
                 <div className="flex justify-between items-start mb-3">
                    <div className="flex-1 min-w-0">
                      <h3 className="font-bold text-white text-lg truncate">{gig.title}</h3>
-                     <p className="text-[#00f2ff] font-black flex items-center gap-1"><IndianRupee size={12} /> {gig.price}</p>
+                     <p className="text-[#C084FC] font-black flex items-center gap-1"><IndianRupee size={12} /> {gig.price}</p>
                    </div>
                    <StatusBadge status={gig.status} />
                 </div>
 
                 {/* Worker contact info for active gigs */}
                 {gig.worker && ['assigned', 'AWAITING_FUNDS', 'SUBMITTED', 'delivered', 'completed'].includes(gig.status) && (
-                  <div className="p-3 bg-[#00f2ff]/5 rounded-xl text-sm mb-3 border border-[#00f2ff]/10 flex items-center justify-between gap-2">
+                  <div className="p-3 bg-[#C084FC]/5 rounded-xl text-sm mb-3 border border-[#C084FC]/10 flex items-center justify-between gap-2">
                     <div>
                       <span className="text-white/50 text-xs">Hustler:</span> <span className="font-bold text-white">{gig.worker.name}</span>
                     </div>
                     {gig.worker.phone && (
-                      <a href={`tel:${gig.worker.phone}`} className="flex items-center gap-1 text-xs text-[#00f2ff] font-bold bg-[#00f2ff]/10 px-2.5 py-1 rounded-lg border border-[#00f2ff]/20 hover:bg-[#00f2ff]/20 transition-colors">
+                      <a href={`tel:${gig.worker.phone}`} className="flex items-center gap-1 text-xs text-[#C084FC] font-bold bg-[#C084FC]/10 px-2.5 py-1 rounded-lg border border-[#C084FC]/20 hover:bg-[#C084FC]/20 transition-colors">
                         <Phone size={10} /> {gig.worker.phone}
                       </a>
                     )}
@@ -205,7 +205,7 @@ export default function ActivityHubPage() {
                    </button>
 
                    {gig.status === 'AWAITING_FUNDS' && (
-                     <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 py-2.5 rounded-xl bg-[#00f2ff] hover:bg-[#00f2ff]/90 text-black font-bold text-sm transition-all shadow-lg shadow-[#00f2ff]/20 flex items-center gap-2 justify-center">
+                     <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-all shadow-lg shadow-[#C084FC]/20 flex items-center gap-2 justify-center">
                        <ShieldCheck size={14} /> Fund Escrow (3%)
                      </button>
                    )}
@@ -225,7 +225,7 @@ export default function ActivityHubPage() {
              const displayStatus = app.status === 'approved' ? gig.status : app.status;
 
              return (
-               <div key={app.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#00f2ff]/30 transition-all group">
+               <div key={app.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#C084FC]/30 transition-all group">
                   <div className="flex justify-between items-start mb-3">
                      <div className="flex-1 min-w-0">
                        <h3 className="font-bold text-white text-lg truncate">{gig.title}</h3>
@@ -237,7 +237,7 @@ export default function ActivityHubPage() {
                    {/* Payment preference badge */}
                   {app.payment_preference && (
                     <div className="mb-3">
-                      <span className={`px-2 py-1 rounded-lg text-[10px] uppercase font-black tracking-widest border ${app.payment_preference === 'ESCROW' ? 'bg-[#00f2ff]/10 text-[#00f2ff] border-[#00f2ff]/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>
+                      <span className={`px-2 py-1 rounded-lg text-[10px] uppercase font-black tracking-widest border ${app.payment_preference === 'ESCROW' ? 'bg-[#C084FC]/10 text-[#C084FC] border-[#C084FC]/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>
                         {app.payment_preference === 'ESCROW' ? '🛡️ Escrow Protected' : '⚡ Direct Connect'}
                       </span>
                     </div>
@@ -250,7 +250,7 @@ export default function ActivityHubPage() {
                         <span className="text-white/50 text-xs">Client:</span> <span className="font-bold text-white">{gig.poster.name}</span>
                       </div>
                       {gig.poster.phone && (
-                        <a href={`tel:${gig.poster.phone}`} className="flex items-center gap-1 text-xs text-[#00f2ff] font-bold bg-[#00f2ff]/10 px-2.5 py-1 rounded-lg border border-[#00f2ff]/20 hover:bg-[#00f2ff]/20 transition-colors">
+                        <a href={`tel:${gig.poster.phone}`} className="flex items-center gap-1 text-xs text-[#C084FC] font-bold bg-[#C084FC]/10 px-2.5 py-1 rounded-lg border border-[#C084FC]/20 hover:bg-[#C084FC]/20 transition-colors">
                           <Phone size={10} /> {gig.poster.phone}
                         </a>
                       )}
@@ -277,7 +277,7 @@ export default function ActivityHubPage() {
                      )}
 
                      {app.status === 'approved' && (gig.status === 'assigned') && (
-                       <button onClick={() => handleSubmitWork(gig.id, app.id)} className="flex-1 py-2.5 rounded-xl bg-[#00f2ff] hover:bg-[#00f2ff]/90 text-black font-bold text-sm transition-all shadow-lg shadow-[#00f2ff]/20 flex items-center gap-2 justify-center">
+                       <button onClick={() => handleSubmitWork(gig.id, app.id)} className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-all shadow-lg shadow-[#C084FC]/20 flex items-center gap-2 justify-center">
                          <ArrowRight size={14} /> Submit Work
                        </button>
                      )}

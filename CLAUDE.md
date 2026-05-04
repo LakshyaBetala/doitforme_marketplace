@@ -85,3 +85,31 @@ From README + handler code:
 
 ## Stale-doc warning
 [supabase/README.md](supabase/README.md) references files `supabase/sql/01_..08_*.sql`. That directory was removed in commit `0c8f119` ("Cleanup: remove redundant root sql directory"). The live migrations are in [supabase/migrations/](supabase/migrations/) and are date-stamped (e.g. `20260421_standardize_naming_and_rls.sql`). Trust the dated migrations, not the README's ordering.
+
+## Design system (read before any UI change)
+
+The site is **dark, Swiss-minimalist, purple-accented**. Default to monochrome; brand color is a highlight, not a fill. Anything else reads as AI-slop.
+
+- **Surface scale (use these, don't invent new blacks):** `--background: #0B0B11` < `--card: #13131A` < `--card-elevated: #1A1A24`. Borders: `rgba(255,255,255,0.08)`. Foreground: `#fafafa`; muted text: `--foreground-muted` (62% white). Defined in [app/globals.css](app/globals.css). **Do not hardcode `bg-[#050505]`** — that's a legacy literal still scattered across ~10 files awaiting migration to the CSS var.
+- **Brand palette is exactly two hues:** `--brand-purple: #8825F5` (primary) and `--brand-blue: #0097FF` (secondary, sparingly). No pink, no indigo, no gradient-magenta, no rainbow status pills. Use neutral grays for status differentiation; reserve purple for one CTA per surface.
+- **Typography:** Space Grotesk for `h1`/`h2` only (display); Inter for everything else including `h3`–`h6`. Weights 400/500/600/700 are loaded. Negative letter-spacing on display heads (`-0.02em`) is the house style.
+- **Soft purple accent:** for inline text/glows on dark surfaces, use `var(--brand-purple-soft)` (`#C9A9FF`) — never reach for `purple-300`/`purple-400`/`#C084FC`/lavenders. The brand `#8825F5` is for fills (CTAs, highlights); the soft tint is for inline accents that need contrast against `#0B0B11`.
+
+## UI primitives — use these, don't roll your own
+
+These live in [components/ui/](components/ui/). If you find yourself open-coding any of these patterns, import the primitive instead — the codebase has too much per-page drift already.
+
+- **`Avatar`** — single initial fallback on neutral surface w/ hairline ring; `Image fill` w/ `sizes`. Source of truth for every user/company avatar.
+- **`Card`** — `bg-[var(--card)]` (`#13131A`) or `variant="elevated"` (`#1A1A24`); hairline border; `rounded-2xl`; `padded` toggles default `p-5 md:p-6`.
+- **`Button`** — variants: `primary` (purple, exactly one per surface), `secondary` (white/[0.06]), `ghost`, `destructive`. Sizes: `sm`/`md`/`lg`. `loading` swaps content for spinner.
+- **`StatusBadge`** + **`statusToTone()`** + **`humanizeStatus()`** — every status pill (gig/escrow/application/dispute/payout) renders here. Tones: `neutral`/`info`/`success`/`warning`/`danger`. The mapper is the canonical place to add new DB status values; never inline ternary `text-green-400 bg-green-500/10` style classes for statuses.
+
+## UI conventions
+
+- Cards: `bg-[var(--card)]` (or the elevated variant for modals/popovers), `border border-[var(--card-border)]`, rounded-2xl, no shadows by default — depth comes from the surface scale, not box-shadow.
+- Buttons: one primary purple per view; everything else is `bg-white/5 hover:bg-white/10` with hairline border. Avoid drop-shadows on dark surfaces; use `ring-1` instead.
+- Mobile flex containers: never wrap a tall page in `items-center` — it traps content above the fold and breaks scrolling. Use `flex-col min-h-[100dvh] overflow-y-auto` for centered-feeling forms.
+- Realtime/toast surface is `#1A1A24` with the standard hairline border (see [app/layout.tsx](app/layout.tsx)).
+
+## Local maintenance scripts
+[scripts/maintenance/](scripts/maintenance/) holds ad-hoc PowerShell color-migration scripts and one-off test runners (`test_onboard*.ts`). Gitignored. **Never move `proxy.ts` here** — it is the Next.js 16 middleware and must live at repo root or auth-gating silently breaks (Next does not error when middleware is missing).

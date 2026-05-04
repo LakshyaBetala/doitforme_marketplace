@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { Loader2, ArrowLeft, Clock, CheckCircle2, XCircle, AlertTriangle, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 
 interface PayoutRecord {
     id: string;
@@ -129,32 +130,24 @@ export default function PayoutsPage() {
                             {payouts.map((p) => (
                                 <div key={p.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-4 flex items-center justify-between hover:border-white/10 transition-colors group">
                                     <div className="flex items-center gap-4 overflow-hidden">
-                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${p.status === 'COMPLETED' ? 'bg-green-500/10 text-green-400' :
-                                                p.status === 'FAILED' ? 'bg-red-500/10 text-red-400' :
-                                                    'bg-yellow-500/10 text-yellow-400'
-                                            }`}>
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-white/[0.04] border border-white/[0.06] text-white/60">
                                             {p.status === 'COMPLETED' ? <CheckCircle2 size={18} /> :
                                                 p.status === 'FAILED' ? <XCircle size={18} /> :
                                                     <Clock size={18} />}
                                         </div>
                                         <div className="min-w-0">
-                                            <h3 className="font-bold text-sm text-white truncate group-hover:text-brand-purple transition-colors">
-                                                {p.gig?.title || "Unknown Gig"}
+                                            <h3 className="font-semibold text-sm text-white truncate group-hover:text-[#C9A9FF] transition-colors">
+                                                {p.gig?.title || "Unknown gig"}
                                             </h3>
-                                            <p className="text-[10px] text-white/60 font-mono mt-0.5">
-                                                {new Date(p.created_at).toLocaleDateString()} • ID: {p.id.slice(0, 8)}
+                                            <p className="text-[10px] text-white/50 font-mono mt-0.5">
+                                                {new Date(p.created_at).toLocaleDateString()} · ID: {p.id.slice(0, 8)}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <div className="text-right shrink-0">
-                                        <p className="font-mono font-bold text-white">₹{p.amount}</p>
-                                        <span className={`text-[10px] font-bold uppercase tracking-wider ${p.status === 'COMPLETED' ? 'text-green-500' :
-                                                p.status === 'FAILED' ? 'text-red-500' :
-                                                    'text-yellow-500'
-                                            }`}>
-                                            {p.status}
-                                        </span>
+                                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                                        <p className="font-mono font-semibold text-white">₹{p.amount}</p>
+                                        <StatusBadge tone={statusToTone(p.status)}>{humanizeStatus(p.status)}</StatusBadge>
                                     </div>
                                 </div>
                             ))}

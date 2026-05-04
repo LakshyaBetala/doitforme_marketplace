@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
-import { Loader2, Phone, GraduationCap, Wallet, ArrowRight } from "lucide-react";
+import { Loader2, Phone, GraduationCap, Wallet, ArrowRight, AtSign, CheckCircle2, XCircle } from "lucide-react";
 import Image from "next/image";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 
@@ -15,8 +15,38 @@ export default function OnboardingPage() {
     const [college, setCollege] = useState(COLLEGES[0]);
     const [customCollege, setCustomCollege] = useState("");
     const [upiId, setUpiId] = useState("");
+    const [username, setUsername] = useState("");
+    const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+    const [usernameReason, setUsernameReason] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
+    // Debounced username availability check
+    useEffect(() => {
+      const u = username.trim().toLowerCase();
+      if (!u) {
+        setUsernameStatus("idle");
+        setUsernameReason(null);
+        return;
+      }
+      setUsernameStatus("checking");
+      const t = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/auth/check-username?u=${encodeURIComponent(u)}`);
+          const data = await res.json();
+          if (data.available) {
+            setUsernameStatus("available");
+            setUsernameReason(null);
+          } else {
+            setUsernameStatus(data.reason === "Taken" ? "taken" : "invalid");
+            setUsernameReason(data.reason || "Unavailable");
+          }
+        } catch {
+          setUsernameStatus("idle");
+        }
+      }, 350);
+      return () => clearTimeout(t);
+    }, [username]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -28,6 +58,13 @@ export default function OnboardingPage() {
         if (!phone.trim()) {
             setLoading(false);
             return setError("Phone number is required.");
+        }
+
+        // Username is optional, but if provided must be valid + available
+        const cleanUsername = username.trim().toLowerCase();
+        if (cleanUsername && (usernameStatus === "taken" || usernameStatus === "invalid")) {
+            setLoading(false);
+            return setError(usernameReason || "Pick a different username.");
         }
 
         if (college === "Other" && !finalCollege) {
@@ -61,6 +98,7 @@ export default function OnboardingPage() {
                     phone: phone.trim(),
                     college: finalCollege,
                     upi_id: upiId.trim() || undefined,
+                    username: cleanUsername || undefined,
                 }),
             });
 
@@ -153,6 +191,42 @@ export default function OnboardingPage() {
                             />
                         </div>
                     )}
+
+                    {/* Username (optional but encouraged — claims doitforme.in/u/<name>) */}
+                    <div>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-base pointer-events-none select-none">@</span>
+                            <input
+                                type="text"
+                                inputMode="text"
+                                autoComplete="off"
+                                autoCapitalize="off"
+                                spellCheck={false}
+                                placeholder="username"
+                                className={`${inputStyle} pl-9 pr-11`}
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+                                maxLength={20}
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                {usernameStatus === "checking" && <Loader2 size={16} className="text-white/40 animate-spin" />}
+                                {usernameStatus === "available" && <CheckCircle2 size={16} className="text-emerald-400" />}
+                                {(usernameStatus === "taken" || usernameStatus === "invalid") && <XCircle size={16} className="text-red-400" />}
+                                {usernameStatus === "idle" && <AtSign size={16} className="text-white/40" />}
+                            </div>
+                        </div>
+                        <p className={`text-[10px] px-1 mt-1.5 leading-tight ${
+                            usernameStatus === "available" ? "text-emerald-400" :
+                            usernameStatus === "taken" || usernameStatus === "invalid" ? "text-red-400" :
+                            "text-white/60"
+                        }`}>
+                            {usernameStatus === "available" && username
+                                ? `doitforme.in/u/${username} — claimed`
+                                : usernameStatus === "taken" || usernameStatus === "invalid"
+                                ? usernameReason
+                                : "Optional — your public profile URL. Permanent once set."}
+                        </p>
+                    </div>
 
                     {/* UPI (optional) */}
                     <div className="relative">

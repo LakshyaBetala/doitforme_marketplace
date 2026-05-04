@@ -70,10 +70,10 @@ export default function CompanyDashboard() {
     );
 
     return (
-        <div className="h-[100dvh] bg-[#050505] text-white flex flex-col font-sans overflow-hidden selection:bg-indigo-500/30 selection:text-white relative">
+        <div className="h-[100dvh] bg-[#0B0B11] text-white flex flex-col font-sans overflow-hidden selection:bg-indigo-500/30 selection:text-white relative">
             {/* Background Atmosphere */}
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#4F46E5]/10 rounded-full blur-[150px] pointer-events-none" />
-            <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#00f2ff]/10 rounded-full blur-[150px] pointer-events-none" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#C084FC]/10 rounded-full blur-[150px] pointer-events-none" />
 
             {/* Header */}
             <header className="h-[70px] md:h-[80px] bg-white/[0.02] backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 md:px-10 shrink-0 z-50">
@@ -107,7 +107,7 @@ export default function CompanyDashboard() {
 
                     <div className="relative">
                         <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-3 pl-2 pr-4 py-1.5 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all">
-                            <div className="w-7 h-7 bg-[#050505] rounded-full flex items-center justify-center overflow-hidden border border-white/10">
+                            <div className="w-7 h-7 bg-[#0B0B11] rounded-full flex items-center justify-center overflow-hidden border border-white/10">
                                 {user?.user_metadata?.avatar_url ? (
                                     <Image src={user.user_metadata.avatar_url} alt="Logo" width={28} height={28} className="object-cover w-full h-full" />
                                 ) : (

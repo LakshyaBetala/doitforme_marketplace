@@ -26,7 +26,7 @@ export default function RealtimeListener() {
                         table: 'messages',
                         filter: `receiver_id=eq.${user.id}`
                     },
-                    (payload) => {
+                    (payload: any) => {
                         const newMsg = payload.new as any;
                         // Avoid notifying if user is literally on that chat page (optional optimization, skip for now to ensure delivery)
                         toast.info("New Message", {
@@ -51,7 +51,7 @@ export default function RealtimeListener() {
                         table: 'gigs',
                         filter: `poster_id=eq.${user.id}`
                     },
-                    (payload) => {
+                    (payload: any) => {
                         const newGig = payload.new as any;
                         const oldGig = payload.old as any;
 
@@ -80,7 +80,7 @@ export default function RealtimeListener() {
                         table: 'gigs',
                         filter: `assigned_worker_id=eq.${user.id}`
                     },
-                    (payload) => {
+                    (payload: any) => {
                         const newGig = payload.new as any;
                         const oldGig = payload.old as any;
 

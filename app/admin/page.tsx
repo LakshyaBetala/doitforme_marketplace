@@ -168,7 +168,7 @@ export default function AdminDashboardPage() {
         setProcessingId(null);
     };
 
-  if (!isAdmin) return <div className="h-screen bg-[#050505] flex items-center justify-center text-white font-black uppercase tracking-[0.4em]">Unauthorized Access // Terminal Locked</div>;
+  if (!isAdmin) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center text-white font-black uppercase tracking-[0.4em]">Unauthorized Access // Terminal Locked</div>;
 
   const getTabClass = (tab: typeof activeTab) => `
     px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all border-r border-[#222]
@@ -176,7 +176,7 @@ export default function AdminDashboardPage() {
   `;
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-6 md:p-12 font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#0B0B11] text-white p-6 md:p-12 font-sans selection:bg-white selection:text-black">
         
         {/* Corner Decals */}
         <div className="fixed top-0 left-0 w-32 h-32 border-l-2 border-t-2 border-[#111] pointer-events-none"></div>
@@ -254,7 +254,7 @@ export default function AdminDashboardPage() {
                                                         <div className="text-[10px] text-[#444] font-bold uppercase tracking-widest">{p.users?.email}</div>
                                                     </td>
                                                     <td className="p-8">
-                                                        <span className="font-black text-sm text-white border border-[#222] px-3 py-1 bg-[#050505]">{p.upi_id || "NULL_VECTOR"}</span>
+                                                        <span className="font-black text-sm text-white border border-[#222] px-3 py-1 bg-[#0B0B11]">{p.upi_id || "NULL_VECTOR"}</span>
                                                     </td>
                                                     <td className="p-8">
                                                        <span className="font-black text-2xl text-white italic">₹{p.amount}</span>
@@ -343,7 +343,7 @@ export default function AdminDashboardPage() {
                                                 <div className="text-[10px] font-black text-[#444] uppercase tracking-[0.3em]">{user.email}</div>
                                             </div>
                                             {user.experience && (
-                                                <div className="text-[10px] text-[#888] bg-[#050505] p-8 border border-[#222] italic leading-relaxed whitespace-pre-wrap font-medium">
+                                                <div className="text-[10px] text-[#888] bg-[#0B0B11] p-8 border border-[#222] italic leading-relaxed whitespace-pre-wrap font-medium">
                                                     <span className="text-[8px] font-black text-[#222] uppercase tracking-[0.5em] block mb-4">Transmission Trace // Data Summary</span>
                                                     {user.experience}
                                                 </div>

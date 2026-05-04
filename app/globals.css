@@ -7,13 +7,19 @@
 --------------------------------------- */
 
 :root {
-  --background: #050505;
+  /* Surface scale — keep three steps: bg < card < elevated */
+  --background: #0B0B11;
+  --card: #13131A;
+  --card-elevated: #1A1A24;
+  --card-border: rgba(255, 255, 255, 0.08);
   --foreground: #fafafa;
-  --card: #0a0a0a;
-  --card-border: #27272a;
+  --foreground-muted: rgba(250, 250, 250, 0.62);
   --brand-purple: #8825F5;
+  /* Soft tint of brand-purple for inline text/accents on dark surfaces.
+     Use this instead of reaching for purple-400 (#C084FC) or other lavenders. */
+  --brand-purple-soft: #C9A9FF;
   --brand-blue: #0097FF;
-  --glass-bg: rgba(5, 5, 5, 0.7);
+  --glass-bg: rgba(11, 11, 17, 0.7);
   --glass-border: rgba(255, 255, 255, 0.08);
 
   /* Mobile Safe Areas */
@@ -46,6 +52,19 @@ body {
   /* --- MOBILE OPTIMIZATION 3: TOUCH UX --- */
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+}
+
+/* Display headings only — Space Grotesk for h1/h2 hero copy.
+   h3+ stay on Inter so they don't compete with display type. */
+h1, h2 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  letter-spacing: -0.02em;
+}
+h1 { font-weight: 700; }
+h2 { font-weight: 600; }
+h3, h4, h5, h6 {
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -0.015em;
 }
 
 /* --- FIX: STOP AUTOFILL COLOR CHANGE --- */

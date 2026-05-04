@@ -6,7 +6,34 @@ import { cookies } from "next/headers";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, name, phone, college, upi_id } = body;
+    const { email, name, phone, college, upi_id, username } = body;
+
+    // Username format validation — same rules as /api/auth/check-username
+    const USERNAME_FORMAT = /^[a-z][a-z0-9_]{2,19}$/;
+    const RESERVED_USERNAMES = new Set([
+      "admin", "administrator", "root", "support", "help", "doitforme",
+      "doitfor", "marketforme", "team", "official", "moderator", "mod",
+      "system", "api", "auth", "login", "logout", "signup", "signin",
+      "settings", "profile", "u", "user", "users", "company", "companies",
+      "gig", "gigs", "feed", "dashboard", "messages", "chat", "post",
+      "explore", "search", "about", "contact", "terms", "privacy",
+      "pricing", "verify", "onboarding", "payouts", "activity",
+      "anthropic", "claude", "openai", "null", "undefined",
+    ]);
+    let cleanedUsername: string | null = null;
+    if (username) {
+      const u = String(username).trim().toLowerCase();
+      if (!USERNAME_FORMAT.test(u)) {
+        return NextResponse.json(
+          { error: "Invalid username. 3–20 chars, lowercase letters/numbers/underscore, must start with a letter." },
+          { status: 400 }
+        );
+      }
+      if (RESERVED_USERNAMES.has(u)) {
+        return NextResponse.json({ error: "That username is reserved." }, { status: 400 });
+      }
+      cleanedUsername = u;
+    }
 
     // SECURITY: Authenticate caller via cookie — use session user ID, never trust body
     const cookieStore = await cookies();
@@ -55,6 +82,21 @@ export async function POST(req: Request) {
     const finalCollege = college || existingUser?.college || null;
     const finalUpi = upi_id || existingUser?.upi_id || null;
     const finalKyc = existingUser?.kyc_verified || false;
+    // Once a username is claimed it's permanent for this iteration — no overwrite of an existing one.
+    const finalUsername = existingUser?.username || cleanedUsername || null;
+
+    // If a NEW username was requested but the user already has one, ignore silently.
+    // If a NEW username was requested AND it conflicts with another user, fail loud.
+    if (cleanedUsername && !existingUser?.username) {
+      const { data: conflict } = await supabase
+        .from("users")
+        .select("id")
+        .eq("username", cleanedUsername)
+        .maybeSingle();
+      if (conflict && conflict.id !== id) {
+        return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
+      }
+    }
 
     // Upsert user (with verified ID from session)
     const { error: userError } = await supabase
@@ -66,6 +108,7 @@ export async function POST(req: Request) {
         phone: finalPhone,
         college: finalCollege,
         upi_id: finalUpi,
+        username: finalUsername,
         kyc_verified: finalKyc,
         updated_at: new Date().toISOString(),
       })

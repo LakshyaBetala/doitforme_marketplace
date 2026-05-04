@@ -153,7 +153,7 @@ export default function CompanyPostTask() {
 
   if (loadingInitial) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#050505]">
+      <div className="min-h-screen flex items-center justify-center bg-[#0B0B11]">
         <Loader2 className="w-10 h-10 text-white animate-spin" />
       </div>
     );
@@ -163,7 +163,7 @@ export default function CompanyPostTask() {
   const inputClass = "w-full bg-[#0a0a0a] border border-[#222] rounded-none p-5 text-sm font-medium text-white outline-none focus:border-white transition-all placeholder:text-[#333]";
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white pt-12 pb-24 px-4 flex justify-center relative font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#0B0B11] text-white pt-12 pb-24 px-4 flex justify-center relative font-sans selection:bg-white selection:text-black">
       
       {/* Editorial side marker */}
       <div className="fixed left-6 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-12 pointer-events-none">

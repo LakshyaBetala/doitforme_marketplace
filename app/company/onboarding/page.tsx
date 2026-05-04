@@ -168,11 +168,11 @@ export default function CompanyOnboardingPage() {
     const labelClass = "block text-xs font-medium text-zinc-400 mb-2 pl-1";
 
     return (
-        <div className="flex bg-[#050505] min-h-[100dvh] text-white font-sans selection:bg-white selection:text-black">
+        <div className="flex bg-[#0B0B11] min-h-[100dvh] text-white font-sans selection:bg-white selection:text-black">
             {/* Left Side: Persuasive Value Pitch */}
-            <div className="hidden lg:flex flex-col justify-between w-[45%] bg-[#050505] p-16 relative overflow-hidden">
+            <div className="hidden lg:flex flex-col justify-between w-[45%] bg-[#0B0B11] p-16 relative overflow-hidden">
                 {/* Subtle background glow */}
-                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#00f2ff]/5 rounded-full blur-[120px] pointer-events-none" />
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-[#C084FC]/5 rounded-full blur-[120px] pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-[#4F46E5]/5 rounded-full blur-[100px] pointer-events-none" />
 
                 <div className="relative z-10 space-y-10">
@@ -189,7 +189,7 @@ export default function CompanyOnboardingPage() {
                     <div>
                         <h2 className="text-[2.75rem] font-medium leading-[1.1] tracking-tight mb-6">
                             Tap into India&apos;s most <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 font-bold">verified student network.</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-[#C084FC] font-bold">verified student network.</span>
                         </h2>
                         <p className="text-zinc-400 text-[15px] leading-relaxed max-w-md font-medium">
                             Hire 1 to 50 vetted student workers instantly. Pay seamlessly via 3% Escrow protection only when the task is delivered.
@@ -199,8 +199,8 @@ export default function CompanyOnboardingPage() {
                     {/* Value Props */}
                     <div className="space-y-5">
                         <div className="flex items-start gap-4">
-                            <div className="w-10 h-10 bg-[#00f2ff]/10 border border-[#00f2ff]/20 flex items-center justify-center shrink-0">
-                                <Zap size={18} className="text-[#00f2ff]" />
+                            <div className="w-10 h-10 bg-[#C084FC]/10 border border-[#C084FC]/20 flex items-center justify-center shrink-0">
+                                <Zap size={18} className="text-[#C084FC]" />
                             </div>
                             <div>
                                 <h4 className="text-sm font-black text-white mb-1">Hire in Hours, Not Weeks</h4>
@@ -250,8 +250,8 @@ export default function CompanyOnboardingPage() {
             </div>
 
             {/* Right Side: Form Wizard */}
-            <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-                <div className="w-full max-w-lg">
+            <div className="flex-1 flex flex-col justify-center p-6 sm:p-12 min-h-[100dvh] py-12 md:py-12 relative overflow-y-auto">
+                <div className="w-full max-w-lg mx-auto my-auto">
                     
                     {/* Header */}
                     <div className="mb-10 flex items-center justify-between">
@@ -279,7 +279,7 @@ export default function CompanyOnboardingPage() {
                         <h2 className="text-lg font-black tracking-tight mb-2">Why Register?</h2>
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-[11px] text-[#888]">
-                                <Zap size={12} className="text-[#00f2ff] shrink-0" />
+                                <Zap size={12} className="text-[#C084FC] shrink-0" />
                                 <span>Post tasks, get verified student applications in hours</span>
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-[#888]">

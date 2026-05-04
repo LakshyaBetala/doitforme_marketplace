@@ -94,7 +94,7 @@ export default function CompanyTaskHubPage() {
     setSelectedWorkerId(null);
   };
 
-  if (loading) return <div className="h-screen bg-[#050505] flex justify-center items-center"><Loader2 className="animate-spin text-white w-8 h-8" /></div>;
+  if (loading) return <div className="h-screen bg-[#0B0B11] flex justify-center items-center"><Loader2 className="animate-spin text-white w-8 h-8" /></div>;
   if (!gig) return null;
 
   const acceptedCount = applications.filter(a => a.status === 'accepted').length;
@@ -102,7 +102,7 @@ export default function CompanyTaskHubPage() {
   const labelClass = "block text-[10px] font-bold text-[#444] uppercase tracking-widest mb-2";
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white pb-36 font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#0B0B11] text-white pb-36 font-sans selection:bg-white selection:text-black">
 
       {/* TOP HEADER */}
       <div className="sticky top-0 z-30 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#222]">
@@ -175,7 +175,7 @@ export default function CompanyTaskHubPage() {
                      )}
                      
                      <div className="flex items-start gap-8 flex-1">
-                       <div className="w-16 h-16 bg-[#050505] border border-[#222] flex items-center justify-center overflow-hidden shrink-0 grayscale group-hover:grayscale-0 transition-all">
+                       <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] flex items-center justify-center overflow-hidden shrink-0 grayscale group-hover:grayscale-0 transition-all">
                          {worker?.avatar_url ? (
                            <Image src={worker.avatar_url} alt="Profile" width={64} height={64} className="object-cover w-full h-full" />
                          ) : (
@@ -197,7 +197,7 @@ export default function CompanyTaskHubPage() {
                             <span className="text-[#888]">{worker?.college || "CREDENTIALS NOT FILED"}</span> // {worker?.email}
                          </div>
                          {app.pitch && (
-                           <div className="text-sm text-[#888] bg-[#050505] border border-[#222] p-6 max-w-xl italic leading-relaxed">
+                           <div className="text-sm text-[#888] bg-[#0B0B11] border border-[#222] p-6 max-w-xl italic leading-relaxed">
                              <span className="uppercase text-[8px] font-bold text-[#333] block mb-3 tracking-[0.3em]">Proposal Transcript</span>
                              "{app.pitch}"
                            </div>
@@ -232,7 +232,7 @@ export default function CompanyTaskHubPage() {
 
       {/* INCENTIVE MODAL */}
       {showIncentiveModal && (
-        <div className="fixed inset-0 z-50 bg-[#050505]/95 backdrop-blur-sm flex items-center justify-center p-6" onClick={(e) => e.target === e.currentTarget && setShowIncentiveModal(false)}>
+        <div className="fixed inset-0 z-50 bg-[#0B0B11]/95 backdrop-blur-sm flex items-center justify-center p-6" onClick={(e) => e.target === e.currentTarget && setShowIncentiveModal(false)}>
           <div className="bg-[#0a0a0a] border border-[#222] p-12 w-full max-w-md relative animate-in zoom-in-95 duration-200">
              <button onClick={() => setShowIncentiveModal(false)} className="absolute top-6 right-6 text-[#444] hover:text-white transition-colors">✕</button>
              
@@ -253,7 +253,7 @@ export default function CompanyTaskHubPage() {
                       value={incentiveAmount} 
                       onChange={e => setIncentiveAmount(e.target.value)} 
                       placeholder="e.g. 500"
-                      className="w-full bg-[#050505] border border-[#222] p-6 pl-12 text-white font-black text-2xl focus:outline-none focus:border-white transition-colors"
+                      className="w-full bg-[#0B0B11] border border-[#222] p-6 pl-12 text-white font-black text-2xl focus:outline-none focus:border-white transition-colors"
                     />
                   </div>
                 </div>

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { Loader2, ArrowLeft, MapPin, Shield, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check } from "lucide-react";
+import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
+import Skeleton from "@/components/ui/Skeleton";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -92,19 +94,48 @@ export default function GigDetailsPage() {
     router.push(`/chat/${gigId}`);
   };
 
-  if (loading) return <div className="h-screen bg-[#0B0B11] flex justify-center items-center"><Loader2 className="animate-spin text-brand-purple w-8 h-8" /></div>;
-  if (!gig) return <div className="h-screen bg-[#0B0B11] flex flex-col gap-4 justify-center items-center text-white"><p className="text-white/50">Gig not found.</p><button onClick={() => router.push('/dashboard')} className="text-brand-purple text-sm font-bold">← Back to Dashboard</button></div>;
+  if (loading) return (
+    <div className="min-h-screen bg-[#0B0B11] text-white">
+      <div className="sticky top-0 z-30 bg-white/[0.02] backdrop-blur-2xl border-b border-white/5">
+        <div className="max-w-2xl mx-auto flex items-center justify-between p-4 px-6 md:px-0">
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="h-6 w-16 rounded-full" />
+        </div>
+      </div>
+      <div className="max-w-2xl mx-auto px-6 md:px-0 py-8 space-y-6">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-3/4" />
+        <div className="flex items-center gap-3 pt-2">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="flex-1 space-y-1.5">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+        </div>
+        <div className="bg-[#13131A] border border-white/[0.08] rounded-2xl p-6 space-y-3">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+        <Skeleton className="h-12 w-full rounded-xl" />
+      </div>
+    </div>
+  );
+  if (!gig) return <div className="h-screen bg-[#0B0B11] flex flex-col gap-4 justify-center items-center text-white"><p className="text-white/50">Gig not found.</p><button onClick={() => router.push('/dashboard')} className="text-[#C9A9FF] text-sm font-medium">← Back to dashboard</button></div>;
 
   const isCompanyTask = gig.listing_type === 'COMPANY_TASK';
-  const accentColor = isCompanyTask ? '#00f2ff' : '#8825F5'; // Cyan for enterprise, Purple for standard
+  // Both flavours render the same brand purple accent; no off-brand indigo.
+  const accentColor = '#8825F5';
   const isMyGig = currentUser?.id === gig.poster_id;
   const timeAgo = gig.created_at ? getTimeAgo(new Date(gig.created_at)) : '';
 
   return (
-    <div className={`min-h-[100dvh] bg-[#050505] text-white selection:bg-indigo-500/30 selection:text-white pb-36 font-sans relative`}>
+    <div className={`min-h-[100dvh] bg-[#0B0B11] text-white selection:bg-indigo-500/30 selection:text-white pb-36 font-sans relative`}>
       {/* Background Atmosphere */}
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-40 left-0 w-[400px] h-[400px] bg-cyan-600/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-40 left-0 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none" />
 
       {/* TOP HEADER BAR */}
       <div className={`sticky top-0 z-30 bg-white/[0.02] backdrop-blur-2xl border-b border-white/5 transition-all`}>
@@ -113,13 +144,9 @@ export default function GigDetailsPage() {
             <ArrowLeft size={16} /> Return
           </button>
           <div className="flex items-center gap-2">
-            <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${
-              gig.status === 'open' 
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(52,211,153,0.1)]' 
-                : 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20'
-            }`}>
-              {gig.status}
-            </span>
+            <StatusBadge tone={gig.status === 'open' ? 'success' : statusToTone(gig.status)}>
+              {humanizeStatus(gig.status)}
+            </StatusBadge>
           </div>
         </div>
       </div>
@@ -147,7 +174,7 @@ export default function GigDetailsPage() {
           </div>
           
           <div className="flex items-center gap-6 mt-4 flex-wrap">
-            <div className={`text-4xl md:text-5xl font-black tracking-tighter flex items-center gap-1 ${isCompanyTask ? 'text-white' : 'text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-cyan-400'}`}>
+            <div className={`text-4xl md:text-5xl font-black tracking-tighter flex items-center gap-1 ${isCompanyTask ? 'text-white' : 'text-transparent bg-clip-text bg-gradient-to-br from-purple-400 to-[#C084FC]'}`}>
               <span className="text-2xl font-light opacity-50 mr-1">₹</span>{gig.price}
             </div>
             <div className="flex items-center gap-5 border-l border-white/10 pl-6 h-10">
@@ -274,7 +301,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
   const [riskAccepted, setRiskAccepted] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#050505]/80 backdrop-blur-xl p-4 flex items-end sm:items-center justify-center overflow-y-auto" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="fixed inset-0 z-50 bg-[#0B0B11]/80 backdrop-blur-xl p-4 flex items-end sm:items-center justify-center overflow-y-auto" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={`bg-[#0A0A0A] border border-white/10 p-8 md:p-12 rounded-3xl w-full max-w-xl relative animate-in zoom-in-95 duration-300 shadow-2xl shadow-black/80`}>
         
         <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full border border-white/5">

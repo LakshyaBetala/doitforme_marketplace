@@ -67,7 +67,7 @@ export default function CompanyLoginPage() {
   const labelClass = "block text-[10px] font-bold text-[#888] uppercase tracking-widest mb-2";
 
   return (
-    <div className="flex min-h-[100dvh] bg-[#050505] text-white font-sans selection:bg-white selection:text-black">
+    <div className="flex min-h-[100dvh] bg-[#0B0B11] text-white font-sans selection:bg-white selection:text-black">
       
       {/* Left Side: Editorial Pitch */}
       <div className="hidden lg:flex w-1/2 flex-col justify-between p-16 border-r border-[#222] bg-[#0a0a0a] relative overflow-hidden">

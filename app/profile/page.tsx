@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 import TelegramLinkButton from "@/components/TelegramLinkButton";
+import Avatar from "@/components/ui/Avatar";
 
 export default function ProfilePage() {
   const supabase = supabaseBrowser();
@@ -122,14 +123,14 @@ export default function ProfilePage() {
           .eq("status", "COMPLETED");
 
         const completedCount = completedGigs?.length || 0;
-        const totalEarned = completedGigs?.reduce((acc, gig) => acc + gig.price, 0) || 0;
+        const totalEarned = completedGigs?.reduce((acc: any, gig: any) => acc + gig.price, 0) || 0;
 
         // 4. Calculate Lightning Responder
         let isLightning = false;
         let avgTime = 0;
 
         const { data: myGigs } = await supabase.from("gigs").select("id").eq("poster_id", user.id);
-        const gigIds = myGigs?.map(g => g.id) || [];
+        const gigIds = myGigs?.map((g: any) => g.id) || [];
 
         if (gigIds.length > 0) {
           const { data: apps } = await supabase
@@ -149,8 +150,8 @@ export default function ProfilePage() {
               let totalResponseTimeMs = 0;
               let responseCount = 0;
 
-              apps.forEach(app => {
-                const firstMsg = myMsgs.find(m => m.gig_id === app.gig_id && m.receiver_id === app.worker_id);
+              apps.forEach((app: any) => {
+                const firstMsg = myMsgs.find((m: any) => m.gig_id === app.gig_id && m.receiver_id === app.worker_id);
                 if (firstMsg) {
                   const diff = new Date(firstMsg.created_at).getTime() - new Date(app.created_at).getTime();
                   if (diff > 0) {
@@ -347,7 +348,7 @@ export default function ProfilePage() {
   return (
     <main className="min-h-[100dvh] bg-[#0B0B11] p-4 md:p-6 lg:p-12 pb-24 text-white selection:bg-brand-purple overflow-x-hidden relative">
 
-      <div className="max-w-5xl mx-auto space-y-6 md:space-y-10 relative z-10">
+      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 relative z-10">
 
         {/* Back Button */}
         <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors py-2 active:scale-95 touch-manipulation">
@@ -379,6 +380,10 @@ export default function ProfilePage() {
           </div>
         )}
 
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+          {/* LEFT COLUMN */}
+          <div className="lg:col-span-5 space-y-6 md:space-y-8">
+
         {/* Profile Header */}
         <div className="relative overflow-hidden rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-12 shadow-2xl">
           <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-12">
@@ -387,15 +392,13 @@ export default function ProfilePage() {
             <div className="relative shrink-0">
               <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full p-[3px] ${stats.isLightningResponder
                 ? "bg-gradient-to-tr from-yellow-400 via-white to-yellow-600 shadow-[0_0_20px_rgba(250,204,21,0.4)] animate-pulse"
-                : "bg-gradient-to-tr from-[#8825F5] via-white to-[#0097FF]"}`
+                : "bg-[#0B0B11]"}`
               }>
-                <div className="w-full h-full rounded-full bg-[#0B0B11] flex items-center justify-center overflow-hidden relative">
-                  {profile.avatar_url ? (
-                    <Image src={profile.avatar_url} alt="Profile" fill className="object-cover" />
-                  ) : (
-                    <span className="text-4xl md:text-5xl font-black text-white">{avatarLetter}</span>
-                  )}
-                </div>
+                <Avatar 
+                  src={profile.avatar_url} 
+                  fallback={avatarLetter} 
+                  className="w-full h-full text-4xl md:text-5xl"
+                />
               </div>
               <div className="absolute bottom-0 right-0 md:bottom-1 md:right-1">
                 {stats.isLightningResponder ? (
@@ -425,6 +428,25 @@ export default function ProfilePage() {
                     </span>
                   )}
                 </h1>
+                {/* Public profile link — only renders if user has claimed a username */}
+                {profile.username && (
+                  <Link
+                    href={`/u/${profile.username}`}
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 mt-2 text-xs text-white/50 hover:text-[#C9A9FF] transition-colors group"
+                  >
+                    <span className="font-mono">doitforme.in/u/{profile.username}</span>
+                    <Send size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                )}
+                {!profile.username && (
+                  <Link
+                    href="/onboarding"
+                    className="inline-flex items-center gap-1.5 mt-2 text-xs text-[#C9A9FF] hover:text-white transition-colors"
+                  >
+                    <span>+ Claim your @username</span>
+                  </Link>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 text-white/60 text-xs md:text-sm font-medium">
@@ -478,6 +500,51 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Financials & Reviews Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-8 space-y-6">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-[#0097FF]" /> Financials
+            </h3>
+            <div className="flex justify-between items-center p-5 bg-[#0B0B11] border border-white/5 rounded-2xl">
+              <span className="text-sm text-white/60">Total Earned</span>
+              <span className="text-xl md:text-2xl font-bold text-white">₹{stats.earnings}</span>
+            </div>
+          </div>
+
+          <div className="rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-8 space-y-6">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500" /> Reputation
+            </h3>
+            <div className="flex flex-col items-center justify-center h-[100px] bg-[#0B0B11] border border-white/5 rounded-2xl">
+              <div className="text-3xl md:text-4xl font-black text-white">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
+              <div className="text-white/60 text-[10px] tracking-widest uppercase mt-1">{profile.rating_count || 0} Reviews</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Worker Setup Link */}
+        <div className="rounded-[28px] md:rounded-[32px] border border-[#8825F5]/20 bg-gradient-to-r from-[#121217] to-[#1a1a24] p-6 md:p-8 flex flex-col items-center justify-between gap-6 shadow-lg relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#8825F5]/5 to-transparent pointer-events-none group-hover:from-[#8825F5]/10 transition-colors"></div>
+            <div className="flex items-center gap-4 relative z-10 w-full">
+              <div className="p-4 bg-[#8825F5]/20 text-[#8825F5] rounded-2xl shrink-0 border border-[#8825F5]/30 flex items-center justify-center">
+                <Briefcase size={28} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-black text-white flex items-center gap-2">Worker Profile</h3>
+                <p className="text-white/60 text-sm mt-1">Add skills, portfolio links, and your resume to stand out.</p>
+              </div>
+            </div>
+            <Link href="/profile/worker-setup" className="w-full px-8 py-3 bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] text-white font-bold rounded-xl text-center active:scale-95 transition-transform hover:opacity-90 shadow-[0_0_15px_rgba(136,37,245,0.3)] relative z-10">
+              {profile.skills && profile.skills.length > 0 ? "Edit Details" : "Setup Now"}
+            </Link>
+        </div>
+
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className="lg:col-span-7 space-y-6 md:space-y-8">
 
         {/* ============================================
             EDIT PROFILE SECTION
@@ -801,51 +868,14 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* Worker Setup Link */}
-        <div className="rounded-[28px] md:rounded-[32px] border border-[#8825F5]/20 bg-gradient-to-r from-[#121217] to-[#1a1a24] p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#8825F5]/5 to-transparent pointer-events-none group-hover:from-[#8825F5]/10 transition-colors"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="p-4 bg-[#8825F5]/20 text-[#8825F5] rounded-2xl shrink-0 border border-[#8825F5]/30 flex items-center justify-center">
-                <Briefcase size={28} />
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-white flex items-center gap-2">Worker Profile</h3>
-                <p className="text-white/60 text-sm mt-1">Add skills, portfolio links, and your resume to stand out.</p>
-              </div>
-            </div>
-            <Link href="/profile/worker-setup" className="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] text-white font-bold rounded-xl text-center active:scale-95 transition-transform hover:opacity-90 shadow-[0_0_15px_rgba(136,37,245,0.3)] relative z-10">
-              {profile.skills && profile.skills.length > 0 ? "Edit Details" : "Setup Now"}
-            </Link>
-        </div>
-
-        {/* Financials & Reviews Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-8 space-y-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-[#0097FF]" /> Financials
-            </h3>
-            <div className="flex justify-between items-center p-5 bg-[#0B0B11] border border-white/5 rounded-2xl">
-              <span className="text-sm text-white/60">Total Earned</span>
-              <span className="text-xl md:text-2xl font-bold text-white">₹{stats.earnings}</span>
-            </div>
-          </div>
-
-          <div className="rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-8 space-y-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-500" /> Reputation
-            </h3>
-            <div className="flex flex-col items-center justify-center h-[100px] bg-[#0B0B11] border border-white/5 rounded-2xl">
-              <div className="text-3xl md:text-4xl font-black text-white">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
-              <div className="text-white/60 text-[10px] tracking-widest uppercase mt-1">{profile.rating_count || 0} Reviews</div>
-            </div>
-          </div>
-        </div>
-
         {/* Logout */}
-        <div className="flex justify-center pt-4 md:pt-8">
-          <div className="w-full md:w-1/3 active:scale-95 transition-transform touch-manipulation">
+        <div className="flex justify-center pt-4">
+          <div className="w-full active:scale-95 transition-transform touch-manipulation">
             <LogoutButton />
           </div>
+        </div>
+
+        </div>
         </div>
 
       </div>

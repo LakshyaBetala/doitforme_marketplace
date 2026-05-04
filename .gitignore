@@ -1,4 +1,4 @@
-﻿# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 /node_modules
@@ -29,6 +29,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -47,5 +48,7 @@ next-env.d.ts
 .antigravity/
 skills-lock.json
 test_*.ts
-hire_error.log
 supabase/.temp
+
+# local maintenance scripts (PowerShell color migrations, ad-hoc test scripts)
+scripts/maintenance/

@@ -58,7 +58,7 @@ const Preloader = ({
     <motion.div
       initial={{ y: 0 }}
       exit={{ y: "-100%", transition: { duration: 0.95, ease: [0.76, 0, 0.24, 1] } }}
-      className="fixed inset-0 z-[9999] bg-[#020202] flex items-center justify-center overflow-hidden cursor-wait"
+      className="fixed inset-0 z-[9999] bg-[#0B0B11] flex items-center justify-center overflow-hidden cursor-wait"
     >
       <AnimatePresence mode="wait">
         {!showLogo ? (
@@ -68,7 +68,7 @@ const Preloader = ({
             animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, scale: 0.9, filter: "blur(5px)" }}
             transition={{ duration: 0.15 }}
-            style={{ color: '#00f2ff' }}
+            style={{ color: '#C084FC' }}
             className="text-6xl md:text-9xl font-black tracking-tighter"
           >
             {words[index]}
@@ -87,7 +87,7 @@ const Preloader = ({
               initial={{ width: 0 }}
               animate={{ width: "100%" }}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="h-1 bg-gradient-to-r from-[#00f2ff] to-[#4F46E5] mt-4 w-full shadow-[0_0_30px_rgba(0,242,255,0.8)]"
+              className="h-1 bg-gradient-to-r from-[#C084FC] to-[#8825F5] mt-4 w-full shadow-[0_0_30px_rgba(136,37,245,0.8)]"
             />
             {/* Subtle indicator if assets are still fetching */}
             {!isAssetReady && (
@@ -199,7 +199,7 @@ export default function LandingPage() {
   const supabase = supabaseBrowser();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: any) => {
       if (data.user) setUserEmail(data.user.email || null);
     });
   }, [supabase]);
@@ -298,7 +298,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white overflow-x-hidden relative selection:bg-brand-purple selection:text-white font-sans touch-manipulation">
+    <div className="min-h-screen bg-[#0B0B11] text-white overflow-x-hidden relative selection:bg-brand-purple selection:text-white font-sans touch-manipulation">
 
       {/* 1. CURTAIN REVEAL (Updated Logic) */}
       <AnimatePresence>
@@ -336,13 +336,13 @@ export default function LandingPage() {
         <motion.div
           animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.15, 0.1] }}
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-[#00f2ff] rounded-full blur-[150px] opacity-10 will-change-transform"
+          className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-[#8825F5] rounded-full blur-[150px] opacity-10 will-change-transform"
           style={{ transform: 'translateZ(0)' }}
         />
         <motion.div
           animate={{ scale: [1, 1.25, 1], opacity: [0.08, 0.12, 0.08] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="absolute top-[10%] right-[-10%] w-[50vw] h-[50vw] bg-[#4F46E5] rounded-full blur-[180px] opacity-10 will-change-transform"
+          className="absolute top-[10%] right-[-10%] w-[50vw] h-[50vw] bg-[#8825F5] rounded-full blur-[180px] opacity-10 will-change-transform"
           style={{ transform: 'translateZ(0)' }}
         />
       </div>
@@ -356,10 +356,10 @@ export default function LandingPage() {
       />
 
       {/* NAVBAR */}
-      <header className="fixed z-50 w-full top-0 left-0 transition-all duration-500">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
+      <header className="fixed z-50 w-full top-0 left-0 transition-all duration-500 bg-[#0B0B11]/85 backdrop-blur-2xl border-b border-white/[0.06]">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 md:gap-3 group">
-            <div className="relative w-14 h-14 md:w-20 md:h-20 transition-transform duration-500 group-hover:rotate-12">
+            <div className="relative w-9 h-9 md:w-16 md:h-16 transition-transform duration-500 group-hover:rotate-12">
               <Image src="/Doitforme_logo.png" alt="logo" fill className="object-contain" />
             </div>
           </Link>
@@ -367,16 +367,15 @@ export default function LandingPage() {
           <nav className="hidden md:flex items-center gap-3">
             <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">Process</button>
             <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">FAQ</button>
-            <Link href="/company/onboarding" className="text-sm font-bold text-[#00f2ff] hover:text-white transition-colors px-4 py-2 rounded-full bg-[#00f2ff]/10 border border-[#00f2ff]/30 hover:bg-[#00f2ff]/30 shadow-[0_0_10px_rgba(0,242,255,0.2)]">Hire Talent</Link>
-            
+            <Link href="/company/onboarding" className="text-sm font-bold text-purple-400 hover:text-white transition-colors px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/30 shadow-[0_0_10px_rgba(136,37,245,0.2)]">Hire Talent</Link>
+
             {(userEmail === "betala911@gmail.com" || userEmail === "doitforme.in@gmail.com") && (
               <Link href="/admin" className="text-sm font-bold text-red-500 hover:text-white transition-colors px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]">Access Admin</Link>
             )}
           </nav>
 
-          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 md:ml-4">
-            <Link href="/company/onboarding" className="md:hidden text-xs font-bold text-[#00f2ff] text-center border border-[#00f2ff]/30 py-2 rounded-full mb-1 bg-[#00f2ff]/10 px-4">Hire Talent</Link>
-            <button onClick={handleLogin} className="px-5 md:px-6 py-2 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 w-full md:w-auto">
+          <div className="flex items-center gap-3 md:gap-4 md:ml-4">
+            <button onClick={handleLogin} className="px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 whitespace-nowrap">
               Login
             </button>
           </div>
@@ -386,7 +385,7 @@ export default function LandingPage() {
       {/* -------------------------------------------------------
           HERO SECTION
       --------------------------------------------------------- */}
-      <section className="relative z-10 lg:min-h-[90vh] overflow-hidden">
+      <section className="relative z-10 lg:min-h-[90vh] overflow-visible">
         {/* Hero Background Glow */}
         <div className="absolute inset-0 pointer-events-none z-0">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#8825F5]/15 rounded-full blur-[150px]" />
@@ -398,31 +397,31 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: 30 }}
           animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="lg:hidden relative z-10 px-5 pt-24 pb-10"
+          className="lg:hidden relative z-10 px-5 pt-28 pb-14 min-h-[90vh] flex flex-col justify-center"
         >
           {/* Eyebrow Badge */}
           <div
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-5 w-fit"
             style={{
-              background: 'linear-gradient(135deg, rgba(0, 242, 255, 0.15) 0%, rgba(0, 242, 255, 0.05) 100%)',
-              border: '1px solid rgba(0, 242, 255, 0.3)',
+              background: 'linear-gradient(135deg, rgba(136, 37, 245, 0.15) 0%, rgba(136, 37, 245, 0.05) 100%)',
+              border: '1px solid rgba(136, 37, 245, 0.3)',
               backdropFilter: 'blur(12px)',
             }}
           >
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_6px_rgba(34,211,238,0.6)]"></span>
-            <span className="text-[10px] font-bold tracking-[0.15em] text-[#00f2ff] uppercase">India's Campus Freelance Network</span>
+            <span className="w-2 h-2 rounded-full bg-purple-400 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_6px_rgba(168,85,247,0.6)]"></span>
+            <span className="text-[10px] font-bold tracking-[0.15em] text-[#C084FC] uppercase">India's Campus Freelance Network</span>
           </div>
 
           {/* Headline Block with Floating Sloth */}
           <div className="relative mb-4">
-            {/* Floating Sloth - top right */}
+            {/* Floating Sloth - top right, repositioned to avoid collision */}
             <motion.div
               animate={{
                 y: [0, -8, 0],
                 rotate: [-2, 2, -2],
               }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -top-2 right-4 z-30 w-[105px] h-[105px]"
+              className="absolute -top-6 right-0 z-30 w-[80px] h-[80px] sm:w-[105px] sm:h-[105px]"
             >
               <Image
                 src="/hisloth.png"
@@ -430,7 +429,7 @@ export default function LandingPage() {
                 width={105}
                 height={105}
                 className="object-contain"
-                style={{ filter: 'drop-shadow(0 0 15px rgba(0, 242, 255, 0.4)) drop-shadow(0 10px 20px rgba(0,0,0,0.3))' }}
+                style={{ filter: 'drop-shadow(0 0 15px rgba(136, 37, 245, 0.4)) drop-shadow(0 10px 20px rgba(0,0,0,0.3))' }}
                 priority
               />
             </motion.div>
@@ -441,7 +440,7 @@ export default function LandingPage() {
                 Earn.
               </h1>
               <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] mt-1">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] via-[#4F46E5] to-[#818CF8]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C084FC] via-[#8825F5] to-[#6D28D9]">
                   Outsource.
                 </span>
               </h1>
@@ -456,15 +455,14 @@ export default function LandingPage() {
             The campus freelance network where you earn and outsource skills — all in one place.
           </p>
 
-          {/* CTA Buttons — Stacked */}
-          <div className="flex flex-col gap-3 w-full max-w-[340px] mx-auto mb-8">
+          {/* CTA Buttons — Stacked with safe-area padding */}
+          <div className="flex flex-col gap-3 w-full max-w-[340px] mx-auto mb-8 overflow-visible pb-[env(safe-area-inset-bottom)]">
             <motion.button
               onClick={handleLogin}
               whileTap={{ scale: 0.97 }}
-              className="group w-full py-[14px] rounded-full text-sm font-bold text-black flex items-center justify-center gap-2 transition-all duration-300"
+              className="group w-full px-6 py-4 rounded-full text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-300 bg-purple-600 hover:bg-purple-700"
               style={{
-                background: 'linear-gradient(135deg, #00f2ff 0%, #4F46E5 100%)',
-                boxShadow: '0 0 25px rgba(0, 242, 255, 0.35), 0 4px 15px rgba(0, 0, 0, 0.3)',
+                boxShadow: '0 0 25px rgba(136, 37, 245, 0.35), 0 4px 15px rgba(0, 0, 0, 0.3)',
               }}
             >
               Start Hustling
@@ -472,9 +470,9 @@ export default function LandingPage() {
             </motion.button>
             <button
               onClick={() => scrollToSection('how-it-works')}
-              className="w-full py-[14px] rounded-full text-sm font-bold text-white/90 border border-[#00f2ff]/40 hover:border-[#00f2ff]/70 transition-all flex items-center justify-center gap-2 active:scale-[0.97] bg-transparent"
+              className="w-full px-6 py-4 rounded-full text-sm font-bold text-white/90 border border-purple-500/40 hover:border-purple-400/70 transition-all flex items-center justify-center gap-2 active:scale-[0.97] bg-transparent"
             >
-              Technical Process
+              How It Works
             </button>
           </div>
         </motion.div>
@@ -492,12 +490,12 @@ export default function LandingPage() {
 
             {/* Heading */}
             <h1 className="text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f2ff] via-[#4F46E5] to-[#818CF8]">Outsource.</span><br /> Get it done.
+              Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C084FC] via-[#8825F5] to-[#6D28D9]">Outsource.</span><br /> Get it done.
             </h1>
 
             {/* Subheading */}
             <p className="text-2xl text-white/85 leading-snug mb-4 w-full">
-              <span className="font-bold text-[#00f2ff]">India's Campus Freelance Network</span>
+              <span className="font-bold text-[#C084FC]">India's Campus Freelance Network</span>
             </p>
 
             {/* Description */}
@@ -529,16 +527,16 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="relative flex items-center justify-center h-[580px] w-full lg:order-2 -ml-16"
           >
-            {/* Multi-layer cyan glow */}
-            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#00f2ff]/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-[#00f2ff]/20 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute top-[55%] left-[45%] -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-[#4F46E5]/25 rounded-full blur-[60px] pointer-events-none" />
-            <div className="absolute bottom-[60px] left-[40%] -translate-x-1/2 w-[300px] h-[80px] bg-[#00f2ff]/15 rounded-full blur-[40px] pointer-events-none" />
+            {/* Multi-layer purple glow */}
+            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#8825F5]/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-[#8825F5]/20 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute top-[55%] left-[45%] -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-[#8825F5]/25 rounded-full blur-[60px] pointer-events-none" />
+            <div className="absolute bottom-[60px] left-[40%] -translate-x-1/2 w-[300px] h-[80px] bg-[#8825F5]/15 rounded-full blur-[40px] pointer-events-none" />
 
             {/* Sparkle particles */}
             <div className="absolute top-[15%] left-[30%] w-1.5 h-1.5 bg-white/40 rounded-full animate-pulse pointer-events-none" />
             <div className="absolute top-[25%] right-[15%] w-1 h-1 bg-white/30 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '0.5s' }} />
-            <div className="absolute bottom-[30%] left-[20%] w-1 h-1 bg-[#00f2ff]/50 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
+            <div className="absolute bottom-[30%] left-[20%] w-1 h-1 bg-[#8825F5]/50 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
             <div className="absolute top-[40%] right-[30%] w-1.5 h-1.5 bg-white/20 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '1.5s' }} />
 
             {/* Sloth Mascot */}
@@ -556,7 +554,7 @@ export default function LandingPage() {
                 height={440}
                 className="object-contain"
                 style={{
-                  filter: 'drop-shadow(0 0 30px rgba(0, 242, 255, 0.35)) drop-shadow(0 0 60px rgba(0, 242, 255, 0.2)) drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4))'
+                  filter: 'drop-shadow(0 0 30px rgba(136, 37, 245, 0.35)) drop-shadow(0 0 60px rgba(136, 37, 245, 0.2)) drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4))'
                 }}
                 priority
               />
@@ -595,7 +593,7 @@ export default function LandingPage() {
                     </div>
                     <p className="text-[11px] text-white/60 font-medium leading-snug mb-2.5">{activeGig.title}</p>
                     <div className="text-right">
-                      <span className="text-lg font-bold text-[#00f2ff]">{activeGig.price}</span>
+                      <span className="text-lg font-bold text-[#C084FC]">{activeGig.price}</span>
                     </div>
                   </div>
                 </motion.div>
@@ -645,7 +643,7 @@ export default function LandingPage() {
                 }}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#00f2ff] shadow-[0_0_6px_rgba(0,242,255,0.5)]"></span>
+                  <span className="w-2 h-2 rounded-full bg-[#C084FC] shadow-[0_0_6px_rgba(192,132,252,0.5)]"></span>
                   <span className="text-xs font-medium text-white/50">Total Earnings</span>
                 </div>
                 <div className="text-3xl font-bold text-white">₹12,450</div>
@@ -658,7 +656,7 @@ export default function LandingPage() {
       {/* -------------------------------------------------------
           SECTION 2: EVERYTHING YOU NEED
       --------------------------------------------------------- */}
-      <section className="relative z-10 overflow-hidden pt-16 md:pt-24 pb-8 md:pb-12 border-y border-white/5 bg-[#050505]">
+      <section className="relative z-10 overflow-hidden pt-16 md:pt-24 pb-8 md:pb-12 border-y border-white/5 bg-[#0B0B11]">
         <div className="absolute inset-0 pointer-events-none z-0">
           <div className="absolute top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-[#8825F5]/8 rounded-full blur-[160px]" />
         </div>
@@ -686,7 +684,7 @@ export default function LandingPage() {
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
               }}
             >
-              <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[#00f2ff]/10 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[#8825F5]/10 rounded-full blur-[80px] pointer-events-none" />
               <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
                 <Image
                   src="/moneysloth.png"
@@ -694,7 +692,7 @@ export default function LandingPage() {
                   width={280}
                   height={280}
                   className="object-contain relative z-10"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(0, 242, 255, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
+                  style={{ filter: 'drop-shadow(0 0 20px rgba(136, 37, 245, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
                 />
                 <motion.div
                   animate={{ y: [0, -5, 0] }}
@@ -704,12 +702,12 @@ export default function LandingPage() {
                   <div
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(0, 242, 255, 0.3) 0%, rgba(0, 242, 255, 0.1) 100%)',
+                      background: 'linear-gradient(135deg, rgba(136, 37, 245, 0.3) 0%, rgba(136, 37, 245, 0.1) 100%)',
                       backdropFilter: 'blur(12px)',
-                      border: '1px solid rgba(0, 242, 255, 0.3)',
+                      border: '1px solid rgba(136, 37, 245, 0.3)',
                     }}
                   >
-                    <span className="text-[#00f2ff]">₹</span>4,500 Payout
+                    <span className="text-[#C084FC]">₹</span>4,500 Payout
                   </div>
                 </motion.div>
               </div>
@@ -726,7 +724,7 @@ export default function LandingPage() {
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
               }}
             >
-              <div className="absolute top-0 left-0 w-[200px] h-[200px] bg-[#4F46E5]/10 rounded-full blur-[80px] pointer-events-none" />
+              <div className="absolute top-0 left-0 w-[200px] h-[200px] bg-[#8825F5]/10 rounded-full blur-[80px] pointer-events-none" />
               <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
                 <Image
                   src="/tasksloth.png"
@@ -734,7 +732,7 @@ export default function LandingPage() {
                   width={280}
                   height={280}
                   className="object-contain relative z-10"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(0, 242, 255, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
+                  style={{ filter: 'drop-shadow(0 0 20px rgba(136, 37, 245, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
                 />
                 <motion.div
                   animate={{ y: [0, -6, 0] }}
@@ -751,7 +749,7 @@ export default function LandingPage() {
                     <div className="flex items-center gap-1 text-zinc-600 font-medium mb-0.5">
                       <ArrowRight size={8} className="rotate-[-45deg]" /> Review App Logic
                     </div>
-                    <div className="text-right text-sm font-bold text-[#4F46E5]">₹6,500</div>
+                    <div className="text-right text-sm font-bold text-[#C9A9FF]">₹6,500</div>
                   </div>
                 </motion.div>
               </div>
@@ -772,7 +770,7 @@ export default function LandingPage() {
                 boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
               }}
             >
-              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-[#00f2ff]/30">
+              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-[#8825F5]/30">
                 <Image src="/Doitforme_logo.png" alt="Avatar" width={32} height={32} className="object-cover" />
               </div>
               <AnimatePresence mode="wait">
@@ -843,7 +841,7 @@ export default function LandingPage() {
       {/* -------------------------------------------------------
           SECTION 3: LIVE CAMPUS FEED
       --------------------------------------------------------- */}
-      < section className="pt-6 pb-10 md:pt-12 md:pb-32 bg-[#050505] relative z-10 border-y border-white/5 overflow-hidden" >
+      < section className="pt-6 pb-10 md:pt-12 md:pb-32 bg-[#0B0B11] relative z-10 border-y border-white/5 overflow-hidden" >
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-24 items-center">
 
           {/* LEFT: Static Content */}
@@ -1004,7 +1002,7 @@ export default function LandingPage() {
       {/* -------------------------------------------------------
           SECTION 4: TRANSPARENCY & PRICING
       --------------------------------------------------------- */}
-      < section id="transparency" className="pt-12 pb-20 md:pt-16 md:pb-32 bg-[#050505] relative z-10 overflow-hidden" >
+      < section id="transparency" className="pt-12 pb-20 md:pt-16 md:pb-32 bg-[#0B0B11] relative z-10 overflow-hidden" >
         {/* Subtle Background Glows */}
         < div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#8825F5]/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#6D28D9]/5 rounded-full blur-[120px] pointer-events-none" />
@@ -1115,7 +1113,7 @@ export default function LandingPage() {
 
               {/* Example 2 - Complete Task */}
               <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-[32px] p-8 relative overflow-hidden shadow-lg shadow-black/20">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500/80 shadow-[0_0_12px_rgba(99,102,241,0.8)]" />
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#8825F5]/80 shadow-[0_0_12px_rgba(136,37,245,0.6)]" />
                 <div className="flex justify-between items-end mb-4">
                   <div>
                     <h4 className="text-white font-bold mb-1">Complete Task (Escrow)</h4>
@@ -1229,7 +1227,7 @@ export default function LandingPage() {
       </section >
 
       {/* FOOTER */}
-      < footer className="w-full bg-[#020202] py-12 border-t border-white/5 relative z-10" >
+      < footer className="w-full bg-[#0B0B11] py-12 border-t border-white/5 relative z-10" >
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
 
           <div className="text-center md:text-left">

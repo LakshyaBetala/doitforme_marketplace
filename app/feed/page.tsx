@@ -7,6 +7,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Clock, IndianRupee, Briefcase, Search, ShoppingBag as ShoppingBagIcon, Sparkles, Star, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import GigCard from "@/components/ui/GigCard";
+import { GigCardCompactSkeleton } from "@/components/ui/Skeleton";
 
 // --- ROBUST TIME AGO ---
 function timeAgo(dateString: string) {
@@ -26,8 +28,10 @@ function timeAgo(dateString: string) {
 
 // --- BACKGROUND COMPONENT (THEMED) ---
 function BackgroundBlobs({ theme }: { theme: "MARKET" | "HUSTLE" }) {
-  const primaryColor = theme === "MARKET" ? "bg-pink-500" : "bg-purple-600";
-  const secondaryColor = theme === "MARKET" ? "bg-rose-400" : "bg-blue-500";
+  // Brand-only ambient: brand-blue for MARKET, brand-purple for HUSTLE.
+  // Never pink/rose — those break the dark-minimal aesthetic.
+  const primaryColor = theme === "MARKET" ? "bg-[#0097FF]" : "bg-[#8825F5]";
+  const secondaryColor = theme === "MARKET" ? "bg-[#0097FF]" : "bg-[#8825F5]";
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 transition-colors duration-1000">
@@ -257,9 +261,12 @@ export default function FeedPage() {
         )}
 
         {loading ? (
-          <div className="text-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-white/60 mb-4" />
-            <p className="text-white/60 text-sm">Loading campus vibe...</p>
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 mx-auto">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="break-inside-avoid mb-4">
+                <GigCardCompactSkeleton />
+              </div>
+            ))}
           </div>
         ) : gigs.length === 0 ? (
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-20 space-y-6">
@@ -278,63 +285,32 @@ export default function FeedPage() {
               </h3>
               <p className="text-brand-purple font-medium">No hustles yet? Be the first to post!</p>
             </div>
-            <button onClick={() => router.push('/post')} className={`px-8 py-4 rounded-xl font-bold text-white ${feedType === 'MARKET' ? 'bg-pink-500 hover:bg-pink-400' : 'bg-brand-purple hover:bg-brand-purple/90'} transition-all hover:scale-105 shadow-xl shadow-brand-purple/20`}>
-              Create Post
+            <button onClick={() => router.push('/post')} className="px-6 py-3 rounded-xl font-medium text-white tracking-tight bg-[#8825F5] hover:bg-[#7a1fe0] transition-colors">
+              Create post
             </button>
           </motion.div>
         ) : (
           <>
             <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 mx-auto">
               <AnimatePresence mode="popLayout">
-                {gigs.map((gig, index) => (
-                  <motion.div
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    key={gig.id}
-                    className={`break-inside-avoid relative group bg-[#1A1A24] border border-white/5 rounded-2xl overflow-hidden hover:border-${themeColor}/50 transition-colors cursor-pointer mb-4`}
-                  >
-                    <Link href={`/gig/${gig.id}`} className="block">
-                      <div className="w-full aspect-square bg-[#121217] relative overflow-hidden">
-                        {gig.images && gig.images[0] ? (
-                          <Image
-                            src={supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl}
-                            alt={gig.title}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                            priority={index < 4}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white/10">
-                            {gig.listing_type === "MARKET" ? <ShoppingBagIcon size={32} className="text-white/60" /> : <Briefcase size={32} className="text-white/60" />}
-                          </div>
-                        )}
-                        <div className={`absolute top-2 right-2 backdrop-blur px-2 py-1 rounded-lg border border-white/10 text-xs font-bold text-white shadow-lg ${gig.market_type === 'REQUEST' ? 'bg-blue-500/80' : 'bg-black/60'}`}>
-                          {gig.market_type === 'REQUEST' ? (
-                            <span>🙏 LOOKING FOR</span>
-                          ) : (
-                            <><IndianRupee size={10} className="inline mr-0.5" />{gig.price}</>
-                          )}
-                        </div>
-                      </div>
-                      <div className="p-3">
-                        <h3 className="text-sm font-bold text-white mb-1 leading-tight line-clamp-2">{gig.title}</h3>
-                        <div className="flex items-center justify-between text-[10px] text-white/60 mt-2">
-                          <span className="flex items-center gap-1 truncate max-w-[60%]"><MapPin size={10} /> {gig.location || "Campus"}</span>
-                          <span>{timeAgo(gig.created_at)}</span>
-                        </div>
-                        {gig.market_type === 'REQUEST' && (
-                          <div className="mt-3 w-full py-2 bg-blue-500/20 border border-blue-500/40 rounded-xl text-center text-xs font-bold text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                            I Have This!
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
+                {gigs.map((gig, index) => {
+                  const imageUrl = gig.images && gig.images[0]
+                    ? supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl
+                    : null;
+                  return (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.3) }}
+                      key={gig.id}
+                      className="break-inside-avoid mb-4"
+                    >
+                      <GigCard gig={gig} imageUrl={imageUrl} variant="compact" />
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
 
