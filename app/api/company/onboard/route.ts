@@ -30,7 +30,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { companyName, companyEmail, companyDetails, companyPhone, companyInterest, logoUrl } = body;
+        const { companyName, companyEmail, companyDetails, companyPhone, companyInterest, logoUrl, password } = body;
 
         if (!companyName?.trim() || !companyEmail?.trim() || !companyDetails?.trim() || !companyPhone?.trim()) {
             return NextResponse.json({ error: "All required company details must be provided." }, { status: 400 });
@@ -60,14 +60,20 @@ export async function POST(req: Request) {
         }
 
         // Update auth metadata
-        await supabase.auth.updateUser({
+        const updateData: any = { 
             data: { 
                 role: 'COMPANY', 
                 company_name: companyName.trim(),
                 company_email: companyEmail.trim(),
                 avatar_url: logoUrl || null
             }
-        });
+        };
+
+        if (password) {
+            updateData.password = password;
+        }
+
+        await supabase.auth.updateUser(updateData);
 
         // Insert into companies table with user_id and contact_email linked
         const { error: companyInsertError } = await serviceRoleClient.from('companies').upsert([{ 

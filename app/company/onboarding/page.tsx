@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ArrowRight, ArrowLeft, Building2, CheckCircle, Image as ImageIcon, X, UploadCloud, Users, ShieldCheck, Zap, Clock } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Building2, CheckCircle, Image as ImageIcon, X, UploadCloud, Users, ShieldCheck, Zap, Clock, Eye, EyeOff } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 
@@ -17,6 +17,8 @@ export default function CompanyOnboardingPage() {
     const [companyDetails, setCompanyDetails] = useState("");
     const [companyPhone, setCompanyPhone] = useState("");
     const [companyInterest, setCompanyInterest] = useState("startup");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [otp, setOtp] = useState("");
     const [existingUserName, setExistingUserName] = useState("");
 
@@ -49,8 +51,8 @@ export default function CompanyOnboardingPage() {
         setError("");
         setSuccess(false);
 
-        if (!companyName.trim() || !companyEmail.trim() || !companyDetails.trim() || !companyPhone.trim()) {
-            return setError("Please fill in all required corporate details.");
+        if (!companyName.trim() || !companyEmail.trim() || !companyDetails.trim() || !companyPhone.trim() || !password.trim()) {
+            return setError("Please fill in all required corporate details including password.");
         }
         if (!logoFile) {
             return setError("A company logo is required to establish your profile.");
@@ -142,7 +144,8 @@ export default function CompanyOnboardingPage() {
                     companyDetails: companyDetails.trim(),
                     companyPhone: companyPhone.trim(),
                     companyInterest: companyInterest,
-                    logoUrl: uploadedLogoUrl
+                    logoUrl: uploadedLogoUrl,
+                    password: existingUserName ? undefined : password.trim()
                 }),
             });
 
@@ -356,6 +359,16 @@ export default function CompanyOnboardingPage() {
                                     <div>
                                         <label className={labelClass}>Business Email</label>
                                         <input type="email" className={inputClass} value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} disabled={loading} placeholder="founder@acme.com" />
+                                    </div>
+
+                                    <div>
+                                        <label className={labelClass}>Account Password</label>
+                                        <div className="relative">
+                                            <input type={showPassword ? "text" : "password"} className={inputClass} value={password} onChange={e => setPassword(e.target.value)} disabled={loading} placeholder="Create a secure password" />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#888] hover:text-white p-2 transition-colors">
+                                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div>
