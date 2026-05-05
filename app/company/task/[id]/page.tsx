@@ -78,8 +78,9 @@ export default function CompanyTaskHubPage() {
            toast.error("Worker hasn't provided a phone number.");
            return;
         }
+        const phoneStr = String(phone);
         const message = encodeURIComponent(`Hi ${app.users?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
-        window.open(`https://wa.me/91${phone.replace(/\D/g,'')}?text=${message}`, '_blank');
+        window.open(`https://wa.me/91${phoneStr.replace(/\D/g,'')}?text=${message}`, '_blank');
         
         await updateApplicationStatus(app.id, 'accepted');
         toast.success("Redirected to Direct Connect!");
@@ -245,11 +246,14 @@ export default function CompanyTaskHubPage() {
                            </div>
                          )}
                          <div className="flex gap-4">
+                           <Link href={`/u/${worker?.username || app.worker_id}`} target="_blank" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">
+                             View Profile
+                           </Link>
                            {worker?.resume_url && (
-                             <a href={supabase.storage.from('resumes').getPublicUrl(worker.resume_url).data.publicUrl} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">View Resume</a>
+                             <a href={worker.resume_url} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">View Resume</a>
                            )}
                            {worker?.portfolio_links?.length > 0 && (
-                             <a href={worker.portfolio_links[0]} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">Portfolio</a>
+                             <a href={worker.portfolio_links[0].startsWith('http') ? worker.portfolio_links[0] : `https://${worker.portfolio_links[0]}`} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">Portfolio Link</a>
                            )}
                          </div>
                          {app.pitch && (
@@ -271,11 +275,21 @@ export default function CompanyTaskHubPage() {
                           </>
                         )}
                         {app.status === 'accepted' && (
-                          <button onClick={() => { setSelectedWorkerId(app.worker_id); setShowIncentiveModal(true); }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-                            <Gift size={12} /> Incentive
-                          </button>
+                          <>
+                            {(app.payment_preference === 'DIRECT' || (app.payment_preference === 'ESCROW' && gig.payment_status === 'ESCROW_FUNDED')) && worker?.phone && (
+                              <button onClick={() => {
+                                const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
+                                window.open(`https://wa.me/91${String(worker.phone).replace(/\D/g,'')}?text=${message}`, '_blank');
+                              }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-r border-[#222]">
+                                WhatsApp
+                              </button>
+                            )}
+                            <button onClick={() => { setSelectedWorkerId(app.worker_id); setShowIncentiveModal(true); }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                              <Gift size={12} /> Incentive
+                            </button>
+                          </>
                         )}
-                        <button onClick={() => router.push(`/chat/${gig.id}`)} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition-all flex items-center justify-center">
+                        <button onClick={() => router.push(`/chat/${gig.id}`)} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition-all flex items-center justify-center border-l border-[#222]">
                           <MessageCircle size={16} />
                         </button>
                      </div>
