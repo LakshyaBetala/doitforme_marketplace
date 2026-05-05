@@ -82,8 +82,8 @@ export default function CompanyTaskHubPage() {
         const message = encodeURIComponent(`Hi ${app.users?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
         window.open(`https://wa.me/91${phoneStr.replace(/\D/g,'')}?text=${message}`, '_blank');
         
-        await updateApplicationStatus(app.id, 'accepted');
-        toast.success("Redirected to Direct Connect!");
+        await updateApplicationStatus(app.id, 'pending');
+        toast.success("Redirected to Direct Connect. Application is now Pending.");
       } else {
         const res = await fetch("/api/gig/hire", {
           method: "POST",
@@ -266,11 +266,37 @@ export default function CompanyTaskHubPage() {
                      </div>
 
                      <div className="shrink-0 flex items-center gap-px bg-[#222] border border-[#222] w-full md:w-auto overflow-hidden">
-                        {(app.status === 'applied' || app.status === 'pending') && (
+                        {(app.status === 'applied') && (
                           <>
                             <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
-                              {hiringId === app.id ? 'Processing...' : `Hire Vector (${app.payment_preference || 'DIRECT'})`}
+                              {hiringId === app.id ? 'Processing...' : (app.payment_preference === 'DIRECT' ? 'Connect (WhatsApp)' : `Hire Vector (ESCROW)`)}
                             </button>
+                            <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
+                          </>
+                        )}
+                        {(app.status === 'pending') && (
+                          <>
+                            {app.payment_preference === 'DIRECT' && (
+                              <button disabled={hiringId === app.id} onClick={async () => {
+                                setHiringId(app.id);
+                                try {
+                                  const { error: gigError } = await supabase.from('gigs').update({
+                                    assigned_worker_id: app.worker_id,
+                                    status: 'assigned'
+                                  }).eq('id', gig.id);
+                                  if (gigError) throw gigError;
+                                  
+                                  await updateApplicationStatus(app.id, 'accepted');
+                                  toast.success("Worker Officially Hired!");
+                                } catch(e: any) {
+                                  toast.error(e.message);
+                                } finally {
+                                  setHiringId(null);
+                                }
+                              }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#C9A9FF] hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
+                                Finalize Hire
+                              </button>
+                            )}
                             <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
                           </>
                         )}
