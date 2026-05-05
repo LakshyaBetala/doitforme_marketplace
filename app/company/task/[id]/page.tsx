@@ -252,9 +252,9 @@ export default function CompanyTaskHubPage() {
                            {worker?.resume_url && (
                              <a href={worker.resume_url} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">View Resume</a>
                            )}
-                           {worker?.portfolio_links?.length > 0 && (
-                             <a href={worker.portfolio_links[0].startsWith('http') ? worker.portfolio_links[0] : `https://${worker.portfolio_links[0]}`} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">Portfolio Link</a>
-                           )}
+                           {worker?.portfolio_links?.length > 0 && worker.portfolio_links.map((link: string, idx: number) => (
+                             <a key={idx} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">Portfolio {idx + 1}</a>
+                           ))}
                          </div>
                          {app.pitch && (
                            <div className="text-sm text-[#888] bg-[#0B0B11] border border-[#222] p-6 max-w-xl italic leading-relaxed">

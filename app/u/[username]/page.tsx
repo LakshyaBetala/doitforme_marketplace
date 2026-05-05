@@ -54,14 +54,15 @@ const PUBLIC_FIELDS = [
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username);
   const supabase = await supabaseServer();
   const { data } = await supabase
     .from("users")
     .select("display_name, name, bio")
-    .eq("username", username)
+    .eq(isUuid ? "id" : "username", username)
     .maybeSingle();
   if (!data) return { title: `@${username}` };
-  const name = data.display_name || data.name || `@${username}`;
+  const name = data.display_name || data.name || (isUuid ? "Profile" : `@${username}`);
   return {
     title: `${name} — DoItForMe`,
     description: data.bio || `${name} on DoItForMe — India's campus freelance network.`,
@@ -80,12 +81,13 @@ export default async function PublicProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(username);
   const supabase = await supabaseServer();
 
   const { data: user } = await supabase
     .from("users")
     .select(PUBLIC_FIELDS)
-    .eq("username", username)
+    .eq(isUuid ? "id" : "username", username)
     .maybeSingle<PublicUser>();
 
   if (!user) notFound();
