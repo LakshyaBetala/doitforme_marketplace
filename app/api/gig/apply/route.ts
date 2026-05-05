@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     )
 
     try {
-        const { gigId, offerPitch, offerPrice } = await req.json();
+        const { gigId, offerPitch, offerPrice, paymentPreference } = await req.json();
 
         // 1. Auth Check
         const { data: { user } } = await supabase.auth.getUser();
@@ -58,6 +58,7 @@ export async function POST(req: Request) {
             status: 'pending',
             pitch: offerPitch || "I'm interested in this item!",
             negotiated_price: offerPrice || null,
+            payment_preference: paymentPreference || "DIRECT"
         }, { onConflict: 'gig_id, worker_id' });
 
         if (appError) throw appError;

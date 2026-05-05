@@ -46,7 +46,7 @@ export async function POST(req: Request) {
             .from('users')
             .update({
                 role: 'COMPANY',
-                name: companyName.trim(), 
+                name: companyName.trim(),
                 is_verified_company: false, // Requires admin approval
                 phone: Number(companyPhone.replace(/\D/g, "")),
                 experience: `Work Email: ${companyEmail.trim()}\n\nDetails: ${companyDetails.trim()}`,
@@ -60,9 +60,9 @@ export async function POST(req: Request) {
         }
 
         // Update auth metadata
-        const updateData: any = { 
-            data: { 
-                role: 'COMPANY', 
+        const updateData: any = {
+            data: {
+                role: 'COMPANY',
                 company_name: companyName.trim(),
                 company_email: companyEmail.trim(),
                 avatar_url: logoUrl || null
@@ -76,8 +76,8 @@ export async function POST(req: Request) {
         await supabase.auth.updateUser(updateData);
 
         // Insert into companies table with user_id and contact_email linked
-        const { error: companyInsertError } = await serviceRoleClient.from('companies').upsert([{ 
-            name: companyName.trim(), 
+        const { error: companyInsertError } = await serviceRoleClient.from('companies').upsert([{
+            name: companyName.trim(),
             is_active: false, // Pending admin approval
             user_id: user.id,
             contact_email: companyEmail.trim(),

@@ -50,12 +50,12 @@ export default function CompanyTaskHubPage() {
       }
       setGig(gigData);
 
-      // Fetch applications & worker info
+      // Fetch applications & worker info (including worker profile details)
       const { data: appsData } = await supabase
         .from('applications')
         .select(`
-          id, worker_id, status, pitch, created_at,
-          users!applications_worker_id_fkey(name, email, avatar_url, phone, college)
+          id, worker_id, status, pitch, created_at, negotiated_price, payment_preference,
+          users!applications_worker_id_fkey(name, email, avatar_url, phone, college, skills, portfolio_links, experience, resume_url, rating, rating_count, jobs_completed)
         `)
         .eq('gig_id', gigId)
         .order('created_at', { ascending: false });
@@ -66,6 +66,48 @@ export default function CompanyTaskHubPage() {
     }
     loadData();
   }, [gigId, router, supabase]);
+
+  const [hiringId, setHiringId] = useState<string | null>(null);
+
+  const handleHire = async (app: any) => {
+    setHiringId(app.id);
+    try {
+      if (app.payment_preference === 'DIRECT') {
+        const phone = app.users?.phone;
+        if (!phone) {
+           toast.error("Worker hasn't provided a phone number.");
+           return;
+        }
+        const message = encodeURIComponent(`Hi ${app.users?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
+        window.open(`https://wa.me/91${phone.replace(/\D/g,'')}?text=${message}`, '_blank');
+        
+        await updateApplicationStatus(app.id, 'accepted');
+        toast.success("Redirected to Direct Connect!");
+      } else {
+        const res = await fetch("/api/gig/hire", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gigId: gig.id, workerId: app.worker_id })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to initiate payment");
+
+        const { load } = await import('@cashfreepayments/cashfree-js');
+        const cashfree = await load({
+          mode: process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') ? 'sandbox' : 'sandbox',
+        });
+        
+        cashfree.checkout({
+          paymentSessionId: data.paymentSessionId,
+          redirectTarget: "_self",
+        });
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setHiringId(null);
+    }
+  };
 
   const updateApplicationStatus = async (appId: string, newStatus: string) => {
     try {
@@ -196,6 +238,20 @@ export default function CompanyTaskHubPage() {
                          <div className="text-[10px] font-bold text-[#444] tracking-widest uppercase">
                             <span className="text-[#888]">{worker?.college || "CREDENTIALS NOT FILED"}</span> // {worker?.email}
                          </div>
+                         {(worker?.skills?.length > 0 || worker?.experience) && (
+                           <div className="text-xs text-[#888] flex flex-col gap-1">
+                             {worker?.skills?.length > 0 && <p><span className="text-[#555] font-bold uppercase text-[9px] tracking-widest">Skills:</span> {worker.skills.join(', ')}</p>}
+                             {worker?.experience && <p><span className="text-[#555] font-bold uppercase text-[9px] tracking-widest">Experience:</span> {worker.experience}</p>}
+                           </div>
+                         )}
+                         <div className="flex gap-4">
+                           {worker?.resume_url && (
+                             <a href={supabase.storage.from('resumes').getPublicUrl(worker.resume_url).data.publicUrl} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">View Resume</a>
+                           )}
+                           {worker?.portfolio_links?.length > 0 && (
+                             <a href={worker.portfolio_links[0]} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">Portfolio</a>
+                           )}
+                         </div>
                          {app.pitch && (
                            <div className="text-sm text-[#888] bg-[#0B0B11] border border-[#222] p-6 max-w-xl italic leading-relaxed">
                              <span className="uppercase text-[8px] font-bold text-[#333] block mb-3 tracking-[0.3em]">Proposal Transcript</span>
@@ -206,9 +262,11 @@ export default function CompanyTaskHubPage() {
                      </div>
 
                      <div className="shrink-0 flex items-center gap-px bg-[#222] border border-[#222] w-full md:w-auto overflow-hidden">
-                        {app.status === 'applied' && (
+                        {(app.status === 'applied' || app.status === 'pending') && (
                           <>
-                            <button onClick={() => updateApplicationStatus(app.id, 'accepted')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">Accept</button>
+                            <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
+                              {hiringId === app.id ? 'Processing...' : `Hire Vector (${app.payment_preference || 'DIRECT'})`}
+                            </button>
                             <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
                           </>
                         )}
