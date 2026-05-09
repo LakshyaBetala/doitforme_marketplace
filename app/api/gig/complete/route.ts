@@ -68,10 +68,7 @@ export async function POST(request: Request) {
 
     payoutAmount = Math.max(0, totalHeld - platformFee);
 
-      // Log Fee Transaction
-      if (platformFee > 0) {
-        await supabaseAdmin.from("transactions").insert({
-    // Log Fee Transaction
+
     if (platformFee > 0) {
       await supabaseAdmin.from("transactions").insert({
         gig_id: gigId,
