@@ -77,13 +77,18 @@ export default function GigDetailsPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || "Failed to apply");
+        // Clean error messages
+        let msg = errorData.error || "Failed to apply";
+        if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("already applied")) {
+          msg = "You have already applied for this task.";
+        }
+        throw new Error(msg);
       }
 
-      toast.success("Application submitted!");
+      toast.success("Application submitted successfully!");
       router.push(`/chat/${gigId}`);
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message || "Something went wrong. Please try again.");
     } finally {
       setIsApplying(false);
     }
@@ -157,10 +162,10 @@ export default function GigDetailsPage() {
         <GigImageGallery gig={gig} supabase={supabase} isCompanyTask={isCompanyTask} />
 
         {/* TITLE + PRICE */}
-        <div className="space-y-4 relative z-10 px-2 md:px-0">
+        <div className="space-y-4 relative z-10 px-2 md:px-0 mb-10">
           <div className="space-y-2">
             {isCompanyTask && <span className="text-xs font-semibold text-[#C9A9FF] mb-2 inline-flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[#8825F5] animate-pulse"></div> Company Task</span>}
-            <h1 className={`text-3xl md:text-5xl font-bold tracking-tight leading-tight text-white`}>{gig.title}</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight leading-tight text-white">{gig.title}</h1>
           </div>
           
           <div className="flex items-center gap-6 mt-4 flex-wrap">
@@ -316,6 +321,7 @@ export default function GigDetailsPage() {
 
 function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isApplying, offerPitch, setOfferPitch, paymentPref, setPaymentPref, isCompanyTask }: any) {
   const [riskAccepted, setRiskAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0B0B11]/80 backdrop-blur-xl p-4 flex items-end sm:items-center justify-center overflow-y-auto" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -410,11 +416,29 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
               />
             </div>
 
+            {/* TERMS & CONDITIONS CHECKBOX */}
+            <div className="pt-4 border-t border-white/5 mt-4">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                 <div className={`w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${termsAccepted ? 'bg-[#8825F5] border-[#8825F5]' : 'bg-black/50 border-white/20 group-hover:border-[#8825F5]/50'}`}>
+                    {termsAccepted && <Check size={14} className="text-white" />}
+                 </div>
+                 <input 
+                   type="checkbox" 
+                   className="hidden" 
+                   checked={termsAccepted} 
+                   onChange={(e) => setTermsAccepted(e.target.checked)} 
+                 />
+                 <span className={`text-xs md:text-sm font-medium transition-colors ${termsAccepted ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-300'}`}>
+                   I understand the requirements of this task, accept the deadlines, and commit to its complete viability. I am responsible for delivering the expected quality.
+                 </span>
+              </label>
+            </div>
+
             <button 
               onClick={handleApply}
-              disabled={isApplying || (paymentPref === "DIRECT" && !riskAccepted)}
+              disabled={isApplying || !termsAccepted || (paymentPref === "DIRECT" && !riskAccepted)}
               className={`w-full py-4 text-[15px] font-semibold rounded-full transition-all flex items-center justify-center gap-3 ${
-                (paymentPref === "DIRECT" && !riskAccepted) 
+                (isApplying || !termsAccepted || (paymentPref === "DIRECT" && !riskAccepted)) 
                 ? 'bg-white/5 text-zinc-500 cursor-not-allowed border border-white/5' 
                 : 'bg-white text-black hover:bg-zinc-200 active:scale-95 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]'
               }`}

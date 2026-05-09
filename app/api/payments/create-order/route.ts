@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
     const { data: { user } } = await supabase.auth.getUser(); // The Payer
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ error: "Please log in to proceed with payment." }, { status: 401 });
 
     // 2. Fetch Gig Details
     const { data: gig, error: gigError } = await supabase
@@ -27,10 +27,8 @@ export async function POST(req: Request) {
     // Market: Poster (Seller)
     // Hustle: Assigned Worker (Worker)
     let recipientId = gig.poster_id;
-    if (gig.listing_type === 'HUSTLE') {
-      if (!gig.assigned_worker_id) return NextResponse.json({ error: "No worker assigned to pay" }, { status: 400 });
-      recipientId = gig.assigned_worker_id;
-    }
+    if (!gig.assigned_worker_id) return NextResponse.json({ error: "No worker assigned to pay" }, { status: 400 });
+    recipientId = gig.assigned_worker_id;
 
     // 4. Fetch Recipient Stats (for Tiered Fee) & Payer Details (for Gateway)
     // We need Payer's phone/email for Cashfree
@@ -57,60 +55,28 @@ export async function POST(req: Request) {
 
     let finalPrice = Number(gig.price);
 
-    if (gig.listing_type === 'MARKET') {
-      // I am the Buyer (User). I have an application.
-      const { data: myApp } = await supabase
-        .from('applications')
-        .select('negotiated_price')
-        .eq('gig_id', gigId)
-        .eq('worker_id', user.id)
-        .maybeSingle();
+    // I am the Poster. Paying the Worker (Recipient).
+    const { data: workerApp } = await supabase
+      .from('applications')
+      .select('negotiated_price')
+      .eq('gig_id', gigId)
+      .eq('worker_id', recipientId)
+      .maybeSingle();
 
-      if (myApp?.negotiated_price) {
-        finalPrice = Number(myApp.negotiated_price);
-      }
-    } else if (gig.listing_type === 'HUSTLE') {
-      // I am the Poster. Paying the Worker (Recipient).
-      const { data: workerApp } = await supabase
-        .from('applications')
-        .select('negotiated_price')
-        .eq('gig_id', gigId)
-        .eq('worker_id', recipientId)
-        .maybeSingle();
-
-      if (workerApp?.negotiated_price) {
-        finalPrice = Number(workerApp.negotiated_price);
-      }
+    if (workerApp?.negotiated_price) {
+      finalPrice = Number(workerApp.negotiated_price);
     }
 
     // 5. Calculate Fees
     const price = finalPrice;
     const jobsCompleted = recipientProfile?.jobs_completed || 0;
 
-    // Security Deposit (Only for Market Rent)
     let deposit = 0;
-    if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
-      deposit = Number(gig.security_deposit) || 0;
-    }
 
-    // Platform Fee Logic — Flat 3% escrow fee deducted from worker/seller payout
-    // Poster/Buyer pays exact listed price. Worker/Seller receives 97%.
-    let platformFee = 0;
+    let platformFee = Math.ceil(price * 0.03);
     let renterFee = 0;
-    let netWorkerPay = 0;
+    let netWorkerPay = price - platformFee;
     const discountApplied = false;
-
-    if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT') {
-      // Rental: 1% added to renter upfront, 3% deducted from owner
-      renterFee = Math.ceil((price + deposit) * 0.01);
-      platformFee = Math.ceil(price * 0.03);
-      netWorkerPay = price - platformFee;
-    } else {
-      // Hustle / Sell: Flat 3% deducted from worker/seller payout
-      renterFee = 0;
-      platformFee = Math.ceil(price * 0.03);
-      netWorkerPay = price - platformFee;
-    }
 
     // Subtotal (Base charge before Gateway)
     // Logic: User Pays: Price + Deposit + Renter Fee (if applicable)

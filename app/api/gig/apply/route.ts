@@ -29,7 +29,7 @@ export async function POST(req: Request) {
         // 1. Auth Check
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json({ error: "Please log in to apply for this task." }, { status: 401 });
         }
 
         // 2. Fetch Gig to validate
@@ -49,6 +49,26 @@ export async function POST(req: Request) {
 
         if (gig.status !== 'open') {
             return NextResponse.json({ error: "This item is no longer available." }, { status: 400 });
+        }
+
+        // 2.5 Check Applicant Limit for Free Accounts
+        const { count: appCount } = await supabase
+            .from("applications")
+            .select("*", { count: 'exact', head: true })
+            .eq("gig_id", gigId);
+
+        if (appCount !== null && appCount >= 10) {
+            // Check if poster is a subscribed company
+            const { data: posterCompany } = await supabase
+                .from("companies")
+                .select("free_credits")
+                .eq("user_id", gig.poster_id)
+                .single();
+
+            const hasUnlimited = posterCompany && posterCompany.free_credits >= 999999;
+            if (!hasUnlimited) {
+                return NextResponse.json({ error: "This task has reached its maximum limit of 10 applicants." }, { status: 403 });
+            }
         }
 
         // 3. Create Application (Offer)
@@ -115,6 +135,17 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("Apply Error:", error.message);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        
+        let safeErrorMsg = "An unexpected error occurred while processing your application.";
+        if (error?.code === '23505') {
+            safeErrorMsg = "You have already applied for this task.";
+        } else if (error?.message) {
+            // Keep specific custom errors if they aren't raw database errors
+            safeErrorMsg = error.message.includes('relation') || error.message.includes('syntax') 
+                ? "A system error occurred. Our team has been notified." 
+                : error.message;
+        }
+
+        return NextResponse.json({ error: safeErrorMsg }, { status: 500 });
     }
 }

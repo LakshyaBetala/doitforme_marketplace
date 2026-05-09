@@ -21,10 +21,13 @@ export default function CompanyTaskHubPage() {
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Incentive Modal
   const [showIncentiveModal, setShowIncentiveModal] = useState(false);
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [incentiveAmount, setIncentiveAmount] = useState<string>("");
+
+  // Premium Features
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [sortOption, setSortOption] = useState<"NEWEST" | "RATING" | "EXPERIENCE">("NEWEST");
 
   useEffect(() => {
     async function loadData() {
@@ -49,6 +52,15 @@ export default function CompanyTaskHubPage() {
         return;
       }
       setGig(gigData);
+
+      // Fetch company premium status
+      const { data: companyData } = await supabase
+        .from('companies')
+        .select('free_credits')
+        .eq('user_id', authUser?.id)
+        .single();
+        
+      setIsSubscribed(companyData?.free_credits >= 999999);
 
       // Fetch applications & worker info (including worker profile details)
       const { data: appsData } = await supabase
@@ -144,6 +156,16 @@ export default function CompanyTaskHubPage() {
 
   const labelClass = "block text-[10px] font-bold text-[#444] uppercase tracking-widest mb-2";
 
+  // Sorting Logic
+  const sortedApplications = [...applications].sort((a, b) => {
+    if (sortOption === "RATING") {
+       return (b.users?.rating || 0) - (a.users?.rating || 0);
+    } else if (sortOption === "EXPERIENCE") {
+       return (b.users?.jobs_completed || 0) - (a.users?.jobs_completed || 0);
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white pb-36 font-sans selection:bg-white selection:text-black">
 
@@ -200,6 +222,22 @@ export default function CompanyTaskHubPage() {
                Applicants
                <span className="bg-white text-black px-2 py-0.5 text-[10px] font-black">{applications.length}</span>
              </h2>
+
+             {/* Premium Sorting */}
+             <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.2em] hidden sm:block">Sort By:</span>
+                <select 
+                   value={sortOption}
+                   onChange={(e) => setSortOption(e.target.value as any)}
+                   disabled={!isSubscribed}
+                   className={`bg-[#0a0a0a] border ${isSubscribed ? 'border-[#444] text-white focus:border-white' : 'border-[#222] text-[#444] cursor-not-allowed'} text-[10px] font-bold uppercase tracking-[0.2em] py-2 px-3 outline-none appearance-none transition-colors`}
+                   title={!isSubscribed ? "Upgrade to Unlimited to sort applicants by Rating & Experience" : ""}
+                >
+                   <option value="NEWEST">Newest</option>
+                   <option value="RATING">{!isSubscribed ? "🔒 Rating" : "Rating"}</option>
+                   <option value="EXPERIENCE">{!isSubscribed ? "🔒 Experience" : "Experience"}</option>
+                </select>
+             </div>
            </div>
 
            {applications.length === 0 ? (
@@ -209,15 +247,15 @@ export default function CompanyTaskHubPage() {
              </div>
            ) : (
              <div className="grid gap-px bg-[#222] border border-[#222]">
-               {applications.map(app => {
+               {sortedApplications.map(app => {
                  const worker = app.users;
                  return (
-                   <div key={app.id} className="bg-[#0a0a0a] p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-8 group hover:bg-[#111] transition-colors relative">
+                    <div key={app.id} className="bg-[#0a0a0a] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-8 group hover:bg-[#111] transition-colors relative">
                      {app.status === 'accepted' && (
                         <div className="absolute top-0 left-0 w-1 h-full bg-white"></div>
                      )}
                      
-                     <div className="flex items-start gap-8 flex-1">
+                     <div className="flex flex-col sm:flex-row items-start gap-6 md:gap-8 w-full md:flex-1">
                        <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-all">
                          {worker?.avatar_url ? (
                            <Image src={worker.avatar_url} alt="Profile" width={64} height={64} className="object-cover w-full h-full" />
@@ -225,7 +263,7 @@ export default function CompanyTaskHubPage() {
                            <span className="font-black text-xl text-[#333] italic uppercase">{worker?.name?.[0] || "?"}</span>
                          )}
                        </div>
-                       <div className="space-y-4 flex-1">
+                       <div className="space-y-4 w-full">
                          <div className="flex flex-wrap items-center gap-4">
                            <h4 className="font-black text-xl text-white uppercase italic tracking-tight">{worker?.name || "Anonymous"}</h4>
                            <span className={`text-[9px] font-black tracking-widest px-2 py-1 border ${
@@ -236,7 +274,7 @@ export default function CompanyTaskHubPage() {
                              {app.status}
                            </span>
                          </div>
-                         <div className="text-[10px] font-bold text-[#444] tracking-widest uppercase">
+                         <div className="text-[10px] font-bold text-[#444] tracking-widest uppercase break-words">
                             <span className="text-[#888]">{worker?.college || "No college listed"}</span> // {worker?.email}
                          </div>
                          {(worker?.skills?.length > 0 || worker?.experience) && (
@@ -245,19 +283,19 @@ export default function CompanyTaskHubPage() {
                              {worker?.experience && <p><span className="text-[#555] font-bold uppercase text-[9px] tracking-widest">Experience:</span> {worker.experience}</p>}
                            </div>
                          )}
-                         <div className="flex gap-4">
-                           <Link href={`/u/${worker?.username || app.worker_id}`} target="_blank" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">
+                         <div className="flex flex-wrap gap-3">
+                           <Link href={`/u/${worker?.username || app.worker_id}`} target="_blank" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111]">
                              View Profile
                            </Link>
                            {worker?.resume_url && (
-                             <a href={worker.resume_url} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">View Resume</a>
+                             <a href={worker.resume_url} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111]">View Resume</a>
                            )}
                            {worker?.portfolio_links?.length > 0 && worker.portfolio_links.map((link: string, idx: number) => (
-                             <a key={idx} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1 bg-[#111]">Portfolio {idx + 1}</a>
+                             <a key={idx} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111]">Portfolio {idx + 1}</a>
                            ))}
                          </div>
                          {app.pitch && (
-                           <div className="text-sm text-[#888] bg-[#0B0B11] border border-[#222] p-6 max-w-xl italic leading-relaxed">
+                           <div className="text-sm text-[#888] bg-[#0B0B11] border border-[#222] p-5 md:p-6 w-full italic leading-relaxed">
                              <span className="uppercase text-[8px] font-bold text-[#333] block mb-3 tracking-[0.3em]">Application Pitch</span>
                              "{app.pitch}"
                            </div>
@@ -265,13 +303,13 @@ export default function CompanyTaskHubPage() {
                        </div>
                      </div>
 
-                     <div className="shrink-0 flex items-center gap-px bg-[#222] border border-[#222] w-full md:w-auto overflow-hidden">
+                     <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-px bg-[#222] border border-[#222] w-full md:w-auto overflow-hidden">
                         {(app.status === 'applied') && (
                           <>
-                            <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
+                            <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all">
                               {hiringId === app.id ? 'Processing...' : (app.payment_preference === 'DIRECT' ? 'Connect (WhatsApp)' : `Hire via Escrow`)}
                             </button>
-                            <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
+                            <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
                           </>
                         )}
                         {(app.status === 'pending') && (
@@ -280,13 +318,15 @@ export default function CompanyTaskHubPage() {
                               <button disabled={hiringId === app.id} onClick={async () => {
                                 setHiringId(app.id);
                                 try {
-                                  const { error: gigError } = await supabase.from('gigs').update({
-                                    assigned_worker_id: app.worker_id,
-                                    status: 'assigned'
-                                  }).eq('id', gig.id);
-                                  if (gigError) throw gigError;
+                                  const res = await fetch("/api/gig/hire-direct", {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ gigId: gig.id, workerId: app.worker_id, applicationId: app.id })
+                                  });
+                                  const data = await res.json();
+                                  if (!res.ok) throw new Error(data.error || "Failed to finalize direct hire");
                                   
-                                  await updateApplicationStatus(app.id, 'accepted');
+                                  setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'accepted' } : a));
                                   toast.success("Worker Officially Hired!");
                                 } catch(e: any) {
                                   toast.error(e.message);

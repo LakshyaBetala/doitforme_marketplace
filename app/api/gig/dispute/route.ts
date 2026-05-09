@@ -42,10 +42,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Only the poster can raise a dispute' }, { status: 403 });
     }
 
-    // 4. Gig must be in 'delivered' state (work has been submitted)
-    if (gig.status !== 'delivered') {
+    // 4. Gig must be in 'SUBMITTED' or 'delivered' state
+    if (gig.status !== 'delivered' && gig.status !== 'SUBMITTED') {
       return NextResponse.json({
-        error: `Dispute can only be raised when work has been delivered. Current status: ${gig.status}`
+        error: `Dispute can only be raised when work has been submitted. Current status: ${gig.status}`
       }, { status: 400 });
     }
 

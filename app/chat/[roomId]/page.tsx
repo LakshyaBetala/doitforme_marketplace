@@ -185,7 +185,6 @@ function ChatRoomContent() {
           setApplicantProfile(null);
 
           let limit = 5;
-          if (gigData.listing_type === 'MARKET') limit = 10;
           setMsgLimit(limit);
 
           const allMagicChips = [
@@ -382,9 +381,7 @@ function ChatRoomContent() {
       (m.sender_id === selectedApplicantId && m.receiver_id === currentUser?.id);
   });
 
-  const magicChips = gig?.listing_type === 'MARKET'
-    ? ["Available?", "Best Price?", "Where to meet?", "Can I see more pics?"]
-    : ["I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"];
+  const magicChips = ["I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"];
 
   // --- RENDER ---
   if (loading) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center"><Loader2 className="animate-spin text-[#C9A9FF]" /></div>;
@@ -495,9 +492,9 @@ function ChatRoomContent() {
         {/* TRANSACTION CARD (Sticky) */}
         <div className="bg-[#1A1A24] border-b border-white/5 p-3 flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 rounded-lg bg-zinc-800 relative overflow-hidden shrink-0 border border-white/10">
-            {gig.images?.[0]
+            {gig?.images && gig.images.length > 0 
               ? <Image src={supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl} alt="Gig" fill className="object-cover" />
-              : (gig.listing_type === 'MARKET' ? <ShoppingBag className="p-2 w-full h-full text-white/50" /> : <Briefcase className="p-2 w-full h-full text-white/50" />)
+              : <Briefcase className="p-2 w-full h-full text-white/50" />
             }
           </div>
           <div className="flex-1 min-w-0">
@@ -597,23 +594,11 @@ function ChatRoomContent() {
                   <p className="text-xs text-white/60 uppercase tracking-widest font-bold">New Agreed Price</p>
                 </div>
 
-                <div className="bg-white/10 rounded-xl p-4 mb-6 text-xs text-white/70 leading-relaxed border border-white/5">
-                  {gig.listing_type === 'MARKET' ? (
-                    gig.market_type === 'RENT' ? (
-                      <p>
-                        Note: At checkout, the <strong className="text-white">Renter</strong> will pay a <strong className="text-[#C9A9FF]">3% Escrow + 2% Gateway Fee</strong> on top of this price.
-                      </p>
-                    ) : (
-                      <p>
-                        <strong className="text-green-400">Zero Fees!</strong> This is a direct P2P transaction. Ensure you verify the item before payment.
-                      </p>
-                    )
-                  ) : (
+                  <div className="bg-white/10 rounded-xl p-4 mb-6 text-xs text-white/70 leading-relaxed border border-white/5">
                     <p>
                       You are accepting this budget. The hustler will receive this amount minus platform fees.
                     </p>
-                  )}
-                </div>
+                  </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -776,16 +761,7 @@ function ChatRoomContent() {
 
           <div className="px-4 pb-4 pt-1 max-w-4xl mx-auto relative flex gap-3 items-center">
 
-            {/* OFFER BUTTON */}
-            {!isPoster && gig.listing_type === 'MARKET' && gig.status === 'open' && (
-              <button
-                onClick={() => setIsOfferModalOpen(true)}
-                className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-green-400 border border-white/5 transition-all shrink-0 touch-manipulation"
-                title="Make an Offer"
-              >
-                <IndianRupee size={20} />
-              </button>
-            )}
+            {/* Removed Offer Button for Market */}
 
             {/* File upload */}
             <input

@@ -26,17 +26,12 @@ function timeAgo(dateString: string) {
   return `${days}d ago`;
 }
 
-// --- BACKGROUND COMPONENT (THEMED) ---
-function BackgroundBlobs({ theme }: { theme: "MARKET" | "HUSTLE" }) {
-  // Brand-only ambient: brand-blue for MARKET, brand-purple for HUSTLE.
-  // Never pink/rose — those break the dark-minimal aesthetic.
-  const primaryColor = theme === "MARKET" ? "bg-[#0097FF]" : "bg-[#8825F5]";
-  const secondaryColor = theme === "MARKET" ? "bg-[#0097FF]" : "bg-[#8825F5]";
-
+// --- BACKGROUND COMPONENT ---
+function BackgroundBlobs() {
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10 transition-colors duration-1000">
-      <div className={`absolute w-[40rem] h-[40rem] ${primaryColor}/10 blur-[100px] rounded-full -top-40 -left-40 animate-blob will-change-transform transition-colors duration-1000`} />
-      <div className={`absolute w-[30rem] h-[30rem] ${secondaryColor}/10 blur-[100px] rounded-full top-[30%] -right-20 animate-blob animation-delay-2000 will-change-transform transition-colors duration-1000`} />
+      <div className={`absolute w-[40rem] h-[40rem] bg-[#8825F5]/10 blur-[100px] rounded-full -top-40 -left-40 animate-blob will-change-transform transition-colors duration-1000`} />
+      <div className={`absolute w-[30rem] h-[30rem] bg-[#8825F5]/10 blur-[100px] rounded-full top-[30%] -right-20 animate-blob animation-delay-2000 will-change-transform transition-colors duration-1000`} />
     </div>
   );
 }
@@ -50,7 +45,6 @@ export default function FeedPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [feedType, setFeedType] = useState<"MARKET" | "HUSTLE">("HUSTLE");
   const [campusFilter, setCampusFilter] = useState<"ALL" | "MY_CAMPUS">("ALL");
 
   const ITEMS_PER_PAGE = 12;
@@ -89,11 +83,8 @@ export default function FeedPage() {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       query = query.gt("created_at", thirtyDaysAgo);
 
-      if (feedType === "HUSTLE") {
-        query = query.eq("listing_type", "HUSTLE").or(`deadline.is.null,deadline.gt.${nowIso}`);
-      } else {
-        query = query.eq("listing_type", "MARKET");
-      }
+      // Filter only Hustles and Company Tasks
+      query = query.in("listing_type", ["HUSTLE", "COMPANY_TASK"]).or(`deadline.is.null,deadline.gt.${nowIso}`);
 
       if (campusFilter === "MY_CAMPUS" && userCollege) {
         query = query.eq("users.college", userCollege);
@@ -103,7 +94,23 @@ export default function FeedPage() {
       if (error) throw error;
 
       if (data) {
-        setGigs(prev => isNewFilter ? data : [...prev, ...data]);
+        // Fetch unlimited companies to auto-feature their posts
+        const { data: unlimitedCompanies } = await supabase
+           .from("companies")
+           .select("user_id")
+           .gte("free_credits", 999999);
+           
+        const premiumPosterIds = new Set(unlimitedCompanies?.map(c => c.user_id) || []);
+        
+        const enhancedData = data.map(gig => ({
+           ...gig,
+           is_featured: premiumPosterIds.has(gig.poster_id)
+        }));
+        
+        // Sort so featured gigs always appear first within this page's result set
+        enhancedData.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+
+        setGigs(prev => isNewFilter ? enhancedData : [...prev, ...enhancedData]);
         setHasMore(data.length === ITEMS_PER_PAGE);
       }
 
@@ -124,11 +131,9 @@ export default function FeedPage() {
         const isFresh = Date.now() - state.timestamp < 1000 * 60 * 10; // 10 mins
 
         if (isFresh && state.gigs?.length > 0) {
-          // Restore State
           setGigs(state.gigs);
           setPage(state.page);
           setHasMore(state.hasMore);
-          setFeedType(state.feedType);
           setCampusFilter(state.campusFilter);
           setLoading(false);
 
@@ -155,7 +160,6 @@ export default function FeedPage() {
         gigs,
         page,
         hasMore,
-        feedType,
         campusFilter,
         scrollTop: window.scrollY,
         timestamp: Date.now()
@@ -167,44 +171,10 @@ export default function FeedPage() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       handleBeforeUnload(); // Save on component unmount
-      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [gigs, page, hasMore, feedType, campusFilter]);
+  }, [gigs, page, hasMore, campusFilter]);
 
-  // Handlers for Filters (replacing the old useEffect)
-  const handleFeedTypeChange = (type: "MARKET" | "HUSTLE") => {
-    if (type === feedType) return;
-    setFeedType(type);
-    setPage(0);
-    setHasMore(true);
-    // We need to pass the new type explicitly because state update is async
-    // But fetchGigs uses state... so we need to pass overrides or rely on useEffect?
-    // Actually, simple fix: Update state, then fetch in a useEffect that ONLY triggers on change AFTER mount?
-    // No, cleaner to just pass the filter to fetchGigs or use a ref. 
-    // Let's modify fetchGigs to accept overrides, or just force a reload via a key?
-    // Re-instating a controlled useEffect might be better if we use a 'mounted' ref.
 
-    // Quick fix: Set state, then trigger fetch with a small timeout or use a ref for current filter.
-    // Actually, standard pattern:
-    // setFeedType(type); 
-    // -> useEffect([feedType]) triggers.
-    // BUT we blocked that to handle Restore.
-
-    // Solution: calls a specialized fetch that takes arguments
-    // fetchGigs(0, true, type); // Need to update fetchGigs signature?
-    // Let's just reload page with new param? No, SPA.
-
-    // Let's stick to the manual approach but update fetchGigs to use refs or passed args?
-    // Or simpler: Just set state and let a specific useEffect handle it IF it's not the initial render?
-  };
-
-  // Refactored Fetch to use parameters instead of state for filters to be safe
-  const fetchGigsWithParams = async (pageIndex: number, isNewFilter: boolean, type: string, campus: string) => {
-    // ... similar logic to fetchGigs but using type/campus args
-    // For now, let's keep it simple:
-    // The state update might not be immediate. 
-    // Let's use a useEffect that listens to [feedType, campusFilter] BUT skips the FIRST run if we restored.
-  };
 
   const loadMore = () => {
     const nextPage = page + 1;
@@ -212,13 +182,9 @@ export default function FeedPage() {
     fetchGigs(nextPage, false);
   };
 
-  const themeColor = feedType === "MARKET" ? "text-pink-400" : "text-brand-purple";
-  const themeBorder = feedType === "MARKET" ? "border-pink-500/20" : "border-brand-purple/20";
-  const themeBg = feedType === "MARKET" ? "bg-pink-500/10" : "bg-brand-purple/10";
-
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white p-4 md:p-6 relative selection:bg-brand-purple overflow-x-hidden">
-      <BackgroundBlobs theme={feedType} />
+      <BackgroundBlobs />
 
       {/* HEADER & TOGGLE */}
       <div className="max-w-xl mx-auto mb-8 sticky top-0 z-20 bg-[#0B0B11]/80 backdrop-blur-xl py-4 -mx-4 px-4 md:mx-auto md:px-0 md:rounded-b-3xl border-b border-white/5 md:border-none space-y-4">
@@ -226,26 +192,18 @@ export default function FeedPage() {
         {/* TOP BAR */}
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-black tracking-tighter italic">
-            <span className={themeColor}>DOIT</span>FORME
+            <span className="text-brand-purple">DOIT</span>FORME
           </h1>
           <button
             onClick={() => router.push('/messages')}
             className="p-2.5 rounded-full bg-white/10 hover:bg-white/10 text-white/60 hover:text-white transition-colors relative"
           >
-            <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${feedType === 'MARKET' ? 'bg-pink-500' : 'bg-brand-purple'} animate-pulse`}></div>
+            <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-purple animate-pulse"></div>
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
           </button>
         </div>
 
-        <div className="flex bg-white/10 p-1 rounded-2xl relative">
-          <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white/10 rounded-xl transition-all duration-300 ease-out left-[calc(50%+2px)]`}></div>
-          <a href="https://marketforme.in" className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors text-white/60 hover:text-white`}>
-            <ShoppingBagIcon size={16} /> Campus Market
-          </a>
-          <button onClick={() => { setFeedType("HUSTLE"); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors text-brand-purple`}>
-            <Briefcase size={16} /> The Hustle
-          </button>
-        </div>
+        {/* Removed Marketplace Toggle */}
       </div>
 
       {/* FEED GRID */}

@@ -177,14 +177,14 @@ export default function Dashboard() {
           </Link>
 
           {/* Search Bar */}
-          <div className="hidden lg:flex relative w-80">
+          <div className="flex relative w-48 md:w-80">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
-              placeholder="Search hustles, tasks, or students"
+              placeholder="Search hustles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0F172A] border border-[#1E293B] rounded-full py-2 pl-9 pr-4 text-sm text-white placeholder:text-zinc-500 focus:border-brand-purple/50 focus:outline-none transition-colors shadow-inner"
+              className="w-full bg-[#0F172A] border border-[#1E293B] rounded-full py-2 pl-9 pr-4 text-xs md:text-sm text-white placeholder:text-zinc-500 focus:border-brand-purple/50 focus:outline-none transition-colors shadow-inner"
             />
           </div>
         </div>
@@ -340,7 +340,7 @@ export default function Dashboard() {
 
                 <div className="flex items-center gap-3">
                   {/* Type Filters */}
-                  <div className="flex items-center bg-[#0F172A] rounded-full p-1 border border-[#1E293B] overflow-x-auto scrollbar-hide shrink-0 max-w-[calc(100vw-100px)] md:max-w-none">
+                  <div className="flex items-center bg-[#0F172A] rounded-full p-1 border border-[#1E293B] overflow-x-auto scrollbar-hide shrink-0 max-w-[calc(100vw-120px)] md:max-w-none touch-pan-x">
                     <FeedTab label="All" active={feedType === 'ALL'} onClick={() => handleFeedTypeChange('ALL')} />
                     <FeedTab label="Hustles" active={feedType === 'HUSTLE'} onClick={() => handleFeedTypeChange('HUSTLE')} />
                     <FeedTab label="Company Tasks" active={feedType === 'COMPANY_TASK'} onClick={() => handleFeedTypeChange('COMPANY_TASK')} />

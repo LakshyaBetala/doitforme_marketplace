@@ -324,7 +324,7 @@ function MessagesContent() {
                         setMessageLimit(null);
                         setIsLimitReached(false);
                     } else {
-                        const limit = gig.listing_type === 'MARKET' ? 10 : 5;
+                        const limit = 5;
                         setMessageLimit(limit);
                         const myCount = data?.filter((m: any) =>
                             m.sender_id === user.id &&
@@ -623,7 +623,7 @@ function MessagesContent() {
     const isCompleted = activeGigStatus === 'completed' || activeGigStatus === 'cancelled' || activeGigStatus === 'disputed';
     const isPosterView = activeConversation?.gig?.poster_id === user?.id;
     const isPhysicalGig = activeConversation?.gig?.is_physical === true;
-    const isMarketGig = activeConversation?.gig?.listing_type === 'MARKET';
+    const isMarketGig = false;
     // Approve/disapprove only valid for: poster, non-physical, non-market (Hustle remote), when delivered
     const canApproveOrDispute = isPosterView && !isPhysicalGig && !isMarketGig && activeGigStatus === 'delivered';
 
@@ -689,7 +689,7 @@ function MessagesContent() {
                                                     {gigStatus === 'completed'
                                                         ? 'Completed'
                                                         : (gigStatus === 'assigned' || gigStatus === 'delivered')
-                                                            ? (chat.gig?.listing_type === 'MARKET' ? 'In deal' : 'Hired')
+                                                            ? 'Hired'
                                                             : gigStatus}
                                                 </StatusBadge>
                                             </span>
@@ -729,7 +729,7 @@ function MessagesContent() {
                                         <span className={`font-bold px-1.5 py-0.5 rounded-full ${activeGigStatus === 'completed' ? 'text-green-400 bg-green-500/10' :
                                                 (activeGigStatus === 'assigned' || activeGigStatus === 'delivered') ? 'text-yellow-400 bg-yellow-500/10' :
                                                     'text-white/30'
-                                            }`}>{activeGigStatus === 'completed' ? '✓ Completed' : (activeGigStatus === 'assigned' || activeGigStatus === 'delivered') ? (activeConversation?.gig?.listing_type === 'MARKET' ? '● In Deal' : '● Hired') : activeGigStatus}
+                                            }`}>{activeGigStatus === 'completed' ? '✓ Completed' : (activeGigStatus === 'assigned' || activeGigStatus === 'delivered') ? '● Hired' : activeGigStatus}
                                         </span>
                                     )}
                                 </div>
@@ -935,13 +935,7 @@ function MessagesContent() {
 
                                     <form onSubmit={(e) => sendMessage(e)} className="flex gap-2 max-w-4xl mx-auto relative items-center">
                                         <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileUpload} accept="image/jpeg,image/png,image/webp" />
-                                        {activeConversation?.gig?.listing_type === 'MARKET' && activeConversation?.gig?.poster_id !== user?.id && (
-                                            <button type="button" onClick={() => setIsOfferModalOpen(true)} disabled={isLimitReached}
-                                                className="p-2.5 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-green-400 border border-white/10 disabled:opacity-50 shrink-0"
-                                            >
-                                                <IndianRupee size={16} />
-                                            </button>
-                                        )}
+                                        {/* Removed Offer Button */}
                                         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLimitReached || isUploading}
                                             className="p-2.5 bg-[#1A1A24] hover:bg-[#2A2A35] rounded-full text-white/50 border border-white/10 disabled:opacity-50 shrink-0"
                                         >

@@ -20,18 +20,22 @@ export async function POST(req: Request) {
     // 1. Authenticate User
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Please log in to hire a worker." }, { status: 401 });
     }
 
     // 2. SECURITY: Fetch Real Price from DB
     const { data: gig, error: gigError } = await supabase
       .from("gigs")
-      .select("price, title, security_deposit")
+      .select("price, title, security_deposit, poster_id")
       .eq("id", gigId)
       .single();
 
     if (gigError || !gig) {
       return NextResponse.json({ error: "Gig not found or invalid" }, { status: 404 });
+    }
+
+    if (gig.poster_id !== user.id) {
+      return NextResponse.json({ error: "You do not have permission to hire for this task." }, { status: 403 });
     }
 
     // Check for Negotiated Price in Applications

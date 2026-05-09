@@ -19,7 +19,7 @@ interface GigFormState {
 }
 
 export const useGigFormStore = create<GigFormState>((set) => ({
-    listingType: null,
+    listingType: "HUSTLE",
     marketType: "SELL",
     itemCondition: "GOOD",
     category: "",
@@ -34,7 +34,7 @@ export const useGigFormStore = create<GigFormState>((set) => ({
     deadlineTime: "",
     setField: (field, value) => set({ [field]: value }),
     reset: () => set({
-        listingType: null, marketType: "SELL", itemCondition: "GOOD",
+        listingType: "HUSTLE", marketType: "SELL", itemCondition: "GOOD",
         category: "", title: "", description: "", githubLink: "",
         price: "", securityDeposit: "", mode: "Online", location: "",
         deadlineDate: "", deadlineTime: ""

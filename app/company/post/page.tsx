@@ -17,6 +17,8 @@ export default function CompanyPostTask() {
 
   const [user, setUser] = useState<any>(null);
   const [loadingInitial, setLoadingInitial] = useState(true);
+  const [hasHitLimit, setHasHitLimit] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -56,11 +58,48 @@ export default function CompanyPostTask() {
           return router.push('/company/dashboard');
       }
 
+      const hasUnlimited = companyData?.free_credits >= 999999;
+      setIsSubscribed(hasUnlimited);
+
+      // Check posting limit (1 per 7 days) if not subscribed
+      if (!hasUnlimited) {
+         const sevenDaysAgo = new Date();
+         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+         
+         const { count, error: countError } = await supabase
+           .from('gigs')
+           .select('*', { count: 'exact', head: true })
+           .eq('poster_id', u.id)
+           .gte('created_at', sevenDaysAgo.toISOString());
+           
+         if (count && count >= 1) {
+           setHasHitLimit(true);
+         }
+      }
+
       setUser({ ...u, user_metadata: { ...u.user_metadata, ...dbUser, company_id: companyData?.id } });
       setLoadingInitial(false);
       setDeadlineDate(new Date().toISOString().split("T")[0]);
     })();
   }, [router, supabase]);
+
+  const handleUpgrade = async () => {
+     toast.loading("Redirecting to payment gateway...");
+     // In a real flow, this redirects to Cashfree/Razorpay checkout for ₹999/month
+     setTimeout(async () => {
+        try {
+           // Simulate successful payment by setting free_credits = 999999 via our API or directly if possible.
+           // For now, we will call an upgrade endpoint or directly push to a success page
+           toast.success("Payment simulated! You are now subscribed.");
+           setHasHitLimit(false);
+           setIsSubscribed(true);
+           // Update DB (Normally done via webhook)
+           await supabase.from('companies').update({ free_credits: 999999 }).eq('user_id', user?.id);
+        } catch (e) {
+           toast.error("Upgrade failed.");
+        }
+     }, 1500);
+  };
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
@@ -198,14 +237,56 @@ export default function CompanyPostTask() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-1 gap-12">
-          
-          {/* Primary Section */}
-          <div className="space-y-10">
-            <div className="space-y-4">
-               <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">Post a Task</h1>
-               <p className="text-[#666] text-sm">Describe what you need done and find the right student for the job.</p>
-            </div>
+        {hasHitLimit ? (
+          <div className="bg-[#0a0a0a] border border-[#222] p-12 text-center max-w-2xl mx-auto space-y-8 mt-12 animate-in fade-in duration-500">
+             <div className="w-16 h-16 bg-[#111] border border-[#333] mx-auto flex items-center justify-center rounded-2xl mb-4 shadow-2xl">
+                <Building2 className="text-[#888] w-8 h-8" />
+             </div>
+             
+             <h2 className="text-3xl font-black uppercase tracking-tighter italic">Posting Limit Reached</h2>
+             <p className="text-[#888] text-sm leading-relaxed max-w-md mx-auto">
+               Your free account is limited to 1 task post per week. Upgrade to DoItForMe Unlimited to unlock unrestricted hiring power.
+             </p>
+
+             <div className="bg-[#111] p-6 border border-[#222] text-left space-y-4">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="text-green-500 w-5 h-5" />
+                  <span className="text-sm font-bold">Unlimited Task Posting</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="text-green-500 w-5 h-5" />
+                  <span className="text-sm font-bold">Auto-Featured Status (Top of Feed)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="text-green-500 w-5 h-5" />
+                  <span className="text-sm font-bold">Unlimited Applicants (Bypass 10 limit)</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="text-green-500 w-5 h-5" />
+                  <span className="text-sm font-bold">Advanced Applicant Filtering</span>
+                </div>
+             </div>
+
+             <div className="pt-6">
+                <button 
+                  onClick={handleUpgrade}
+                  className="w-full p-5 bg-white text-black text-sm font-black uppercase tracking-widest hover:bg-gray-200 transition-colors"
+                >
+                  Upgrade to Unlimited — ₹999/mo
+                </button>
+             </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-1 gap-12">
+            
+            {/* Primary Section */}
+            <div className="space-y-10">
+              <div className="space-y-4">
+                 <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">Post a Task</h1>
+                 <p className="text-[#666] text-sm max-w-xl leading-relaxed">
+                    Describe what you need done and find the right student for the job. <br/><span className="text-[#888] font-semibold">Posting a task is completely free. However, assigning a clear budget and completion incentives will attract top-tier students.</span>
+                 </p>
+              </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
@@ -236,7 +317,7 @@ export default function CompanyPostTask() {
                </div>
 
                <div className="space-y-3">
-                  <label className={labelClass}>Budget / Unit (INR)</label>
+                  <label className={labelClass}>Budget / Unit (INR) <span className="lowercase text-[8px] text-[#888] ml-2 tracking-normal">(Recommended to attract workers)</span></label>
                   <div className="relative">
                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-bold text-[#444]">₹</span>
                     <input type="number" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="500" className={`${inputClass} pl-10 font-mono text-lg font-black`} />
@@ -319,7 +400,8 @@ export default function CompanyPostTask() {
               </div>
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

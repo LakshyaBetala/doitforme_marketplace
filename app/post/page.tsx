@@ -24,7 +24,7 @@ export default function PostGigWizard() {
   const store = useGigFormStore();
   const { listingType, marketType, itemCondition, category, title, description, githubLink, price, securityDeposit, mode, location, deadlineDate, deadlineTime } = store;
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(2);
   // --- LOCAL STATE ---
   const [user, setUser] = useState<any | null>(null);
   const [userLoading, setUserLoading] = useState(true);
@@ -172,20 +172,20 @@ export default function PostGigWizard() {
       const deadlineISO = deadlineDate ? new Date(`${deadlineDate}T${deadlineTime || "23:59:59"}`).toISOString() : null;
 
       const payload = {
-        listing_type: listingType || "HUSTLE",
+        listing_type: "HUSTLE",
         category,
-        market_type: listingType === "MARKET" ? marketType : null,
-        item_condition: listingType === "MARKET" ? itemCondition : null,
+        market_type: null,
+        item_condition: null,
         poster_id: user.id,
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
-        security_deposit: (listingType === "MARKET" && marketType === "RENT") ? Number(securityDeposit) : 0,
-        is_physical: listingType === "HUSTLE" ? mode !== "Online" : true,
-        location: (listingType === "MARKET" || mode !== "Online") ? (location.trim() || "Campus") : null,
+        security_deposit: 0,
+        is_physical: mode !== "Online",
+        location: mode !== "Online" ? (location.trim() || "Campus") : null,
         images: uploadedPaths,
-        deadline: listingType === "HUSTLE" ? deadlineISO : null,
-        github_link: (listingType === "HUSTLE" && (category === "Tech & Engineering" || category === "Academics & Gigs") && githubLink.trim()) ? githubLink.trim() : null,
+        deadline: deadlineISO,
+        github_link: (category === "Tech & Engineering" || category === "Academics & Gigs") && githubLink.trim() ? githubLink.trim() : null,
         status: "open",
         created_at: new Date().toISOString()
       };
@@ -210,7 +210,7 @@ export default function PostGigWizard() {
       // -------------------------------------
 
       store.reset(); // clear drafts
-      toast.success(listingType === 'MARKET' ? "Item listed! Your listing is now live." : "Hustle posted! Your gig is now live.");
+      toast.success("Hustle posted! Your gig is now live.");
       router.push("/dashboard");
 
     } catch (err: any) {
@@ -277,30 +277,7 @@ export default function PostGigWizard() {
           </div>
         )}
 
-        {/* STEP 1: TYPE SELECTION */}
-        {step === 1 && (
-          <div className="space-y-8 animate-in fade-in-50 slide-in-from-right-8 duration-300">
-            <div className="text-center space-y-2 mb-10">
-              <h1 className="text-4xl font-black tracking-tight">What do you want to do?</h1>
-              <p className="text-white/50 text-sm">Select the type of listing you want to create.</p>
-            </div>
-
-            <div className="max-w-md mx-auto">
-              <button onClick={() => { store.setField('listingType', 'HUSTLE'); store.setField('category', ''); }} className={`group relative w-full p-8 rounded-[32px] border transition-all text-left overflow-hidden ${listingType === 'HUSTLE' ? 'border-brand-purple bg-brand-purple/10 shadow-[0_0_30px_rgba(136,37,245,0.15)] ring-1 ring-brand-purple/50' : 'border-white/5 bg-[#121217] hover:bg-[#1A1A24] hover:border-white/10'}`}>
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all ${listingType === 'HUSTLE' ? 'bg-brand-purple text-white shadow-lg' : 'bg-white/10 text-white/50 group-hover:bg-white/10 group-hover:text-white'}`}>
-                  <BriefcaseIcon className="w-6 h-6" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Post a Hustle</h2>
-                <p className="text-sm text-white/50 leading-relaxed">Request services, chores, or tasks from peers on campus.</p>
-              </button>
-
-              <p className="text-center text-xs text-white/30 mt-6">
-                Looking to buy or sell items? Visit <a href="https://marketforme.in/post" className="text-brand-purple hover:underline font-bold">MarketForMe.in</a>
-              </p>
-            </div>
-
-          </div >
-        )}
+        {/* STEP 1 Removed */}
 
         {/* STEP 2: DETAILS */}
         {
@@ -353,19 +330,7 @@ export default function PostGigWizard() {
                   </div>
                 )}
 
-                {listingType === "MARKET" && (
-                  <div className="space-y-3 pt-2">
-                    <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Item Condition</label>
-                    <div className="flex flex-wrap gap-2">
-                      {[{ id: "NEW", label: "New" }, { id: "LIKE_NEW", label: "Like New" }, { id: "GOOD", label: "Good" }, { id: "FAIR", label: "Fair" }].map(c => (
-                        <button key={c.id} onClick={() => store.setField('itemCondition', c.id as any)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${itemCondition === c.id ? "bg-white text-black" : "bg-[#1A1A24] border border-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
-                          {c.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )
-                }
+                {/* Item Condition Removed */}
 
                 {/* IMAGES UPLOAD (In Step 2) */}
                 <div className="space-y-3 pt-6 border-t border-white/5">
@@ -421,7 +386,7 @@ export default function PostGigWizard() {
               <div className="space-y-6">
                 <div className="space-y-3">
                   <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">
-                    {listingType === "MARKET" ? (marketType === "RENT" ? "Rental Fee (Per Day)" : marketType === "REQUEST" ? "My Budget" : "Price") : "Budget"}
+                    Budget
                   </label>
                   <div className="relative">
                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl text-white/60 font-mono">₹</span>
@@ -429,17 +394,6 @@ export default function PostGigWizard() {
                   </div>
                 </div>
 
-                {listingType === "MARKET" && marketType === "RENT" && (
-                  <div className="space-y-3 bg-brand-purple/5 p-4 rounded-2xl border border-brand-purple/20">
-                    <label className="flex items-center justify-between text-xs font-bold text-brand-purple uppercase tracking-widest"><span>Security Deposit</span> <span className="normal-case opacity-60">Refundable</span></label>
-                    <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-purple/50 font-mono">₹</span>
-                      <input type="number" inputMode="decimal" value={securityDeposit} onChange={(e) => store.setField('securityDeposit', e.target.value)} placeholder="2000" className="w-full bg-black/20 border border-brand-purple/20 rounded-xl py-3 pl-10 pr-4 text-xl font-bold text-brand-purple outline-none focus:border-brand-purple/50 transition-all font-mono" />
-                    </div>
-                  </div>
-                )}
-
-                {listingType === "HUSTLE" && (
                   <div className="space-y-3 border-t border-white/5 pt-6">
                     <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Format</label>
                     <div className="flex flex-wrap gap-2">
@@ -450,14 +404,13 @@ export default function PostGigWizard() {
                       ))}
                     </div>
                   </div>
-                )}
 
                 <div className="space-y-3 pt-2">
                   <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Location</label>
                   <div className="relative">
                     <MapPin size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 z-10" />
                     <input
-                      className={`w-full bg-[#1A1A24] border border-white/10 rounded-2xl py-5 pl-12 pr-12 text-lg text-white placeholder:text-white/60 focus:outline-none focus:border-brand-purple/50 transition-all shadow-inner ${listingType === "HUSTLE" && mode === "Online" ? "opacity-30 cursor-not-allowed" : ""}`}
+                      className={`w-full bg-[#1A1A24] border border-white/10 rounded-2xl py-5 pl-12 pr-12 text-lg text-white placeholder:text-white/60 focus:outline-none focus:border-brand-purple/50 transition-all shadow-inner ${mode === "Online" ? "opacity-30 cursor-not-allowed" : ""}`}
                       value={location}
                       onChange={(e) => {
                         store.setField('location', e.target.value);
@@ -465,12 +418,12 @@ export default function PostGigWizard() {
                         setError("");
                       }}
                       onFocus={() => setShowLocationSuggestions(true)}
-                      disabled={listingType === "HUSTLE" && mode === "Online"}
-                      placeholder={listingType === "HUSTLE" && mode === "Online" ? "Remote (Online)" : "Search campus hotspot or type custom..."}
+                      disabled={mode === "Online"}
+                      placeholder={mode === "Online" ? "Remote (Online)" : "Search campus hotspot or type custom..."}
                     />
 
                     {/* PIN LOCATION BUTTON */}
-                    {!(listingType === "HUSTLE" && mode === "Online") && (
+                    {!(mode === "Online") && (
                       <button
                         type="button"
                         onClick={() => {

@@ -6,6 +6,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { Loader2, Briefcase, IndianRupee, ArrowRight, ShieldCheck, CheckCircle, Clock, Phone, MessageSquare, Zap, AlertTriangle } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
   'open': { label: 'Open', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
@@ -23,7 +24,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 function StatusBadge({ status }: { status: string }) {
   const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
   return (
-    <span className={`px-2.5 py-1 rounded-lg ${config.bg} ${config.border} border text-[10px] uppercase font-black tracking-widest ${config.color} whitespace-nowrap`}>
+    <span className={`px-2.5 py-1 rounded-lg ${config.bg} ${config.border} border text-[10px] uppercase font-black tracking-widest ${config.color} whitespace-normal text-center leading-tight`}>
       {config.label}
     </span>
   );
@@ -143,12 +144,14 @@ export default function ActivityHubPage() {
         </div>
 
         {/* TABS */}
-        <div className="flex bg-white/5 p-1 rounded-2xl relative border border-white/5">
-           <button onClick={() => setActiveTab("HIRING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-all ${activeTab === 'HIRING' ? 'bg-purple-600 text-white shadow-lg shadow-[#C084FC]/20' : 'text-white/60 hover:text-white'}`}>
-             <Briefcase size={14} /> Outsourcing ({hiringGigs.length})
+        <div className="flex bg-white/5 p-1.5 rounded-2xl relative border border-white/5">
+           <button onClick={() => setActiveTab("HIRING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${activeTab === 'HIRING' ? 'text-white' : 'text-white/60 hover:text-white'}`}>
+             {activeTab === 'HIRING' && <motion.div layoutId="activeTab" className="absolute inset-0 bg-purple-600 rounded-xl shadow-lg shadow-[#C084FC]/20 -z-10" />}
+             <Briefcase size={14} className="z-10" /> <span className="z-10">Outsourcing ({hiringGigs.length})</span>
            </button>
-           <button onClick={() => setActiveTab("WORKING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-all ${activeTab === 'WORKING' ? 'bg-purple-600 text-white shadow-lg shadow-[#C084FC]/20' : 'text-white/60 hover:text-white'}`}>
-             <Zap size={14} /> Hustling ({workingGigs.length})
+           <button onClick={() => setActiveTab("WORKING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${activeTab === 'WORKING' ? 'text-white' : 'text-white/60 hover:text-white'}`}>
+             {activeTab === 'WORKING' && <motion.div layoutId="activeTab" className="absolute inset-0 bg-purple-600 rounded-xl shadow-lg shadow-[#C084FC]/20 -z-10" />}
+             <Zap size={14} className="z-10" /> <span className="z-10">Hustling ({workingGigs.length})</span>
            </button>
         </div>
 
@@ -224,22 +227,24 @@ export default function ActivityHubPage() {
            {activeTab === "WORKING" && workingGigs.map(app => {
              const gig = app.gig;
              if(!gig) return null;
-             const displayStatus = app.status === 'approved' ? gig.status : app.status;
+             const displayStatus = app.status === 'accepted' ? gig.status : app.status;
 
              return (
                <div key={app.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#C084FC]/30 transition-all group">
-                  <div className="flex justify-between items-start mb-3">
+                  <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                      <div className="flex-1 min-w-0">
                        <h3 className="font-bold text-white text-lg truncate">{gig.title}</h3>
                        <p className="text-green-400 font-black flex items-center gap-1"><IndianRupee size={12} /> {app.negotiated_price || gig.price}</p>
                      </div>
-                     <StatusBadge status={displayStatus} />
+                     <div className="shrink-0 max-w-[50%] flex justify-end">
+                        <StatusBadge status={displayStatus} />
+                     </div>
                   </div>
 
 
 
                    {/* Poster contact info for active gigs */}
-                  {app.status === 'approved' && gig.poster && ['assigned', 'AWAITING_FUNDS', 'SUBMITTED', 'delivered', 'completed'].includes(gig.status) && (
+                  {app.status === 'accepted' && gig.poster && ['assigned', 'AWAITING_FUNDS', 'SUBMITTED', 'delivered', 'completed'].includes(gig.status) && (
                     <div className="p-3 bg-white/5 rounded-xl text-sm mb-3 border border-white/5 flex items-center justify-between gap-2">
                       <div>
                         <span className="text-white/50 text-xs">Client:</span> <span className="font-bold text-white">{gig.poster.name}</span>
@@ -265,13 +270,13 @@ export default function ActivityHubPage() {
                        <MessageSquare size={14} /> Chat
                      </button>
 
-                     {app.status === 'approved' && gig.status === 'AWAITING_FUNDS' && (
+                     {app.status === 'accepted' && gig.status === 'AWAITING_FUNDS' && (
                         <div className="flex-1 py-2.5 rounded-xl bg-yellow-500/10 text-yellow-500 font-bold text-sm text-center border border-yellow-500/20 flex items-center justify-center gap-2">
                           <Clock size={14} /> Waiting for Escrow
                         </div>
                      )}
 
-                     {app.status === 'approved' && (gig.status === 'assigned') && (
+                     {app.status === 'accepted' && (gig.status === 'assigned') && (
                        <button onClick={() => handleSubmitWork(gig.id, app.id)} className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-all shadow-lg shadow-[#C084FC]/20 flex items-center gap-2 justify-center">
                          <ArrowRight size={14} /> Submit Work
                        </button>

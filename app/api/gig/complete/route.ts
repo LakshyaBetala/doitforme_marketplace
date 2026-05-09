@@ -38,18 +38,12 @@ export async function POST(request: Request) {
 
     if (gig.poster_id !== user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-    // 2. Determine Payout Logic based on Type
-    const listingType = gig.listing_type || 'HUSTLE';
-    const marketType = gig.market_type;
-    const deposit = gig.security_deposit || 0;
-    const isP2PSell = listingType === 'MARKET' && (marketType === 'SELL' || marketType === 'REQUEST');
+    // 2. Determine Payout Logic
 
 
-    // Default: Hustle -> Payout to Worker
+    // Payout to Worker
     let payoutDestination = gig.assigned_worker_id;
     let payoutAmount = 0; // Will fetch from Escrow
-    let refundDestination = null;
-    let refundAmount = 0;
 
     // Fetch Escrow Record to get the held amount safely
     const { data: escrowRecord, error: escrowFetchError } = await supabaseAdmin
@@ -62,44 +56,31 @@ export async function POST(request: Request) {
       console.error("Escrow Fetch Error:", escrowFetchError);
     }
 
-    // For P2P Buy/Sell, escrow has no funds — just skip payout logic
-    const totalHeld = isP2PSell ? 0 : (Number(escrowRecord?.amount_held) || 0);
+    const totalHeld = Number(escrowRecord?.amount_held) || 0;
 
-    if (!escrowRecord && !isP2PSell) {
+    if (!escrowRecord) {
       return NextResponse.json({ error: "Escrow record not found" }, { status: 500 });
     }
 
-    if (listingType === 'MARKET') {
-      if (marketType === 'SELL') {
-        // Sell: Payout to POSTER (Seller)
-        payoutDestination = gig.poster_id;
-        payoutAmount = totalHeld;
-      } else if (marketType === 'RENT') {
-        // Rent: Refund Deposit to WORKER (Renter), Payout Rest to POSTER (Owner)
-        refundDestination = gig.assigned_worker_id;
-        refundAmount = deposit;
+    // Hustle — Flat 3% escrow fee deducted from worker payout
+    const feeRate = 0.03;
+    const platformFee = Math.max(0, Math.ceil(totalHeld * feeRate));
 
-        payoutDestination = gig.poster_id;
-        payoutAmount = totalHeld - deposit;
-      }
-    } else {
-      // Hustle — Flat 3% escrow fee deducted from worker payout
-      const feeRate = 0.03;
-      const platformFee = Math.max(0, Math.ceil(totalHeld * feeRate));
-
-      payoutAmount = Math.max(0, totalHeld - platformFee);
+    payoutAmount = Math.max(0, totalHeld - platformFee);
 
       // Log Fee Transaction
       if (platformFee > 0) {
         await supabaseAdmin.from("transactions").insert({
-          gig_id: gigId,
-          user_id: user.id,
-          amount: platformFee,
-          type: "PLATFORM_FEE",
-          status: "COMPLETED",
-          provider_data: { description: `Escrow Fee (3%) for ${gig.title}` }
-        });
-      }
+    // Log Fee Transaction
+    if (platformFee > 0) {
+      await supabaseAdmin.from("transactions").insert({
+        gig_id: gigId,
+        user_id: user.id,
+        amount: platformFee,
+        type: "PLATFORM_FEE",
+        status: "COMPLETED",
+        provider_data: { description: `Escrow Fee (3%) for ${gig.title}` }
+      });
     }
 
     // 3. Update Gig Status -> COMPLETED
@@ -136,17 +117,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Log Refund Transaction (if any)
-    if (refundAmount > 0 && refundDestination) {
-      await supabaseAdmin.from("transactions").insert({
-        gig_id: gigId,
-        user_id: refundDestination,
-        amount: refundAmount,
-        type: "REFUND_CREDIT",
-        status: "COMPLETED",
-        provider_data: { description: `Security Deposit Refund for ${gig.title}` }
-      });
-    }
+    // Refund Logic Removed
 
     // 3. Add Rating
     if (rating && gig.assigned_worker_id) {
@@ -177,13 +148,11 @@ export async function POST(request: Request) {
           rating_count: newCount,
         };
 
-        if (listingType === 'HUSTLE') {
-          updateData.jobs_completed = oldJobs + 1;
-          // If total_earned exists, update it here as well
-          const { data: userCurrent } = await supabaseAdmin.from('users').select('total_earned').eq('id', gig.assigned_worker_id).maybeSingle();
-          if (userCurrent) {
-            updateData.total_earned = (Number(userCurrent.total_earned) || 0) + payoutAmount;
-          }
+        updateData.jobs_completed = oldJobs + 1;
+        // If total_earned exists, update it here as well
+        const { data: userCurrent } = await supabaseAdmin.from('users').select('total_earned').eq('id', gig.assigned_worker_id).maybeSingle();
+        if (userCurrent) {
+          updateData.total_earned = (Number(userCurrent.total_earned) || 0) + payoutAmount;
         }
 
         await supabaseAdmin
