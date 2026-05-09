@@ -312,14 +312,27 @@ function MessagesContent() {
                 const isPreAgreement = gig.status === 'open';
 
                 if (!isPoster && isPreAgreement) {
-                    const limit = gig.listing_type === 'MARKET' ? 10 : 5;
-                    setMessageLimit(limit);
-                    const myCount = data?.filter((m: any) =>
-                        m.sender_id === user.id &&
-                        m.message_type !== 'offer' &&
-                        !magicChips.includes(m.content)
-                    ).length || 0;
-                    setIsLimitReached(myCount >= limit);
+                    // Check if user is KYC verified — verified users get unlimited messages
+                    const { data: userProfile } = await supabase
+                        .from('users')
+                        .select('kyc_verified')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (userProfile?.kyc_verified) {
+                        // Verified users: no message limit
+                        setMessageLimit(null);
+                        setIsLimitReached(false);
+                    } else {
+                        const limit = gig.listing_type === 'MARKET' ? 10 : 5;
+                        setMessageLimit(limit);
+                        const myCount = data?.filter((m: any) =>
+                            m.sender_id === user.id &&
+                            m.message_type !== 'offer' &&
+                            !magicChips.includes(m.content)
+                        ).length || 0;
+                        setIsLimitReached(myCount >= limit);
+                    }
                 } else {
                     setMessageLimit(null);
                     setIsLimitReached(false);
@@ -496,7 +509,8 @@ function MessagesContent() {
 
             if (res.ok) {
                 toast.success("Offer accepted! This gig is now assigned.");
-                window.location.reload();
+                setActiveGigStatus('assigned');
+                setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, offer_status: 'accepted' } : m));
             } else {
                 const json = await res.json();
                 toast.error(json.error || "Failed to accept offer");
@@ -523,7 +537,14 @@ function MessagesContent() {
 
             if (res.ok) {
                 toast.success("Work approved! Payout initiated.");
-                window.location.reload();
+                setActiveGigStatus('completed');
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    gig_id: gigId,
+                    content: "Work has been approved and funds released.",
+                    message_type: 'system',
+                    created_at: new Date().toISOString()
+                }]);
             } else {
                 const data = await res.json();
                 toast.error(data.error || "Failed to approve work.");
@@ -546,7 +567,14 @@ function MessagesContent() {
             if (res.ok) {
                 toast.success("Dispute raised. Escrow is frozen.");
                 setShowDisputeModal(false);
-                window.location.reload();
+                setActiveGigStatus('disputed');
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    gig_id: gigId,
+                    content: "A dispute has been raised on this gig. Escrow is frozen.",
+                    message_type: 'system',
+                    created_at: new Date().toISOString()
+                }]);
             } else {
                 toast.error(data.error || "Failed to raise dispute.");
             }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Loader2, ArrowLeft, MapPin, Shield, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check } from "lucide-react";
+import { Loader2, ArrowLeft, MapPin, Shield, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check, ChevronLeft, ChevronRight, FileText, Download } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 import Skeleton from "@/components/ui/Skeleton";
 import Image from "next/image";
@@ -132,10 +132,10 @@ export default function GigDetailsPage() {
   const timeAgo = gig.created_at ? getTimeAgo(new Date(gig.created_at)) : '';
 
   return (
-    <div className={`min-h-[100dvh] bg-[#0B0B11] text-white selection:bg-indigo-500/30 selection:text-white pb-36 font-sans relative`}>
+    <div className={`min-h-[100dvh] bg-[#0B0B11] text-white selection:bg-[#8825F5]/30 selection:text-white pb-36 font-sans relative`}>
       {/* Background Atmosphere */}
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-40 left-0 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#8825F5]/10 rounded-full blur-[150px] pointer-events-none" />
+      <div className="absolute bottom-40 left-0 w-[400px] h-[400px] bg-[#8825F5]/10 rounded-full blur-[150px] pointer-events-none" />
 
       {/* TOP HEADER BAR */}
       <div className={`sticky top-0 z-30 bg-white/[0.02] backdrop-blur-2xl border-b border-white/5 transition-all`}>
@@ -153,23 +153,13 @@ export default function GigDetailsPage() {
 
       <div className="max-w-2xl mx-auto p-4 space-y-10 animate-in fade-in duration-500">
 
-        {/* IMAGES */}
-        {gig.images && gig.images.length > 0 && (
-          <div className={`w-full aspect-video rounded-3xl border border-white/10 bg-white/5 overflow-hidden relative shadow-2xl shadow-black/50 group`}>
-            <Image 
-              src={supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl}
-              alt="Gig image"
-              fill
-              className={`object-cover transition-transform duration-700 group-hover:scale-105 ${isCompanyTask ? 'grayscale' : ''}`}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/80 via-transparent to-transparent"></div>
-          </div>
-        )}
+        {/* IMAGES — Gallery with navigation */}
+        <GigImageGallery gig={gig} supabase={supabase} isCompanyTask={isCompanyTask} />
 
         {/* TITLE + PRICE */}
         <div className="space-y-4 relative z-10 px-2 md:px-0">
           <div className="space-y-2">
-            {isCompanyTask && <span className="text-xs font-semibold text-indigo-400 mb-2 inline-flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div> Enterprise Directive</span>}
+            {isCompanyTask && <span className="text-xs font-semibold text-[#C9A9FF] mb-2 inline-flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-[#8825F5] animate-pulse"></div> Company Task</span>}
             <h1 className={`text-3xl md:text-5xl font-bold tracking-tight leading-tight text-white`}>{gig.title}</h1>
           </div>
           
@@ -189,18 +179,23 @@ export default function GigDetailsPage() {
 
           <div className="flex flex-wrap items-center gap-3 mt-6 pt-6 border-t border-white/5">
             <span className={`px-4 py-1.5 text-xs font-semibold rounded-full border ${
-              isCompanyTask ? 'bg-white/10 text-white border-white/20' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+              isCompanyTask ? 'bg-white/10 text-white border-white/20' : 'bg-[#8825F5]/10 text-[#C9A9FF] border-[#8825F5]/20'
             }`}>
-              {gig.listing_type === 'COMPANY_TASK' ? 'Operational Unit Task' : gig.listing_type}
+              {gig.listing_type === 'COMPANY_TASK' ? 'Company Task' : gig.listing_type === 'HUSTLE' ? 'Hustle' : gig.listing_type}
             </span>
             {gig.category && (
               <span className={`px-4 py-1.5 text-xs font-medium rounded-full border border-white/10 text-zinc-400 bg-white/5`}>
                 {gig.category}
               </span>
             )}
-            {appCount > 0 && (
-              <span className={`px-4 py-1.5 text-xs font-medium rounded-full border border-indigo-500/20 text-indigo-300 bg-indigo-500/5 flex items-center gap-2`}>
-                <Users size={14} /> {appCount} Applications Active
+            {gig.max_workers > 1 && (
+              <span className="px-4 py-1.5 text-xs font-medium rounded-full border border-[#8825F5]/20 text-[#C9A9FF] bg-[#8825F5]/5 flex items-center gap-2">
+                <Users size={14} /> {appCount} of {gig.max_workers} positions
+              </span>
+            )}
+            {appCount > 0 && gig.max_workers <= 1 && (
+              <span className="px-4 py-1.5 text-xs font-medium rounded-full border border-[#8825F5]/20 text-[#C9A9FF] bg-[#8825F5]/5 flex items-center gap-2">
+                <Users size={14} /> {appCount} applied
               </span>
             )}
           </div>
@@ -209,7 +204,7 @@ export default function GigDetailsPage() {
         {/* POSTER CARD */}
         {poster && (
           <div className={`p-8 rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-md flex items-center gap-6 shadow-lg shadow-black/20`}>
-            <div className={`w-20 h-20 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0 shadow-inner group-hover:border-indigo-500/50 transition-all`}>
+            <div className={`w-20 h-20 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0 shadow-inner group-hover:border-[#8825F5]/50 transition-all`}>
               {poster.avatar_url ? (
                 <Image src={poster.avatar_url} alt="Poster" width={80} height={80} className="object-cover w-full h-full" />
               ) : (
@@ -233,11 +228,33 @@ export default function GigDetailsPage() {
 
         {/* DESCRIPTION */}
         <div className={`p-8 md:p-10 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-md relative overflow-hidden shadow-lg shadow-black/20 mt-8`}>
-          {isCompanyTask && <div className="absolute top-0 right-0 p-3 bg-white/5 rounded-bl-2xl text-[10px] font-bold text-zinc-500 uppercase tracking-widest select-none border-b border-l border-white/10">Operational_Parameters</div>}
           <h2 className="text-sm font-semibold text-zinc-300 mb-6 flex items-center gap-3">
-             <span className="w-4 h-px bg-zinc-500"></span> Briefing Specifications
+             <span className="w-4 h-px bg-zinc-500"></span> Task Details
           </h2>
           <p className="text-zinc-200 text-[15px] leading-[1.8] font-medium whitespace-pre-wrap">{gig.description}</p>
+
+          {/* PDF/Document Attachments */}
+          {gig.images && gig.images.filter((img: string) => img.toLowerCase().endsWith('.pdf') || img.toLowerCase().endsWith('.doc') || img.toLowerCase().endsWith('.docx')).length > 0 && (
+            <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
+              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2"><FileText size={14} /> Attachments</h3>
+              <div className="flex flex-wrap gap-3">
+                {gig.images.filter((img: string) => img.toLowerCase().endsWith('.pdf') || img.toLowerCase().endsWith('.doc') || img.toLowerCase().endsWith('.docx')).map((doc: string, i: number) => {
+                  const docUrl = supabase.storage.from('gig-images').getPublicUrl(doc).data.publicUrl;
+                  const fileName = doc.split('/').pop() || `Document ${i + 1}`;
+                  return (
+                    <a key={i} href={docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/[0.06] hover:border-[#8825F5]/30 transition-all group">
+                      <div className="w-10 h-10 rounded-lg bg-[#8825F5]/10 flex items-center justify-center shrink-0"><FileText size={18} className="text-[#C9A9FF]" /></div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{fileName}</p>
+                        <p className="text-[10px] text-zinc-500 uppercase">Click to view</p>
+                      </div>
+                      <Download size={14} className="text-zinc-500 group-hover:text-[#C9A9FF] transition-colors shrink-0" />
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* DEADLINE */}
@@ -247,7 +264,7 @@ export default function GigDetailsPage() {
                <Clock size={20} className={`text-amber-400`} />
             </div>
             <div>
-              <p className={`text-xs font-semibold text-amber-500 mb-1`}>Delivery Timeline Constraint</p>
+              <p className={`text-xs font-semibold text-amber-500 mb-1`}>Deadline</p>
               <p className="text-sm text-zinc-300 font-medium">{new Date(gig.deadline).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
             </div>
           </div>
@@ -257,7 +274,7 @@ export default function GigDetailsPage() {
 
       {/* STICKY BOTTOM ACTION BAR */}
       {!isMyGig && gig.status === 'open' && (
-        <div className={`fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#050505] via-[#050505]/95 to-transparent z-40 safe-area-bottom backdrop-blur-sm pointer-events-none`}>
+        <div className={`fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#0B0B11] via-[#0B0B11]/95 to-transparent z-40 safe-area-bottom backdrop-blur-sm pointer-events-none`}>
           <div className="max-w-2xl mx-auto flex gap-4 pointer-events-auto">
             <button 
               onClick={handleMessagePoster} 
@@ -309,26 +326,26 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
         </button>
         
         <h2 className="text-3xl font-bold text-white tracking-tight mb-2">Connect & Apply</h2>
-        <p className="text-sm font-medium text-zinc-400 mb-10">Select transaction protocol for this application.</p>
+        <p className="text-sm font-medium text-zinc-400 mb-10">How would you like to get paid?</p>
 
         <div className="space-y-10">
             
             {/* PAYMENT PREFERENCE TOGGLE */}
             <div className="space-y-4">
-              <label className="text-xs font-semibold text-zinc-400 block mb-4">Payment Security Protocol</label>
+              <label className="text-xs font-semibold text-zinc-400 block mb-4">Payment Method</label>
               
               <div className="flex flex-col gap-3">
                 
                 {/* DIRECT CONNECT */}
                 <button 
                   onClick={() => setPaymentPref("DIRECT")} 
-                  className={`p-6 flex flex-col items-start gap-4 transition-all text-left rounded-2xl border ${paymentPref === "DIRECT" ? "bg-white/10 border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
+                  className={`p-6 flex flex-col items-start gap-4 transition-all text-left rounded-2xl border ${paymentPref === "DIRECT" ? "bg-white/10 border-[#8825F5]/50 shadow-[0_0_20px_rgba(136,37,245,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
                 >
                   <div className="flex items-center justify-between w-full">
                     <p className="font-bold text-lg tracking-tight text-white flex items-center gap-2">⚡ Direct Connect</p>
-                    <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "DIRECT" ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>No Platform Fee</span>
+                    <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "DIRECT" ? 'bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>No Platform Fee</span>
                   </div>
-                  <p className="text-[13px] font-medium text-zinc-400 leading-relaxed">Direct organizational contact. Payment managed outside the secure framework.</p>
+                  <p className="text-[13px] font-medium text-zinc-400 leading-relaxed">Connect directly via WhatsApp. Handle payment between yourselves — no platform involvement.</p>
                 </button>
 
                 {/* DIRECT CONNECT WARNING & CHECKBOX */}
@@ -365,18 +382,18 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                 {gig.price >= 500 ? (
                   <button 
                     onClick={() => setPaymentPref("ESCROW")} 
-                    className={`p-6 flex flex-col items-start gap-4 transition-all text-left rounded-2xl border ${paymentPref === "ESCROW" ? "bg-white/10 border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
+                    className={`p-6 flex flex-col items-start gap-4 transition-all text-left rounded-2xl border ${paymentPref === "ESCROW" ? "bg-white/10 border-[#8825F5]/50 shadow-[0_0_20px_rgba(136,37,245,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
                   >
                     <div className="flex items-center justify-between w-full">
                       <p className="font-bold text-lg tracking-tight text-white flex items-center gap-2">🛡️ Secure Escrow</p>
-                      <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "ESCROW" ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>3% Platform Fee</span>
+                      <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "ESCROW" ? 'bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>3% Platform Fee</span>
                     </div>
-                    <p className="text-[13px] font-medium text-zinc-400 leading-relaxed">Secured transaction shield. Guaranteed disbursement upon delivery of verified artifacts.</p>
+                    <p className="text-[13px] font-medium text-zinc-400 leading-relaxed">Payment held securely until you deliver. Guaranteed payout — you'll receive ₹{Math.floor(gig.price * 0.97)} after 3% fee.</p>
                   </button>
                 ) : (
                   <div className="p-6 bg-white/[0.01] border border-white/5 rounded-2xl opacity-40 cursor-not-allowed">
                     <p className="font-bold text-lg text-zinc-600 tracking-tight flex items-center gap-2">🛡️ Secure Escrow</p>
-                    <p className="text-[11px] font-semibold text-red-500/80 mt-2 bg-red-500/10 px-2 py-1 rounded inline-block">Invalid for Assets &lt; ₹500</p>
+                    <p className="text-[11px] font-semibold text-red-500/80 mt-2 bg-red-500/10 px-2 py-1 rounded inline-block">Available for tasks ₹500+</p>
                   </div>
                 )}
               </div>
@@ -388,7 +405,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                 value={offerPitch}
                 onChange={e => setOfferPitch(e.target.value)}
                 placeholder="Explain why you're a good fit for this gig..."
-                className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-sm font-medium text-white outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 resize-none transition-all placeholder:text-zinc-600 shadow-inner"
+                className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-sm font-medium text-white outline-none focus:border-[#8825F5]/50 focus:ring-1 focus:ring-[#8825F5]/50 resize-none transition-all placeholder:text-zinc-600 shadow-inner"
                 rows={4}
               />
             </div>
@@ -411,7 +428,65 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
   );
 }
 
+// --- Image Gallery Component ---
+function GigImageGallery({ gig, supabase, isCompanyTask }: { gig: any; supabase: any; isCompanyTask: boolean }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  // Filter to only image files (not PDFs/docs)
+  const imageFiles = (gig.images || []).filter((img: string) => 
+    !img.toLowerCase().endsWith('.pdf') && 
+    !img.toLowerCase().endsWith('.doc') && 
+    !img.toLowerCase().endsWith('.docx')
+  );
 
+  if (imageFiles.length === 0) {
+    // Default fallback — branded gradient with category
+    return (
+      <div className="w-full aspect-video rounded-3xl border border-white/10 overflow-hidden relative shadow-2xl shadow-black/50 bg-gradient-to-br from-[#8825F5]/20 via-[#13131A] to-[#0B0B11] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-16 h-16 rounded-2xl bg-[#8825F5]/10 border border-[#8825F5]/20 flex items-center justify-center mx-auto">
+            <FileText size={28} className="text-[#C9A9FF]" />
+          </div>
+          <p className="text-sm font-medium text-zinc-500">{gig.category || gig.listing_type}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const prev = () => setCurrentIndex(i => (i === 0 ? imageFiles.length - 1 : i - 1));
+  const next = () => setCurrentIndex(i => (i === imageFiles.length - 1 ? 0 : i + 1));
+
+  return (
+    <div className="w-full aspect-video rounded-3xl border border-white/10 bg-white/5 overflow-hidden relative shadow-2xl shadow-black/50 group">
+      <Image 
+        src={supabase.storage.from('gig-images').getPublicUrl(imageFiles[currentIndex]).data.publicUrl}
+        alt={`Task image ${currentIndex + 1}`}
+        fill
+        className="object-cover transition-transform duration-700 group-hover:scale-105"
+        sizes="(max-width: 768px) 100vw, 672px"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B11]/80 via-transparent to-transparent"></div>
+      
+      {/* Navigation arrows */}
+      {imageFiles.length > 1 && (
+        <>
+          <button onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70">
+            <ChevronLeft size={20} />
+          </button>
+          <button onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 backdrop-blur-md border border-white/10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70">
+            <ChevronRight size={20} />
+          </button>
+          {/* Dots */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {imageFiles.map((_: any, i: number) => (
+              <button key={i} onClick={() => setCurrentIndex(i)} className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-white w-5' : 'bg-white/40 hover:bg-white/60'}`} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 function getTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);

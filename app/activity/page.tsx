@@ -96,7 +96,7 @@ export default function ActivityHubPage() {
       if(error) toast.error("Payment failed");
       else {
           toast.success("Escrow funded! Work can begin.");
-          window.location.reload();
+          setHiringGigs(prev => prev.map(g => g.id === gigId ? { ...g, status: 'assigned', escrow_status: 'FUNDED' } : g));
       }
   };
 
@@ -112,7 +112,9 @@ export default function ActivityHubPage() {
       if(error) toast.error("Failed to submit work");
       else {
           toast.success("Work submitted! 24-hour review timer started.");
-          window.location.reload();
+          setWorkingGigs(prev => prev.map(app => 
+              app.gig?.id === gigId ? { ...app, gig: { ...app.gig, status: 'SUBMITTED', auto_release_at: releaseDate } } : app
+          ));
       }
   };
 
@@ -125,7 +127,7 @@ export default function ActivityHubPage() {
       if(error) toast.error("Failed to release funds");
       else {
           toast.success("Work approved, funds released!");
-          window.location.reload();
+          setHiringGigs(prev => prev.map(g => g.id === gigId ? { ...g, status: 'completed', escrow_status: 'RELEASED' } : g));
       }
   };
 

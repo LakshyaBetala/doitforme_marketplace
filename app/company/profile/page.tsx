@@ -126,7 +126,7 @@ export default function CompanyProfilePage() {
     );
   }
 
-  if (!company) return <div className="min-h-screen bg-[#0B0B11] text-white flex justify-center items-center font-bold uppercase tracking-widest text-xs">Unit Profile Not Found.</div>;
+  if (!company) return <div className="min-h-screen bg-[#0B0B11] text-white flex justify-center items-center font-bold uppercase tracking-widest text-xs">Company profile not found.</div>;
 
   const labelClass = "text-[10px] font-bold text-[#444] uppercase tracking-widest mb-3 block";
   const inputClass = "w-full bg-[#0a0a0a] border border-[#222] rounded-none p-5 text-sm font-medium text-white outline-none focus:border-white transition-all placeholder:text-[#333] disabled:opacity-50";
@@ -137,7 +137,7 @@ export default function CompanyProfilePage() {
       {/* Side Marker */}
       <div className="fixed left-6 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-12 pointer-events-none">
         <div className="rotate-90 origin-left text-[10px] font-bold tracking-[0.5em] text-[#222] uppercase whitespace-nowrap">
-          SYSTEM // PROFILE_MOD [VER-2.1]
+          COMPANY // PROFILE
         </div>
       </div>
 
@@ -152,7 +152,7 @@ export default function CompanyProfilePage() {
                 <Image src="/Doitforme_logo.png" alt="DoItForMe" width={24} height={24} className="object-contain opacity-50" />
                 <div className="flex flex-col">
                   <span className="font-black text-xs tracking-tighter text-white leading-none">DoItForMe</span>
-                  <span className="text-[9px] font-bold text-[#333] uppercase tracking-[0.2em]">Enterprise Clearance</span>
+                  <span className="text-[9px] font-bold text-[#333] uppercase tracking-[0.2em]">Enterprise</span>
                 </div>
             </div>
         </div>
@@ -163,8 +163,8 @@ export default function CompanyProfilePage() {
             <div className="bg-amber-950/20 border border-amber-500/30 p-6 flex items-start gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
                 <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
                 <div>
-                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Awaiting Deployment Clearance</p>
-                <p className="text-[10px] text-amber-500/70 font-medium leading-relaxed">Administrator review in progress. Access to campus broadcast systems is restricted until credentials are verified.</p>
+                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Pending Verification</p>
+                <p className="text-[10px] text-amber-500/70 font-medium leading-relaxed">Your company profile is under review. Posting access will be granted once verification is complete.</p>
                 </div>
             </div>
             )}
@@ -186,7 +186,7 @@ export default function CompanyProfilePage() {
               
               {/* Logo Presentation */}
               <div className="relative group">
-                <div className="w-32 h-32 md:w-40 md:h-40 bg-[#0a0a0a] border border-[#222] flex items-center justify-center overflow-hidden transition-all duration-500 grayscale hover:grayscale-0">
+                <div className="w-32 h-32 md:w-40 md:h-40 bg-[#0a0a0a] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden transition-all duration-500">
                    {company.logo_url || company.avatar_url ? (
                      <Image src={company.logo_url || company.avatar_url} alt="Logo" width={160} height={160} className="object-cover w-full h-full" />
                    ) : (
@@ -194,15 +194,15 @@ export default function CompanyProfilePage() {
                    )}
                 </div>
                 {company.is_active && (
-                    <div className="absolute -top-3 -right-3 bg-white text-black p-2 font-black italic text-[8px] uppercase tracking-tighter shadow-xl">
-                      Verified Entity
+                    <div className="absolute -top-3 -right-3 bg-white text-black p-2 rounded-md font-black italic text-[8px] uppercase tracking-tighter shadow-xl flex items-center gap-1">
+                      <ShieldCheck size={10} /> Verified
                     </div>
                 )}
               </div>
 
               {/* Title Identity */}
               <div className="text-center lg:text-left space-y-4">
-                 <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.3em] block">Identity // Organizational</span>
+                 <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.3em] block">Company Profile</span>
                  <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
                     {company.name}
                  </h1>
@@ -230,7 +230,7 @@ export default function CompanyProfilePage() {
            <div className="shrink-0 w-full lg:w-auto">
              {!isEditing ? (
                 <button onClick={startEditing} className="w-full lg:w-auto px-10 py-5 bg-white text-black text-xs font-black uppercase tracking-[0.3em] hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
-                  <Edit2 size={14} /> Update Credentials
+                  <Edit2 size={14} /> Edit Profile
                 </button>
              ) : (
                 <div className="flex items-center gap-px bg-[#222] w-full border border-[#222]">
@@ -239,7 +239,7 @@ export default function CompanyProfilePage() {
                   </button>
                   <button onClick={saveProfile} disabled={saving} className="flex-1 lg:flex-none px-10 py-5 bg-white text-black text-xs font-black uppercase tracking-[0.3em] hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                     {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                    Authorize Sync
+                    Save Changes
                   </button>
                 </div>
              )}
@@ -252,7 +252,7 @@ export default function CompanyProfilePage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                <div className="space-y-4">
-                  <label className={labelClass}>Organizational Title</label>
+                  <label className={labelClass}>Company Name</label>
                   {isEditing ? (
                     <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className={inputClass} />
                   ) : (
@@ -261,7 +261,7 @@ export default function CompanyProfilePage() {
                </div>
 
                <div className="space-y-4">
-                  <label className={labelClass}>Classification</label>
+                  <label className={labelClass}>Company Type</label>
                   {isEditing ? (
                     <select value={editType} onChange={(e) => setEditType(e.target.value)} className={inputClass}>
                       {COMPANY_TYPES.map(t => <option key={t} value={t}>{t.toUpperCase()}</option>)}
@@ -272,30 +272,30 @@ export default function CompanyProfilePage() {
                </div>
 
                <div className="space-y-4">
-                  <label className={labelClass}>Technical Web Interface (Website)</label>
+                  <label className={labelClass}>Website</label>
                   {isEditing ? (
                     <input type="url" placeholder="https://" value={editWebsite} onChange={(e) => setEditWebsite(e.target.value)} className={inputClass} />
                   ) : (
-                    <div className="text-xl font-black text-white italic uppercase tracking-tight">{company.website || 'OFFLINE'}</div>
+                    <div className="text-xl font-black text-white italic uppercase tracking-tight">{company.website || 'Not provided'}</div>
                   )}
                </div>
 
                <div className="space-y-4">
-                  <label className={labelClass}>Correspondence Vector (Email)</label>
+                  <label className={labelClass}>Email</label>
                   {isEditing ? (
                     <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={inputClass} />
                   ) : (
-                    <div className="text-xl font-black text-white italic uppercase tracking-tight">{company.contact_email || 'NOT FILED'}</div>
+                    <div className="text-xl font-black text-white italic uppercase tracking-tight">{company.contact_email || 'Not provided'}</div>
                   )}
                </div>
             </div>
 
             <div className="space-y-4 pt-4 border-t border-[#222]">
-              <label className={labelClass}>Operational Overview</label>
+              <label className={labelClass}>About</label>
               {isEditing ? (
-                <textarea rows={6} placeholder="SPECIFY MISSION PARAMETERS..." value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className={`${inputClass} resize-none leading-relaxed`} />
+                <textarea rows={6} placeholder="Describe what your company does, your mission, and the kind of talent you're looking for..." value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className={`${inputClass} resize-none leading-relaxed`} />
               ) : (
-                 <div className="text-sm text-[#888] leading-relaxed max-w-3xl font-medium whitespace-pre-wrap">{company.description || 'NO SYSTEM DESCRIPTION FILED.'}</div>
+                 <div className="text-sm text-[#888] leading-relaxed max-w-3xl font-medium whitespace-pre-wrap">{company.description || 'No description added yet.'}</div>
               )}
             </div>
 

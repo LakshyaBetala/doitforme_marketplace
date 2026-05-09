@@ -305,7 +305,7 @@ export default function ProfilePage() {
       });
 
       setIsEditing(false);
-      setSaveMessage({ type: 'success', text: 'Profile updated! Next edit available in 14 days.' });
+      setSaveMessage({ type: 'success', text: 'Profile updated! Next edit available in 7 days.' });
       setTimeout(() => setSaveMessage(null), 4000);
 
     } catch (err: any) {
@@ -330,8 +330,8 @@ export default function ProfilePage() {
   const avatarLetter = profile.email ? profile.email[0].toUpperCase() : "U";
   const displayName = profile.name || profile.email.split("@")[0];
 
-  // 14-day edit cooldown logic (using profile_last_edited_at so new signups aren't locked)
-  const EDIT_COOLDOWN_DAYS = 14;
+  // 7-day edit cooldown logic (using profile_last_edited_at so new signups aren't locked)
+  const EDIT_COOLDOWN_DAYS = 7;
   const lastEditedAt = profile.profile_last_edited_at ? new Date(profile.profile_last_edited_at) : null;
   const now = new Date();
   const cooldownMs = EDIT_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
@@ -769,13 +769,13 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
               {/* Left: Referral Info */}
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-purple/20 to-brand-pink/20 flex items-center justify-center shrink-0 border border-brand-purple/30">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-purple/20 to-brand-purple/10 flex items-center justify-center shrink-0 border border-brand-purple/30">
                   <Gift size={26} className="text-brand-purple drop-shadow-[0_0_15px_rgba(136,37,245,0.8)]" />
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white flex gap-2 items-center">
                     Refer & Earn
-                    <span className="px-2 py-0.5 rounded-full bg-brand-pink/20 text-brand-pink text-[10px] uppercase font-bold tracking-widest border border-brand-pink/30">Hot</span>
+                    <span className="px-2 py-0.5 rounded-full bg-brand-purple/20 text-[#C9A9FF] text-[10px] uppercase font-bold tracking-widest border border-brand-purple/30">Hot</span>
                   </h3>
                   <p className="text-[12px] text-zinc-400 max-w-sm mt-1">Share your code with friends. You both get 25 Reward Points when they join!</p>
                 </div>

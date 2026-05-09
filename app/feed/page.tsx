@@ -85,6 +85,10 @@ export default function FeedPage() {
         .range(from, to);
 
       // Filters
+      // Exclude gigs older than 30 days
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      query = query.gt("created_at", thirtyDaysAgo);
+
       if (feedType === "HUSTLE") {
         query = query.eq("listing_type", "HUSTLE").or(`deadline.is.null,deadline.gt.${nowIso}`);
       } else {

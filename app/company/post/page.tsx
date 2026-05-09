@@ -91,7 +91,10 @@ export default function CompanyPostTask() {
     }
 
     const p = Number(price);
-    if (Number.isNaN(p) || p < 100) return "Minimum budget per worker is ₹100.";
+    if (Number.isNaN(p) || p < 100) {
+      setLoading(false);
+      return setError("Minimum budget per worker is ₹100.");
+    }
 
     if (mode !== "Online" && !location.trim()) {
       return setError("Location is required for offline tasks.");
@@ -168,7 +171,7 @@ export default function CompanyPostTask() {
       {/* Editorial side marker */}
       <div className="fixed left-6 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-12 pointer-events-none">
         <div className="rotate-90 origin-left text-[10px] font-bold tracking-[0.5em] text-[#222] uppercase whitespace-nowrap">
-          DEPLOYMENT // PROTOCOL 04-X
+          COMPANY // POST TASK
         </div>
       </div>
 
@@ -200,18 +203,18 @@ export default function CompanyPostTask() {
           {/* Primary Section */}
           <div className="space-y-10">
             <div className="space-y-4">
-               <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">Task Definition</h1>
-               <p className="text-[#666] text-sm">Provide precise technical specifications for the required student resource units.</p>
+               <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">Post a Task</h1>
+               <p className="text-[#666] text-sm">Describe what you need done and find the right student for the job.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
-                <label className={labelClass}>Deployment Title</label>
+                <label className={labelClass}>Task Title</label>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="E.G. CAMPUS AMBASSADOR PROGRAM..." className={inputClass} />
               </div>
 
               <div className="space-y-3">
-                <label className={labelClass}>Classification</label>
+                <label className={labelClass}>Category</label>
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className={inputClass}>
                   {categories.map(cat => <option key={cat} value={cat}>{cat.toUpperCase()}</option>)}
                 </select>
@@ -219,13 +222,13 @@ export default function CompanyPostTask() {
             </div>
 
             <div className="space-y-3">
-              <label className={labelClass}>Operational Description</label>
+              <label className={labelClass}>Task Description</label>
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="DETAILED OBJECTIVES, EXPECTATIONS, AND DELIVERABLES..." className={`${inputClass} h-48 resize-none`} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                <div className="space-y-3">
-                  <label className={labelClass}>Resource Units (Workers)</label>
+                  <label className={labelClass}>Workers Needed</label>
                   <div className="relative">
                     <User size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#444]" />
                     <input type="number" min="1" max="50" value={maxWorkers} onChange={(e) => setMaxWorkers(parseInt(e.target.value) || 1)} className={`${inputClass} pl-12 font-mono text-lg`} />
@@ -241,7 +244,7 @@ export default function CompanyPostTask() {
                </div>
 
                <div className="space-y-3">
-                  <label className={labelClass}>Operational Format</label>
+                  <label className={labelClass}>Work Mode</label>
                   <div className="flex gap-px bg-[#222] border border-[#222]">
                     {["Online", "Offline (On-Site)"].map((m) => (
                       <button key={m} onClick={() => setMode(m)} className={`flex-1 px-4 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${mode === m ? "bg-white text-black" : "bg-[#0a0a0a] text-[#444] hover:text-white"}`}>
@@ -254,7 +257,7 @@ export default function CompanyPostTask() {
 
             {mode !== "Online" && (
               <div className="space-y-3 pt-4 border-t border-[#222]">
-                <label className={labelClass}>Physical Vector (Location)</label>
+                <label className={labelClass}>Location</label>
                 <div className="relative">
                   <MapPin size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#444]" />
                   <input
@@ -269,17 +272,17 @@ export default function CompanyPostTask() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
-                <label className={labelClass}>Termination Date (Deadline)</label>
+                <label className={labelClass}>Deadline Date</label>
                 <input type="date" value={deadlineDate} onChange={(e) => setDeadlineDate(e.target.value)} className={inputClass} style={{colorScheme: 'dark'}} />
               </div>
               <div className="space-y-3">
-                <label className={labelClass}>Termination Time</label>
+                <label className={labelClass}>Deadline Time</label>
                 <input type="time" value={deadlineTime} onChange={(e) => setDeadlineTime(e.target.value)} className={inputClass} style={{colorScheme: 'dark'}} />
               </div>
             </div>
 
             <div className="pt-8 border-t border-[#222] space-y-6">
-              <label className={labelClass}>Technical Attachments</label>
+              <label className={labelClass}>Attachments (Images & PDFs)</label>
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 <input ref={fileInputRef} type="file" accept="image/*, .pdf" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
                 
@@ -309,10 +312,10 @@ export default function CompanyPostTask() {
 
             <div className="pt-12">
                <button onClick={handleSubmit} disabled={loading} className={`w-full p-6 font-black text-xs uppercase tracking-[0.4em] transition-all flex justify-center items-center gap-3 ${loading ? 'bg-[#111] text-[#333]' : 'bg-white text-black hover:bg-gray-200'}`}>
-                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <><CheckCircle size={18} /> Deploy to Ecosystem</>}
+                {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <><CheckCircle size={18} /> Post Task</>}
               </button>
               <div className="mt-4 text-center">
-                <p className="text-[10px] font-bold text-[#333] uppercase tracking-widest">Total Deployment Budget: ₹{(Number(price) || 0) * (maxWorkers || 1)}</p>
+                <p className="text-[10px] font-bold text-[#333] uppercase tracking-widest">Total Budget: ₹{(Number(price) || 0) * (maxWorkers || 1)}</p>
               </div>
             </div>
           </div>

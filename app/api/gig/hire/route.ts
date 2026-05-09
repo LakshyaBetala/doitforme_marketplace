@@ -2,7 +2,6 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createClient } from "@supabase/supabase-js";
-import fs from 'fs';
 
 export async function POST(req: Request) {
   const cookieStore = await cookies()
@@ -165,9 +164,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("Hire Route Error:", error.message);
-    try {
-      fs.appendFileSync('hire_error.log', new Date().toISOString() + ' - ' + error.message + '\n' + error.stack + '\n\n');
-    } catch (e) { }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

@@ -95,7 +95,7 @@ export default function CompanyTaskHubPage() {
 
         const { load } = await import('@cashfreepayments/cashfree-js');
         const cashfree = await load({
-          mode: process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') ? 'sandbox' : 'sandbox',
+          mode: process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') ? 'sandbox' : 'production',
         });
         
         cashfree.checkout({
@@ -151,7 +151,7 @@ export default function CompanyTaskHubPage() {
       <div className="sticky top-0 z-30 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#222]">
         <div className="max-w-6xl mx-auto flex items-center justify-between p-6">
           <button onClick={() => router.push('/company/dashboard')} className="flex items-center gap-2 text-[#666] hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
-            <ArrowLeft size={16} /> Back to Repository
+            <ArrowLeft size={16} /> Back to Dashboard
           </button>
           <div className="flex items-center gap-4">
             <span className={`px-2 py-1 text-[9px] font-black tracking-[0.2em] uppercase border ${gig.status === 'open' ? 'bg-white text-black border-white' : 'bg-transparent text-[#444] border-[#222]'}`}>
@@ -166,7 +166,7 @@ export default function CompanyTaskHubPage() {
         {/* TASK SUMMARY HEADER */}
         <div className="border-b border-[#222] pb-12 flex flex-col lg:flex-row items-end justify-between gap-8">
            <div className="max-w-3xl space-y-6">
-              <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.3em] block">Operational Hub // Task: {gig.id.split('-')[0]}</span>
+              <span className="text-[10px] font-bold text-[#444] uppercase tracking-[0.3em] block">Task #{gig.id.split('-')[0]}</span>
               <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
                 {gig.title}
               </h1>
@@ -174,20 +174,20 @@ export default function CompanyTaskHubPage() {
               
               <div className="flex flex-wrap items-center gap-4">
                  <div className="flex flex-col">
-                    <span className={labelClass}>Unit Budget</span>
+                    <span className={labelClass}>Budget per Worker</span>
                     <span className="text-xl font-black text-white">₹{gig.price}</span>
                  </div>
                  <div className="w-px h-8 bg-[#222] mx-2 hidden sm:block"></div>
                  <div className="flex flex-col">
-                    <span className={labelClass}>Deployment Capacity</span>
-                    <span className="text-xl font-black text-white">{acceptedCount} <span className="text-[#444]">/</span> {gig.max_workers} UNITS</span>
+                    <span className={labelClass}>Positions Filled</span>
+                    <span className="text-xl font-black text-white">{acceptedCount} <span className="text-[#444]">/</span> {gig.max_workers}</span>
                  </div>
               </div>
            </div>
 
            <div className="shrink-0 flex gap-4 w-full lg:w-auto">
               <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 lg:flex-none px-8 py-4 bg-[#111] border border-[#222] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest transition-all">
-                Preview Vector
+                Preview Task
               </button>
            </div>
         </div>
@@ -197,7 +197,7 @@ export default function CompanyTaskHubPage() {
            <div className="flex items-center justify-between">
              <h2 className="text-xs font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
                <span className="w-1.5 h-4 bg-white"></span>
-               Applicant Pipeline
+               Applicants
                <span className="bg-white text-black px-2 py-0.5 text-[10px] font-black">{applications.length}</span>
              </h2>
            </div>
@@ -205,7 +205,7 @@ export default function CompanyTaskHubPage() {
            {applications.length === 0 ? (
              <div className="border border-[#222] bg-[#0a0a0a] py-32 text-center">
                  <Users size={24} className="mx-auto text-[#222] mb-6" />
-                 <p className="text-[#444] text-[10px] font-bold uppercase tracking-widest">Pipeline Empty. Monitoring for Incoming Vectors...</p>
+                 <p className="text-[#444] text-[10px] font-bold uppercase tracking-widest">No applicants yet. Share the task link to get started.</p>
              </div>
            ) : (
              <div className="grid gap-px bg-[#222] border border-[#222]">
@@ -218,7 +218,7 @@ export default function CompanyTaskHubPage() {
                      )}
                      
                      <div className="flex items-start gap-8 flex-1">
-                       <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] flex items-center justify-center overflow-hidden shrink-0 grayscale group-hover:grayscale-0 transition-all">
+                       <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-all">
                          {worker?.avatar_url ? (
                            <Image src={worker.avatar_url} alt="Profile" width={64} height={64} className="object-cover w-full h-full" />
                          ) : (
@@ -227,7 +227,7 @@ export default function CompanyTaskHubPage() {
                        </div>
                        <div className="space-y-4 flex-1">
                          <div className="flex flex-wrap items-center gap-4">
-                           <h4 className="font-black text-xl text-white uppercase italic tracking-tight">{worker?.name || "ANONYMOUS UNIT"}</h4>
+                           <h4 className="font-black text-xl text-white uppercase italic tracking-tight">{worker?.name || "Anonymous"}</h4>
                            <span className={`text-[9px] font-black tracking-widest px-2 py-1 border ${
                              app.status === 'accepted' ? 'bg-white text-black border-white' : 
                              app.status === 'rejected' ? 'bg-transparent text-red-500 border-red-500/30' : 
@@ -237,7 +237,7 @@ export default function CompanyTaskHubPage() {
                            </span>
                          </div>
                          <div className="text-[10px] font-bold text-[#444] tracking-widest uppercase">
-                            <span className="text-[#888]">{worker?.college || "CREDENTIALS NOT FILED"}</span> // {worker?.email}
+                            <span className="text-[#888]">{worker?.college || "No college listed"}</span> // {worker?.email}
                          </div>
                          {(worker?.skills?.length > 0 || worker?.experience) && (
                            <div className="text-xs text-[#888] flex flex-col gap-1">
@@ -258,7 +258,7 @@ export default function CompanyTaskHubPage() {
                          </div>
                          {app.pitch && (
                            <div className="text-sm text-[#888] bg-[#0B0B11] border border-[#222] p-6 max-w-xl italic leading-relaxed">
-                             <span className="uppercase text-[8px] font-bold text-[#333] block mb-3 tracking-[0.3em]">Proposal Transcript</span>
+                             <span className="uppercase text-[8px] font-bold text-[#333] block mb-3 tracking-[0.3em]">Application Pitch</span>
                              "{app.pitch}"
                            </div>
                          )}
@@ -269,7 +269,7 @@ export default function CompanyTaskHubPage() {
                         {(app.status === 'applied') && (
                           <>
                             <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
-                              {hiringId === app.id ? 'Processing...' : (app.payment_preference === 'DIRECT' ? 'Connect (WhatsApp)' : `Hire Vector (ESCROW)`)}
+                              {hiringId === app.id ? 'Processing...' : (app.payment_preference === 'DIRECT' ? 'Connect (WhatsApp)' : `Hire via Escrow`)}
                             </button>
                             <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
                           </>
@@ -339,11 +339,11 @@ export default function CompanyTaskHubPage() {
              </div>
              
              <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Grant Bonus</h3>
-             <p className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-10 leading-relaxed">Financial incentive for high-performance delivery. Funds will be deployed to the worker's node immediately upon authorization.</p>
+             <p className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-10 leading-relaxed">Send a bonus to reward high-performance delivery. (Coming Soon — will be enabled in the next update.)</p>
              
              <div className="space-y-10 mb-12">
                 <div>
-                  <label className={labelClass}>Incentive Vector (Amount INR)</label>
+                  <label className={labelClass}>Bonus Amount (INR)</label>
                   <div className="relative">
                     <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-[#444]">₹</span>
                     <input 
@@ -362,7 +362,7 @@ export default function CompanyTaskHubPage() {
                disabled={!incentiveAmount}
                className="w-full p-6 bg-white text-black font-black uppercase tracking-[0.3em] text-xs transition-all disabled:opacity-30 hover:bg-gray-200"
              >
-               Authorize Transaction
+               Authorize (Coming Soon)
              </button>
           </div>
         </div>
