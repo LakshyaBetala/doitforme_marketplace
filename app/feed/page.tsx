@@ -100,15 +100,15 @@ export default function FeedPage() {
            .select("user_id")
            .gte("free_credits", 999999);
            
-        const premiumPosterIds = new Set(unlimitedCompanies?.map(c => c.user_id) || []);
+        const premiumPosterIds = new Set(unlimitedCompanies?.map((c: any) => c.user_id) || []);
         
-        const enhancedData = data.map(gig => ({
+        const enhancedData = data.map((gig: any) => ({
            ...gig,
            is_featured: premiumPosterIds.has(gig.poster_id)
         }));
         
         // Sort so featured gigs always appear first within this page's result set
-        enhancedData.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+        enhancedData.sort((a: any, b: any) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
 
         setGigs(prev => isNewFilter ? enhancedData : [...prev, ...enhancedData]);
         setHasMore(data.length === ITEMS_PER_PAGE);
