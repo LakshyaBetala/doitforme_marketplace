@@ -131,7 +131,7 @@ export default function PostGigWizard() {
 
   const prevStep = () => {
     setError("");
-    setStep(s => s - 1);
+    setStep(s => Math.max(2, s - 1)); // step 1 was removed; clamp at 2
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -249,25 +249,30 @@ export default function PostGigWizard() {
 
         {/* PROGRESS HEADER */}
         <div className="flex items-center justify-between mb-8">
-          <button onClick={() => step > 1 ? prevStep() : router.back()} className="text-white/60 hover:text-white transition w-10 h-10 flex items-center justify-center rounded-full bg-white/10 border border-white/5">
-            <ChevronLeft size={20} />
+          <button
+            onClick={() => step > 2 ? prevStep() : router.back()}
+            className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors px-3 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.16]"
+            aria-label="Back"
+          >
+            <ChevronLeft size={18} />
+            <span className="text-xs font-semibold hidden sm:inline">Back</span>
           </button>
 
           <div className="flex flex-col items-center">
             <div className="flex gap-2">
-              {[1, 2, 3].map(i => (
-                <div key={i} className={`h-1.5 w-12 rounded-full transition-colors duration-300 ${i === step ? 'bg-brand-purple shadow-[0_0_10px_rgba(136,37,245,0.5)]' : i < step ? 'bg-white' : 'bg-white/10'}`} />
+              {[2, 3].map(i => (
+                <div key={i} className={`h-1.5 w-14 rounded-full transition-colors duration-300 ${i === step ? 'bg-[#8825F5]' : i < step ? 'bg-white' : 'bg-white/10'}`} />
               ))}
             </div>
-            {step > 1 && (
-              <span className="mt-2 text-[10px] font-bold uppercase tracking-widest text-brand-purple">
-                {listingType === 'HUSTLE' ? 'HUSTLE' : `MARKET • ${marketType || ''}`}
-              </span>
-            )}
+            <span className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A9FF]">
+              Post a hustle
+            </span>
           </div>
 
-          <div className="w-10 h-10 flex items-center justify-center">
-            {step === 3 ? <span className="text-[10px] font-bold uppercase tracking-widest text-brand-purple">Final</span> : <span className="text-[10px] uppercase text-white/60">Step {step}</span>}
+          <div className="w-[72px] sm:w-[88px] flex items-center justify-end">
+            <span className="text-[10px] uppercase tracking-widest text-white/50">
+              {step === 3 ? "Final" : `Step ${step - 1} / 2`}
+            </span>
           </div>
         </div>
 

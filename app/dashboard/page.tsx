@@ -238,7 +238,11 @@ export default function Dashboard() {
             3. MAIN CONTENT AREA (Core Zone)
         -------------------------------------------------- */}
         <main className="flex-1 overflow-y-auto bg-[var(--background)] scrollbar-hide relative">
-          <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-24 md:pb-8">
+          {/* Ambient purple glow — gives the dashboard depth without screaming */}
+          <div aria-hidden className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[600px] rounded-full bg-[#8825F5]/[0.07] blur-[180px]" />
+          <div aria-hidden className="pointer-events-none absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-[#0097FF]/[0.05] blur-[160px]" />
+
+          <div className="relative max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-24 md:pb-8">
 
             {/* Profile Completion Alert */}
             {showProfileAlert && (
@@ -302,22 +306,24 @@ export default function Dashboard() {
 
             {/* Layer 2: Quick Action Bar */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link href="/post" className="flex items-center gap-4 p-5 bg-[var(--card)] border border-white/[0.08] text-white rounded-2xl hover:border-white/[0.16] active:scale-[0.99] transition-colors">
-                <div className="w-11 h-11 rounded-xl bg-[#8825F5] flex items-center justify-center shrink-0">
-                  <Plus size={20} className="text-white" strokeWidth={2.5} />
+              <Link href="/post" className="group relative flex items-center gap-5 p-6 md:p-7 bg-[var(--card)] border border-white/[0.08] text-white rounded-3xl hover:border-[#8825F5]/40 active:scale-[0.99] transition-all overflow-hidden">
+                {/* purple wash on hover */}
+                <span aria-hidden className="pointer-events-none absolute -right-12 -bottom-12 w-44 h-44 rounded-full bg-[#8825F5]/15 blur-3xl opacity-60 group-hover:opacity-100 transition-opacity" />
+                <div className="relative w-14 h-14 rounded-2xl bg-[#8825F5] flex items-center justify-center shrink-0 shadow-[0_8px_24px_-8px_rgba(136,37,245,0.6)]">
+                  <Plus size={24} className="text-white" strokeWidth={2.5} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <span className="block font-semibold text-sm text-white">Post a hustle</span>
-                  <span className="block text-[11px] text-white/50 mt-0.5">Need something done? Get offers in minutes.</span>
+                <div className="relative flex-1 min-w-0">
+                  <span className="block font-semibold text-base md:text-lg text-white tracking-tight">Post a hustle</span>
+                  <span className="block text-xs md:text-sm text-white/55 mt-1">Need something done? Get offers in minutes.</span>
                 </div>
               </Link>
-              <Link href="/activity" className="flex items-center gap-4 p-5 bg-[var(--card)] border border-white/[0.08] text-white rounded-2xl hover:border-white/[0.16] active:scale-[0.99] transition-colors">
-                <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0">
-                  <Briefcase size={18} className="text-white/80" />
+              <Link href="/activity" className="group relative flex items-center gap-5 p-6 md:p-7 bg-[var(--card)] border border-white/[0.08] text-white rounded-3xl hover:border-white/[0.18] active:scale-[0.99] transition-all">
+                <div className="w-14 h-14 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center shrink-0">
+                  <Briefcase size={22} className="text-white/85" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="block font-semibold text-sm text-white">Activity</span>
-                  <span className="block text-[11px] text-white/50 mt-0.5">Your posts, applications, and escrow.</span>
+                  <span className="block font-semibold text-base md:text-lg text-white tracking-tight">Activity</span>
+                  <span className="block text-xs md:text-sm text-white/55 mt-1">Your posts, applications, and escrow.</span>
                 </div>
               </Link>
             </section>
