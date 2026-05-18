@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee } from "lucide-react";
+import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee, Users } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "./StatusBadge";
 
 /**
@@ -24,7 +24,10 @@ type Gig = {
   images?: string[] | null;
   created_at?: string | null;
   is_highlighted?: boolean | null;
+  is_featured?: boolean | null;
   highlight_expires_at?: string | null;
+  applicant_count?: number | null;
+  max_workers?: number | null;
   users?: { college?: string | null } | null;
 };
 
@@ -74,8 +77,10 @@ function TypePill({ listing_type, market_type }: { listing_type?: string | null;
 
 export default function GigCard({ gig, imageUrl, variant = "detailed", className = "" }: GigCardProps) {
   const isMarket = gig.listing_type === "MARKET";
-  const isHighlighted = !!(gig.is_highlighted && gig.highlight_expires_at && new Date(gig.highlight_expires_at) > new Date());
+  const isHighlighted = !!gig.is_featured || !!(gig.is_highlighted && gig.highlight_expires_at && new Date(gig.highlight_expires_at) > new Date());
   const showStatus = gig.status && gig.status.toLowerCase() !== "open";
+  const isHiring = !isMarket && (gig.applicant_count ?? 0) > 0;
+  const hiringLabel = isHiring ? `${gig.applicant_count} hiring` : null;
 
   const ringClass = isHighlighted
     ? "border-[#8825F5]/40 ring-1 ring-[#8825F5]/20"
@@ -119,11 +124,16 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
               </span>
               <span>{timeAgo(gig.created_at)}</span>
             </div>
-            {showStatus && (
-              <div className="mt-2">
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              {hiringLabel && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/10 border border-[#8825F5]/20 px-2 py-0.5 rounded-full">
+                  <Users size={10} /> {hiringLabel}
+                </span>
+              )}
+              {showStatus && (
                 <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </Link>
@@ -162,6 +172,11 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
               <MapPin size={11} className="text-[#8825F5]" /> {gig.is_physical ? "On-Site" : "Remote"}
             </span>
             <div className="flex items-center gap-2">
+              {hiringLabel && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/15 border border-[#8825F5]/30 px-2 py-0.5 rounded-full">
+                  <Users size={11} /> {hiringLabel}
+                </span>
+              )}
               {showStatus && <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>}
               <span className="text-[11px] font-medium text-white/40">{timeAgo(gig.created_at)}</span>
             </div>
@@ -199,6 +214,11 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
             {gig.users?.college && <span className="text-white/30">· {gig.users.college}</span>}
           </span>
           <div className="flex items-center gap-2">
+            {hiringLabel && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/10 border border-[#8825F5]/20 px-2 py-0.5 rounded-full">
+                <Users size={10} /> {hiringLabel}
+              </span>
+            )}
             {showStatus && <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>}
             <span className="text-[11px] text-white/40">{timeAgo(gig.created_at)}</span>
           </div>

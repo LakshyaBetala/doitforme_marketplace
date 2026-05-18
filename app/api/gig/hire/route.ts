@@ -51,6 +51,10 @@ export async function POST(req: Request) {
     const basePrice = application?.negotiated_price ? Number(application.negotiated_price) : Number(gig.price);
     const deposit = Number(gig.security_deposit) || 0;
 
+    if (basePrice < 500) {
+      return NextResponse.json({ error: "Escrow is available for gigs ₹500 and above. For smaller jobs, use Direct Connect." }, { status: 400 });
+    }
+
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!

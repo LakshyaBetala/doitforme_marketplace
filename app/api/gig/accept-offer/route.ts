@@ -135,11 +135,11 @@ export async function POST(req: Request) {
 
         if (escrowError) console.error("Escrow setup warning:", escrowError);
 
-        // --- TELEGRAM NOTIFICATION TO WORKER ---
+        // --- TELEGRAM + EMAIL TO WORKER ---
         try {
             const { data: worker } = await supabaseAdmin
                 .from('users')
-                .select('telegram_chat_id')
+                .select('telegram_chat_id, email, name')
                 .eq('id', application.worker_id)
                 .single();
 
@@ -150,10 +150,20 @@ export async function POST(req: Request) {
                     `🎉 <b>Offer Accepted!</b>\nYou have been chosen for <i>${gig.title}</i>.\n<a href="https://doitforme.in/gig/${gig.id}">View Details</a>`
                 );
             }
+            if (worker?.email) {
+                const { sendEmail } = await import('@/lib/email');
+                await sendEmail('application_accepted', {
+                    to: worker.email,
+                    recipientName: worker.name,
+                    gigTitle: gig.title,
+                    gigId: gig.id,
+                    amount: application.negotiated_price || gig.price,
+                });
+            }
         } catch (e) {
-            console.error("Telegram notification failed:", e);
+            console.error("Notification (accept-offer) failed:", e);
         }
-        // ---------------------------------------
+        // -----------------------------------
 
         // --- PHONE/WHATSAPP AUTO-EXCHANGE (System Message) ---
         try {

@@ -35,7 +35,7 @@ export async function POST(req: Request) {
         // 2. Fetch Gig to validate
         const { data: gig, error: gigError } = await supabase
             .from("gigs")
-            .select("poster_id, status, title, price")
+            .select("poster_id, status, title, price, listing_type")
             .eq("id", gigId)
             .single();
 
@@ -58,25 +58,28 @@ export async function POST(req: Request) {
             .eq("gig_id", gigId);
 
         if (appCount !== null && appCount >= 10) {
-            // Check if poster is a subscribed company
+            // Pro companies have unlimited applicants; free tier caps at 10.
             const { data: posterCompany } = await supabase
                 .from("companies")
-                .select("free_credits")
+                .select("pro_until")
                 .eq("user_id", gig.poster_id)
                 .single();
 
-            const hasUnlimited = posterCompany && posterCompany.free_credits >= 999999;
-            if (!hasUnlimited) {
-                return NextResponse.json({ error: "This task has reached its maximum limit of 10 applicants." }, { status: 403 });
+            const isPro = posterCompany?.pro_until && new Date(posterCompany.pro_until) > new Date();
+            if (!isPro) {
+                return NextResponse.json({ error: "This task has reached its maximum limit of 10 applicants. Poster is on the free tier." }, { status: 403 });
             }
         }
+
+        const isJob = gig.listing_type === 'HUSTLE' || gig.listing_type === 'COMPANY_TASK';
+        const defaultPitch = isJob ? "I am interested in this task and would like to apply." : "I'm interested in this item!";
 
         // 3. Create Application (Offer)
         const { error: appError } = await supabase.from("applications").upsert({
             gig_id: gigId,
             worker_id: user.id,
             status: 'pending',
-            pitch: offerPitch || "I'm interested in this item!",
+            pitch: offerPitch || defaultPitch,
             negotiated_price: offerPrice || null,
             payment_preference: paymentPreference || "DIRECT"
         }, { onConflict: 'gig_id, worker_id' });
@@ -88,7 +91,7 @@ export async function POST(req: Request) {
         // If offerPrice is different -> Offer Message
         const isOffer = offerPrice && Number(offerPrice) > 0;
         const contentType = isOffer ? 'offer' : 'text';
-        const contentText = isOffer ? '' : (offerPitch || "I'm interested in this item!");
+        const contentText = isOffer ? '' : (offerPitch || defaultPitch);
 
         const { error: msgError } = await supabase.from("messages").insert({
             gig_id: gigId,
@@ -105,7 +108,7 @@ export async function POST(req: Request) {
             // Don't fail the request, as the application was created
         }
 
-        // --- TELEGRAM NOTIFICATION ---
+        // --- TELEGRAM + EMAIL NOTIFICATIONS ---
         try {
             const { createClient } = await import('@supabase/supabase-js');
             const supabaseAdmin = createClient(
@@ -113,23 +116,41 @@ export async function POST(req: Request) {
                 process.env.SUPABASE_SERVICE_ROLE_KEY!
             );
 
-            const { data: poster } = await supabaseAdmin
-                .from('users')
-                .select('telegram_chat_id')
-                .eq('id', gig.poster_id)
-                .single();
+            const [{ data: poster }, { data: applicant }] = await Promise.all([
+                supabaseAdmin.from('users').select('telegram_chat_id, email, name').eq('id', gig.poster_id).single(),
+                supabaseAdmin.from('users').select('email, name').eq('id', user.id).single(),
+            ]);
+
+            const { sendTelegramAlert } = await import('@/lib/telegram');
+            const { sendEmail } = await import('@/lib/email');
 
             if (poster?.telegram_chat_id) {
-                const { sendTelegramAlert } = await import('@/lib/telegram');
                 await sendTelegramAlert(
                     poster.telegram_chat_id,
                     `📄 <b>New Offer / Application!</b>\nSomeone just made an offer on your listing: <i>${gig.title}</i>.\n<a href="https://doitforme.in/gig/${gigId}/applicants">Review Offer</a>`
                 );
             }
+
+            if (poster?.email) {
+                await sendEmail('new_applicant', {
+                    to: poster.email,
+                    recipientName: poster.name,
+                    gigTitle: gig.title,
+                    gigId,
+                });
+            }
+            if (applicant?.email) {
+                await sendEmail('applied', {
+                    to: applicant.email,
+                    recipientName: applicant.name,
+                    gigTitle: gig.title,
+                    gigId,
+                });
+            }
         } catch (e) {
-            console.error("Telegram notification failed:", e);
+            console.error("Notification (apply) failed:", e);
         }
-        // ----------------------------
+        // --------------------------------------
 
         return NextResponse.json({ success: true });
 

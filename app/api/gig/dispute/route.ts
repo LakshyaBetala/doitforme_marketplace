@@ -71,25 +71,33 @@ export async function POST(req: Request) {
       status: 'DISPUTED',
     }).eq('gig_id', gigId);
 
-    // 8. Telegram alerts
+    // 8. Telegram + email alerts to both parties
     try {
       const { sendTelegramAlert } = await import('@/lib/telegram');
+      const { sendEmail } = await import('@/lib/email');
 
-      // Notify worker
       const { data: worker } = await supabaseAdmin
         .from('users')
-        .select('telegram_chat_id, name')
+        .select('telegram_chat_id, email, name')
         .eq('id', gig.assigned_worker_id)
         .single();
 
       if (worker?.telegram_chat_id) {
         await sendTelegramAlert(
           worker.telegram_chat_id,
-          `⚠️ <b>Dispute Raised</b>\nThe poster has raised a dispute for <i>${gig.title}</i>.\nReason: ${reason}\nOur team will review within 24 hours. The escrow is currently frozen.\n<a href="https://doitforme.in/gig/${gigId}">View Gig</a>`
+          `⚠️ <b>Dispute Raised</b>\nThe poster has raised a dispute for <i>${gig.title}</i>.\nReason: ${reason}\nOur team will review within 48 hours. The escrow is currently frozen.\n<a href="https://doitforme.in/gig/${gigId}">View Gig</a>`
         );
       }
+      if (worker?.email) {
+        await sendEmail('dispute_opened', {
+          to: worker.email,
+          recipientName: worker.name,
+          gigTitle: gig.title,
+          gigId,
+        });
+      }
     } catch (e) {
-      console.error('Telegram notification failed:', e);
+      console.error('Notification (dispute) failed:', e);
     }
 
     return NextResponse.json({ success: true, message: 'Dispute raised. Escrow is frozen pending review.' });

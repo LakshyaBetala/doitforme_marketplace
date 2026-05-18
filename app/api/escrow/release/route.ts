@@ -31,6 +31,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: rpcErr.message || 'Release RPC failed' }, { status: 500 });
     }
 
+    // Notify worker via email
+    try {
+      const { data: gig } = await supabase
+        .from('gigs')
+        .select('title, assigned_worker_id, net_worker_pay')
+        .eq('id', gigId)
+        .single();
+
+      if (gig?.assigned_worker_id) {
+        const { data: worker } = await supabase
+          .from('users')
+          .select('email, name, telegram_chat_id')
+          .eq('id', gig.assigned_worker_id)
+          .single();
+
+        if (worker?.email) {
+          const { sendEmail } = await import('@/lib/email');
+          await sendEmail('payment_released', {
+            to: worker.email,
+            recipientName: worker.name,
+            gigTitle: gig.title,
+            gigId,
+            amount: gig.net_worker_pay,
+          });
+        }
+        if (worker?.telegram_chat_id) {
+          const { sendTelegramAlert } = await import('@/lib/telegram');
+          await sendTelegramAlert(
+            worker.telegram_chat_id,
+            `💸 <b>Escrow released</b>\nYour payout for <i>${gig.title}</i> is queued. Funds settle within 24-48h.`
+          );
+        }
+      }
+    } catch (e) {
+      console.error("Notification (release) failed:", e);
+    }
+
     return NextResponse.json({ success: true, detail: rpcData });
   } catch (err: any) {
     console.error("Escrow release failed:", err);

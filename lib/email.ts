@@ -1,0 +1,259 @@
+// Single source of truth for transactional email via Resend.
+// Free tier ceiling: 3000/month — every send is fire-and-forget and never
+// fails the parent request. If RESEND_API_KEY is unset we log and no-op.
+
+const RESEND_ENDPOINT = "https://api.resend.com/emails";
+const FROM = "doitforme <noreply@doitforme.in>";
+const REPLY_TO = "doitforme.in@gmail.com";
+const SITE = "https://doitforme.in";
+
+type EmailKind =
+  | "applied"
+  | "new_applicant"
+  | "application_accepted"
+  | "application_rejected"
+  | "hired_direct"
+  | "work_delivered"
+  | "auto_release_warning"
+  | "payment_released"
+  | "dispute_opened"
+  | "company_approved"
+  | "company_pro_activated";
+
+interface BaseArgs {
+  to: string;
+  recipientName?: string | null;
+  gigTitle?: string | null;
+  gigId?: string | null;
+  amount?: number | null;
+  proUntil?: string | null;
+  extra?: Record<string, string | number | null | undefined>;
+}
+
+interface RenderResult {
+  subject: string;
+  preheader: string;
+  bodyHtml: string;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function gigUrl(gigId?: string | null): string {
+  return gigId ? `${SITE}/gig/${gigId}` : SITE;
+}
+
+function render(kind: EmailKind, args: BaseArgs): RenderResult {
+  const name = escapeHtml(args.recipientName || "there");
+  const title = escapeHtml(args.gigTitle || "your gig");
+  const url = gigUrl(args.gigId);
+  const rupees = args.amount != null ? `₹${args.amount}` : null;
+
+  switch (kind) {
+    case "applied":
+      return {
+        subject: `Application sent — ${args.gigTitle || "your gig"}`,
+        preheader: "We've passed your pitch to the poster.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>You applied to <strong>${title}</strong>. The poster has been notified and will respond in the chat.</p>
+          <p><a href="${url}" class="cta">Open chat</a></p>
+          <p class="muted">Tip: keep all payment in escrow. Direct UPI = no protection.</p>
+        `,
+      };
+
+    case "new_applicant":
+      return {
+        subject: `New applicant on ${args.gigTitle || "your gig"}`,
+        preheader: "Review the pitch and respond.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>You have a new applicant on <strong>${title}</strong>.</p>
+          <p><a href="${url}" class="cta">Review applicant</a></p>
+        `,
+      };
+
+    case "application_accepted":
+      return {
+        subject: `You're hired — ${args.gigTitle || "gig accepted"}`,
+        preheader: "The poster accepted your offer.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>Your offer on <strong>${title}</strong> was accepted${rupees ? ` for <strong>${rupees}</strong>` : ""}. Funds are in escrow.</p>
+          <p><a href="${url}" class="cta">Open the gig</a></p>
+        `,
+      };
+
+    case "application_rejected":
+      return {
+        subject: `Update on ${args.gigTitle || "your application"}`,
+        preheader: "Another applicant was chosen this time.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>The poster of <strong>${title}</strong> picked someone else. Keep an eye on the feed — more gigs drop daily.</p>
+          <p><a href="${SITE}/feed" class="cta">Browse new gigs</a></p>
+        `,
+      };
+
+    case "hired_direct":
+      return {
+        subject: `You've been hired directly — ${args.gigTitle || "new gig"}`,
+        preheader: "Payment is held in escrow.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>You were hired directly for <strong>${title}</strong>${rupees ? ` (<strong>${rupees}</strong>)` : ""}. Funds are secured in escrow.</p>
+          <p><a href="${url}" class="cta">Get started</a></p>
+        `,
+      };
+
+    case "work_delivered":
+      return {
+        subject: `Work delivered — review ${args.gigTitle || "your gig"}`,
+        preheader: "24-hour clock has started.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>The worker marked <strong>${title}</strong> as delivered. Funds auto-release in <strong>24 hours</strong> unless you raise a dispute.</p>
+          <p><a href="${url}" class="cta">Review & release</a></p>
+        `,
+      };
+
+    case "auto_release_warning":
+      return {
+        subject: `Auto-release in 1 hour — ${args.gigTitle || "your gig"}`,
+        preheader: "Last chance to dispute.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>Escrow on <strong>${title}</strong> auto-releases to the worker in <strong>1 hour</strong>. If something is wrong, raise a dispute now.</p>
+          <p><a href="${url}" class="cta">Review now</a></p>
+        `,
+      };
+
+    case "payment_released":
+      return {
+        subject: `Payout queued — ${rupees || "your earnings"}`,
+        preheader: "Funds released from escrow.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>Escrow on <strong>${title}</strong> was released. ${rupees ? `Your net payout: <strong>${rupees}</strong>.` : ""} Payouts are processed manually within 24-48 hours.</p>
+          <p><a href="${SITE}/payouts" class="cta">View payouts</a></p>
+        `,
+      };
+
+    case "dispute_opened":
+      return {
+        subject: `Dispute opened on ${args.gigTitle || "your gig"}`,
+        preheader: "An admin will review.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>A dispute was raised on <strong>${title}</strong>. Funds are frozen until our team reviews — usually within 48 hours.</p>
+          <p><a href="${url}" class="cta">Open dispute thread</a></p>
+        `,
+      };
+
+    case "company_approved":
+      return {
+        subject: "Your company is approved on doitforme",
+        preheader: "You can now post gigs.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>Welcome — your company account is verified. You can post your first gig now (free tier: 1 gig, up to 10 applicants).</p>
+          <p><a href="${SITE}/company/post" class="cta">Post your first gig</a> &nbsp; <a href="${SITE}/pricing" class="muted-link">See Pro (₹299/mo)</a></p>
+        `,
+      };
+
+    case "company_pro_activated": {
+      const until = args.proUntil ? new Date(args.proUntil).toDateString() : "30 days from today";
+      return {
+        subject: "Pro activated — unlimited gigs unlocked",
+        preheader: "Featured posts + unlimited applicants are live.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>Pro is active until <strong>${escapeHtml(until)}</strong>. You get unlimited gigs, unlimited applicants, and a featured pin on every post.</p>
+          <p><a href="${SITE}/company/dashboard" class="cta">Open dashboard</a></p>
+        `,
+      };
+    }
+  }
+}
+
+function wrap({ subject, preheader, bodyHtml }: RenderResult): string {
+  const safePreheader = escapeHtml(preheader);
+  return `<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(subject)}</title>
+<style>
+  body { margin:0; padding:0; background:#0B0B11; color:#fafafa; font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif; line-height:1.55; }
+  .wrap { max-width:560px; margin:0 auto; padding:32px 24px; }
+  .card { background:#13131A; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:28px; }
+  h1 { font-size:18px; letter-spacing:-0.01em; margin:0 0 18px; font-weight:600; }
+  p { margin:0 0 14px; color:#fafafa; font-size:15px; }
+  .muted { color:rgba(255,255,255,0.62); font-size:13px; }
+  .muted-link { color:rgba(255,255,255,0.62); font-size:13px; text-decoration:underline; }
+  .cta { display:inline-block; background:#8825F5; color:#fff !important; padding:11px 18px; border-radius:10px; text-decoration:none; font-weight:600; font-size:14px; margin-top:8px; }
+  .foot { margin-top:22px; color:rgba(255,255,255,0.45); font-size:12px; text-align:center; }
+  .preheader { display:none !important; visibility:hidden; opacity:0; height:0; width:0; overflow:hidden; }
+  a { color:#C9A9FF; }
+</style></head>
+<body>
+<span class="preheader">${safePreheader}</span>
+<div class="wrap">
+  <div class="card">
+    <h1>${escapeHtml(subject)}</h1>
+    ${bodyHtml}
+  </div>
+  <p class="foot">doitforme.in · <a href="${SITE}/settings/notifications">Notification settings</a></p>
+</div>
+</body></html>`;
+}
+
+export async function sendEmail(kind: EmailKind, args: BaseArgs): Promise<{ ok: boolean; skipped?: string }> {
+  if (!args.to) return { ok: false, skipped: "no recipient" };
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn(`[email] RESEND_API_KEY missing — would send ${kind} to ${args.to}`);
+    return { ok: false, skipped: "RESEND_API_KEY missing" };
+  }
+
+  const rendered = render(kind, args);
+  const html = wrap(rendered);
+
+  try {
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM,
+        to: [args.to],
+        subject: rendered.subject,
+        html,
+        reply_to: REPLY_TO,
+        headers: {
+          "X-Entity-Ref-ID": `${kind}:${args.gigId || "none"}`,
+        },
+        tags: [{ name: "kind", value: kind }],
+      }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      console.error(`[email] ${kind} -> ${args.to} failed: ${res.status} ${text}`);
+      return { ok: false, skipped: `resend ${res.status}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.error(`[email] ${kind} -> ${args.to} threw:`, e);
+    return { ok: false, skipped: "exception" };
+  }
+}
+
+export type { EmailKind, BaseArgs };

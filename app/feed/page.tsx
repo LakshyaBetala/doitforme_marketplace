@@ -73,8 +73,9 @@ export default function FeedPage() {
       // Base Query
       let query = supabase
         .from("gigs")
-        .select("*, users:poster_id!inner(college)")
+        .select("*, users:poster_id!inner(college), applications(count)")
         .eq("status", "open")
+        .order("is_featured", { ascending: false })
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -94,17 +95,18 @@ export default function FeedPage() {
       if (error) throw error;
 
       if (data) {
-        // Fetch unlimited companies to auto-feature their posts
-        const { data: unlimitedCompanies } = await supabase
+        // Pro companies (pro_until > now) get their posts auto-featured.
+        const { data: proCompanies } = await supabase
            .from("companies")
-           .select("user_id")
-           .gte("free_credits", 999999);
-           
-        const premiumPosterIds = new Set(unlimitedCompanies?.map((c: any) => c.user_id) || []);
-        
+           .select("user_id, pro_until")
+           .gt("pro_until", new Date().toISOString());
+
+        const proPosterIds = new Set((proCompanies || []).map((c: any) => c.user_id));
+
         const enhancedData = data.map((gig: any) => ({
            ...gig,
-           is_featured: premiumPosterIds.has(gig.poster_id)
+           is_featured: gig.is_featured || proPosterIds.has(gig.poster_id),
+           applicant_count: Array.isArray(gig.applications) ? (gig.applications[0]?.count ?? 0) : 0,
         }));
         
         // Sort so featured gigs always appear first within this page's result set

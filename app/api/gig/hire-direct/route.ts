@@ -56,23 +56,32 @@ export async function POST(req: Request) {
 
     if (updateAppError) throw updateAppError;
 
-    // 4. Send Telegram Notification
+    // 4. Telegram + email notification to worker
     try {
-      const { sendTelegramAlert } = await import('@/lib/telegram');
       const { data: worker } = await supabaseAdmin
         .from('users')
-        .select('telegram_chat_id')
+        .select('telegram_chat_id, email, name')
         .eq('id', workerId)
         .single();
 
       if (worker?.telegram_chat_id) {
+        const { sendTelegramAlert } = await import('@/lib/telegram');
         await sendTelegramAlert(
           worker.telegram_chat_id,
           `🎉 <b>You're Hired!</b>\nYou have been directly hired for <i>${gig.title}</i>.\nThe client will contact you to coordinate the task and payment.\n<a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://doitforme.in'}/gig/${gigId}">View Task details</a>`
         );
       }
+      if (worker?.email) {
+        const { sendEmail } = await import('@/lib/email');
+        await sendEmail('hired_direct', {
+          to: worker.email,
+          recipientName: worker.name,
+          gigTitle: gig.title,
+          gigId,
+        });
+      }
     } catch (e) {
-      console.error('Telegram notification failed:', e);
+      console.error('Notification (hire-direct) failed:', e);
     }
 
     return NextResponse.json({ success: true, message: "Worker successfully hired directly" });

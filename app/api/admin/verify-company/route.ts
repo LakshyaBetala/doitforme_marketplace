@@ -67,6 +67,32 @@ export async function POST(req: Request) {
             console.error("verifyUser update error (companies):", companyError);
         }
 
+        // Notify the company they're approved
+        try {
+            const { data: targetUser } = await serviceRoleClient
+                .from("users")
+                .select("email, name, telegram_chat_id")
+                .eq("id", targetUserId)
+                .single();
+
+            if (targetUser?.email) {
+                const { sendEmail } = await import("@/lib/email");
+                await sendEmail("company_approved", {
+                    to: targetUser.email,
+                    recipientName: targetUser.name,
+                });
+            }
+            if (targetUser?.telegram_chat_id) {
+                const { sendTelegramAlert } = await import("@/lib/telegram");
+                await sendTelegramAlert(
+                    targetUser.telegram_chat_id,
+                    `✅ <b>Company approved!</b>\nYou can now post your first gig on doitforme.\n<a href="https://doitforme.in/company/post">Post a gig</a>`
+                );
+            }
+        } catch (e) {
+            console.error("Notification (verify-company) failed:", e);
+        }
+
         return NextResponse.json({ success: true, message: "Company verified." });
     } catch (err: any) {
         console.error("Verify company error:", err);

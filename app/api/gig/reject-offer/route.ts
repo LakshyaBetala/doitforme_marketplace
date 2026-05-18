@@ -49,6 +49,41 @@ export async function POST(req: Request) {
 
         if (rejectError) throw rejectError;
 
+        // Notify applicant via email
+        try {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabaseAdmin = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!
+            );
+
+            const { data: app } = await supabaseAdmin
+                .from('applications')
+                .select('worker_id, gig:gigs(title)')
+                .eq('id', applicationId)
+                .single();
+
+            if (app?.worker_id) {
+                const { data: applicant } = await supabaseAdmin
+                    .from('users')
+                    .select('email, name')
+                    .eq('id', app.worker_id)
+                    .single();
+
+                if (applicant?.email) {
+                    const { sendEmail } = await import('@/lib/email');
+                    const gigTitle = (app as any).gig?.title || null;
+                    await sendEmail('application_rejected', {
+                        to: applicant.email,
+                        recipientName: applicant.name,
+                        gigTitle,
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Notification (reject-offer) failed:", e);
+        }
+
         return NextResponse.json({ success: true });
 
     } catch (error: any) {

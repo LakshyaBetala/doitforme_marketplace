@@ -68,6 +68,42 @@ export async function POST(req: Request) {
 
     if (updateError) throw updateError;
 
+    // Notify the poster — they have 12h to review
+    try {
+      const { data: full } = await supabaseAdmin
+        .from('gigs')
+        .select('title, poster_id')
+        .eq('id', gigId)
+        .single();
+
+      if (full?.poster_id) {
+        const { data: poster } = await supabaseAdmin
+          .from('users')
+          .select('email, name, telegram_chat_id')
+          .eq('id', full.poster_id)
+          .single();
+
+        if (poster?.telegram_chat_id) {
+          const { sendTelegramAlert } = await import('@/lib/telegram');
+          await sendTelegramAlert(
+            poster.telegram_chat_id,
+            `📦 <b>Work delivered</b>\n<i>${full.title}</i> is ready for review. Escrow auto-releases in 12h.\n<a href="https://doitforme.in/gig/${gigId}">Review now</a>`
+          );
+        }
+        if (poster?.email) {
+          const { sendEmail } = await import('@/lib/email');
+          await sendEmail('work_delivered', {
+            to: poster.email,
+            recipientName: poster.name,
+            gigTitle: full.title,
+            gigId,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Notification (deliver) failed:", e);
+    }
+
     return NextResponse.json({ success: true, message: "Work delivered successfully" });
 
   } catch (error: any) {

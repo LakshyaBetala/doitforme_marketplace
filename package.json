@@ -20,7 +20,6 @@
     "autoprefixer": "^10.4.23",
     "cashfree-pg": "^5.1.0",
     "clsx": "^2.1.1",
-    "firebase": "^12.7.0",
     "framer-motion": "^12.34.0",
     "lucide-react": "^0.562.0",
     "next": "16.1.0",

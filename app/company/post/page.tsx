@@ -51,30 +51,19 @@ export default function CompanyPostTask() {
       if (!u) return router.push("/login");
 
       const { data: dbUser } = await supabase.from("users").select("role, is_verified_company").eq("id", u.id).single();
-      const { data: companyData } = await supabase.from("companies").select("id").eq("user_id", u.id).single();
-      
+      const { data: companyData } = await supabase.from("companies").select("id, pro_until, lifetime_gigs_posted").eq("user_id", u.id).single();
+
       if (dbUser?.role !== 'COMPANY' || !dbUser?.is_verified_company) {
           toast.error("Access denied. Only verified companies can post company tasks.");
           return router.push('/company/dashboard');
       }
 
-      const hasUnlimited = companyData?.free_credits >= 999999;
-      setIsSubscribed(hasUnlimited);
+      const isPro = !!(companyData?.pro_until && new Date(companyData.pro_until) > new Date());
+      setIsSubscribed(isPro);
 
-      // Check posting limit (1 per 7 days) if not subscribed
-      if (!hasUnlimited) {
-         const sevenDaysAgo = new Date();
-         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-         
-         const { count, error: countError } = await supabase
-           .from('gigs')
-           .select('*', { count: 'exact', head: true })
-           .eq('poster_id', u.id)
-           .gte('created_at', sevenDaysAgo.toISOString());
-           
-         if (count && count >= 1) {
-           setHasHitLimit(true);
-         }
+      // Free tier: 1 lifetime gig. Pro: unlimited.
+      if (!isPro && (companyData?.lifetime_gigs_posted ?? 0) >= 1) {
+        setHasHitLimit(true);
       }
 
       setUser({ ...u, user_metadata: { ...u.user_metadata, ...dbUser, company_id: companyData?.id } });
@@ -84,21 +73,36 @@ export default function CompanyPostTask() {
   }, [router, supabase]);
 
   const handleUpgrade = async () => {
-     toast.loading("Redirecting to payment gateway...");
-     // In a real flow, this redirects to Cashfree/Razorpay checkout for ₹999/month
-     setTimeout(async () => {
-        try {
-           // Simulate successful payment by setting free_credits = 999999 via our API or directly if possible.
-           // For now, we will call an upgrade endpoint or directly push to a success page
-           toast.success("Payment simulated! You are now subscribed.");
-           setHasHitLimit(false);
-           setIsSubscribed(true);
-           // Update DB (Normally done via webhook)
-           await supabase.from('companies').update({ free_credits: 999999 }).eq('user_id', user?.id);
-        } catch (e) {
-           toast.error("Upgrade failed.");
-        }
-     }, 1500);
+    const toastId = toast.loading("Opening payment gateway…");
+    try {
+      const res = await fetch("/api/company/pro/create-order", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || !data.paymentSessionId) {
+        toast.error(data.error || "Could not start payment.", { id: toastId });
+        return;
+      }
+      toast.dismiss(toastId);
+      // Cashfree drop-in: load checkout if not already on page
+      const cashfreeMode = process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox";
+      // @ts-expect-error - Cashfree global injected by checkout script
+      if (typeof window.Cashfree === "undefined") {
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error("Failed to load Cashfree SDK"));
+          document.body.appendChild(s);
+        });
+      }
+      // @ts-expect-error - Cashfree global
+      const cashfree = window.Cashfree({ mode: cashfreeMode });
+      cashfree.checkout({
+        paymentSessionId: data.paymentSessionId,
+        redirectTarget: "_self",
+      });
+    } catch (e: any) {
+      toast.error(e.message || "Upgrade failed.", { id: toastId });
+    }
   };
 
   const handleFiles = (files: FileList | null) => {
@@ -183,6 +187,28 @@ export default function CompanyPostTask() {
       const { data: newGig, error: dbError } = await supabase.from("gigs").insert(payload).select('id').single();
       if (dbError) throw dbError;
 
+      // Increment lifetime counter + flag as featured if pro
+      try {
+        if (isSubscribed && newGig?.id) {
+          await supabase.from("gigs").update({ is_featured: true }).eq("id", newGig.id);
+        }
+        const rpcRes = await supabase.rpc("increment_company_lifetime_gigs", { p_user_id: user.id });
+        if (rpcRes.error) {
+          // Fallback if RPC isn't installed yet — do a read-modify-write.
+          const { data: c } = await supabase
+            .from("companies")
+            .select("lifetime_gigs_posted")
+            .eq("user_id", user.id)
+            .single();
+          await supabase
+            .from("companies")
+            .update({ lifetime_gigs_posted: (c?.lifetime_gigs_posted ?? 0) + 1 })
+            .eq("user_id", user.id);
+        }
+      } catch (e) {
+        console.warn("post-gig bookkeeping failed (non-fatal):", e);
+      }
+
       toast.success("Company Task posted successfully!");
       router.push("/company/dashboard");
 
@@ -243,9 +269,9 @@ export default function CompanyPostTask() {
                 <Building2 className="text-[#888] w-8 h-8" />
              </div>
              
-             <h2 className="text-3xl font-black uppercase tracking-tighter italic">Posting Limit Reached</h2>
+             <h2 className="text-3xl font-black uppercase tracking-tighter italic">Free Tier Used</h2>
              <p className="text-[#888] text-sm leading-relaxed max-w-md mx-auto">
-               Your free account is limited to 1 task post per week. Upgrade to DoItForMe Unlimited to unlock unrestricted hiring power.
+               Your free account includes one lifetime gig with up to 10 applicants. Upgrade to Company Pro for unlimited posting, unlimited applicants, and featured placement.
              </p>
 
              <div className="bg-[#111] p-6 border border-[#222] text-left space-y-4">
@@ -272,7 +298,7 @@ export default function CompanyPostTask() {
                   onClick={handleUpgrade}
                   className="w-full p-5 bg-white text-black text-sm font-black uppercase tracking-widest hover:bg-gray-200 transition-colors"
                 >
-                  Upgrade to Unlimited — ₹999/mo
+                  Upgrade to Company Pro — ₹299/mo
                 </button>
              </div>
           </div>

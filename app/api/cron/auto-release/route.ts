@@ -24,12 +24,13 @@ export async function GET(req: Request) {
     const now = new Date().toISOString();
 
     // 1. Fetch eligible gigs (Timer Passed + Held + No Dispute)
+    // Status is stored lowercase ('delivered'); accept both for safety.
     const { data: gigs, error: gigsErr } = await supabase
       .from("gigs")
       .select("*, worker:users!assigned_worker_id(id, upi_id, jobs_completed), poster:users!poster_id(id, upi_id, jobs_completed)")
-      .eq("status", "DELIVERED")
-      .lt("auto_release_at", now) // <--- Check 24h timer
-      .eq("payment_status", "HELD")
+      .in("status", ["delivered", "DELIVERED"])
+      .lt("auto_release_at", now)
+      .in("payment_status", ["HELD", "ESCROW_FUNDED"])
       .is("dispute_reason", null)
       .limit(50);
 

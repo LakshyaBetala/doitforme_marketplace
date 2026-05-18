@@ -53,14 +53,14 @@ export default function CompanyTaskHubPage() {
       }
       setGig(gigData);
 
-      // Fetch company premium status
+      // Fetch company premium status (Pro)
       const { data: companyData } = await supabase
         .from('companies')
-        .select('free_credits')
+        .select('pro_until')
         .eq('user_id', authUser?.id)
         .single();
-        
-      setIsSubscribed(companyData?.free_credits >= 999999);
+
+      setIsSubscribed(!!(companyData?.pro_until && new Date(companyData.pro_until) > new Date()));
 
       // Fetch applications & worker info (including worker profile details)
       const { data: appsData } = await supabase

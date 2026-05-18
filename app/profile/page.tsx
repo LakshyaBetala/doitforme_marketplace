@@ -346,536 +346,410 @@ export default function ProfilePage() {
   if (!profile.upi_id) missingFields.push("UPI ID");
 
   return (
-    <main className="min-h-[100dvh] bg-[#0B0B11] p-4 md:p-6 lg:p-12 pb-24 text-white selection:bg-brand-purple overflow-x-hidden relative">
-
-      <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 relative z-10">
+    <main className="min-h-[100dvh] bg-[#070B14] p-4 md:p-6 lg:p-12 pb-24 text-white selection:bg-[#8825F5]/30 selection:text-white overflow-x-hidden relative font-sans">
+      <div className="max-w-5xl mx-auto space-y-6 md:space-y-8 relative z-10">
 
         {/* Back Button */}
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-white/50 hover:text-white transition-colors py-2 active:scale-95 touch-manipulation">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors py-2 active:scale-95 text-sm font-medium">
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </Link>
 
         {/* Profile Incomplete Alert */}
         {missingFields.length > 0 && !isEditing && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
-            <AlertTriangle size={20} className="text-amber-400 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-bold text-amber-300 mb-1">Profile incomplete</p>
-              <p className="text-xs text-amber-300/70">Missing: {missingFields.join(", ")}. Complete your profile to post gigs and apply.</p>
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-start md:items-center gap-3">
+              <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5 md:mt-0" />
+              <div>
+                <p className="text-sm font-bold text-amber-400">Profile incomplete</p>
+                <p className="text-xs text-amber-400/70 mt-0.5">Missing: {missingFields.join(", ")}. Complete your profile to post and apply.</p>
+              </div>
             </div>
-            <button onClick={startEditing} className="shrink-0 px-4 py-2 bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold rounded-xl hover:bg-amber-500/30 transition-all active:scale-95">
-              Add Now
+            <button onClick={startEditing} className="shrink-0 px-5 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-bold rounded-xl transition-all active:scale-95 whitespace-nowrap">
+              Complete Profile
             </button>
           </div>
         )}
 
         {/* Save Message Toast */}
         {saveMessage && (
-          <div className={`rounded-2xl p-4 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-300 ${saveMessage.type === 'success'
-            ? 'bg-green-500/10 border border-green-500/30 text-green-400'
-            : 'bg-red-500/10 border border-red-500/30 text-red-400'
-            }`}>
-            {saveMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+          <div className={`rounded-2xl p-4 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-300 ${
+            saveMessage.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'
+          }`}>
+            {saveMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
             <span className="text-sm font-bold">{saveMessage.text}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
-          {/* LEFT COLUMN */}
-          <div className="lg:col-span-5 space-y-6 md:space-y-8">
-
-        {/* Profile Header */}
-        <div className="relative overflow-hidden rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-12 shadow-2xl">
-          <div className="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-12">
-
-            {/* Avatar */}
-            <div className="relative shrink-0">
-              <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full p-[3px] ${stats.isLightningResponder
-                ? "bg-gradient-to-tr from-yellow-400 via-white to-yellow-600 shadow-[0_0_20px_rgba(250,204,21,0.4)] animate-pulse"
-                : "bg-[#0B0B11]"}`
-              }>
-                <Avatar 
-                  src={profile.avatar_url} 
-                  fallback={avatarLetter} 
-                  className="w-full h-full text-4xl md:text-5xl"
-                />
-              </div>
-              <div className="absolute bottom-0 right-0 md:bottom-1 md:right-1">
-                {stats.isLightningResponder ? (
-                  <div className="bg-yellow-500 text-black p-2 rounded-full border-4 border-[#121217] shadow-lg" title="Lightning Responder">
-                    <Zap className="w-5 h-5 md:w-6 md:h-6 fill-current" />
-                  </div>
-                ) : profile.kyc_verified ? (
-                  <div className="bg-green-500 text-black p-2 rounded-full border-4 border-[#121217]">
-                    <ShieldCheck className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
+        {/* BENTO GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          
+          {/* ==================================================== */}
+          {/* MAIN IDENTITY & EDIT CARD (LEFT BENTO) */}
+          {/* ==================================================== */}
+          <div className="lg:col-span-7 rounded-[32px] border border-white/5 bg-[#0F141E] shadow-2xl overflow-hidden relative h-fit">
+            
+            {/* Cover Photo Area */}
+            <div className="h-32 md:h-40 bg-gradient-to-br from-[#1E2536] to-[#0A0E17] relative flex items-start justify-end p-5 md:p-6">
+              <div className="absolute inset-0 bg-white/5 opacity-20 mix-blend-overlay pointer-events-none"></div>
+              
+              {/* Edit Controls Top Right */}
+              <div className="relative z-10 flex items-center gap-3">
+                {!isEditing ? (
+                  <>
+                    {!canEdit && (
+                      <span className="text-[10px] text-white/50 bg-black/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-sm border border-white/5 hidden md:flex">
+                        <Lock size={10} /> Next edit: {nextEditDate}
+                      </span>
+                    )}
+                    <button
+                      onClick={startEditing}
+                      disabled={!canEdit}
+                      className="px-4 py-2 md:px-5 md:py-2.5 bg-black/20 hover:bg-[#8825F5] border border-white/10 hover:border-[#8825F5] text-white text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-40 disabled:hover:bg-black/20 disabled:cursor-not-allowed flex items-center gap-2 backdrop-blur-sm shadow-lg"
+                    >
+                      <Edit2 size={12} /> {canEdit ? 'Edit Profile' : 'Locked'}
+                    </button>
+                  </>
                 ) : (
-                  <div className="bg-yellow-500 text-black p-2 rounded-full border-4 border-[#121217]">
-                    <ShieldAlert className="w-5 h-5 md:w-6 md:h-6" />
-                  </div>
+                  <>
+                    <button
+                      onClick={cancelEditing}
+                      className="px-4 py-2 md:py-2.5 bg-black/20 border border-white/10 text-white/60 text-xs font-bold rounded-xl hover:bg-white/5 hover:text-white transition-all active:scale-95 backdrop-blur-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveProfile}
+                      disabled={saving}
+                      className="px-5 py-2 md:py-2.5 bg-[#8825F5] text-white text-xs font-bold rounded-xl hover:bg-[#7D5FFF] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(136,37,245,0.3)]"
+                    >
+                      {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                      {saving ? "Saving..." : "Save"}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
 
-            {/* Info */}
-            <div className="flex-1 text-center md:text-left space-y-5 w-full">
-              <div>
-                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight capitalize leading-tight flex items-center justify-center md:justify-start gap-3">
-                  {displayName}
-                  {stats.isLightningResponder && (
-                    <span className="hidden md:inline-flex px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs font-bold uppercase tracking-widest rounded-full items-center gap-1">
-                      <Zap size={12} fill="currentColor" /> Lightning Responder
-                    </span>
-                  )}
-                </h1>
-                {/* Public profile link — only renders if user has claimed a username */}
-                {profile.username && (
-                  <Link
-                    href={`/u/${profile.username}`}
-                    target="_blank"
-                    className="inline-flex items-center gap-1.5 mt-2 text-xs text-white/50 hover:text-[#C9A9FF] transition-colors group"
-                  >
-                    <span className="font-mono">doitforme.in/u/{profile.username}</span>
-                    <Send size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                  </Link>
-                )}
-                {!profile.username && (
-                  <Link
-                    href="/onboarding"
-                    className="inline-flex items-center gap-1.5 mt-2 text-xs text-[#C9A9FF] hover:text-white transition-colors"
-                  >
-                    <span>+ Claim your @username</span>
-                  </Link>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3 text-white/60 text-xs md:text-sm font-medium">
-                {/* Email (always read-only) */}
-                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5 truncate max-w-full">
-                  <Mail className="w-4 h-4 text-[#0097FF] shrink-0" /> {profile.email}
-                </span>
-
-                {/* Phone */}
-                {profile.phone && (
-                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5 text-green-400">
-                    <Phone className="w-4 h-4 shrink-0" /> {profile.phone}
-                  </span>
-                )}
-
-                {/* UPI */}
-                {profile.upi_id && (
-                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#8825F5]/10 border border-[#8825F5]/30 text-[#8825F5]">
-                    <Wallet className="w-4 h-4 shrink-0" /> {profile.upi_id}
-                  </span>
-                )}
-
-                {/* College */}
-                {profile.college && (
-                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5 text-yellow-400">
-                    <GraduationCap className="w-4 h-4 shrink-0" /> {profile.college}
-                  </span>
-                )}
-
-                {/* Join Date */}
-                <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 border border-white/5 text-white/60">
-                  <Calendar className="w-4 h-4 shrink-0" /> Joined {joinDate}
-                </span>
-              </div>
-            </div>
-
-            {/* Stats Block */}
-            <div className="flex md:flex-col gap-3 w-full md:w-auto md:min-w-[140px]">
-              <div className="flex-1 p-4 md:p-5 bg-white/10 rounded-2xl border border-white/5 text-center">
-                <div className="text-2xl md:text-3xl font-black text-white">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
-                <div className="text-[10px] text-white/60 uppercase font-bold tracking-wider flex items-center justify-center gap-1 mt-1">
-                  <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> Rating
+            {/* Profile Content */}
+            <div className="px-6 md:px-10 pb-10 relative">
+              
+              {/* Avatar overlapping cover */}
+              <div className="relative -mt-16 mb-6 inline-flex">
+                <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[#0F141E] relative z-10 ${stats.isLightningResponder ? "shadow-[0_0_20px_rgba(250,204,21,0.2)]" : ""}`}>
+                  <Avatar src={profile.avatar_url} fallback={avatarLetter} className="w-full h-full text-4xl" />
                 </div>
-              </div>
-              <div className="flex-1 p-4 md:p-5 bg-white/10 rounded-2xl border border-white/5 text-center">
-                <div className="text-2xl md:text-3xl font-black text-white">{stats.completed}</div>
-                <div className="text-[10px] text-white/60 uppercase font-bold tracking-wider flex items-center justify-center gap-1 mt-1">
-                  <CheckCircle2 className="w-3 h-3 text-green-500" /> Done
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Financials & Reviews Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-          <div className="rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-8 space-y-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-[#0097FF]" /> Financials
-            </h3>
-            <div className="flex justify-between items-center p-5 bg-[#0B0B11] border border-white/5 rounded-2xl">
-              <span className="text-sm text-white/60">Total Earned</span>
-              <span className="text-xl md:text-2xl font-bold text-white">₹{stats.earnings}</span>
-            </div>
-          </div>
-
-          <div className="rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-8 space-y-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Star className="w-5 h-5 text-yellow-500" /> Reputation
-            </h3>
-            <div className="flex flex-col items-center justify-center h-[100px] bg-[#0B0B11] border border-white/5 rounded-2xl">
-              <div className="text-3xl md:text-4xl font-black text-white">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
-              <div className="text-white/60 text-[10px] tracking-widest uppercase mt-1">{profile.rating_count || 0} Reviews</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Worker Setup Link */}
-        <div className="rounded-[28px] md:rounded-[32px] border border-[#8825F5]/20 bg-gradient-to-r from-[#121217] to-[#1a1a24] p-6 md:p-8 flex flex-col items-center justify-between gap-6 shadow-lg relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#8825F5]/5 to-transparent pointer-events-none group-hover:from-[#8825F5]/10 transition-colors"></div>
-            <div className="flex items-center gap-4 relative z-10 w-full">
-              <div className="p-4 bg-[#8825F5]/20 text-[#8825F5] rounded-2xl shrink-0 border border-[#8825F5]/30 flex items-center justify-center">
-                <Briefcase size={28} />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-black text-white flex items-center gap-2">Worker Profile</h3>
-                <p className="text-white/60 text-sm mt-1">Add skills, portfolio links, and your resume to stand out.</p>
-              </div>
-            </div>
-            <Link href="/profile/worker-setup" className="w-full px-8 py-3 bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] text-white font-bold rounded-xl text-center active:scale-95 transition-transform hover:opacity-90 shadow-[0_0_15px_rgba(136,37,245,0.3)] relative z-10">
-              {profile.skills && profile.skills.length > 0 ? "Edit Details" : "Setup Now"}
-            </Link>
-        </div>
-
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div className="lg:col-span-7 space-y-6 md:space-y-8">
-
-        {/* ============================================
-            EDIT PROFILE SECTION
-        ============================================ */}
-        <div className="rounded-[28px] md:rounded-[32px] border border-white/10 bg-[#121217] p-6 md:p-8 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-black text-white flex items-center gap-2">
-              <Edit2 className="w-5 h-5 text-brand-purple" /> Edit Profile
-            </h3>
-            {!isEditing ? (
-              <div className="flex items-center gap-3">
-                {!canEdit && (
-                  <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-                    <Lock size={10} /> Next edit: {nextEditDate}
-                  </span>
-                )}
-                <button
-                  onClick={startEditing}
-                  disabled={!canEdit}
-                  className="px-5 py-2.5 bg-white/10 border border-white/10 text-white text-xs font-bold rounded-xl hover:bg-brand-purple/10 hover:border-brand-purple/30 hover:text-brand-purple transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/10 disabled:hover:border-white/10 disabled:hover:text-white"
-                >
-                  {canEdit ? 'Edit' : 'Locked'}
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={cancelEditing}
-                  className="px-4 py-2 bg-white/10 border border-white/10 text-zinc-400 text-xs font-bold rounded-xl hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={saveProfile}
-                  disabled={saving}
-                  className="px-5 py-2.5 bg-gradient-to-r from-brand-purple to-brand-pink text-white text-xs font-bold rounded-xl hover:opacity-90 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(136,37,245,0.3)]"
-                >
-                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Name */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Full Name</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/60 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
-                />
-              ) : (
-                <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                  <User size={16} className="text-zinc-500 shrink-0" />
-                  <span className={profile.name ? "text-white" : "text-zinc-600 italic"}>{profile.name || "Not set"}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Phone */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Phone Number</label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  placeholder="Enter phone number"
-                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/60 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
-                />
-              ) : (
-                <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                  <Phone size={16} className="text-zinc-500 shrink-0" />
-                  <span className={profile.phone ? "text-white" : "text-zinc-600 italic"}>{profile.phone || "Not set"}</span>
-                </div>
-              )}
-            </div>
-
-            {/* College */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                University / College {profile.college && <Lock size={8} className="text-zinc-600" />}
-              </label>
-              {isEditing && !profile.college ? (
-                <div className="space-y-2">
-                  <div className="relative z-[60]">
-                    <UniversitySelect value={editCollege} onChange={setEditCollege} />
-                  </div>
-                  {editCollege === "Other" && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <input
-                        type="text"
-                        placeholder="Enter University Name"
-                        value={editCustomCollege}
-                        onChange={(e) => setEditCustomCollege(e.target.value)}
-                        className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/60 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
-                        autoFocus
-                      />
+                
+                {/* Badges */}
+                <div className="absolute bottom-2 right-2 z-20 flex gap-2">
+                  {stats.isLightningResponder ? (
+                    <div className="bg-yellow-500 text-black p-2 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.5)]" title="Lightning Responder">
+                      <Zap className="w-4 h-4 fill-current" />
+                    </div>
+                  ) : profile.kyc_verified ? (
+                    <div className="bg-emerald-500 text-black p-2 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                  ) : (
+                    <div className="bg-amber-500 text-black p-2 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
+                      <ShieldAlert className="w-4 h-4" />
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                  <GraduationCap size={16} className="text-zinc-500 shrink-0" />
-                  <span className={profile.college ? "text-white" : "text-zinc-600 italic"}>{profile.college || "Not set"}</span>
-                </div>
-              )}
-            </div>
-
-            {/* UPI ID */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center gap-1">
-                UPI ID {profile.upi_id && <Lock size={8} className="text-zinc-600" />}
-              </label>
-              {isEditing && !profile.upi_id ? (
-                <input
-                  type="text"
-                  inputMode="text"
-                  autoComplete="off"
-                  value={editUpiId}
-                  onChange={(e) => setEditUpiId(e.target.value)}
-                  placeholder="UPI ID (e.g. name@oksbi)"
-                  className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-sm placeholder:text-white/60 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple transition-all"
-                />
-              ) : (
-                <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                  <Wallet size={16} className="text-zinc-500 shrink-0" />
-                  <span className={profile.upi_id ? "text-white" : "text-zinc-600 italic"}>{profile.upi_id || "Not set"}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Email (read-only) */}
-            <div className="space-y-2 md:col-span-2">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1">Email Address <span className="text-zinc-600">(read-only)</span></label>
-              <div className="p-4 rounded-xl bg-[#0B0B11] border border-white/5 text-sm flex items-center gap-3">
-                <Mail size={16} className="text-zinc-500 shrink-0" />
-                <span className="text-zinc-400">{profile.email}</span>
-              </div>
-            </div>
-
-            {/* Preferences/Interests */}
-            <div className="space-y-3 md:col-span-2 mt-2 pt-4 border-t border-white/5">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest ml-1 flex items-center justify-between">
-                Interests & Strengths
-                {isEditing && <span className="text-[9px] text-zinc-600 font-normal normal-case">Select 3-5 ({editPreferences.length}/5)</span>}
-              </label>
-
-              <div className="p-3 bg-brand-purple/10 border border-brand-purple/20 rounded-xl flex gap-3 items-center">
-                <Zap className="w-4 h-4 text-brand-purple shrink-0" />
-                <p className="text-[11px] text-zinc-300">
-                  Pick your interests to get notified about matching gigs instantly.
-                </p>
               </div>
 
-              {isEditing ? (
-                <div className="flex flex-wrap gap-2">
-                  {PREFERENCE_OPTIONS.map(cat => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => {
-                        if (editPreferences.includes(cat)) {
-                          setEditPreferences(editPreferences.filter(c => c !== cat));
-                        } else if (editPreferences.length < 5) {
-                          setEditPreferences([...editPreferences, cat]);
-                        }
-                      }}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${editPreferences.includes(cat) ? 'bg-brand-purple text-white border-brand-purple' : 'bg-[#1E293B]/50 border-[#1E293B] text-zinc-400 hover:text-white'}`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+              {/* Name & Title */}
+              <div className="space-y-2 mb-10">
+                {isEditing ? (
+                  <div>
+                    <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1">Full Name</label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Your name"
+                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-none flex items-center gap-3">
+                      {displayName}
+                      {stats.isLightningResponder && (
+                        <span className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase tracking-widest rounded-md items-center gap-1 hidden md:flex">
+                          <Zap size={10} fill="currentColor" /> Lightning
+                        </span>
+                      )}
+                    </h1>
+                    
+                    {profile.username ? (
+                      <Link href={`/u/${profile.username}`} target="_blank" className="text-sm text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 mt-1 w-fit">
+                        doitforme.in/u/{profile.username} <Send size={12} className="opacity-50" />
+                      </Link>
+                    ) : (
+                      <Link href="/onboarding" className="text-sm text-[#8825F5] hover:text-[#7D5FFF] transition-colors mt-1 font-medium w-fit">
+                        + Claim your @username
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Bento Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                
+                {/* Email (Always Read-only) */}
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                    Email <span className="normal-case opacity-50 font-normal">(Read Only)</span>
+                  </label>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm text-zinc-300">
+                    <Mail size={16} className="text-zinc-500 shrink-0" />
+                    <span className="truncate">{profile.email}</span>
+                  </div>
                 </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {(!profile.preferences || profile.preferences.length === 0) ? (
-                    <span className="text-sm text-zinc-600 italic px-2">No preferences set</span>
+
+                {/* Phone */}
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1">Phone</label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="Phone number"
+                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                    />
                   ) : (
-                    profile.preferences.map((cat: string) => (
-                      <span key={cat} className="px-3 py-1.5 rounded-full text-[10px] font-bold border border-white/10 bg-white/10 text-zinc-300">
-                        {cat}
-                      </span>
-                    ))
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
+                      <Phone size={16} className="text-zinc-500 shrink-0" />
+                      <span className={profile.phone ? "text-zinc-300" : "text-zinc-600 italic"}>{profile.phone || "Not set"}</span>
+                    </div>
                   )}
                 </div>
-              )}
+
+                {/* UPI ID */}
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                    UPI ID {profile.upi_id && <Lock size={10} className="text-zinc-600" />}
+                  </label>
+                  {isEditing && !profile.upi_id ? (
+                    <input
+                      type="text"
+                      value={editUpiId}
+                      onChange={(e) => setEditUpiId(e.target.value)}
+                      placeholder="name@oksbi"
+                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
+                      <Wallet size={16} className="text-zinc-500 shrink-0" />
+                      <span className={profile.upi_id ? "text-zinc-300 truncate" : "text-zinc-600 italic"}>{profile.upi_id || "Not set"}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* College */}
+                <div>
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                    University / College {profile.college && <Lock size={10} className="text-zinc-600" />}
+                  </label>
+                  {isEditing && !profile.college ? (
+                    <div className="relative z-[60]">
+                      <UniversitySelect value={editCollege} onChange={setEditCollege} />
+                      {editCollege === "Other" && (
+                        <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <input
+                            type="text"
+                            placeholder="University Name"
+                            value={editCustomCollege}
+                            onChange={(e) => setEditCustomCollege(e.target.value)}
+                            className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
+                      <GraduationCap size={16} className="text-zinc-500 shrink-0" />
+                      <span className={profile.college ? "text-zinc-300 truncate" : "text-zinc-600 italic"}>{profile.college || "Not set"}</span>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* Interests */}
+              <div className="mt-8 pt-8 border-t border-white/5">
+                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 flex justify-between items-center">
+                  Interests & Strengths
+                  {isEditing && <span className="text-[9px] text-zinc-600 font-normal normal-case">Select 3-5 ({editPreferences.length}/5)</span>}
+                </label>
+                
+                {isEditing ? (
+                  <div className="flex flex-wrap gap-2">
+                    {PREFERENCE_OPTIONS.map(cat => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => {
+                          if (editPreferences.includes(cat)) {
+                            setEditPreferences(editPreferences.filter(c => c !== cat));
+                          } else if (editPreferences.length < 5) {
+                            setEditPreferences([...editPreferences, cat]);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${editPreferences.includes(cat) ? 'bg-[#8825F5] text-white border-[#8825F5]' : 'bg-black/20 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'}`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {(!profile.preferences || profile.preferences.length === 0) ? (
+                      <span className="text-sm text-zinc-600 italic px-2">No preferences set</span>
+                    ) : (
+                      profile.preferences.map((cat: string) => (
+                        <span key={cat} className="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-white/5 bg-white/5 text-zinc-300">
+                          {cat}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
             </div>
           </div>
-        </div>
 
-        {/* KYC Section */}
-        {!profile.kyc_verified && (
-          <div className="rounded-[24px] border border-[#8825F5]/50 bg-[#1A1A24] p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden active:scale-[0.99] transition-transform">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#8825F5]/10 to-transparent pointer-events-none"></div>
-            <div className="flex items-center gap-4 relative z-10">
-              <div className="p-3 bg-[#8825F5]/20 text-[#8825F5] rounded-xl shrink-0">
-                <ShieldAlert className="w-8 h-8" />
+          {/* ==================================================== */}
+          {/* STATS & ACTIONS (RIGHT BENTO) */}
+          {/* ==================================================== */}
+          <div className="lg:col-span-5 space-y-6">
+
+            {/* Performance Stats */}
+            <div className="rounded-[32px] border border-white/5 bg-[#0F141E] p-6 md:p-8 flex items-center justify-between shadow-xl">
+              <div className="space-y-1 flex-1">
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold flex items-center gap-1.5 mb-2"><Briefcase size={12} className="text-zinc-400"/> Total Earned</div>
+                <div className="text-3xl font-black text-white tracking-tight">₹{stats.earnings}</div>
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">✓ {stats.completed} GIGS</div>
               </div>
-              <div className="text-center md:text-left">
-                <h3 className="text-lg font-bold text-white">Verification Pending</h3>
-                <p className="text-white/60 text-sm">Upload Student ID to unlock features.</p>
+              
+              <div className="w-px h-16 bg-white/10 mx-6"></div>
+              
+              <div className="space-y-1 flex-1">
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold flex items-center gap-1.5 mb-2"><Star size={12} className="text-yellow-500"/> Reputation</div>
+                <div className="flex items-baseline gap-2">
+                  <div className="text-3xl font-black text-white tracking-tight">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
+                </div>
+                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">{profile.rating_count || 0} REVIEWS</div>
               </div>
             </div>
-            <Link href="/verify-id" className="w-full md:w-auto px-8 py-3 bg-white text-black font-bold rounded-xl text-center active:scale-95 transition-all relative z-10 touch-manipulation">
-              Verify Now
-            </Link>
-          </div>
-        )}
 
-        {/* Refer & Earn Section */}
-        {referralCode && (
-          <section id="refer" className="scroll-mt-24 rounded-[28px] md:rounded-[32px] border border-brand-purple/20 bg-[#121217] p-6 md:p-8 space-y-6 relative overflow-hidden group hover:border-brand-purple/40 transition-colors">
-            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-purple/5 blur-[100px] rounded-full pointer-events-none group-hover:bg-brand-purple/10 transition-all"></div>
+            {/* KYC Pending Alert (if applicable) */}
+            {!profile.kyc_verified && (
+              <div className="rounded-[24px] border border-amber-500/20 bg-amber-500/5 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-amber-500/20 text-amber-500 rounded-xl shrink-0">
+                    <ShieldAlert size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-amber-400">Verification Pending</h3>
+                    <p className="text-amber-400/60 text-xs mt-0.5">Required to post & apply.</p>
+                  </div>
+                </div>
+                <Link href="/verify-id" className="w-full sm:w-auto px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-xs font-bold rounded-xl transition-all whitespace-nowrap text-center text-center">
+                  Verify Now
+                </Link>
+              </div>
+            )}
 
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
-              {/* Left: Referral Info */}
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-purple/20 to-brand-purple/10 flex items-center justify-center shrink-0 border border-brand-purple/30">
-                  <Gift size={26} className="text-brand-purple drop-shadow-[0_0_15px_rgba(136,37,245,0.8)]" />
+            {/* Worker Setup CTA */}
+            <div className="rounded-[32px] border border-white/5 bg-[#0F141E] p-6 md:p-8 flex flex-col gap-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-[50px] pointer-events-none transition-all"></div>
+              
+              <div className="flex items-start gap-4 relative z-10">
+                <div className="p-3 bg-white/5 rounded-xl shrink-0 border border-white/5">
+                  <Briefcase size={20} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-white flex gap-2 items-center">
-                    Refer & Earn
-                    <span className="px-2 py-0.5 rounded-full bg-brand-purple/20 text-[#C9A9FF] text-[10px] uppercase font-bold tracking-widest border border-brand-purple/30">Hot</span>
-                  </h3>
-                  <p className="text-[12px] text-zinc-400 max-w-sm mt-1">Share your code with friends. You both get 25 Reward Points when they join!</p>
+                  <h3 className="text-lg font-black text-white tracking-tight">Worker Profile</h3>
+                  <p className="text-zinc-400 text-[13px] mt-1.5 leading-relaxed">Add specialized skills, portfolio links, and your resume to stand out to employers.</p>
                 </div>
               </div>
+              
+              <Link href="/profile/worker-setup" className="w-full py-3.5 bg-white/10 border border-white/10 text-white font-bold rounded-xl text-center hover:bg-white/20 active:scale-95 transition-all relative z-10 text-sm">
+                {profile.skills && profile.skills.length > 0 ? "Edit Details" : "Setup Profile"}
+              </Link>
+            </div>
 
-              {/* Center: Code Share */}
-              <div className="flex items-center gap-3 w-full md:w-auto">
-                <div className="flex-1 md:flex-none flex items-center justify-between bg-[#0B0B11] border border-white/5 rounded-xl px-4 py-3 gap-4">
-                  <span className="text-base font-mono font-black text-white tracking-[0.2em]">{referralCode}</span>
+            {/* Refer & Earn */}
+            {referralCode && (
+              <div className="rounded-[32px] border border-white/5 bg-[#0F141E] p-6 shadow-xl relative overflow-hidden group">
+                <div className="flex items-center gap-3 mb-4 relative z-10">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                    <Gift size={14} className="text-emerald-400" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white tracking-wide">Refer & Earn</h3>
+                </div>
+                
+                <p className="text-xs text-zinc-400 mb-5 leading-relaxed relative z-10">Share your code with friends. You both get 25 Reward Points when they join!</p>
+                
+                <div className="flex flex-col sm:flex-row items-center gap-3 relative z-10">
+                  <div className="flex-1 w-full flex items-center justify-between bg-black/20 border border-white/5 rounded-xl px-4 py-3">
+                    <span className="text-sm font-mono font-bold text-white tracking-[0.2em]">{referralCode}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(referralCode);
+                        setCodeCopied(true);
+                        setTimeout(() => setCodeCopied(false), 2000);
+                      }}
+                      className="p-1.5 rounded-md hover:bg-white/10 text-zinc-500 hover:text-white transition-all"
+                    >
+                      {codeCopied ? <CheckCircle2 size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                    </button>
+                  </div>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(referralCode);
-                      setCodeCopied(true);
-                      setTimeout(() => setCodeCopied(false), 2000);
+                      const shareUrl = `${window.location.origin}/login?ref=${referralCode}`;
+                      if (navigator.share) {
+                        navigator.share({ title: 'Join DoItForMe!', text: `Use my referral code ${referralCode} to sign up!`, url: shareUrl });
+                      } else {
+                        navigator.clipboard.writeText(shareUrl);
+                        setCodeCopied(true);
+                        setTimeout(() => setCodeCopied(false), 2000);
+                      }
                     }}
-                    className="p-1.5 rounded-lg bg-white/10 hover:bg-brand-purple/20 text-zinc-400 hover:text-brand-purple transition-all active:scale-90"
-                    title="Copy Code"
+                    className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/5 text-white text-xs font-bold rounded-xl hover:bg-white/10 transition-all active:scale-95 whitespace-nowrap"
                   >
-                    {codeCopied ? <CheckCircle2 size={16} className="text-green-400" /> : <Copy size={16} />}
+                    Share
                   </button>
                 </div>
-                <button
-                  onClick={() => {
-                    const shareUrl = `${window.location.origin}/login?ref=${referralCode}`;
-                    if (navigator.share) {
-                      navigator.share({ title: 'Join DoItForMe!', text: `Use my referral code ${referralCode} to sign up!`, url: shareUrl });
-                    } else {
-                      navigator.clipboard.writeText(shareUrl);
-                      setCodeCopied(true);
-                      setTimeout(() => setCodeCopied(false), 2000);
-                    }
-                  }}
-                  className="px-6 py-3 bg-gradient-to-r from-brand-purple to-brand-pink text-white text-sm font-bold rounded-xl hover:opacity-90 transition-all active:scale-95 shadow-[0_0_15px_rgba(136,37,245,0.3)] whitespace-nowrap"
-                >
-                  Share Code
-                </button>
+              </div>
+            )}
+
+            {/* Telegram Notifications */}
+            <div className="rounded-[24px] border border-[#0088cc]/20 bg-[#0F141E] p-5 relative overflow-hidden shadow-xl">
+              <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full">
+                <div className="flex-1 w-full text-center sm:text-left">
+                  <h3 className="text-sm font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+                    <Send size={14} className="text-[#0088cc]" /> Telegram Sync
+                  </h3>
+                </div>
+                <div className="w-full sm:w-auto text-center sm:text-right">
+                  <TelegramLinkButton userId={profile.id} isLinked={!!profile.telegram_chat_id} />
+                </div>
               </div>
             </div>
 
-            {/* Right: Stats Footer */}
-            <div className="pt-4 border-t border-white/5 flex items-center gap-8 overflow-x-auto scrollbar-hide relative z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-                  <User size={16} className="text-zinc-400" />
-                </div>
-                <div>
-                  <div className="text-lg font-black text-white">{referralCount}</div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Friends Joined</div>
-                </div>
-              </div>
-
-              <div className="w-px h-8 bg-white/10 shrink-0"></div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
-                  <Zap size={16} className="text-amber-400 fill-amber-400" />
-                </div>
-                <div>
-                  <div className="text-lg font-black text-amber-400 flex items-baseline gap-1">{pointsBalance}<span className="text-[10px] opacity-60">RP</span></div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Reward Points</div>
-                </div>
-              </div>
-
-              {/* Rewards Coming Soon Display */}
-              <div className="w-px h-8 bg-white/10 shrink-0"></div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-brand-pink/10 border border-brand-pink/20 flex items-center justify-center shrink-0">
-                  <Gift size={16} className="text-brand-pink" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-brand-pink mb-0.5">Coming Soon!</div>
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Redeem Rewards</div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Telegram Notifications */}
-        <section className="rounded-[28px] md:rounded-[32px] border border-[#0088cc]/20 bg-[#121217] p-5 md:p-6 relative overflow-hidden">
-          <div className="flex items-center gap-4 relative z-10 w-full">
-            <div className="flex-1">
-              <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Send size={16} className="text-[#0088cc]" /> Telegram Notifications
-              </h3>
-            </div>
-            <div className="w-auto min-w-[200px]">
-              <TelegramLinkButton userId={profile.id} isLinked={!!profile.telegram_chat_id} />
-            </div>
           </div>
-        </section>
+        </div>
 
         {/* Logout */}
-        <div className="flex justify-center pt-4">
-          <div className="w-full active:scale-95 transition-transform touch-manipulation">
+        <div className="flex justify-center pt-8 pb-4 relative z-10">
+          <div className="w-full md:w-auto min-w-[200px] active:scale-95 transition-transform">
             <LogoutButton />
           </div>
-        </div>
-
-        </div>
         </div>
 
       </div>

@@ -63,6 +63,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Transaction already processed" });
     }
 
+    // 2.5 Defensive amount check — if Cashfree says a different number than we recorded, reject.
+    if (process.env.NODE_ENV !== 'development') {
+      const cfAmount = Number(validPayment?.payment_amount || 0);
+      const dbAmount = Number(txn.amount || 0);
+      if (cfAmount > 0 && Math.abs(cfAmount - dbAmount) > 1) {
+        console.error(`[verify-payment] amount mismatch order=${orderId} cf=${cfAmount} db=${dbAmount}`);
+        return NextResponse.json({ error: "Payment amount mismatch" }, { status: 400 });
+      }
+    }
+
     // 3. Extract fee breakdown saved by /api/gig/hire
     const breakdown = txn.provider_data?.breakdown || {};
     const basePrice    = breakdown.base_price    || 0;
@@ -181,11 +191,11 @@ export async function POST(req: Request) {
 
     console.log(`✅ Gig ${gigId} successfully processed for worker ${workerId}. Full? ${isFull}`);
 
-    // 10. Telegram notification
+    // 10. Telegram + email notification to worker
     try {
       const { data: worker } = await supabaseAdmin
         .from('users')
-        .select('telegram_chat_id')
+        .select('telegram_chat_id, email, name')
         .eq('id', workerId)
         .single();
 
@@ -196,8 +206,18 @@ export async function POST(req: Request) {
           `🎉 <b>You've been hired!</b>\nYour offer for <i>${gig.title}</i> was accepted and funds are secured in escrow.\n<a href="https://doitforme.in/gig/${gigId}">View Gig</a>`
         );
       }
+      if (worker?.email) {
+        const { sendEmail } = await import('@/lib/email');
+        await sendEmail('application_accepted', {
+          to: worker.email,
+          recipientName: worker.name,
+          gigTitle: gig.title,
+          gigId,
+          amount: basePrice,
+        });
+      }
     } catch (e) {
-      console.error("Telegram notification failed:", e);
+      console.error("Notification (verify-payment) failed:", e);
     }
 
     return NextResponse.json({ success: true, message: "Escrow funded and worker assigned successfully" });
