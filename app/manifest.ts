@@ -2,10 +2,10 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
     return {
-        name: 'DoItForMe – Campus Freelance Network',
+        name: "DoItForMe",
         short_name: 'DoItForMe',
         description:
-            "India's campus freelance network. 700+ verified students completing real tasks for peers and companies. Escrow-protected, instant UPI payouts.",
+            "India's campus hustle network — students, peers, and companies hire each other for real work. Escrow-protected, instant UPI payouts.",
         start_url: '/',
         display: 'standalone',
         background_color: '#0B0B11',

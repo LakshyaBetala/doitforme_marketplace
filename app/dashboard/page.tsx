@@ -161,11 +161,11 @@ export default function Dashboard() {
   if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="h-[100dvh] bg-[#070B1A] text-white flex flex-col font-sans overflow-hidden">
+    <div className="h-[100dvh] bg-[var(--background)] text-white flex flex-col font-sans overflow-hidden">
       {/* --------------------------------------------------
           1. TOP BAR (Global Navigation)
       -------------------------------------------------- */}
-      <header className="h-[70px] md:h-[80px] bg-gradient-to-r from-[#0B1021] to-[#070B1A] border-b border-[#1E293B] flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
+      <header className="h-[70px] md:h-[80px] bg-gradient-to-r from-[#0B1021] to-[#070B1A] border-b border-white/[0.08] flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
         <div className="flex items-center gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
@@ -183,7 +183,7 @@ export default function Dashboard() {
               placeholder="Search hustles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0F172A] border border-[#1E293B] rounded-full py-2 pl-9 pr-4 text-xs md:text-sm text-white placeholder:text-zinc-500 focus:border-brand-purple/50 focus:outline-none transition-colors shadow-inner"
+              className="w-full bg-[var(--card)] border border-white/[0.08] rounded-full py-2 pl-9 pr-4 text-xs md:text-sm text-white placeholder:text-zinc-500 focus:border-brand-purple/50 focus:outline-none transition-colors shadow-inner"
             />
           </div>
         </div>
@@ -205,14 +205,14 @@ export default function Dashboard() {
 
           {/* Profile Dropdown */}
           <div className="relative">
-            <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-[#1E293B] bg-white/10 hover:bg-white/10 transition-colors">
+            <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-white/[0.08] bg-white/10 hover:bg-white/10 transition-colors">
               <Avatar fallback={username} className="w-8 h-8" textClassName="text-sm" />
               <span className="text-sm font-medium hidden md:block">{username}</span>
               <ChevronDown size={14} className="text-zinc-500" />
             </button>
 
             {isProfileDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-56 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden py-1 z-50">
+              <div className="absolute top-full right-0 mt-2 w-56 bg-[var(--card)] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden py-1 z-50">
                 <Link href="/profile" className="flex items-center px-4 py-3 hover:bg-white/10 text-sm text-zinc-300 hover:text-white transition-colors">
                   <User size={16} className="mr-3 shrink-0" />
                   <span className="font-medium">Profile</span>
@@ -237,7 +237,7 @@ export default function Dashboard() {
         {/* --------------------------------------------------
             3. MAIN CONTENT AREA (Core Zone)
         -------------------------------------------------- */}
-        <main className="flex-1 overflow-y-auto bg-[#070B1A] scrollbar-hide relative">
+        <main className="flex-1 overflow-y-auto bg-[var(--background)] scrollbar-hide relative">
           <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-24 md:pb-8">
 
             {/* Profile Completion Alert */}
@@ -274,14 +274,14 @@ export default function Dashboard() {
             )}
 
             {/* Layer 1: Welcome + Identity */}
-            <section className="bg-[#0F172A] border border-[#1E293B] rounded-3xl p-5 md:p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group mb-4">
+            <section className="bg-[var(--card)] border border-white/[0.08] rounded-3xl p-5 md:p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group mb-4">
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-purple/10 blur-[100px] rounded-full pointer-events-none"></div>
               <div className="relative z-10 w-full md:w-auto mb-4 md:mb-0">
                 <h1 className="text-xl md:text-2xl font-black text-white tracking-tight mb-1">Good afternoon, {username.split(' ')[0]}.</h1>
-                <p className="text-zinc-400 text-xs md:text-sm">Here’s what’s happening on your campus today.</p>
+                <p className="text-zinc-400 text-xs md:text-sm">Live work from peers and companies — pick your hustle.</p>
               </div>
               <div className="hidden md:flex relative z-10 items-center justify-end">
-                <div className="bg-[#1E293B]/30 border border-[#334155] rounded-2xl px-5 py-3 backdrop-blur-md flex items-center gap-6">
+                <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-5 py-3 backdrop-blur-md flex items-center gap-6">
                   <div>
                     <p className="text-[10px] text-brand-purple font-black uppercase tracking-widest mb-1 shadow-sm flex items-center gap-1.5"><Zap size={10} className="fill-brand-purple" /> Opportunities</p>
                   </div>
@@ -290,7 +290,7 @@ export default function Dashboard() {
                       <span className="text-xl font-black text-white">{hustleCount}</span>
                       <span className="text-[10px] font-bold text-zinc-500 uppercase ml-1.5">Hustles</span>
                     </div>
-                    <div className="w-px h-6 bg-[#334155] self-center"></div>
+                    <div className="w-px h-6 bg-white/[0.1] self-center"></div>
                     <div>
                       <span className="text-xl font-black text-white">{companyTaskCount}</span>
                       <span className="text-[10px] font-bold text-zinc-500 uppercase ml-1.5">Company</span>
@@ -302,20 +302,23 @@ export default function Dashboard() {
 
             {/* Layer 2: Quick Action Bar */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link href="/post" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all">
-                  <Plus size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
+              <Link href="/post" className="flex items-center gap-4 p-5 bg-[var(--card)] border border-white/[0.08] text-white rounded-2xl hover:border-white/[0.16] active:scale-[0.99] transition-colors">
+                <div className="w-11 h-11 rounded-xl bg-[#8825F5] flex items-center justify-center shrink-0">
+                  <Plus size={20} className="text-white" strokeWidth={2.5} />
                 </div>
-                <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Create Post</span>
-                <span className="text-[10px] text-zinc-500 mt-1 text-center leading-tight">Post a task or find help on campus</span>
+                <div className="flex-1 min-w-0">
+                  <span className="block font-semibold text-sm text-white">Post a hustle</span>
+                  <span className="block text-[11px] text-white/50 mt-0.5">Need something done? Get offers in minutes.</span>
+                </div>
               </Link>
-              <Link href="/activity" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all relative">
-                  <Briefcase size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-brand-pink rounded-full border-2 border-[#0F172A]"></span>
+              <Link href="/activity" className="flex items-center gap-4 p-5 bg-[var(--card)] border border-white/[0.08] text-white rounded-2xl hover:border-white/[0.16] active:scale-[0.99] transition-colors">
+                <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center shrink-0">
+                  <Briefcase size={18} className="text-white/80" />
                 </div>
-                <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Activity Hub</span>
-                <span className="text-[10px] text-zinc-500 mt-1 text-center leading-tight">Track your posts, offers & deals</span>
+                <div className="flex-1 min-w-0">
+                  <span className="block font-semibold text-sm text-white">Activity</span>
+                  <span className="block text-[11px] text-white/50 mt-0.5">Your posts, applications, and escrow.</span>
+                </div>
               </Link>
             </section>
 
@@ -323,17 +326,17 @@ export default function Dashboard() {
 
             {/* Layer 4: Live Feed Section */}
             <section>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sticky top-0 bg-[#070B1A]/90 backdrop-blur-md py-4 z-20">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sticky top-0 bg-[var(--background)]/90 backdrop-blur-md py-4 z-20">
                 <div>
                   <h2 className="text-xl font-black text-white flex items-center gap-2 mb-1">
-                    Live Campus Feed <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse hidden sm:inline-block"></span>
+                    Live Feed <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse hidden sm:inline-block"></span>
                   </h2>
-                  <p className="text-xs text-zinc-400 font-medium">See what students need right now</p>
+                  <p className="text-xs text-zinc-400 font-medium">Fresh hustles from students and companies</p>
                 </div>
 
                 <div className="flex items-center gap-3">
                   {/* Type Filters */}
-                  <div className="flex items-center bg-[#0F172A] rounded-full p-1 border border-[#1E293B] overflow-x-auto scrollbar-hide shrink-0 max-w-[calc(100vw-120px)] md:max-w-none touch-pan-x">
+                  <div className="flex items-center bg-[var(--card)] rounded-full p-1 border border-white/[0.08] overflow-x-auto scrollbar-hide shrink-0 max-w-[calc(100vw-120px)] md:max-w-none touch-pan-x">
                     <FeedTab label="All" active={feedType === 'ALL'} onClick={() => handleFeedTypeChange('ALL')} />
                     <FeedTab label="Hustles" active={feedType === 'HUSTLE'} onClick={() => handleFeedTypeChange('HUSTLE')} />
                     <FeedTab label="Company Tasks" active={feedType === 'COMPANY_TASK'} onClick={() => handleFeedTypeChange('COMPANY_TASK')} />
@@ -343,12 +346,12 @@ export default function Dashboard() {
                   <div className="relative">
                     <button
                       onClick={() => setIsFilterOpen(!isFilterOpen)}
-                      className={`p-2 rounded-full border transition-all ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-[#1E293B] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
+                      className={`p-2 rounded-full border transition-all ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
                     >
                       <Filter size={16} />
                     </button>
                     {isFilterOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-48 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                      <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--card)] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
                         <div className="p-2 space-y-1">
                           <button
                             onClick={() => { setCampusFilter('ALL'); setIsFilterOpen(false); }}
@@ -374,13 +377,13 @@ export default function Dashboard() {
                     <div className="relative">
                       <button
                         onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}
-                        className={`p-2 rounded-full border transition-all ${categoryFilter !== 'ALL' ? 'bg-brand-pink text-white border-brand-pink' : 'border-[#1E293B] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
+                        className={`p-2 rounded-full border transition-all ${categoryFilter !== 'ALL' ? 'bg-brand-pink text-white border-brand-pink' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
                         title="Filter by Category"
                       >
                         <Tags size={16} />
                       </button>
                       {isCategoryFilterOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-64 bg-[#0F172A] border border-[#1E293B] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 max-h-[300px] overflow-y-auto">
+                        <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--card)] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 max-h-[300px] overflow-y-auto">
                           <div className="p-2 space-y-1">
                             <button
                               onClick={() => { setCategoryFilter('ALL'); setIsCategoryFilterOpen(false); }}
@@ -465,7 +468,7 @@ function SidebarLink({ href, icon: Icon, label, active, badge }: any) {
 
 function StatCard({ title, value, icon: Icon, color, bg, subtext, progress }: any) {
   return (
-    <div className="bg-[#0F172A] border border-[#1E293B] rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl transition-all h-[150px] flex flex-col justify-between">
+    <div className="bg-[var(--card)] border border-white/[0.08] rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl transition-all h-[150px] flex flex-col justify-between">
       <div className="flex justify-between items-start relative z-10 mb-2">
         <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center ${color} shadow-inner group-hover:scale-110 transition-transform`}>
           <Icon size={20} />
@@ -561,7 +564,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 animate-in fade-in">
-      <div className="w-full max-w-md max-h-[90vh] flex flex-col bg-[#0F172A] border border-[#1E293B] rounded-[24px] md:rounded-3xl p-5 md:p-8 pt-8 relative shadow-2xl overflow-y-auto scrollbar-hide">
+      <div className="w-full max-w-md max-h-[90vh] flex flex-col bg-[var(--card)] border border-white/[0.08] rounded-[24px] md:rounded-3xl p-5 md:p-8 pt-8 relative shadow-2xl overflow-y-auto scrollbar-hide">
         <button onClick={onClose} className="absolute top-3 right-3 md:top-4 md:right-4 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
           <X size={20} />
         </button>
@@ -579,7 +582,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
             <button
               key={cat}
               onClick={() => handleToggle(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all touch-manipulation ${selected.includes(cat) ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.4)]' : 'bg-[#1E293B]/50 border-[#1E293B] text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all touch-manipulation ${selected.includes(cat) ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.4)]' : 'bg-white/[0.04] border-white/[0.08] text-zinc-400 hover:text-white hover:border-zinc-600'}`}
             >
               {cat}
             </button>
