@@ -134,7 +134,8 @@ export default function GigDetailsPage() {
   // Both flavours render the same brand purple accent; no off-brand indigo.
   const accentColor = '#8825F5';
   const isMyGig = currentUser?.id === gig.poster_id;
-  const timeAgo = gig.created_at ? getTimeAgo(new Date(gig.created_at)) : '';
+  const safeDate = gig.created_at?.endsWith("Z") || gig.created_at?.includes("+") ? gig.created_at : `${gig.created_at}Z`;
+  const timeAgo = gig.created_at ? getTimeAgo(new Date(safeDate)) : '';
 
   return (
     <div className={`min-h-[100dvh] bg-[#0B0B11] text-white selection:bg-[#8825F5]/30 selection:text-white pb-36 font-sans relative`}>
@@ -218,7 +219,10 @@ export default function GigDetailsPage() {
             </div>
             <div className="flex-1 min-w-0 space-y-1">
               <p className="font-bold text-xl text-white tracking-tight truncate">{poster.name}</p>
-              <p className="text-[13px] font-medium text-zinc-400 bg-white/5 px-2 py-1 rounded-md inline-block mt-2 border border-white/5">{poster.college || 'EXTERNAL_ORG'} &bull; {poster.rating ? `${poster.rating} RATIO` : 'NEW_UNIT'}</p>
+              <p className="text-[13px] font-medium text-zinc-400 bg-white/5 px-2 py-1 rounded-md inline-block mt-2 border border-white/5">
+                {!isCompanyTask && <>{poster.college || 'EXTERNAL_ORG'} &bull; </>}
+                {poster.rating ? `${poster.rating} RATIO` : 'NEW_UNIT'}
+              </p>
             </div>
             {!isMyGig && (
               <button 

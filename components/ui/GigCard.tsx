@@ -131,6 +131,46 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
   }
 
   // detailed variant
+  if (gig.listing_type === "COMPANY_TASK") {
+    return (
+      <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
+        <div className={`bg-gradient-to-br from-[#0B0B11] to-[#13131A] rounded-2xl p-5 md:p-6 border border-[#8825F5]/30 hover:border-[#8825F5]/60 transition-all flex flex-col h-full relative overflow-hidden shadow-[0_0_15px_rgba(136,37,245,0.1)] hover:shadow-[0_0_25px_rgba(136,37,245,0.2)] group-hover:-translate-y-1`}>
+          {/* Decorative glow */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#8825F5]/20 rounded-full blur-[40px] pointer-events-none group-hover:bg-[#8825F5]/30 transition-colors"></div>
+          
+          <div className="flex items-center justify-between mb-3 relative z-10">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#8825F5]/20 text-[#D4BFFF] border border-[#8825F5]/40 text-[10px] font-black tracking-widest uppercase shadow-[0_0_10px_rgba(136,37,245,0.2)]">
+              <Building2 size={12} />
+              Enterprise
+            </span>
+            {isHighlighted && (
+              <span className="text-[10px] font-bold tracking-widest text-amber-400 uppercase bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">Featured</span>
+            )}
+          </div>
+          <h3 className="font-bold text-white text-lg leading-snug line-clamp-2 mb-3 group-hover:text-[#D4BFFF] transition-colors relative z-10">
+            {gig.title}
+          </h3>
+          <div className="flex items-baseline gap-1 mb-auto relative z-10">
+            {gig.price != null ? (
+              <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-[#D4BFFF] tracking-tight">₹{gig.price}</span>
+            ) : (
+              <span className="text-xs font-semibold text-[#8825F5]">Open offer</span>
+            )}
+          </div>
+          <div className="mt-5 pt-4 border-t border-[#8825F5]/20 flex items-center justify-between relative z-10">
+            <span className="flex items-center gap-1.5 text-[11px] font-medium text-white/60">
+              <MapPin size={11} className="text-[#8825F5]" /> {gig.is_physical ? "On-Site" : "Remote"}
+            </span>
+            <div className="flex items-center gap-2">
+              {showStatus && <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>}
+              <span className="text-[11px] font-medium text-white/40">{timeAgo(gig.created_at)}</span>
+            </div>
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
       <div className={`bg-[#13131A] rounded-2xl p-5 md:p-6 border transition-colors flex flex-col h-full ${ringClass}`}>
