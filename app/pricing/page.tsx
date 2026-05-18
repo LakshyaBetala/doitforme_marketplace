@@ -4,7 +4,7 @@ import PricingContent from "./PricingContent";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
 
 export const metadata: Metadata = {
-  title: "Pricing – DoItForMe Student Gig Platform Fees",
+  title: "Pricing – Student Gig Platform Fees",
   description:
     "DoItForMe pricing is simple: Direct Connect is completely FREE. Optional Escrow Protection for tasks ₹500+ costs just 3%. No hidden charges. Instant UPI payouts.",
   alternates: { canonical: `${BASE_URL}/pricing` },

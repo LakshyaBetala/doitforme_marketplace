@@ -26,6 +26,17 @@ function verifySignature(rawBody: string, timestamp: string, providedB64: string
   }
 }
 
+// GET → simple health/liveness response so the URL doesn't 405 in a browser.
+// Cashfree only sends POSTs; the real work is below.
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    endpoint: "cashfree-webhook",
+    method: "POST",
+    message: "Endpoint operational. Cashfree posts JSON here with HMAC signature.",
+  });
+}
+
 export async function POST(req: Request) {
   const rawBody = await req.text();
   const timestamp = req.headers.get("x-webhook-timestamp") || "";

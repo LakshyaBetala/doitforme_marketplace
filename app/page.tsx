@@ -4,7 +4,9 @@ import LandingPage from "@/components/home/LandingPage";
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
 
 export const metadata: Metadata = {
-  title: "DoItForMe – India's Campus Freelance Network",
+  // Absolute: prevents the layout's "%s | DoItForMe" template from
+  // appending a second "DoItForMe" to the home tab title.
+  title: { absolute: "DoItForMe – India's Campus Freelance Network" },
   description:
     "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Escrow-protected, instant UPI payouts.",
   keywords: [
