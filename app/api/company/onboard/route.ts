@@ -69,11 +69,20 @@ export async function POST(req: Request) {
             }
         };
 
-        if (password) {
-            updateData.password = password;
-        }
-
         await supabase.auth.updateUser(updateData);
+
+        // Update password using admin client for reliability
+        if (password) {
+            const { error: passwordError } = await serviceRoleClient.auth.admin.updateUserById(
+                user.id,
+                { password: password }
+            );
+            
+            if (passwordError) {
+                console.error("Error setting company password via admin:", passwordError);
+                // We shouldn't fail the whole request just for this, but it's important to log
+            }
+        }
 
         // Insert into companies table with user_id and contact_email linked
         const { error: companyInsertError } = await serviceRoleClient.from('companies').upsert([{

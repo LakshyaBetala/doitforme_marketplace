@@ -271,9 +271,14 @@ export default function CompanyOnboardingPage() {
                         >
                             <ArrowLeft size={16} /> Return to Home
                         </button>
-                        <div className="flex items-center gap-2">
-                            <Image src="/Doitforme_logo.png" alt="DoItForMe" width={20} height={20} className="object-contain opacity-50" />
-                            <span className="text-[10px] font-bold text-[#666] uppercase tracking-widest leading-none">DoItForMe</span>
+                        <div className="flex items-center gap-4">
+                            <Link href="/company/login" className="text-sm font-medium text-[#C084FC] hover:text-purple-400 transition-colors">
+                                Login Instead
+                            </Link>
+                            <div className="flex items-center gap-2 border-l border-[#333] pl-4">
+                                <Image src="/Doitforme_logo.png" alt="DoItForMe" width={20} height={20} className="object-contain opacity-50" />
+                                <span className="text-[10px] font-bold text-[#666] uppercase tracking-widest leading-none">DoItForMe</span>
+                            </div>
                         </div>
                     </div>
 
@@ -394,7 +399,12 @@ export default function CompanyOnboardingPage() {
                                     >
                                         {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <>Complete Registration <ArrowRight size={18} /></>}
                                     </button>
-                                    <p className="text-xs text-zinc-500 text-center font-medium mt-4">No credit card required. Fast verification within 24 hours.</p>
+                                    <div className="mt-6 text-center space-y-2">
+                                        <p className="text-xs text-zinc-500 font-medium">No credit card required. Fast verification within 24 hours.</p>
+                                        <p className="text-sm text-zinc-400">
+                                            Already have an enterprise node? <Link href="/company/login" className="text-white hover:underline font-medium">Log in</Link>
+                                        </p>
+                                    </div>
                                 </form>
                             )}
 
