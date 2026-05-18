@@ -49,7 +49,7 @@ export async function POST(req: Request) {
         // Update user
         const { error: userError } = await serviceRoleClient
             .from("users")
-            .update({ is_verified_company: true })
+            .update({ is_verified_company: true, role: 'COMPANY' })
             .eq("id", targetUserId);
 
         if (userError) {

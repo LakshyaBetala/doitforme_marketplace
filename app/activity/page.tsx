@@ -101,34 +101,43 @@ export default function ActivityHubPage() {
       }
   };
 
-  const handleSubmitWork = async (gigId: string, applicationId: string) => {
-      toast.loading("Submitting work...");
+  const handleSubmitWork = async (gigId: string, applicationId: string, isDirect: boolean = false) => {
+      toast.loading(isDirect ? "Marking as done..." : "Submitting work...");
       
       // Set auto_release_at to NOW() + 24 HOURS
       const releaseDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const updateData = isDirect 
+          ? { status: 'SUBMITTED' } 
+          : { status: 'SUBMITTED', auto_release_at: releaseDate };
+          
       const { error } = await supabase.from('gigs')
-         .update({ status: 'SUBMITTED', auto_release_at: releaseDate })
+         .update(updateData)
          .eq('id', gigId);
       
       if(error) toast.error("Failed to submit work");
       else {
-          toast.success("Work submitted! 24-hour review timer started.");
+          toast.success(isDirect ? "Work marked as done!" : "Work submitted! 24-hour review timer started.");
           setWorkingGigs(prev => prev.map(app => 
-              app.gig?.id === gigId ? { ...app, gig: { ...app.gig, status: 'SUBMITTED', auto_release_at: releaseDate } } : app
+              app.gig?.id === gigId ? { ...app, gig: { ...app.gig, ...updateData } } : app
           ));
       }
   };
 
-  const handleApproveWork = async (gigId: string) => {
-      toast.loading("Releasing funds...");
+  const handleApproveWork = async (gigId: string, isDirect: boolean = false) => {
+      toast.loading(isDirect ? "Closing task..." : "Releasing funds...");
+      
+      const updateData = isDirect
+          ? { status: 'completed' }
+          : { status: 'completed', escrow_status: 'RELEASED' };
+          
       const { error } = await supabase.from('gigs')
-         .update({ status: 'completed', escrow_status: 'RELEASED' })
+         .update(updateData)
          .eq('id', gigId);
       
-      if(error) toast.error("Failed to release funds");
+      if(error) toast.error(isDirect ? "Failed to close task" : "Failed to release funds");
       else {
-          toast.success("Work approved, funds released!");
-          setHiringGigs(prev => prev.map(g => g.id === gigId ? { ...g, status: 'completed', escrow_status: 'RELEASED' } : g));
+          toast.success(isDirect ? "Task closed successfully!" : "Work approved, funds released!");
+          setHiringGigs(prev => prev.map(g => g.id === gigId ? { ...g, ...updateData } : g));
       }
   };
 
@@ -209,15 +218,15 @@ export default function ActivityHubPage() {
                      <MessageSquare size={14} /> Chat
                    </button>
 
-                   {gig.status === 'AWAITING_FUNDS' && (
+                   {gig.status === 'AWAITING_FUNDS' && gig.payment_gateway !== 'DIRECT' && (
                      <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-all shadow-lg shadow-[#C084FC]/20 flex items-center gap-2 justify-center">
                        <ShieldCheck size={14} /> Fund Escrow (3%)
                      </button>
                    )}
 
-                   {(gig.status === 'SUBMITTED' || gig.status === 'delivered') && (
-                     <button onClick={() => handleApproveWork(gig.id)} className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-all shadow-lg shadow-green-500/20 flex items-center gap-2 justify-center">
-                       <CheckCircle size={14} /> Approve & Release
+                   {(gig.status === 'SUBMITTED' || gig.status === 'delivered' || (gig.status === 'assigned' && gig.payment_gateway === 'DIRECT')) && (
+                     <button onClick={() => handleApproveWork(gig.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-all shadow-lg shadow-green-500/20 flex items-center gap-2 justify-center">
+                       <CheckCircle size={14} /> {gig.payment_gateway === 'DIRECT' ? 'Close Task' : 'Approve & Release'}
                      </button>
                    )}
                 </div>
@@ -270,15 +279,15 @@ export default function ActivityHubPage() {
                        <MessageSquare size={14} /> Chat
                      </button>
 
-                     {app.status === 'accepted' && gig.status === 'AWAITING_FUNDS' && (
+                     {app.status === 'accepted' && gig.status === 'AWAITING_FUNDS' && gig.payment_gateway !== 'DIRECT' && (
                         <div className="flex-1 py-2.5 rounded-xl bg-yellow-500/10 text-yellow-500 font-bold text-sm text-center border border-yellow-500/20 flex items-center justify-center gap-2">
                           <Clock size={14} /> Waiting for Escrow
                         </div>
                      )}
 
                      {app.status === 'accepted' && (gig.status === 'assigned') && (
-                       <button onClick={() => handleSubmitWork(gig.id, app.id)} className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-all shadow-lg shadow-[#C084FC]/20 flex items-center gap-2 justify-center">
-                         <ArrowRight size={14} /> Submit Work
+                       <button onClick={() => handleSubmitWork(gig.id, app.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-all shadow-lg shadow-[#C084FC]/20 flex items-center gap-2 justify-center">
+                         <ArrowRight size={14} /> {gig.payment_gateway === 'DIRECT' ? 'Mark as Done' : 'Submit Work'}
                        </button>
                      )}
                   </div>
