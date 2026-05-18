@@ -10,12 +10,11 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   Plus, Briefcase, Search, MapPin, MessageSquare, User,
-  Home, ShoppingBag, Inbox, Star, Settings, LogOut, Bell, ChevronDown, CheckCircle2,
+  Home, Inbox, Star, Settings, LogOut, Bell, ChevronDown, CheckCircle2,
   DollarSign, ArrowRight, Zap, ShieldCheck, AlertTriangle, X, Gift, Copy, Clock, Filter, Tags
 } from "lucide-react";
 import InstallAppButton from "@/components/InstallAppButton";
 import EnableNotificationsButton from "@/components/EnableNotificationsButton";
-import CrossDomainLink from "@/components/CrossDomainLink";
 import Avatar from "@/components/ui/Avatar";
 import GigCard from "@/components/ui/GigCard";
 import EmptyState from "@/components/ui/EmptyState";
@@ -302,7 +301,7 @@ export default function Dashboard() {
             </section>
 
             {/* Layer 2: Quick Action Bar */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Link href="/post" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
                 <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all">
                   <Plus size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
@@ -310,15 +309,9 @@ export default function Dashboard() {
                 <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Create Post</span>
                 <span className="text-[10px] text-zinc-500 mt-1 text-center leading-tight">Post a task or find help on campus</span>
               </Link>
-              <CrossDomainLink targetDomain="https://marketforme.in" redirectTo="/" className="flex flex-col items-center justify-center py-6 px-4 bg-gradient-to-r from-brand-purple to-brand-pink text-white rounded-2xl hover:opacity-95 active:scale-95 group hover:-translate-y-1 transition-all shadow-[0_0_20px_rgba(136,37,245,0.2)] hover:shadow-[0_0_30px_rgba(136,37,245,0.6)]">
-                <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><ShoppingBag size={24} /></div>
-                <span className="font-black tracking-wide">Campus Market</span>
-                <span className="text-[10px] text-white/60 mt-1 text-center leading-tight">Buy & Sell on MarketForMe</span>
-              </CrossDomainLink>
               <Link href="/activity" className="flex flex-col items-center justify-center py-6 px-4 bg-[#0F172A] border border-[#1E293B] text-white rounded-2xl hover:bg-[#1E293B]/50 hover:border-brand-purple/50 active:scale-95 group hover:-translate-y-1 transition-all shadow-lg hover:shadow-[0_0_20px_rgba(136,37,245,0.15)]">
                 <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-brand-purple/20 transition-all relative">
                   <Briefcase size={24} className="text-zinc-400 group-hover:text-brand-purple transition-colors" />
-                  {/* Subtle notification dot for active applications */}
                   <span className="absolute top-2 right-2 w-2 h-2 bg-brand-pink rounded-full border-2 border-[#0F172A]"></span>
                 </div>
                 <span className="font-black tracking-wide text-zinc-300 group-hover:text-white transition-colors">Activity Hub</span>

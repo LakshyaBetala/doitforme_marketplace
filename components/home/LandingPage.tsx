@@ -1289,5 +1289,4 @@ const posterFaq = [
   { q: "How do I post a task on DoItForMe?", a: "Simply go to Dashboard → Post a Task. Describe what you need, set a budget, and students near you will apply within minutes." },
   { q: "How does payment work for posters?", a: "You pay upfront into escrow. The money is only released to the worker after you approve their work. If they don't deliver, you get a full refund." },
   { q: "What kind of tasks can I post?", a: "Anything campus-related! Errands, assignments, design work, coding help, event setup, tutoring — you name it." },
-  { q: "Where is the Marketplace?", a: "The Buy/Sell/Rent marketplace has moved to MarketForMe.in — our dedicated campus marketplace. Same login, same community!" },
 ];
