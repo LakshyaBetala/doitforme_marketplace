@@ -56,6 +56,11 @@ function AuthPage() {
       setReferralCode(refCode.toUpperCase());
       setView('SIGNUP'); // Auto-switch to sign-up when coming via referral
     }
+
+    const errCode = searchParams.get('error');
+    if (errCode === 'enterprise_account') {
+      setMessage("Enterprise accounts must use the Company Portal. Please click 'Company Portal' below.");
+    }
   }, [searchParams]);
 
   // --- HELPER: SYNC USER TO DB ---
@@ -110,6 +115,19 @@ function AuthPage() {
       error = res.error;
 
       if (!error) {
+        // Fetch role to ensure companies don't use student login
+        const { data: dbUser } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", res.data.user?.id)
+          .single();
+
+        if (dbUser?.role === "COMPANY") {
+          await supabase.auth.signOut();
+          setLoading(false);
+          return setMessage("Enterprise accounts must use the Company Portal. Please click 'Company Portal' below.");
+        }
+
         await syncUser(res.data.user?.id!, email);
         router.push("/dashboard");
         return;

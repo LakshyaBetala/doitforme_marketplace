@@ -4,7 +4,7 @@ import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Eye, EyeOff, Building2, ExternalLink, ArrowRight, ShieldCheck, ListChecks, Network } from "lucide-react";
+import { Eye, EyeOff, Building2, ExternalLink, ArrowRight, ArrowLeft, ShieldCheck, ListChecks, Network } from "lucide-react";
 import Link from "next/link";
 
 export default function CompanyLoginPage() {

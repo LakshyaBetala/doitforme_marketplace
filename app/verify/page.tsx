@@ -139,6 +139,19 @@ function VerifyContent() {
       return setError(verifyError?.message || "Invalid or expired OTP. Try again.");
     }
 
+    // Block companies from logging in through the student portal
+    const { data: dbUser } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (dbUser?.role === "COMPANY") {
+      await supabase.auth.signOut();
+      setLoading(false);
+      return setError("Enterprise accounts must use the Company Portal. Go back to login and click 'Company Portal'.");
+    }
+
     // 2. ACCOUNT CREATION (Only happens AFTER Verification)
     try {
       // Extract metadata saved during signup

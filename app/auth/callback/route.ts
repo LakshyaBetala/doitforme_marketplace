@@ -30,6 +30,18 @@ export async function GET(request: Request) {
         const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (!error && data.user) {
+            // Fetch role to ensure companies don't use student OAuth
+            const { data: dbUser } = await supabase
+                .from("users")
+                .select("role")
+                .eq("id", data.user.id)
+                .single();
+
+            if (dbUser?.role === "COMPANY") {
+                await supabase.auth.signOut();
+                return NextResponse.redirect(`${origin}/login?error=enterprise_account`);
+            }
+
             // Sync user to the users table
             try {
                 await fetch(`${origin}/api/auth/create-user`, {
