@@ -445,9 +445,19 @@ function AuthPage() {
             </p>
           )}
           
-          <div className="mt-6 pt-6 border-t border-white/5">
-            <Link href="/company/login" className="text-white/50 hover:text-white transition-colors flex items-center justify-center gap-2 font-bold text-[10px] uppercase tracking-widest">
-               Company Account? Enterprise Login
+          <div className="mt-8 pt-8 border-t border-white/10">
+            <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold mb-3">Hiring Talent?</p>
+            <Link href="/company/login" className="group flex items-center justify-between bg-black/40 hover:bg-black/80 border border-white/10 hover:border-white/30 p-4 rounded-xl transition-all w-full">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                  <Image src="/Doitforme_logo.png" alt="Company" width={16} height={16} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="text-left">
+                  <p className="text-white text-xs font-bold uppercase tracking-widest leading-none mb-1">Company Portal</p>
+                  <p className="text-white/40 text-[10px] leading-none">Login as an Enterprise</p>
+                </div>
+              </div>
+              <ArrowRight size={16} className="text-white/30 group-hover:text-white transition-colors group-hover:translate-x-1" />
             </Link>
           </div>
         </div>

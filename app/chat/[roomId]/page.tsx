@@ -457,9 +457,9 @@ function ChatRoomContent() {
         <header className="px-4 py-3 border-b border-white/10 bg-[#121217] flex items-center gap-4 shadow-lg z-20 shrink-0">
           <div className="flex items-center gap-3">
             {isPoster && <button onClick={() => setSidebarOpen(true)} className="md:hidden text-white/70"><Menu size={24} /></button>}
-            <Link href={`/gig/${roomId}`} className="p-2 rounded-full bg-white/10 hover:bg-white/10">
+            <button onClick={() => router.back()} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
               <ArrowLeft size={20} className="text-white/70" />
-            </Link>
+            </button>
 
             <div>
               <h1 className="font-bold text-sm md:text-base leading-tight">

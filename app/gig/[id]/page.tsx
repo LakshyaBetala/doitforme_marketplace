@@ -17,6 +17,7 @@ export default function GigDetailsPage() {
 
   const [gig, setGig] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [poster, setPoster] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [appCount, setAppCount] = useState(0);
@@ -32,6 +33,16 @@ export default function GigDetailsPage() {
       if (!gigId) return;
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
+
+      // Fetch user's worker profile for profile gate
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('users')
+          .select('skills, resume_url, portfolio_links, name, phone')
+          .eq('id', user.id)
+          .single();
+        if (profileData) setUserProfile(profileData);
+      }
 
       const { data: gigData } = await supabase
         .from('gigs')
@@ -62,6 +73,16 @@ export default function GigDetailsPage() {
 
   const handleApply = async () => {
     if (!currentUser) return router.push("/login");
+
+    // Profile Gate: Require at least skills OR resume before applying
+    const hasSkills = userProfile?.skills && userProfile.skills.length > 0;
+    const hasResume = !!userProfile?.resume_url;
+    if (!hasSkills && !hasResume) {
+      toast.error("Complete your worker profile first — add skills or upload a resume to apply.");
+      router.push("/profile/worker-setup");
+      return;
+    }
+
     setIsApplying(true);
     
     try {

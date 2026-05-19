@@ -249,115 +249,195 @@ export default function CompanyTaskHubPage() {
              <div className="grid gap-px bg-[#222] border border-[#222]">
                {sortedApplications.map(app => {
                  const worker = app.users;
+                 const isDirect = app.payment_preference === 'DIRECT';
+                 const isAccepted = app.status === 'accepted';
+                 const isPending = app.status === 'pending';
+                 const isApplied = app.status === 'applied';
                  return (
-                    <div key={app.id} className="bg-[#0a0a0a] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-8 group hover:bg-[#111] transition-colors relative">
-                     {app.status === 'accepted' && (
+                    <div key={app.id} className="bg-[#0a0a0a] p-6 md:p-8 flex flex-col gap-6 group hover:bg-[#111] transition-colors relative">
+                     {isAccepted && (
                         <div className="absolute top-0 left-0 w-1 h-full bg-white"></div>
                      )}
-                     
-                     <div className="flex flex-col sm:flex-row items-start gap-6 md:gap-8 w-full md:flex-1">
-                       <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-all">
-                         {worker?.avatar_url ? (
-                           <Image src={worker.avatar_url} alt="Profile" width={64} height={64} className="object-cover w-full h-full" />
-                         ) : (
-                           <span className="font-black text-xl text-[#333] italic uppercase">{worker?.name?.[0] || "?"}</span>
-                         )}
-                       </div>
-                       <div className="space-y-4 w-full">
-                         <div className="flex flex-wrap items-center gap-4">
-                           <h4 className="font-black text-xl text-white uppercase italic tracking-tight">{worker?.name || "Anonymous"}</h4>
-                           <span className={`text-[9px] font-black tracking-widest px-2 py-1 border ${
-                             app.status === 'accepted' ? 'bg-white text-black border-white' : 
-                             app.status === 'rejected' ? 'bg-transparent text-red-500 border-red-500/30' : 
-                             'bg-transparent text-[#444] border-[#222]'
-                           } uppercase`}>
-                             {app.status}
-                           </span>
-                         </div>
-                         <div className="text-[10px] font-bold text-[#444] tracking-widest uppercase break-words">
-                            <span className="text-[#888]">{worker?.college || "No college listed"}</span> // {worker?.email}
-                         </div>
-                         {(worker?.skills?.length > 0 || worker?.experience) && (
-                           <div className="text-xs text-[#888] flex flex-col gap-1">
-                             {worker?.skills?.length > 0 && <p><span className="text-[#555] font-bold uppercase text-[9px] tracking-widest">Skills:</span> {worker.skills.join(', ')}</p>}
-                             {worker?.experience && <p><span className="text-[#555] font-bold uppercase text-[9px] tracking-widest">Experience:</span> {worker.experience}</p>}
-                           </div>
-                         )}
-                         <div className="flex flex-wrap gap-3">
-                           <Link href={`/u/${worker?.username || app.worker_id}`} target="_blank" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111]">
-                             View Profile
-                           </Link>
-                           {worker?.resume_url && (
-                             <a href={worker.resume_url} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111]">View Resume</a>
-                           )}
-                           {worker?.portfolio_links?.length > 0 && worker.portfolio_links.map((link: string, idx: number) => (
-                             <a key={idx} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111]">Portfolio {idx + 1}</a>
-                           ))}
-                         </div>
-                         {app.pitch && (
-                           <div className="text-sm text-[#888] bg-[#0B0B11] border border-[#222] p-5 md:p-6 w-full italic leading-relaxed">
-                             <span className="uppercase text-[8px] font-bold text-[#333] block mb-3 tracking-[0.3em]">Application Pitch</span>
-                             "{app.pitch}"
-                           </div>
-                         )}
-                       </div>
-                     </div>
 
-                     <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-px bg-[#222] border border-[#222] w-full md:w-auto overflow-hidden">
-                        {(app.status === 'applied') && (
-                          <>
-                            <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all">
-                              {hiringId === app.id ? 'Processing...' : (app.payment_preference === 'DIRECT' ? 'Connect (WhatsApp)' : `Hire via Escrow`)}
-                            </button>
-                            <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
-                          </>
-                        )}
-                        {(app.status === 'pending') && (
-                          <>
-                            {app.payment_preference === 'DIRECT' && (
-                              <button disabled={hiringId === app.id} onClick={async () => {
-                                setHiringId(app.id);
-                                try {
-                                  const res = await fetch("/api/gig/hire-direct", {
-                                    method: "POST",
-                                    headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ gigId: gig.id, workerId: app.worker_id, applicationId: app.id })
-                                  });
-                                  const data = await res.json();
-                                  if (!res.ok) throw new Error(data.error || "Failed to finalize direct hire");
-                                  
-                                  setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'accepted' } : a));
-                                  toast.success("Worker Officially Hired!");
-                                } catch(e: any) {
-                                  toast.error(e.message);
-                                } finally {
-                                  setHiringId(null);
-                                }
-                              }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#C9A9FF] hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
-                                Finalize Hire
+                     {/* Post-hire guidance banner */}
+                     {isAccepted && (
+                       <div className={`w-full rounded-lg p-4 border ${isDirect ? 'bg-[#25D366]/10 border-[#25D366]/20' : 'bg-[#8825F5]/10 border-[#8825F5]/20'}`}>
+                         <div className="flex items-start gap-3">
+                           {isDirect ? (
+                             <>
+                               <span className="text-lg shrink-0">⚡</span>
+                               <div>
+                                 <p className="text-xs font-black uppercase tracking-widest text-[#25D366] mb-1">Direct Connect — Hired</p>
+                                 <p className="text-[11px] text-[#888] leading-relaxed">
+                                   Contact <span className="text-white font-bold">{worker?.name}</span> directly via WhatsApp or phone. Payment and delivery are handled between you.
+                                 </p>
+                                 {worker?.phone && (
+                                   <p className="text-xs text-white/80 mt-2 font-mono bg-black/30 px-3 py-1.5 rounded inline-block border border-white/10">
+                                     📱 {worker.phone}
+                                   </p>
+                                 )}
+                               </div>
+                             </>
+                           ) : (
+                             <>
+                               <span className="text-lg shrink-0">🛡️</span>
+                               <div>
+                                 <p className="text-xs font-black uppercase tracking-widest text-[#C9A9FF] mb-1">Escrow — Hired</p>
+                                 <p className="text-[11px] text-[#888] leading-relaxed">
+                                   Communicate with <span className="text-white font-bold">{worker?.name}</span> through the platform chat. Payment is held in escrow and released once you approve the work.
+                                 </p>
+                               </div>
+                             </>
+                           )}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Pending (Direct Connect awaiting finalization) */}
+                     {isPending && isDirect && (
+                       <div className="w-full rounded-lg p-4 border bg-amber-500/10 border-amber-500/20">
+                         <div className="flex items-start gap-3">
+                           <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                           <div>
+                             <p className="text-xs font-black uppercase tracking-widest text-amber-400 mb-1">Awaiting Finalization</p>
+                             <p className="text-[11px] text-[#888] leading-relaxed">
+                               You connected with {worker?.name} via WhatsApp. Click <span className="text-white font-bold">Finalize Hire</span> once agreed to officially mark them as hired.
+                             </p>
+                           </div>
+                         </div>
+                       </div>
+                     )}
+                      
+                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-8">
+                       <div className="flex flex-col sm:flex-row items-start gap-6 md:gap-8 w-full md:flex-1">
+                         <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-all">
+                           {worker?.avatar_url ? (
+                             <Image src={worker.avatar_url} alt="Profile" width={64} height={64} className="object-cover w-full h-full" />
+                           ) : (
+                             <span className="font-black text-xl text-[#333] italic uppercase">{worker?.name?.[0] || "?"}</span>
+                           )}
+                         </div>
+                         <div className="space-y-4 w-full">
+                           <div className="flex flex-wrap items-center gap-3">
+                             <h4 className="font-black text-xl text-white uppercase italic tracking-tight">{worker?.name || "Anonymous"}</h4>
+                             <span className={`text-[9px] font-black tracking-widest px-2 py-1 border ${
+                               isAccepted ? 'bg-white text-black border-white' : 
+                               app.status === 'rejected' ? 'bg-transparent text-red-500 border-red-500/30' : 
+                               'bg-transparent text-[#444] border-[#222]'
+                             } uppercase`}>
+                               {app.status}
+                             </span>
+                             {/* Payment preference badge */}
+                             <span className={`text-[9px] font-black tracking-widest px-2 py-1 border uppercase ${isDirect ? 'text-[#25D366] border-[#25D366]/30 bg-[#25D366]/5' : 'text-[#C9A9FF] border-[#8825F5]/30 bg-[#8825F5]/5'}`}>
+                               {isDirect ? '⚡ Direct' : '🛡️ Escrow'}
+                             </span>
+                             {worker?.rating && worker.rating_count > 0 && (
+                               <span className="text-[9px] font-black tracking-widest px-2 py-1 border border-yellow-500/30 bg-yellow-500/5 text-yellow-400 uppercase">
+                                 ★ {Number(worker.rating).toFixed(1)} ({worker.rating_count})
+                               </span>
+                             )}
+                             {worker?.jobs_completed > 0 && (
+                               <span className="text-[9px] font-black tracking-widest px-2 py-1 border border-[#222] text-[#666] uppercase">
+                                 {worker.jobs_completed} Jobs Done
+                               </span>
+                             )}
+                           </div>
+                           <div className="text-[10px] font-bold text-[#444] tracking-widest uppercase break-words">
+                              <span className="text-[#888]">{worker?.college || "No college listed"}</span> // {worker?.email}
+                           </div>
+                           {(worker?.skills?.length > 0 || worker?.experience) && (
+                             <div className="text-xs text-[#888] flex flex-col gap-1">
+                               {worker?.skills?.length > 0 && <p><span className="text-[#555] font-bold uppercase text-[9px] tracking-widest">Skills:</span> {worker.skills.join(', ')}</p>}
+                               {worker?.experience && <p><span className="text-[#555] font-bold uppercase text-[9px] tracking-widest">Experience:</span> {worker.experience}</p>}
+                             </div>
+                           )}
+                           <div className="flex flex-wrap gap-3">
+                             <Link href={`/u/${worker?.username || app.worker_id}`} target="_blank" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111] transition-colors">
+                               View Profile
+                             </Link>
+                             {worker?.resume_url && (
+                               <a href={worker.resume_url} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111] flex items-center gap-1.5 transition-colors">
+                                 <FileText size={10} /> Resume
+                               </a>
+                             )}
+                             {worker?.portfolio_links?.length > 0 && worker.portfolio_links.map((link: string, idx: number) => (
+                               <a key={idx} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111] transition-colors">
+                                 Portfolio {idx + 1}
+                               </a>
+                             ))}
+                           </div>
+                           {app.pitch && (
+                             <div className="text-sm text-[#888] bg-[#0B0B11] border border-[#222] p-5 md:p-6 w-full italic leading-relaxed">
+                               <span className="uppercase text-[8px] font-bold text-[#333] block mb-3 tracking-[0.3em]">Application Pitch</span>
+                               &quot;{app.pitch}&quot;
+                             </div>
+                           )}
+                         </div>
+                       </div>
+
+                       <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-px bg-[#222] border border-[#222] w-full md:w-auto overflow-hidden">
+                          {isApplied && (
+                            <>
+                              <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all">
+                                {hiringId === app.id ? 'Processing...' : (isDirect ? '⚡ Connect (WhatsApp)' : '🛡️ Hire via Escrow')}
                               </button>
-                            )}
-                            <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
-                          </>
-                        )}
-                        {app.status === 'accepted' && (
-                          <>
-                            {(app.payment_preference === 'DIRECT' || (app.payment_preference === 'ESCROW' && gig.payment_status === 'ESCROW_FUNDED')) && worker?.phone && (
-                              <button onClick={() => {
-                                const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
-                                window.open(`https://wa.me/91${String(worker.phone).replace(/\D/g,'')}?text=${message}`, '_blank');
-                              }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-r border-[#222]">
-                                WhatsApp
+                              <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
+                            </>
+                          )}
+                          {isPending && (
+                            <>
+                              {isDirect && (
+                                <button disabled={hiringId === app.id} onClick={async () => {
+                                  setHiringId(app.id);
+                                  try {
+                                    const res = await fetch("/api/gig/hire-direct", {
+                                      method: "POST",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ gigId: gig.id, workerId: app.worker_id, applicationId: app.id })
+                                    });
+                                    const data = await res.json();
+                                    if (!res.ok) throw new Error(data.error || "Failed to finalize direct hire");
+                                    
+                                    setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'accepted' } : a));
+                                    toast.success("Worker Officially Hired!");
+                                  } catch(e: any) {
+                                    toast.error(e.message);
+                                  } finally {
+                                    setHiringId(null);
+                                  }
+                                }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#C9A9FF] hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
+                                  ✓ Finalize Hire
+                                </button>
+                              )}
+                              <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
+                            </>
+                          )}
+                          {isAccepted && (
+                            <>
+                              {isDirect && worker?.phone && (
+                                <button onClick={() => {
+                                  const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
+                                  window.open(`https://wa.me/91${String(worker.phone).replace(/\D/g,'')}?text=${message}`, '_blank');
+                                }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-r border-[#222]">
+                                  WhatsApp
+                                </button>
+                              )}
+                              {!isDirect && (
+                                <button onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#8825F5] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-r border-[#222]">
+                                  <MessageCircle size={12} /> Platform Chat
+                                </button>
+                              )}
+                              <button onClick={() => { setSelectedWorkerId(app.worker_id); setShowIncentiveModal(true); }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                <Gift size={12} /> Incentive
                               </button>
-                            )}
-                            <button onClick={() => { setSelectedWorkerId(app.worker_id); setShowIncentiveModal(true); }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-                              <Gift size={12} /> Incentive
+                            </>
+                          )}
+                          {!isAccepted && (
+                            <button onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition-all flex items-center justify-center border-l border-[#222]">
+                              <MessageCircle size={16} />
                             </button>
-                          </>
-                        )}
-                        <button onClick={() => router.push(`/chat/${gig.id}`)} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition-all flex items-center justify-center border-l border-[#222]">
-                          <MessageCircle size={16} />
-                        </button>
+                          )}
+                       </div>
                      </div>
                    </div>
                  )

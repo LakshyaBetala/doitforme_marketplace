@@ -115,9 +115,12 @@ export default function CompanyLoginPage() {
 
       {/* Right Side: Login Panel */}
       <div className="flex-1 flex flex-col justify-center items-center p-6 lg:p-0 relative">
+        <Link href="/" className="absolute top-6 left-6 flex items-center gap-2 text-[#666] hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+           <ArrowLeft size={16} /> Home
+        </Link>
         <div className="w-full max-w-md mx-auto">
           
-          <div className="lg:hidden flex items-center gap-3 mb-12 justify-center">
+          <div className="lg:hidden flex items-center gap-3 mb-12 justify-center mt-8">
              <div className="w-10 h-10 bg-white flex items-center justify-center p-1">
                 <Image src="/Doitforme_logo.png" alt="Logo" width={24} height={24} className="object-contain" />
              </div>
