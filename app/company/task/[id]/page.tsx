@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
-  Loader2, ArrowLeft, Users, Download, ShieldCheck, FileText, CheckCircle2, Gift, MessageCircle, AlertTriangle
+  Loader2, ArrowLeft, Users, Download, ShieldCheck, FileText, CheckCircle2, Gift, MessageCircle, AlertTriangle, X, ArrowRight
 } from "lucide-react";
 
 export default function CompanyTaskHubPage() {
@@ -492,8 +492,6 @@ export default function CompanyTaskHubPage() {
           </div>
         </div>
       )}
-
-    </div>
 
       {/* DIRECT CONNECT HANDOFF MODAL */}
       {handoffApp && (
