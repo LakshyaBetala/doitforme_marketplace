@@ -38,7 +38,7 @@ export default function GigDetailsPage() {
       if (user) {
         const { data: profileData } = await supabase
           .from('users')
-          .select('skills, resume_url, portfolio_links, name, phone')
+          .select('skills, resume_url, portfolio_links, name, phone, upi_id')
           .eq('id', user.id)
           .single();
         if (profileData) setUserProfile(profileData);
@@ -74,12 +74,15 @@ export default function GigDetailsPage() {
   const handleApply = async () => {
     if (!currentUser) return router.push("/login");
 
-    // Profile Gate: Require at least skills OR resume before applying
+    // Profile Gate: Require at least skills OR resume, plus phone and UPI ID
     const hasSkills = userProfile?.skills && userProfile.skills.length > 0;
     const hasResume = !!userProfile?.resume_url;
-    if (!hasSkills && !hasResume) {
-      toast.error("Complete your worker profile first — add skills or upload a resume to apply.");
-      router.push("/profile/worker-setup");
+    const hasPhone = !!userProfile?.phone;
+    const hasUpiId = !!userProfile?.upi_id;
+
+    if ((!hasSkills && !hasResume) || !hasPhone || !hasUpiId) {
+      toast.error("Please complete your profile to continue.");
+      router.push(`/profile/worker-setup?from=apply&gigId=${gigId}`);
       return;
     }
 
@@ -350,7 +353,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
 
   return (
     <div className="fixed inset-0 z-50 bg-[#0B0B11]/80 backdrop-blur-xl p-4 flex items-end sm:items-center justify-center overflow-y-auto" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`bg-[#0A0A0A] border border-white/10 p-8 md:p-12 rounded-3xl w-full max-w-xl relative animate-in zoom-in-95 duration-300 shadow-2xl shadow-black/80`}>
+      <div className={`bg-[#0A0A0A] border border-white/10 p-5 md:p-12 rounded-3xl w-full max-w-xl relative animate-in zoom-in-95 duration-300 shadow-2xl shadow-black/80`}>
         
         <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full border border-white/5">
             <X size={20} />
@@ -370,18 +373,18 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                 {/* DIRECT CONNECT */}
                 <button 
                   onClick={() => setPaymentPref("DIRECT")} 
-                  className={`p-6 flex flex-col items-start gap-4 transition-all text-left rounded-2xl border ${paymentPref === "DIRECT" ? "bg-white/10 border-[#8825F5]/50 shadow-[0_0_20px_rgba(136,37,245,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
+                  className={`p-4 md:p-6 flex flex-col items-start gap-3 md:gap-4 transition-all text-left rounded-2xl border ${paymentPref === "DIRECT" ? "bg-white/10 border-[#8825F5]/50 shadow-[0_0_20px_rgba(136,37,245,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <p className="font-bold text-lg tracking-tight text-white flex items-center gap-2">⚡ Direct Connect</p>
+                    <p className="font-bold text-base md:text-lg tracking-tight text-white flex items-center gap-2">⚡ Direct Connect</p>
                     <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "DIRECT" ? 'bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>No Platform Fee</span>
                   </div>
-                  <p className="text-[13px] font-medium text-zinc-400 leading-relaxed">Connect directly via WhatsApp. Handle payment between yourselves — no platform involvement.</p>
+                  <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed">Connect directly via WhatsApp. Handle payment between yourselves — no platform involvement.</p>
                 </button>
 
                 {/* DIRECT CONNECT WARNING & CHECKBOX */}
                 {paymentPref === "DIRECT" && (
-                  <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl space-y-5 animate-in zoom-in-95 duration-200 shadow-inner">
+                  <div className="p-4 md:p-6 bg-red-500/10 border border-red-500/20 rounded-2xl space-y-4 md:space-y-5 animate-in zoom-in-95 duration-200 shadow-inner">
                     <div className="flex items-start gap-4">
                        <AlertTriangle size={24} className="text-red-400 shrink-0 mt-0.5" />
                        <div className="space-y-2">
@@ -413,17 +416,17 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                 {gig.price >= 500 ? (
                   <button 
                     onClick={() => setPaymentPref("ESCROW")} 
-                    className={`p-6 flex flex-col items-start gap-4 transition-all text-left rounded-2xl border ${paymentPref === "ESCROW" ? "bg-white/10 border-[#8825F5]/50 shadow-[0_0_20px_rgba(136,37,245,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
+                    className={`p-4 md:p-6 flex flex-col items-start gap-3 md:gap-4 transition-all text-left rounded-2xl border ${paymentPref === "ESCROW" ? "bg-white/10 border-[#8825F5]/50 shadow-[0_0_20px_rgba(136,37,245,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <p className="font-bold text-lg tracking-tight text-white flex items-center gap-2">🛡️ Secure Escrow</p>
+                      <p className="font-bold text-base md:text-lg tracking-tight text-white flex items-center gap-2">🛡️ Secure Escrow</p>
                       <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "ESCROW" ? 'bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>3% Platform Fee</span>
                     </div>
-                    <p className="text-[13px] font-medium text-zinc-400 leading-relaxed">Payment held securely until you deliver. Guaranteed payout — you'll receive ₹{Math.floor(gig.price * 0.97)} after 3% fee.</p>
+                    <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed">Payment held securely until you deliver. Guaranteed payout — you'll receive ₹{Math.floor(gig.price * 0.97)} after 3% fee.</p>
                   </button>
                 ) : (
-                  <div className="p-6 bg-white/[0.01] border border-white/5 rounded-2xl opacity-40 cursor-not-allowed">
-                    <p className="font-bold text-lg text-zinc-600 tracking-tight flex items-center gap-2">🛡️ Secure Escrow</p>
+                  <div className="p-4 md:p-6 bg-white/[0.01] border border-white/5 rounded-2xl opacity-40 cursor-not-allowed">
+                    <p className="font-bold text-base md:text-lg text-zinc-600 tracking-tight flex items-center gap-2">🛡️ Secure Escrow</p>
                     <p className="text-[11px] font-semibold text-red-500/80 mt-2 bg-red-500/10 px-2 py-1 rounded inline-block">Available for tasks ₹500+</p>
                   </div>
                 )}

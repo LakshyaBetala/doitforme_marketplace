@@ -24,7 +24,21 @@ export default function WorkerSetupPage() {
     const [resumeFile, setResumeFile] = useState<File | null>(null);
     const [existingResumeUrl, setExistingResumeUrl] = useState<string | null>(null);
 
+    const [phone, setPhone] = useState("");
+    const [upiId, setUpiId] = useState("");
+
+    const [fromApply, setFromApply] = useState(false);
+    const [redirectGigId, setRedirectGigId] = useState<string | null>(null);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('from') === 'apply') setFromApply(true);
+            setRedirectGigId(params.get('gigId'));
+        }
+    }, []);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -35,7 +49,7 @@ export default function WorkerSetupPage() {
             }
             const { data, error } = await supabase
                 .from('users')
-                .select('skills, portfolio_links, experience, resume_url')
+                .select('skills, portfolio_links, experience, resume_url, phone, upi_id')
                 .eq('id', user.id)
                 .single();
             
@@ -44,6 +58,8 @@ export default function WorkerSetupPage() {
                 setPortfolioLinks(data.portfolio_links || []);
                 setExperience(data.experience || "");
                 setExistingResumeUrl(data.resume_url || null);
+                setPhone(data.phone ? String(data.phone) : "");
+                setUpiId(data.upi_id || "");
             }
             setFetching(false);
         };
@@ -78,10 +94,28 @@ export default function WorkerSetupPage() {
         setSuccess(false);
         setLoading(true);
 
+        if (fromApply) {
+            if (!phone.trim()) return setError("Phone number is required to apply.");
+            if (!upiId.trim()) return setError("UPI ID is required to apply.");
+            if (skills.length === 0 && !existingResumeUrl && !resumeFile) {
+                return setError("You must add at least one skill or upload a resume.");
+            }
+        }
+
+        if (upiId.trim()) {
+            const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+            if (!upiRegex.test(upiId.trim())) {
+                setLoading(false);
+                return setError("Invalid UPI ID format. (e.g., name@oksbi)");
+            }
+        }
+
         const formData = new FormData();
         formData.append("skills", JSON.stringify(skills));
         formData.append("portfolio_links", JSON.stringify(portfolioLinks));
         formData.append("experience", experience);
+        formData.append("phone", phone.trim());
+        formData.append("upi_id", upiId.trim());
         if (resumeFile) {
             if (resumeFile.size > 2 * 1024 * 1024) {
                 setLoading(false);
@@ -102,7 +136,11 @@ export default function WorkerSetupPage() {
             } else {
                 setSuccess(true);
                 setTimeout(() => {
-                    router.push("/profile");
+                    if (fromApply && redirectGigId) {
+                        router.push(`/gig/${redirectGigId}`);
+                    } else {
+                        router.push("/profile");
+                    }
                 }, 2000);
             }
         } catch (err: any) {
@@ -114,6 +152,8 @@ export default function WorkerSetupPage() {
 
     // Profile completeness
     const completionItems = [
+        { label: "Phone", done: !!phone.trim() },
+        { label: "UPI ID", done: !!upiId.trim() },
         { label: "Skills", done: skills.length > 0 },
         { label: "Portfolio", done: portfolioLinks.length > 0 },
         { label: "Resume", done: !!(existingResumeUrl || resumeFile) },
@@ -156,6 +196,21 @@ export default function WorkerSetupPage() {
                     </div>
                 </div>
 
+                {/* Apply Required Banner */}
+                {fromApply && (
+                    <div className="mb-6 bg-[#8825F5]/10 border border-[#8825F5]/30 rounded-2xl p-5 flex items-start gap-4 animate-in fade-in slide-in-from-top-4">
+                        <div className="p-2 bg-[#8825F5]/20 rounded-xl shrink-0">
+                            <Sparkles size={20} className="text-[#C9A9FF]" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-white tracking-tight">Complete your profile to apply</h2>
+                            <p className="text-sm text-white/70 mt-1 leading-relaxed">
+                                You need to add your <strong>Phone Number</strong>, <strong>UPI ID</strong>, and at least one <strong>Skill</strong> or <strong>Resume</strong> before you can apply for this task.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* Profile Completeness Bar */}
                 <div className={`${sectionCardStyle} mb-6`}>
                     <div className="flex items-center justify-between mb-3">
@@ -184,6 +239,32 @@ export default function WorkerSetupPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    
+                    {/* Basic Info */}
+                    <div className={sectionCardStyle}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelStyle}>Phone Number {fromApply && <span className="text-amber-400">*</span>}</label>
+                                <input
+                                    type="tel"
+                                    placeholder="Required for direct connect tasks"
+                                    className={inputStyle}
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className={labelStyle}>UPI ID {fromApply && <span className="text-amber-400">*</span>}</label>
+                                <input
+                                    type="text"
+                                    placeholder="name@bank (Required for payouts)"
+                                    className={inputStyle}
+                                    value={upiId}
+                                    onChange={(e) => setUpiId(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
                     
                     {/* Skills */}
                     <div className={sectionCardStyle}>
