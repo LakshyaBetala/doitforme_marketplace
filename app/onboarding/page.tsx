@@ -21,6 +21,24 @@ export default function OnboardingPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // Auto-redirect companies away from the student onboarding page
+    useEffect(() => {
+        const checkRole = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: dbUser } = await supabase
+                    .from("users")
+                    .select("role")
+                    .eq("id", user.id)
+                    .single();
+                if (dbUser?.role === "COMPANY") {
+                    router.push("/company/dashboard");
+                }
+            }
+        };
+        checkRole();
+    }, [router, supabase]);
+
     // Debounced username availability check
     useEffect(() => {
       const u = username.trim().toLowerCase();
@@ -84,6 +102,18 @@ export default function OnboardingPage() {
         if (!user) {
             setLoading(false);
             return router.push("/login");
+        }
+
+        // Add a check in case a company ends up here
+        const { data: dbUser } = await supabase
+            .from("users")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+        if (dbUser?.role === "COMPANY") {
+            setLoading(false);
+            return router.push("/company/dashboard");
         }
 
         // Update profile via the create-user API (handles upsert + wallet)
