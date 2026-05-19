@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
-import { Loader2, ArrowLeft, Upload, Plus, X, Briefcase, Link as LinkIcon, Star, CheckCircle, FileText, ExternalLink, Sparkles, Shield } from "lucide-react";
+import { Loader2, ArrowLeft, Upload, Plus, X, Briefcase, Link as LinkIcon, Star, CheckCircle, FileText, ExternalLink, Sparkles, Shield, AlertTriangle } from "lucide-react";
 
 export default function WorkerSetupPage() {
     const supabase = supabaseBrowser();
@@ -198,15 +198,21 @@ export default function WorkerSetupPage() {
 
                 {/* Apply Required Banner */}
                 {fromApply && (
-                    <div className="mb-6 bg-[#8825F5]/10 border border-[#8825F5]/30 rounded-2xl p-5 flex items-start gap-4 animate-in fade-in slide-in-from-top-4">
-                        <div className="p-2 bg-[#8825F5]/20 rounded-xl shrink-0">
-                            <Sparkles size={20} className="text-[#C9A9FF]" />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-white tracking-tight">Complete your profile to apply</h2>
-                            <p className="text-sm text-white/70 mt-1 leading-relaxed">
-                                You need to add your <strong>Phone Number</strong>, <strong>UPI ID</strong>, and at least one <strong>Skill</strong> or <strong>Resume</strong> before you can apply for this task.
-                            </p>
+                    <div className="mb-8 relative overflow-hidden bg-gradient-to-r from-red-500/10 via-[#8825F5]/10 to-blue-500/10 border-2 border-red-500/30 rounded-3xl p-6 shadow-[0_0_40px_rgba(255,0,0,0.1)] animate-in fade-in slide-in-from-top-4">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
+                        <div className="flex items-start md:items-center gap-5 relative z-10">
+                            <div className="p-3 bg-red-500/20 rounded-2xl shrink-0 shadow-inner">
+                                <AlertTriangle size={28} className="text-red-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight mb-2 uppercase text-red-100">Action Required to Apply</h2>
+                                <p className="text-sm md:text-base text-white/90 leading-relaxed font-medium">
+                                    You cannot apply for tasks until you provide the following details below: <br className="hidden md:block"/>
+                                    <span className="text-amber-400 font-bold">1. Phone Number</span> (for Direct Connect) &nbsp;•&nbsp; 
+                                    <span className="text-amber-400 font-bold">2. UPI ID</span> (for Escrow Payouts) &nbsp;•&nbsp; 
+                                    <span className="text-[#C9A9FF] font-bold">3. Skills or Resume</span>
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -244,22 +244,7 @@ export default function Dashboard() {
 
           <div className="relative max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-24 md:pb-8">
 
-            {/* Profile Completion Alert */}
-            {showProfileAlert && (
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500">
-                <AlertTriangle size={20} className="text-amber-400 shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-amber-300 mb-1">Complete your profile</p>
-                  <p className="text-xs text-amber-300/70">Missing: {missingFields.join(", ")}. Add these details to start posting and applying.</p>
-                </div>
-                <Link href="/profile" className="shrink-0 px-4 py-2 bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold rounded-xl hover:bg-amber-500/30 transition-all active:scale-95">
-                  Complete Profile
-                </Link>
-                <button onClick={() => setProfileAlertDismissed(true)} className="shrink-0 p-1 text-amber-400/50 hover:text-amber-300 transition-colors">
-                  <X size={16} />
-                </button>
-              </div>
-            )}
+            {/* Profile Completion Alert Removed: We now only gate application on the task page itself */}
 
             {/* KYC Verification Prompt */}
             {user && !user.user_metadata?.kyc_verified && (

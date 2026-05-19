@@ -351,9 +351,19 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
   const [riskAccepted, setRiskAccepted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   return (
-    <div className="fixed inset-0 z-50 bg-[#0B0B11]/80 backdrop-blur-xl p-4 flex items-end sm:items-center justify-center overflow-y-auto" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={`bg-[#0A0A0A] border border-white/10 p-5 md:p-12 rounded-3xl w-full max-w-xl relative animate-in zoom-in-95 duration-300 shadow-2xl shadow-black/80`}>
+    <div className="fixed inset-0 z-[100] bg-[#0B0B11]/90 backdrop-blur-md p-3 sm:p-4 flex items-end sm:items-center justify-center overscroll-none" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className={`bg-[#0A0A0A] border border-white/10 p-5 md:p-10 rounded-3xl w-full max-w-xl relative animate-in slide-in-from-bottom-8 sm:zoom-in-95 duration-300 shadow-2xl shadow-black/80 max-h-[90vh] overflow-y-auto no-scrollbar overscroll-contain`}>
         
         <button onClick={onClose} className="absolute top-6 right-6 text-zinc-500 hover:text-white transition-colors bg-white/5 p-2 rounded-full border border-white/5">
             <X size={20} />
@@ -384,12 +394,12 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
 
                 {/* DIRECT CONNECT WARNING & CHECKBOX */}
                 {paymentPref === "DIRECT" && (
-                  <div className="p-4 md:p-6 bg-red-500/10 border border-red-500/20 rounded-2xl space-y-4 md:space-y-5 animate-in zoom-in-95 duration-200 shadow-inner">
-                    <div className="flex items-start gap-4">
-                       <AlertTriangle size={24} className="text-red-400 shrink-0 mt-0.5" />
-                       <div className="space-y-2">
-                         <p className="text-sm font-bold text-red-400">Risk Authorization Required</p>
-                         <p className="text-xs text-red-400/80 font-medium leading-relaxed">
+                  <div className="p-3 md:p-5 bg-red-500/10 border border-red-500/20 rounded-2xl space-y-3 md:space-y-4 animate-in zoom-in-95 duration-200 shadow-inner">
+                    <div className="flex items-start gap-3">
+                       <AlertTriangle size={20} className="text-red-400 shrink-0 mt-0.5" />
+                       <div className="space-y-1">
+                         <p className="text-[13px] font-bold text-red-400 leading-tight">Risk Authorization Required</p>
+                         <p className="text-[11px] text-red-400/80 font-medium leading-relaxed">
                            This channel is unshielded. The platform assumes zero liability for financial delivery or dispute mediation. 
                          </p>
                        </div>
