@@ -80,6 +80,7 @@ export default function CompanyTaskHubPage() {
   }, [gigId, router, supabase]);
 
   const [hiringId, setHiringId] = useState<string | null>(null);
+  const [handoffApp, setHandoffApp] = useState<any | null>(null);
 
   const handleHire = async (app: any) => {
     setHiringId(app.id);
@@ -90,12 +91,7 @@ export default function CompanyTaskHubPage() {
            toast.error("Worker hasn't provided a phone number.");
            return;
         }
-        const phoneStr = String(phone);
-        const message = encodeURIComponent(`Hi ${app.users?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
-        window.open(`https://wa.me/91${phoneStr.replace(/\D/g,'')}?text=${message}`, '_blank');
-        
-        await updateApplicationStatus(app.id, 'pending');
-        toast.success("Redirected to Direct Connect. Application is now Pending.");
+        setHandoffApp(app);
       } else {
         const res = await fetch("/api/gig/hire", {
           method: "POST",
@@ -385,32 +381,38 @@ export default function CompanyTaskHubPage() {
                             </>
                           )}
                           {isPending && (
-                            <>
-                              {isDirect && (
-                                <button disabled={hiringId === app.id} onClick={async () => {
-                                  setHiringId(app.id);
-                                  try {
-                                    const res = await fetch("/api/gig/hire-direct", {
-                                      method: "POST",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ gigId: gig.id, workerId: app.worker_id, applicationId: app.id })
-                                    });
-                                    const data = await res.json();
-                                    if (!res.ok) throw new Error(data.error || "Failed to finalize direct hire");
-                                    
-                                    setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'accepted' } : a));
-                                    toast.success("Worker Officially Hired!");
-                                  } catch(e: any) {
-                                    toast.error(e.message);
-                                  } finally {
-                                    setHiringId(null);
-                                  }
-                                }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#C9A9FF] hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
-                                  ✓ Finalize Hire
-                                </button>
-                              )}
-                              <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all">Reject</button>
-                            </>
+                            <div className="flex flex-col w-full border-t border-yellow-500/30">
+                              <div className="bg-yellow-500/10 p-4 text-center border-b border-yellow-500/20">
+                                <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest block mb-1">Direct Connect Pending</span>
+                                <span className="text-[10px] text-yellow-500/70">Have you finalized terms on WhatsApp?</span>
+                              </div>
+                              <div className="flex">
+                                {isDirect && (
+                                  <button disabled={hiringId === app.id} onClick={async () => {
+                                    setHiringId(app.id);
+                                    try {
+                                      const res = await fetch("/api/gig/hire-direct", {
+                                        method: "POST",
+                                        headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ gigId: gig.id, workerId: app.worker_id, applicationId: app.id })
+                                      });
+                                      const data = await res.json();
+                                      if (!res.ok) throw new Error(data.error || "Failed to finalize direct hire");
+                                      
+                                      setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: 'accepted' } : a));
+                                      toast.success("Worker Officially Hired!");
+                                    } catch(e: any) {
+                                      toast.error(e.message);
+                                    } finally {
+                                      setHiringId(null);
+                                    }
+                                  }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-yellow-500 hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
+                                    ✓ Yes, Officially Hire
+                                  </button>
+                                )}
+                                <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all border-l border-[#222]">No, Reject</button>
+                              </div>
+                            </div>
                           )}
                           {isAccepted && (
                             <>
