@@ -432,7 +432,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                       <p className="font-bold text-base md:text-lg tracking-tight text-white flex items-center gap-2">🛡️ Secure Escrow</p>
                       <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "ESCROW" ? 'bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>3% Platform Fee</span>
                     </div>
-                    <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed">Payment held securely until you deliver. Guaranteed payout — you'll receive ₹{Math.floor(gig.price * 0.97)} after 3% fee.</p>
+                    <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed">Payment held securely until you deliver. Guaranteed payout subject to a 3% platform fee.</p>
                   </button>
                 ) : (
                   <div className="p-4 md:p-6 bg-white/[0.01] border border-white/5 rounded-2xl opacity-40 cursor-not-allowed">
