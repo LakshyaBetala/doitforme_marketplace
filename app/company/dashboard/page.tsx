@@ -170,8 +170,8 @@ function CompanyDashboard() {
             <header className="h-[70px] md:h-[80px] bg-white/[0.02] backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 md:px-10 shrink-0 z-50">
                 <div className="flex items-center gap-8">
                     <Link href="/" className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 shadow-inner">
-                            <Image src="/Doitforme_logo.png" alt="DoItForMe" width={24} height={24} className="object-contain" />
+                        <div className="relative w-10 h-10 flex items-center justify-center overflow-hidden">
+                            <Image src="/Doitforme_logo.png" alt="DoItForMe" width={36} height={36} className="object-contain" />
                         </div>
                         <div className="flex flex-col">
                             <span className="font-bold text-lg tracking-tight text-white leading-none">DoItForMe</span>

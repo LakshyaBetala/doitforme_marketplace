@@ -418,8 +418,11 @@ export default function CompanyTaskHubPage() {
                             <>
                               {isDirect && worker?.phone && (
                                 <button onClick={() => {
+                                  const phoneStr = String(worker.phone);
+                                  const cleanPhone = phoneStr.replace(/\D/g, '');
+                                  const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
                                   const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
-                                  window.open(`https://wa.me/91${String(worker.phone).replace(/\D/g,'')}?text=${message}`, '_blank');
+                                  window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
                                 }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-r border-[#222]">
                                   WhatsApp
                                 </button>
@@ -486,6 +489,57 @@ export default function CompanyTaskHubPage() {
              >
                Authorize (Coming Soon)
              </button>
+          </div>
+        </div>
+      )}
+
+    </div>
+
+      {/* DIRECT CONNECT HANDOFF MODAL */}
+      {handoffApp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-[#0B0B11] border border-[#333] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-6 md:p-8 space-y-6">
+              <div className="flex items-start justify-between border-b border-[#222] pb-6">
+                <div>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">Direct Connect</h3>
+                  <p className="text-[10px] text-[#888] uppercase tracking-widest font-bold mt-2">Handoff to WhatsApp</p>
+                </div>
+                <button onClick={() => setHandoffApp(null)} className="text-[#666] hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-sm text-[#ccc] leading-relaxed">
+                  You are about to negotiate directly with <strong>{handoffApp.users?.name}</strong>. Since there is no platform Escrow protection for Direct Connect, please ensure you agree on deliverables and timeline.
+                </p>
+                <div className="bg-[#8825F5]/10 border border-[#8825F5]/30 p-4 rounded-none">
+                  <p className="text-xs text-[#C9A9FF] font-bold">
+                    Crucial Step: Once you agree on terms, you MUST return here and click "Finalize Hire" so the student gets platform credit and the job closes.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-[#222] flex flex-col gap-3">
+                <button 
+                  onClick={async () => {
+                    const phoneStr = String(handoffApp.users?.phone);
+                    const cleanPhone = phoneStr.replace(/\D/g, '');
+                    const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                    const message = encodeURIComponent(`Hi ${handoffApp.users?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
+                    window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
+                    
+                    await updateApplicationStatus(handoffApp.id, 'pending');
+                    toast.success("Application is now Pending.");
+                    setHandoffApp(null);
+                  }}
+                  className="w-full p-4 bg-[#25D366] text-white hover:bg-[#1ebd59] text-[10px] font-black uppercase tracking-widest transition-all text-center flex items-center justify-center gap-2"
+                >
+                  <ArrowRight size={14} /> Open WhatsApp
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
