@@ -21,6 +21,7 @@ export default function GigDetailsPage() {
   const [poster, setPoster] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [appCount, setAppCount] = useState(0);
+  const [acceptedCount, setAcceptedCount] = useState(0);
 
   // Apply Modal State
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
@@ -60,11 +61,19 @@ export default function GigDetailsPage() {
         setPoster(posterData);
 
         // Get application count
-        const { count } = await supabase
+        const { count: totalApps } = await supabase
           .from('applications')
           .select('*', { count: 'exact', head: true })
           .eq('gig_id', gigId);
-        setAppCount(count || 0);
+        setAppCount(totalApps || 0);
+
+        // Get accepted count
+        const { count: acceptedApps } = await supabase
+          .from('applications')
+          .select('*', { count: 'exact', head: true })
+          .eq('gig_id', gigId)
+          .eq('status', 'accepted');
+        setAcceptedCount(acceptedApps || 0);
       }
       setLoading(false);
     }
@@ -220,7 +229,7 @@ export default function GigDetailsPage() {
             )}
             {gig.max_workers > 1 && (
               <span className="px-4 py-1.5 text-xs font-medium rounded-full border border-[#8825F5]/20 text-[#C9A9FF] bg-[#8825F5]/5 flex items-center gap-2">
-                <Users size={14} /> {appCount} of {gig.max_workers} positions
+                <Users size={14} /> {acceptedCount} of {gig.max_workers} positions
               </span>
             )}
             {appCount > 0 && gig.max_workers <= 1 && (
