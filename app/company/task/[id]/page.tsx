@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
+import Avatar from "@/components/ui/Avatar";
 import { toast } from "sonner";
 import {
   Loader2, ArrowLeft, Users, Download, ShieldCheck, FileText, CheckCircle2, Gift, MessageCircle, AlertTriangle, X, ArrowRight
@@ -305,13 +306,9 @@ export default function CompanyTaskHubPage() {
                       
                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-8">
                        <div className="flex flex-col sm:flex-row items-start gap-6 md:gap-8 w-full md:flex-1">
-                         <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-all">
-                           {worker?.avatar_url ? (
-                             <Image src={worker.avatar_url} alt="Profile" width={64} height={64} className="object-cover w-full h-full" />
-                           ) : (
-                             <span className="font-black text-xl text-[#333] italic uppercase">{worker?.name?.[0] || "?"}</span>
-                           )}
-                         </div>
+                          <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-all">
+                            <Avatar src={worker?.avatar_url} fallback={worker?.name || "U"} className="w-full h-full rounded-none" textClassName="text-xl font-black italic uppercase text-[#333]" />
+                          </div>
                          <div className="space-y-4 w-full">
                            <div className="flex flex-wrap items-center gap-3">
                              <h4 className="font-black text-xl text-white uppercase italic tracking-tight">{worker?.name || "Anonymous"}</h4>

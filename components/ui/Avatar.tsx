@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 interface AvatarProps {
   src?: string | null;
@@ -15,14 +18,22 @@ export default function Avatar({
   textClassName = "text-sm",
   sizes = "40px",
 }: AvatarProps) {
+  const [error, setError] = useState(false);
   const initial = fallback?.trim()?.charAt(0)?.toUpperCase() || "U";
 
   return (
     <div
       className={`relative rounded-full overflow-hidden flex items-center justify-center bg-[#1A1A24] ring-1 ring-white/10 text-white font-medium ${className}`}
     >
-      {src ? (
-        <Image src={src} alt="" fill sizes={sizes} className="object-cover" />
+      {src && !error ? (
+        <Image 
+          src={src} 
+          alt="" 
+          fill 
+          sizes={sizes} 
+          className="object-cover" 
+          onError={() => setError(true)}
+        />
       ) : (
         <span className={`${textClassName} tracking-tight`}>{initial}</span>
       )}

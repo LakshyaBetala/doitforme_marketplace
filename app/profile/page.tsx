@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
@@ -10,7 +10,7 @@ import {
   User, Mail, ShieldCheck, ShieldAlert, Star, Briefcase,
   Loader2, Wallet, Calendar, CheckCircle2,
   Phone, GraduationCap, ArrowLeft, Edit2, Check, X,
-  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock, Send
+  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock, Send, Camera
 } from "lucide-react";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 import TelegramLinkButton from "@/components/TelegramLinkButton";
@@ -28,6 +28,9 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   // Editable fields
   const [editName, setEditName] = useState("");
@@ -211,6 +214,42 @@ export default function ProfilePage() {
 
     loadProfile();
   }, [router, supabase]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      setSaveMessage({ type: 'error', text: 'Image must be less than 5MB.' });
+      return;
+    }
+    
+    setUploadingAvatar(true);
+    setSaveMessage(null);
+    
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/profile/update-avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to upload avatar");
+      }
+
+      setProfile((prev: any) => ({ ...prev, avatar_url: data.avatar_url }));
+      setSaveMessage({ type: 'success', text: 'Avatar updated successfully!' });
+      setTimeout(() => setSaveMessage(null), 3000);
+    } catch (err: any) {
+      setSaveMessage({ type: 'error', text: err.message });
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const startEditing = () => {
     setIsEditing(true);
@@ -435,8 +474,12 @@ export default function ProfilePage() {
               
               {/* Avatar overlapping cover */}
               <div className="relative -mt-16 mb-6 inline-flex">
-                <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[#0F141E] relative z-10 ${stats.isLightningResponder ? "shadow-[0_0_20px_rgba(250,204,21,0.2)]" : ""}`}>
-                  <Avatar src={profile.avatar_url} fallback={avatarLetter} className="w-full h-full text-4xl" />
+                <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[#0F141E] relative z-10 group cursor-pointer ${stats.isLightningResponder ? "shadow-[0_0_20px_rgba(250,204,21,0.2)]" : ""}`} onClick={() => fileInputRef.current?.click()}>
+                  <Avatar src={profile.avatar_url} fallback={avatarLetter} className="w-full h-full text-4xl group-hover:opacity-50 transition-opacity" />
+                  <div className="absolute inset-[6px] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
+                    {uploadingAvatar ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-8 h-8 text-white" />}
+                  </div>
+                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
                 </div>
                 
                 {/* Badges */}

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import Avatar from "@/components/ui/Avatar";
 import { Send, ArrowLeft, Loader2, Shield, User, Star, Menu, X, ShoppingBag, Briefcase, IndianRupee, Sparkles, Paperclip, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -422,7 +423,7 @@ function ChatRoomContent() {
                       className={`w-full p-4 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-white/5 ${selectedApplicantId === app.id ? 'bg-[#C9A9FF]/10 border-l-2 border-l-[#C9A9FF]' : ''}`}
                     >
                       <div className="w-10 h-10 rounded-full bg-zinc-800 relative overflow-hidden shrink-0">
-                        {app.avatar_url ? <Image src={app.avatar_url} alt={app.name} fill className="object-cover" /> : <div className="w-full h-full flex items-center justify-center text-xs">{app.name[0]}</div>}
+                        <Avatar src={app.avatar_url} fallback={app.name || "U"} className="w-full h-full rounded-none" textClassName="text-xs font-bold" />
                       </div>
                       <div className="text-left overflow-hidden flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-0.5 mt-1">
