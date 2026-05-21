@@ -127,7 +127,7 @@ export async function POST(req: Request) {
             if (poster?.telegram_chat_id) {
                 await sendTelegramAlert(
                     poster.telegram_chat_id,
-                    `📄 <b>New Offer / Application!</b>\nSomeone just made an offer on your listing: <i>${gig.title}</i>.\n<a href="https://doitforme.in/gig/${gigId}/applicants">Review Offer</a>`
+                    `📄 <b>New Offer / Application!</b>\nSomeone just made an offer on your listing: <i>${gig.title}</i>.\n<a href="https://doitforme.in/company/task/${gigId}">Review Offer</a>`
                 );
             }
 

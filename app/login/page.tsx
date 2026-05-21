@@ -105,7 +105,12 @@ function AuthPage() {
       error = res.error;
       if (!error) {
         setLoading(false);
-        return router.push(`/verify?email=${encodeURIComponent(email)}&mode=login`);
+        let redirectUrl = `/verify?email=${encodeURIComponent(email)}&mode=login`;
+        const nextUrl = searchParams.get('next');
+        if (nextUrl) {
+          redirectUrl += `&next=${encodeURIComponent(nextUrl)}`;
+        }
+        return router.push(redirectUrl);
       }
     } else {
       const res = await supabase.auth.signInWithPassword({
@@ -129,7 +134,8 @@ function AuthPage() {
         }
 
         await syncUser(res.data.user?.id!, email);
-        router.push("/dashboard");
+        const nextUrl = searchParams.get('next') || "/dashboard";
+        router.push(nextUrl);
         return;
       }
     }
@@ -190,6 +196,10 @@ function AuthPage() {
       let redirectUrl = `/verify?email=${encodeURIComponent(email)}&mode=signup`;
       if (referralCode.trim()) {
         redirectUrl += `&ref=${encodeURIComponent(referralCode.trim())}`;
+      }
+      const nextUrl = searchParams.get('next');
+      if (nextUrl) {
+        redirectUrl += `&next=${encodeURIComponent(nextUrl)}`;
       }
       router.push(redirectUrl);
     }

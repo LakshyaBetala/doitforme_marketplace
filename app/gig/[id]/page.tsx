@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Loader2, ArrowLeft, MapPin, Shield, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check, ChevronLeft, ChevronRight, FileText, Download } from "lucide-react";
+import { Loader2, ArrowLeft, MapPin, Shield, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check, ChevronLeft, ChevronRight, FileText, Download, Share2 } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 import Skeleton from "@/components/ui/Skeleton";
 import Image from "next/image";
@@ -81,7 +81,7 @@ export default function GigDetailsPage() {
   }, [gigId, supabase]);
 
   const handleApply = async () => {
-    if (!currentUser) return router.push("/login");
+    if (!currentUser) return router.push(`/login?next=/gig/${gigId}`);
 
     // Profile Gate: Require at least skills OR resume, plus phone and UPI ID
     const hasSkills = userProfile?.skills && userProfile.skills.length > 0;
@@ -128,8 +128,17 @@ export default function GigDetailsPage() {
   };
 
   const handleMessagePoster = () => {
-    if (!currentUser) return router.push("/login");
+    if (!currentUser) return router.push(`/login?next=/gig/${gigId}`);
     router.push(`/chat/${gigId}`);
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/gig/${gigId}`);
+      toast.success("Gig link copied to clipboard!");
+    } catch (err) {
+      toast.error("Failed to copy link");
+    }
   };
 
   if (loading) return (
@@ -179,10 +188,13 @@ export default function GigDetailsPage() {
       {/* TOP HEADER BAR */}
       <div className={`sticky top-0 z-30 bg-white/[0.02] backdrop-blur-2xl border-b border-white/5 transition-all`}>
         <div className="max-w-2xl mx-auto flex items-center justify-between p-4 px-6 md:px-0">
-          <button onClick={() => router.back()} className={`flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium`}>
+          <button onClick={() => (window.history.length > 2 && document.referrer.includes(window.location.host)) ? router.back() : router.push('/dashboard')} className={`flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium`}>
             <ArrowLeft size={16} /> Return
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <button onClick={handleShare} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+              <Share2 size={14} /> Share
+            </button>
             <StatusBadge tone={gig.status === 'open' ? 'success' : statusToTone(gig.status)}>
               {humanizeStatus(gig.status)}
             </StatusBadge>

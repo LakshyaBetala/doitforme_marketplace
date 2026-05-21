@@ -33,7 +33,7 @@ export default function CompanyTaskHubPage() {
     async function loadData() {
       if (!gigId) return;
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return router.push("/login");
+      if (!session) return router.push(`/login?next=/company/task/${gigId}`);
 
       const { data: { user: authUser } } = await supabase.auth.getUser();
       setUser(authUser);
@@ -167,8 +167,8 @@ export default function CompanyTaskHubPage() {
       {/* TOP HEADER */}
       <div className="sticky top-0 z-30 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-[#222]">
         <div className="max-w-6xl mx-auto flex items-center justify-between p-6">
-          <button onClick={() => router.push('/company/dashboard')} className="flex items-center gap-2 text-[#666] hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
-            <ArrowLeft size={16} /> Back to Dashboard
+          <button onClick={() => router.push(gig?.listing_type === 'COMPANY_TASK' ? '/company/dashboard' : '/activity')} className="flex items-center gap-2 text-[#666] hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+            <ArrowLeft size={16} /> Back to {gig?.listing_type === 'COMPANY_TASK' ? 'Dashboard' : 'Activity'}
           </button>
           <div className="flex items-center gap-4">
             <span className={`px-2 py-1 text-[9px] font-black tracking-[0.2em] uppercase border ${gig.status === 'open' ? 'bg-white text-black border-white' : 'bg-transparent text-[#444] border-[#222]'}`}>

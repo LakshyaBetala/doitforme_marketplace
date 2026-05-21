@@ -69,13 +69,14 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
       };
 
     case "new_applicant":
+      const applicantReviewUrl = `${SITE}/company/task/${args.gigId}`;
       return {
         subject: `New applicant on ${args.gigTitle || "your gig"}`,
         preheader: "Review the pitch and respond.",
         bodyHtml: `
           <p>Hi ${name},</p>
           <p>You have a new applicant on <strong>${title}</strong>.</p>
-          <p><a href="${url}" class="cta">Review applicant</a></p>
+          <p><a href="${applicantReviewUrl}" class="cta">Review applicant</a></p>
         `,
       };
 

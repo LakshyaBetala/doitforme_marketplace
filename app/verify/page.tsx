@@ -187,8 +187,9 @@ function VerifyContent() {
       console.error("Sync error (non-fatal):", e);
     }
 
-    // 3. Redirect to Dashboard
-    router.push("/dashboard");
+    // 3. Redirect to Dashboard or nextUrl
+    const nextUrl = params.get('next') || "/dashboard";
+    router.push(nextUrl);
   };
 
   const resendOTP = async () => {
