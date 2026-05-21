@@ -58,8 +58,8 @@ export default function ProfilePage() {
   const [codeCopied, setCodeCopied] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) router.push("/login");
+    supabase.auth.getSession().then((res) => {
+      if (!res.data.session) router.push("/login");
     });
   }, [router, supabase]);
 
