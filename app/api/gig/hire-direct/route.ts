@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     // 2. SECURITY: Fetch Gig and Check Ownership
     const { data: gig, error: gigError } = await supabase
       .from("gigs")
-      .select("poster_id, title")
+      .select("poster_id, title, max_workers")
       .eq("id", gigId)
       .single();
 
@@ -41,22 +41,46 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 3. Update Gig and Application
-    const { error: updateGigError } = await supabaseAdmin.from('gigs').update({
-      assigned_worker_id: workerId,
-      status: 'assigned',
-      payment_gateway: 'DIRECT' // Marking as DIRECT connect
-    }).eq('id', gigId);
-
-    if (updateGigError) throw updateGigError;
-
+    // 3. Update Application FIRST
     const { error: updateAppError } = await supabaseAdmin.from('applications').update({
       status: 'accepted'
     }).eq('id', applicationId);
 
     if (updateAppError) throw updateAppError;
 
-    // 4. Telegram + email notification to worker
+    // 4. Count accepted applications to see if gig is full
+    const { count: acceptedCountResponse, error: countError } = await supabaseAdmin
+      .from('applications')
+      .select('*', { count: 'exact', head: true })
+      .eq('gig_id', gigId)
+      .eq('status', 'accepted');
+
+    const acceptedCount = acceptedCountResponse || 1;
+    const maxWorkers = gig.max_workers || 1;
+    const isFull = acceptedCount >= maxWorkers;
+
+    // 5. Update Gig
+    const gigUpdatePayload: any = {
+      assigned_worker_id: workerId,
+      payment_gateway: 'DIRECT' // Marking as DIRECT connect
+    };
+
+    if (isFull) {
+      gigUpdatePayload.status = 'assigned';
+      
+      // Reject remaining pending applications
+      await supabaseAdmin
+        .from('applications')
+        .update({ status: 'rejected' })
+        .eq('gig_id', gigId)
+        .eq('status', 'applied');
+    }
+
+    const { error: updateGigError } = await supabaseAdmin.from('gigs').update(gigUpdatePayload).eq('id', gigId);
+
+    if (updateGigError) throw updateGigError;
+
+    // 6. Telegram + email notification to worker
     try {
       const { data: worker } = await supabaseAdmin
         .from('users')

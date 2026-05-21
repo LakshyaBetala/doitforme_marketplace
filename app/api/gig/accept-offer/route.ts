@@ -96,12 +96,33 @@ export async function POST(req: Request) {
 
         if (updateAppError) throw updateAppError;
 
-        // 2. UPDATE GIG -> ASSIGNED
+        // Count approved/accepted
+        const { count: acceptedCountResponse } = await supabaseAdmin
+            .from("applications")
+            .select("*", { count: 'exact', head: true })
+            .eq("gig_id", gig.id)
+            .in("status", ['accepted', 'approved']);
+            
+        const acceptedCount = acceptedCountResponse || 1;
+        const maxWorkers = gig.max_workers || 1;
+        const isFull = acceptedCount >= maxWorkers;
+
+        // 2. UPDATE GIG
         const gigUpdateData: any = {
-            status: 'assigned',
             assigned_worker_id: application.worker_id,
             escrow_status: 'NONE'
         };
+
+        if (isFull) {
+            gigUpdateData.status = 'assigned';
+            
+            // Reject remaining pending applications
+            await supabaseAdmin
+                .from("applications")
+                .update({ status: "rejected" })
+                .eq("gig_id", gig.id)
+                .eq("status", "applied");
+        }
 
         // For SELL type: store handshake_code directly on gig (no escrow payment)
         if (gig.market_type === 'SELL' || gig.market_type === 'REQUEST') {
