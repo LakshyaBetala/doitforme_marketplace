@@ -10,7 +10,7 @@ import {
   User, Mail, ShieldCheck, ShieldAlert, Star, Briefcase,
   Loader2, Wallet, Calendar, CheckCircle2,
   Phone, GraduationCap, ArrowLeft, Edit2, Check, X,
-  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock, Send, Camera
+  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock, Send, Camera, AtSign, XCircle
 } from "lucide-react";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 import TelegramLinkButton from "@/components/TelegramLinkButton";
@@ -39,6 +39,10 @@ export default function ProfilePage() {
   const [editUpiId, setEditUpiId] = useState("");
   const [editCollege, setEditCollege] = useState(COLLEGES[0]);
   const [editCustomCollege, setEditCustomCollege] = useState("");
+  
+  const [editUsername, setEditUsername] = useState("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameReason, setUsernameReason] = useState<string | null>(null);
 
   const PREFERENCE_OPTIONS = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
@@ -52,6 +56,39 @@ export default function ProfilePage() {
   const [referralCount, setReferralCount] = useState(0);
   const [activePoints, setActivePoints] = useState<any[]>([]);
   const [codeCopied, setCodeCopied] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.push("/login");
+    });
+  }, [router, supabase]);
+
+  // Debounced username availability check
+  useEffect(() => {
+    const u = editUsername.trim().toLowerCase();
+    if (!u || u === profile?.username) {
+      setUsernameStatus("idle");
+      setUsernameReason(null);
+      return;
+    }
+    setUsernameStatus("checking");
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/auth/check-username?u=${encodeURIComponent(u)}`);
+        const data = await res.json();
+        if (data.available) {
+          setUsernameStatus("available");
+          setUsernameReason(null);
+        } else {
+          setUsernameStatus(data.reason === "Taken" ? "taken" : "invalid");
+          setUsernameReason(data.reason || "Unavailable");
+        }
+      } catch {
+        setUsernameStatus("idle");
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [editUsername, profile?.username]);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -263,6 +300,9 @@ export default function ProfilePage() {
     setEditUpiId(profile.upi_id ? String(profile.upi_id) : "");
     setEditCollege(profile.college ? String(profile.college) : COLLEGES[0]);
     setEditCustomCollege("");
+    setEditUsername("");
+    setUsernameStatus("idle");
+    setUsernameReason(null);
     setIsEditing(false);
     setSaveMessage(null);
   };
@@ -302,6 +342,15 @@ export default function ProfilePage() {
       }
     }
 
+    if (!profile.username && editUsername.trim()) {
+      const cleanUser = editUsername.trim().toLowerCase();
+      if (usernameStatus === "taken" || usernameStatus === "invalid") {
+        setSaveMessage({ type: 'error', text: usernameReason || "Pick a different username." });
+        setSaving(false);
+        return;
+      }
+    }
+
     try {
       // Update fields
       const updates: any = {
@@ -314,6 +363,9 @@ export default function ProfilePage() {
 
       if (!profile.college && finalCollege) updates.college = finalCollege;
       if (!profile.upi_id && finalUpiId) updates.upi_id = finalUpiId;
+      if (!profile.username && editUsername.trim() && usernameStatus === "available") {
+        updates.username = editUsername.trim().toLowerCase();
+      }
 
       const { error: dbError } = await supabase
         .from("users")
@@ -503,15 +555,52 @@ export default function ProfilePage() {
               {/* Name & Title */}
               <div className="space-y-2 mb-10">
                 {isEditing ? (
-                  <div>
-                    <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1">Full Name</label>
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      placeholder="Your name"
-                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1">Full Name</label>
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Your name"
+                        className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                      />
+                    </div>
+                    {!profile.username && (
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                          Username <span className="normal-case opacity-50 font-normal">(Permanent once set)</span>
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-sm pointer-events-none select-none">@</span>
+                          <input
+                            type="text"
+                            value={editUsername}
+                            onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+                            placeholder="username"
+                            maxLength={20}
+                            className="w-full pl-9 pr-11 py-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                              {usernameStatus === "checking" && <Loader2 size={14} className="text-white/40 animate-spin" />}
+                              {usernameStatus === "available" && <CheckCircle2 size={14} className="text-emerald-400" />}
+                              {(usernameStatus === "taken" || usernameStatus === "invalid") && <XCircle size={14} className="text-red-400" />}
+                              {usernameStatus === "idle" && <AtSign size={14} className="text-white/40" />}
+                          </div>
+                        </div>
+                        <p className={`text-[10px] px-1 mt-1.5 leading-tight ${
+                            usernameStatus === "available" ? "text-emerald-400" :
+                            usernameStatus === "taken" || usernameStatus === "invalid" ? "text-red-400" :
+                            "text-white/60"
+                        }`}>
+                            {usernameStatus === "available" && editUsername
+                                ? `doitforme.in/u/${editUsername} — available`
+                                : usernameStatus === "taken" || usernameStatus === "invalid"
+                                ? usernameReason
+                                : "Optional — your public profile URL."}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1">
@@ -529,9 +618,9 @@ export default function ProfilePage() {
                         doitforme.in/u/{profile.username} <Send size={12} className="opacity-50" />
                       </Link>
                     ) : (
-                      <Link href="/onboarding" className="text-sm text-[#8825F5] hover:text-[#7D5FFF] transition-colors mt-1 font-medium w-fit">
+                      <button onClick={startEditing} className="text-sm text-[#8825F5] hover:text-[#7D5FFF] transition-colors mt-1 font-medium w-fit text-left">
                         + Claim your @username
-                      </Link>
+                      </button>
                     )}
                   </div>
                 )}
