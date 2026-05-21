@@ -218,6 +218,10 @@ function AuthPage() {
     if (referralCode.trim()) {
       redirectUrl.searchParams.set("ref", referralCode.trim());
     }
+    const nextUrl = searchParams.get("next");
+    if (nextUrl) {
+      redirectUrl.searchParams.set("next", nextUrl);
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
