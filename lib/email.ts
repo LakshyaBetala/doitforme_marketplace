@@ -62,8 +62,8 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
         preheader: "We've passed your pitch to the poster.",
         bodyHtml: `
           <p>Hi ${name},</p>
-          <p>You applied to <strong>${title}</strong>. The poster has been notified and will respond in the chat.</p>
-          <p><a href="${url}" class="cta">Open chat</a></p>
+          <p>You have applied to <strong>${title}</strong>. Wait for the poster to take action, you can track your status here.</p>
+          <p><a href="${url}" class="cta">Track Status</a></p>
           <p class="muted">Tip: keep all payment in escrow. Direct UPI = no protection.</p>
         `,
       };
@@ -189,17 +189,29 @@ function wrap({ subject, preheader, bodyHtml }: RenderResult): string {
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(subject)}</title>
 <style>
-  body { margin:0; padding:0; background:#0B0B11; color:#fafafa; font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif; line-height:1.55; }
+  :root { color-scheme: light dark; }
+  body { margin:0; padding:0; background:#f9f9fa; color:#111111; font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif; line-height:1.55; }
   .wrap { max-width:560px; margin:0 auto; padding:32px 24px; }
-  .card { background:#13131A; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:28px; }
-  h1 { font-size:18px; letter-spacing:-0.01em; margin:0 0 18px; font-weight:600; }
-  p { margin:0 0 14px; color:#fafafa; font-size:15px; }
-  .muted { color:rgba(255,255,255,0.62); font-size:13px; }
-  .muted-link { color:rgba(255,255,255,0.62); font-size:13px; text-decoration:underline; }
-  .cta { display:inline-block; background:#8825F5; color:#fff !important; padding:11px 18px; border-radius:10px; text-decoration:none; font-weight:600; font-size:14px; margin-top:8px; }
-  .foot { margin-top:22px; color:rgba(255,255,255,0.45); font-size:12px; text-align:center; }
+  .card { background:#ffffff; border:1px solid #eaeaea; border-radius:16px; padding:28px; }
+  h1 { font-size:18px; letter-spacing:-0.01em; margin:0 0 18px; font-weight:600; color:#111111; }
+  p { margin:0 0 14px; color:#333333; font-size:15px; }
+  .muted { color:#888888; font-size:13px; }
+  .muted-link { color:#888888; font-size:13px; text-decoration:underline; }
+  .cta { display:inline-block; background:#8825F5; color:#ffffff !important; padding:11px 18px; border-radius:10px; text-decoration:none; font-weight:600; font-size:14px; margin-top:8px; }
+  .foot { margin-top:22px; color:#888888; font-size:12px; text-align:center; }
   .preheader { display:none !important; visibility:hidden; opacity:0; height:0; width:0; overflow:hidden; }
-  a { color:#C9A9FF; }
+  a { color:#8825F5; }
+
+  @media (prefers-color-scheme: dark) {
+    body { background:#0B0B11 !important; color:#fafafa !important; }
+    .card { background:#13131A !important; border-color:rgba(255,255,255,0.08) !important; }
+    h1 { color:#ffffff !important; }
+    p { color:#fafafa !important; }
+    .muted { color:rgba(255,255,255,0.62) !important; }
+    .muted-link { color:rgba(255,255,255,0.62) !important; }
+    a { color:#C9A9FF !important; }
+    .cta { color:#ffffff !important; }
+  }
 </style></head>
 <body>
 <span class="preheader">${safePreheader}</span>
