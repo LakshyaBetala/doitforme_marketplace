@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import InstallAppButton from "@/components/InstallAppButton";
 import EnableNotificationsButton from "@/components/EnableNotificationsButton";
+import NotificationBell from "@/components/NotificationBell";
 import Avatar from "@/components/ui/Avatar";
 import GigCard from "@/components/ui/GigCard";
 import EmptyState from "@/components/ui/EmptyState";
@@ -200,6 +201,8 @@ export default function Dashboard() {
             <MessageSquare size={18} />
             {hasUnreadMessages && <div className="absolute top-2 right-2 w-2 h-2 bg-brand-purple rounded-full"></div>}
           </button>
+
+          <NotificationBell />
 
           <div className="h-6 w-px bg-[#1E293B] mx-1 md:mx-2"></div>
 
