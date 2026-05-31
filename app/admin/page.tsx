@@ -14,7 +14,10 @@ export default function AdminDashboardPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     
     // Tabs state
-    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "COMPANY_LIST" | "PENDING_COMPANIES">("PAYOUTS");
+    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC">("PAYOUTS");
+
+    // Pending student-ID review state
+    const [pendingKyc, setPendingKyc] = useState<any[]>([]);
 
     // Payouts state
     const [payouts, setPayouts] = useState<any[]>([]);
@@ -50,9 +53,45 @@ export default function AdminDashboardPage() {
         await Promise.all([
             fetchPayouts(),
             fetchCompanies(),
-            fetchPendingUsers()
+            fetchPendingUsers(),
+            fetchPendingKyc()
         ]);
         setLoading(false);
+    };
+
+    const fetchPendingKyc = async () => {
+        try {
+            const res = await fetch("/api/admin/review-kyc");
+            const data = await res.json();
+            if (res.ok) setPendingKyc(data.users || []);
+        } catch {
+            // non-fatal
+        }
+    };
+
+    const reviewKyc = async (id: string, action: "approve" | "reject") => {
+        let reason: string | undefined;
+        if (action === "reject") {
+            reason = window.prompt("Reason shown to the student (optional):") || undefined;
+        }
+        setProcessingId(id);
+        try {
+            const res = await fetch("/api/admin/review-kyc", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ targetUserId: id, action, reason }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || "Failed to update.");
+            } else {
+                setPendingKyc(prev => prev.filter(u => u.id !== id));
+                toast.success(action === "approve" ? "Student verified" : "ID rejected");
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Network error.");
+        }
+        setProcessingId(null);
     };
 
     const fetchPayouts = async () => {
@@ -213,6 +252,9 @@ export default function AdminDashboardPage() {
                 <button onClick={() => setActiveTab("PENDING_COMPANIES")} className={getTabClass("PENDING_COMPANIES")}>
                     Verification Queue ({pendingUsers.length})
                 </button>
+                <button onClick={() => setActiveTab("PENDING_KYC")} className={getTabClass("PENDING_KYC")}>
+                    Student IDs ({pendingKyc.length})
+                </button>
             </div>
 
             {loading ? (
@@ -368,6 +410,52 @@ export default function AdminDashboardPage() {
                                  </div>
                                 )}
                             </div>
+                        </div>
+                    )}
+
+                    {/* STUDENT ID REVIEW VIEW — only AI-flagged (manual_review) IDs land here */}
+                    {activeTab === "PENDING_KYC" && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#222] border border-[#222]">
+                            {pendingKyc.map((u) => (
+                                <div key={u.id} className="p-8 bg-[#0a0a0a] space-y-6">
+                                    <div className="space-y-1">
+                                        <div className="font-black text-xl text-white italic uppercase tracking-tighter">{u.name || "UNNAMED"}</div>
+                                        <div className="text-[10px] font-black text-[#444] uppercase tracking-[0.3em]">{u.email}</div>
+                                        <div className="text-[10px] text-[#666] uppercase tracking-widest">Claims: {u.college || "—"}</div>
+                                        <div className="text-[10px] text-[#666] uppercase tracking-widest">
+                                            AI: {u.kyc_institution || "no institution read"} · conf {u.kyc_confidence != null ? Number(u.kyc_confidence).toFixed(2) : "—"}
+                                        </div>
+                                    </div>
+                                    {u.id_image_url ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={u.id_image_url} alt="Student ID" className="w-full max-h-80 object-contain bg-black border border-[#222]" />
+                                    ) : (
+                                        <div className="py-12 text-center text-[#444] text-[10px] uppercase tracking-widest border border-[#222]">Image unavailable</div>
+                                    )}
+                                    <div className="flex gap-px bg-[#222] border border-[#222]">
+                                        <button
+                                            onClick={() => reviewKyc(u.id, "approve")}
+                                            disabled={!!processingId}
+                                            className="flex-1 px-6 py-4 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-20"
+                                        >
+                                            {processingId === u.id ? "..." : "Approve"}
+                                        </button>
+                                        <button
+                                            onClick={() => reviewKyc(u.id, "reject")}
+                                            disabled={!!processingId}
+                                            className="flex-1 px-6 py-4 bg-[#0a0a0a] text-red-500 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white disabled:opacity-20"
+                                        >
+                                            Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                            {pendingKyc.length === 0 && (
+                                <div className="md:col-span-2 border border-[#222] bg-[#0a0a0a] py-40 text-center">
+                                    <CheckCircle2 size={32} className="mx-auto text-[#222] mb-6" />
+                                    <p className="text-[#444] text-[10px] font-bold uppercase tracking-[0.3em]">No IDs awaiting review.</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

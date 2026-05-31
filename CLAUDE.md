@@ -64,6 +64,15 @@ Posts and chat messages are filtered for phone/UPI/social-handle leakage and ill
 
 The regex blocklists in [lib/moderation-rules.ts](lib/moderation-rules.ts) and `useModeration.ts` are intentionally aggressive about phone-number obfuscation (`9 8 7 ...`, `9-8-7 ...`) and payment keywords (`paytm`, `gpay`, `upi`, etc.) because bypassing escrow is the primary abuse vector.
 
+### Student KYC verification (AI auto-approve)
+Students upload an ID at `/verify-id` → [app/api/kyc/upload/route.ts](app/api/kyc/upload/route.ts) stores it in the private `kyc-ids` bucket (service-role) and **auto-verifies it with Google Gemini** via [lib/kycVerification.ts](lib/kycVerification.ts) (`gemini-2.5-flash`, free tier, key `GEMINI_API_KEY`).
+- **Eligibility is broad on purpose:** ANY student ID — school, Class 11/12, junior college, college, university, or graduate/alumni — is valid. The prompt explicitly approves school IDs; don't narrow it back to "university only."
+- **State machine** on `users`: `kyc_status ∈ none | pending | approved | rejected | manual_review`, plus `kyc_confidence`, `kyc_institution`, `kyc_rejection_reason`, `kyc_reviewed_at`. The legacy `kyc_verified` boolean is kept in sync (`true` only when approved) because the rest of the app keys off it.
+- **Thresholds** live in [lib/kycVerification.ts](lib/kycVerification.ts): approve ≥ `0.85`, treat < `0.5` as unsure. **Fails open** like moderation — any Gemini/network/parse error returns `manual_review` (never hard-blocks a real student).
+- **Admin review** of the `manual_review` minority is in the **Student IDs** tab of [app/admin/page.tsx](app/admin/page.tsx), backed by [app/api/admin/review-kyc/route.ts](app/api/admin/review-kyc/route.ts) (GET lists with 30-min signed image URLs; POST approve/reject emails the student).
+- **Backfill / re-verify** existing uploads with [scripts/maintenance/reverify-kyc.mjs](scripts/maintenance/reverify-kyc.mjs) (`node scripts/maintenance/reverify-kyc.mjs`). It's resumable (skips already-scored rows) and stops cleanly on the Gemini free-tier daily quota — re-run after reset to finish.
+- Outcome emails (`kyc_approved` / `kyc_rejected` with reason) are sent via [lib/email.ts](lib/email.ts) — `RESEND_API_KEY` is set in Vercel (prod email works); it's just absent from local `.env.local`, so email no-ops in local dev only.
+
 ### Payments
 Cashfree is the primary gateway ([app/api/payments/create-order/route.ts](app/api/payments/create-order/route.ts), `verify-payment`). Razorpay SDK is also installed but Cashfree is the active path. **The create-order handler re-fetches the real gig price from the DB and ignores any price sent in the request body** — client-supplied amounts are a security footgun.
 
@@ -81,7 +90,7 @@ Supabase is configured for **email OTP only** — magic links are disabled. Keep
 
 ## Required environment variables
 From README + handler code:
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`.
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), `RESEND_API_KEY` (transactional email — unset = email no-ops).
 
 ## Stale-doc warning
 [supabase/README.md](supabase/README.md) references files `supabase/sql/01_..08_*.sql`. That directory was removed in commit `0c8f119` ("Cleanup: remove redundant root sql directory"). The live migrations are in [supabase/migrations/](supabase/migrations/) and are date-stamped (e.g. `20260421_standardize_naming_and_rls.sql`). Trust the dated migrations, not the README's ordering.

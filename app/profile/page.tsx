@@ -778,7 +778,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* KYC Pending Alert (if applicable) */}
+            {/* KYC Alert — state-aware (rejected / under review / not yet verified) */}
             {!profile.kyc_verified && (
               <div className="rounded-[24px] border border-amber-500/20 bg-amber-500/5 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
                 <div className="flex items-center gap-4">
@@ -786,13 +786,27 @@ export default function ProfilePage() {
                     <ShieldAlert size={20} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-amber-400">Verification Pending</h3>
-                    <p className="text-amber-400/60 text-xs mt-0.5">Required to post & apply.</p>
+                    <h3 className="text-sm font-bold text-amber-400">
+                      {profile.kyc_status === "rejected"
+                        ? "Verification failed"
+                        : profile.kyc_status === "manual_review"
+                          ? "Under review"
+                          : "Verification pending"}
+                    </h3>
+                    <p className="text-amber-400/60 text-xs mt-0.5">
+                      {profile.kyc_status === "rejected"
+                        ? (profile.kyc_rejection_reason || "Please re-upload a clear photo of your student ID.")
+                        : profile.kyc_status === "manual_review"
+                          ? "We're taking a quick look — you'll get an email shortly."
+                          : "Verify your student ID to post & apply."}
+                    </p>
                   </div>
                 </div>
-                <Link href="/verify-id" className="w-full sm:w-auto px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-xs font-bold rounded-xl transition-all whitespace-nowrap text-center text-center">
-                  Verify Now
-                </Link>
+                {profile.kyc_status !== "manual_review" && (
+                  <Link href="/verify-id" className="w-full sm:w-auto px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-xs font-bold rounded-xl transition-all whitespace-nowrap text-center">
+                    {profile.kyc_status === "rejected" ? "Re-upload ID" : "Verify Now"}
+                  </Link>
+                )}
               </div>
             )}
 

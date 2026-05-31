@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { verifyStudentIdImage } from "@/lib/kycVerification";
+import { sendEmail } from "@/lib/email";
 
 // Service-role client bypasses all Storage RLS policies
 const supabaseAdmin = createClient(
@@ -52,33 +54,56 @@ export async function POST(req: Request) {
     }
 
     // 4. Upload to Storage
-    console.log("Starting KYC upload to bucket 'kyc-ids' for user:", user.id);
     const fileExt = file.name.split('.').pop() || 'jpg';
     const filePath = `${user.id}/${user.id}_student_id_${Date.now()}.${fileExt}`;
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+    const arrayBuffer = await file.arrayBuffer();
+    const fileBytes = new Uint8Array(arrayBuffer);
+
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('kyc-ids')
-      .upload(filePath, file, {
+      .upload(filePath, fileBytes, {
         contentType: file.type,
         upsert: true
       });
 
     if (uploadError) {
       console.error("KYC Storage Upload Error Details:", uploadError);
-      return NextResponse.json({ 
-        error: "Storage upload failed", 
+      return NextResponse.json({
+        error: "Storage upload failed",
         details: uploadError.message,
-        code: (uploadError as any).statusCode 
+        code: (uploadError as any).statusCode
       }, { status: 500 });
     }
 
-    console.log("Upload successful:", uploadData.path);
+    // 5. Pull the user's declared name/college to cross-check against the ID.
+    const { data: profile } = await supabaseAdmin
+      .from('users')
+      .select('name, college, email')
+      .eq('id', user.id)
+      .single();
 
-    // 5. Update User Profile
+    // 6. Auto-verify with the free vision model (fails open -> manual_review).
+    const base64 = Buffer.from(arrayBuffer).toString("base64");
+    const result = await verifyStudentIdImage(base64, file.type, {
+      declaredName: profile?.name,
+      declaredCollege: profile?.college,
+    });
+
+    const approved = result.decision === "approved";
+    const rejected = result.decision === "rejected";
+
+    // 7. Persist decision. Status drives the UI + admin queue; kyc_verified is the
+    //    boolean the rest of the app already keys off, so keep it in sync.
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
         id_card_url: filePath,
-        kyc_verified: false
+        kyc_verified: approved,
+        kyc_status: result.decision,
+        kyc_confidence: result.confidence,
+        kyc_institution: result.institution,
+        kyc_rejection_reason: rejected ? result.reason : null,
+        kyc_reviewed_at: result.decision === "manual_review" ? null : new Date().toISOString(),
       })
       .eq('id', user.id);
 
@@ -87,7 +112,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to update user profile", details: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, path: filePath });
+    // 8. Notify the student of the outcome (fire-and-forget; never fails the upload).
+    if (profile?.email && (approved || rejected)) {
+      sendEmail(approved ? "kyc_approved" : "kyc_rejected", {
+        to: profile.email,
+        recipientName: profile.name,
+        extra: { reason: result.reason, institution: result.institution },
+      }).catch(() => {});
+    }
+
+    return NextResponse.json({
+      success: true,
+      path: filePath,
+      decision: result.decision,
+      reason: result.reason,
+      institution: result.institution,
+    });
 
   } catch (err: any) {
     console.error("Fatal KYC Upload Error:", err);

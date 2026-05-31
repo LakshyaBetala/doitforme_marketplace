@@ -811,7 +811,7 @@ export default function LandingPage() {
               <ShieldCheck className="w-5 h-5 text-purple-400" />
             </div>
             <h3 className="text-white font-semibold mb-2">Verified students</h3>
-            <p className="text-gray-400 text-sm">OTP-verified student IDs. Real campus locations. Every student is authenticated before they can work.</p>
+            <p className="text-gray-400 text-sm">AI-verified student IDs — school, college or university. Every student is authenticated before they can work.</p>
           </div>
           <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
             <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">

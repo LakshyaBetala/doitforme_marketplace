@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "About DoItForMe – India's Campus Freelance Network",
     description:
-      "DoItForMe empowers Indian university students to earn money and outsource tasks. Verified IDs, escrow payments, instant UPI.",
+      "DoItForMe empowers Indian students — school, college and university — to earn money and outsource tasks. Verified IDs, escrow payments, instant UPI.",
     url: `${BASE_URL}/about`,
     siteName: "DoItForMe",
     type: "website",

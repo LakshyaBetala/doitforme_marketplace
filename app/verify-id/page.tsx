@@ -23,26 +23,30 @@ export default function VerifyIDPage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success">("idle");
+  const [status, setStatus] = useState<"idle" | "approved" | "review">("idle");
   const [error, setError] = useState("");
-  
+  const [reason, setReason] = useState("");
+
   const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Redirect if already verified, or show "Under Review" if already uploaded
+  // Reflect existing state: verified -> profile; under manual review -> review screen;
+  // rejected -> let them re-upload and show the reason; otherwise show the uploader.
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const { data } = await supabase
         .from("users")
-        .select("kyc_verified, id_card_url")
+        .select("kyc_verified, kyc_status, kyc_rejection_reason, id_card_url")
         .eq("id", user.id)
         .single();
-      if (data?.kyc_verified) {
+      if (data?.kyc_verified || data?.kyc_status === "approved") {
         router.push("/profile");
-      } else if (data?.id_card_url) {
+      } else if (data?.kyc_status === "manual_review") {
         setAlreadySubmitted(true);
+      } else if (data?.kyc_status === "rejected" && data?.kyc_rejection_reason) {
+        setReason(data.kyc_rejection_reason);
       }
     })();
   }, [supabase, router]);
@@ -103,8 +107,18 @@ export default function VerifyIDPage() {
         throw new Error(data.error || "Upload failed. Try again.");
       }
 
-      setStatus("success");
-      setTimeout(() => router.push("/profile"), 3000);
+      if (data.decision === "approved") {
+        setStatus("approved");
+        setTimeout(() => router.push("/profile"), 2500);
+      } else if (data.decision === "rejected") {
+        // Stay on the uploader so they can immediately re-shoot a clearer photo.
+        setReason(data.reason || "We couldn't confirm this is a valid student ID.");
+        setFile(null);
+        setPreview(null);
+      } else {
+        // manual_review (incl. fail-open)
+        setStatus("review");
+      }
 
     } catch (err: any) {
       console.error(err);
@@ -115,17 +129,37 @@ export default function VerifyIDPage() {
   };
 
 
-  if (status === "success") {
+  if (status === "approved") {
+    return (
+      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
+        <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500 max-w-md">
+          <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+            <ShieldCheck className="w-12 h-12 text-emerald-400" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">You&apos;re verified ✓</h1>
+          <div className="space-y-2 text-white/60">
+            <p>Your student ID was <strong className="text-emerald-400">approved instantly</strong>.</p>
+            <p className="text-sm">The verified badge is now live on your profile. Taking you there…</p>
+          </div>
+          <Link href="/profile" className="inline-block text-brand-purple hover:text-white transition-colors font-bold mt-4">
+            Go to Profile
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "review") {
     return (
       <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
         <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500 max-w-md">
           <div className="w-24 h-24 bg-brand-purple/10 rounded-full flex items-center justify-center mx-auto border border-brand-purple/20 shadow-[0_0_50px_rgba(136,37,245,0.2)]">
             <Clock className="w-12 h-12 text-brand-purple animate-pulse" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Upload Received</h1>
+          <h1 className="text-3xl font-bold text-white">Quick review needed</h1>
           <div className="space-y-2 text-white/60">
-            <p>Your ID is now <strong>Pending Review</strong>.</p>
-            <p className="text-sm">Our team will verify it shortly. Approvals typically take 1-12 hours.</p>
+            <p>Thanks! Your ID needs a <strong>quick human check</strong>.</p>
+            <p className="text-sm">This usually takes under a few hours — we&apos;ll email you the moment it&apos;s done.</p>
           </div>
           <Link href="/profile" className="inline-block text-brand-purple hover:text-white transition-colors font-bold mt-4">
             Return to Profile
@@ -171,9 +205,16 @@ export default function VerifyIDPage() {
             <div className="w-16 h-16 bg-brand-purple/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-purple/20">
               <ScanLine className="w-8 h-8 text-brand-purple" />
             </div>
-            <h1 className="text-3xl font-black mb-2">Upload Student ID</h1>
-            <p className="text-white/50">Upload your ID card for manual verification.<br/>We support JPG and PNG.</p>
+            <h1 className="text-3xl font-black mb-2">Verify your student ID</h1>
+            <p className="text-white/50">School, college or university — any student ID works.<br/>Most uploads are approved instantly. JPG or PNG.</p>
           </div>
+
+          {reason && (
+            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-300 text-sm flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span><strong>Couldn&apos;t verify your last upload.</strong> {reason} Please re-upload a clear photo of the front of your ID.</span>
+            </div>
+          )}
 
           <div 
             onDragOver={onDragOver}

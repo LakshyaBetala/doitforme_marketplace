@@ -47,8 +47,6 @@ export const COLLEGES: string[] = [
     "National Law School of India University (NLSIU)",
     "NIT Calicut",
     "NIT Rourkela",
-    "NIT Rourkela",
-    "NIT Rourkela",
     "NIT Surathkal",
     "NIT Trichy",
     "NIT Warangal",
@@ -110,7 +108,7 @@ export default function UniversitySelect({ value, onChange }: Props) {
     return (
         <div className="relative w-full" ref={dropdownRef}>
             <label className="block text-[10px] font-bold text-white/60 mb-2 ml-1 uppercase tracking-wider">
-                Select University
+                School / College / University
             </label>
 
             {/* TRIGGER BUTTON */}
@@ -122,7 +120,7 @@ export default function UniversitySelect({ value, onChange }: Props) {
                 <div className="flex items-center gap-3 pr-4 flex-1 overflow-hidden">
                     <Building2 size={18} className="text-white/40 group-hover:text-brand-purple shrink-0 transition-colors" />
                     <span className={`line-clamp-2 text-left leading-tight ${value ? "text-white font-medium" : "text-white/40"}`}>
-                        {value || "Search for your college..."}
+                        {value || "Search your school, college or university…"}
                     </span>
                 </div>
                 <ChevronDown size={18} className={`text-white/40 transition-transform shrink-0 ${isOpen ? "rotate-180 text-brand-purple" : ""}`} />
@@ -189,14 +187,33 @@ export default function UniversitySelect({ value, onChange }: Props) {
                                 })}
                             </div>
                         ) : (
-                            <div className="p-8 text-center flex flex-col items-center justify-center space-y-3">
-                                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-                                    <Building2 size={24} className="text-white/20" />
-                                </div>
-                                <div>
-                                    <p className="text-white/80 font-medium">No results found</p>
-                                    <p className="text-white/40 text-xs mt-1">Try selecting "Other" at the bottom</p>
-                                </div>
+                            <div className="p-4 text-center flex flex-col items-center justify-center space-y-3">
+                                {search.trim().length >= 2 ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onChange(search.trim());
+                                            setIsOpen(false);
+                                            setSearch("");
+                                        }}
+                                        className="w-full text-left px-4 py-3 rounded-xl text-sm md:text-base bg-[#8825F5]/15 border border-[#8825F5]/30 text-white hover:bg-[#8825F5]/25 transition-all flex items-center gap-3"
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-[#8825F5]/20 flex items-center justify-center shrink-0">
+                                            <Check size={14} className="text-brand-purple" strokeWidth={3} />
+                                        </div>
+                                        <span className="break-words leading-tight">
+                                            Use <strong>&ldquo;{search.trim()}&rdquo;</strong>
+                                            <span className="block text-white/40 text-xs mt-0.5">Your school, college or university</span>
+                                        </span>
+                                    </button>
+                                ) : (
+                                    <div className="py-6 flex flex-col items-center space-y-3">
+                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                                            <Building2 size={24} className="text-white/20" />
+                                        </div>
+                                        <p className="text-white/40 text-xs">Keep typing your institution&apos;s name…</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

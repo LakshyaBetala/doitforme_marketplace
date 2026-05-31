@@ -18,7 +18,9 @@ type EmailKind =
   | "payment_released"
   | "dispute_opened"
   | "company_approved"
-  | "company_pro_activated";
+  | "company_pro_activated"
+  | "kyc_approved"
+  | "kyc_rejected";
 
 interface BaseArgs {
   to: string;
@@ -156,6 +158,33 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p><a href="${url}" class="cta">Open dispute thread</a></p>
         `,
       };
+
+    case "kyc_approved": {
+      const institution = args.extra?.institution ? escapeHtml(String(args.extra.institution)) : null;
+      return {
+        subject: "You're a verified student on doitforme ✓",
+        preheader: "Your student ID was approved.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>Your student ID${institution ? ` from <strong>${institution}</strong>` : ""} has been <strong>verified</strong>. The verified badge is now live on your profile, and posters can see you're a real student.</p>
+          <p><a href="${SITE}/feed" class="cta">Find your first gig</a></p>
+        `,
+      };
+    }
+
+    case "kyc_rejected": {
+      const reason = args.extra?.reason ? escapeHtml(String(args.extra.reason)) : "We couldn't confirm this is a valid student ID.";
+      return {
+        subject: "Action needed — re-upload your student ID",
+        preheader: "We couldn't verify your ID this time.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>We couldn't verify the ID you uploaded. <strong>Reason:</strong> ${reason}</p>
+          <p>Please upload a clear, well-lit photo of the front of your school, college, or university ID card — any institution works.</p>
+          <p><a href="${SITE}/verify-id" class="cta">Re-upload ID</a></p>
+        `,
+      };
+    }
 
     case "company_approved":
       return {
