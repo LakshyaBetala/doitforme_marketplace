@@ -146,8 +146,8 @@ export default async function PublicProfilePage({
                   {displayName}
                 </h1>
                 {user.kyc_verified && (
-                  <span title="KYC verified" className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#8825F5]/10 text-[#C9A9FF] border border-[#8825F5]/20 text-[10px] font-medium">
-                    <ShieldCheck size={10} /> Verified
+                  <span title="Verified student — ID checked" className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#8825F5]/10 text-[#C9A9FF] border border-[#8825F5]/20 text-[10px] font-medium">
+                    <ShieldCheck size={10} /> Verified student
                   </span>
                 )}
                 {user.is_verified_company && (

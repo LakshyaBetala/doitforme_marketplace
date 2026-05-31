@@ -1,14 +1,19 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function RealtimeListener() {
     const supabase = supabaseBrowser();
     const router = useRouter();
+    const pathname = usePathname();
+    // Keep the latest pathname in a ref so the realtime callbacks (set up once)
+    // always read the current route without tearing down subscriptions on nav.
+    const pathnameRef = useRef(pathname);
+    pathnameRef.current = pathname;
 
     useEffect(() => {
         const setupListener = async () => {
@@ -28,7 +33,10 @@ export default function RealtimeListener() {
                     },
                     (payload: any) => {
                         const newMsg = payload.new as any;
-                        // Avoid notifying if user is literally on that chat page (optional optimization, skip for now to ensure delivery)
+                        // Don't toast if the user is already in the messages/chat surface —
+                        // they'll see the message land in real time without a redundant popup.
+                        const path = pathnameRef.current;
+                        if (path?.startsWith("/messages") || path?.startsWith("/chat")) return;
                         toast.info("New Message", {
                             description: newMsg.content || "You have a new message.",
                             action: {
