@@ -209,28 +209,43 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
       const category = rawCategory ? escapeHtml(rawCategory) : null;
       const company = args.extra?.company ? escapeHtml(String(args.extra.company)) : null;
       const profileIncomplete = String(args.extra?.profileIncomplete || "") === "1";
-      const tier = Number(args.extra?.tier || 3);
       const { short, angle } = categoryCopy(rawCategory);
+      const gt = args.gigTitle || "a new opportunity";
 
-      // Tier-based reason line — why this student is getting the email.
-      const reasonLine =
-        tier === 1
-          ? `Because you told us you're into <strong>${category || "this area"}</strong>, this one's a strong match.`
-          : tier === 2
-            ? `Your profile is complete, so you're exactly who posters shortlist first.`
-            : `A fresh opportunity from the doitforme board, picked for you.`;
+      // `match` = this recipient's relationship to the gig, set by the broadcast:
+      //   interest → their declared interest IS this gig's category
+      //   related  → they're into a related field we chose to include
+      //   engaged  → otherwise active on the platform
+      // Falls back from legacy `tier` so older callers still render sensibly.
+      const match = String(
+        args.extra?.match || (Number(args.extra?.tier || 3) === 1 ? "interest" : "engaged")
+      );
 
-      const subject =
-        tier === 1 && short
-          ? `New ${short} gig for you: ${args.gigTitle || "a new opportunity"}${rupees ? ` (${rupees})` : ""}`
-          : `New paid gig: ${args.gigTitle || "a new opportunity"}${rupees ? ` — ${rupees}` : ""}`;
+      let reasonLine: string;
+      let hook: string;
+      let subject: string;
+      if (match === "interest") {
+        reasonLine = `Because you told us you're into <strong>${category || "this area"}</strong>, this one's a strong match.`;
+        hook = angle;
+        subject = short
+          ? `New ${short} gig for you: ${gt}${rupees ? ` (${rupees})` : ""}`
+          : `New paid gig for you: ${gt}${rupees ? ` (${rupees})` : ""}`;
+      } else if (match === "related") {
+        reasonLine = `It's not your usual field, but it's a paid gig you might be into — this one's open to students from any background.`;
+        hook = "a chance to earn and pick up something new outside your usual area.";
+        subject = `New paid gig you might like: ${gt}${rupees ? ` (${rupees})` : ""}`;
+      } else {
+        reasonLine = `A fresh paid opportunity from the doitforme board, picked for you.`;
+        hook = angle;
+        subject = `New paid gig: ${gt}${rupees ? ` — ${rupees}` : ""}`;
+      }
 
       return {
         subject,
         preheader: `${company ? company + " just posted" : "A new gig just dropped"}${category ? ` in ${category}` : ""}. Be one of the first to apply.`,
         bodyHtml: `
           <p>Hi ${name},</p>
-          <p>${reasonLine} It's ${angle}</p>
+          <p>${reasonLine} It's ${hook}</p>
           <table role="presentation" width="100%" style="margin:8px 0 18px;border-collapse:separate;">
             <tr><td style="background:#f4f0fb;border:1px solid #e6dcfa;border-radius:12px;padding:16px 18px;">
               <div style="font-size:16px;font-weight:700;color:#111111;line-height:1.35;">${title}</div>

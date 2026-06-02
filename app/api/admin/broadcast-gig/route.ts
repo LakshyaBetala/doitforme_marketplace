@@ -11,14 +11,32 @@ const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
 // re-running only hits people who haven't received that channel yet.
 const EMAIL_BATCH_DEFAULT = 90; // stay under Resend free-tier ~100/day
 
-type AudienceRow = { id: string; email: string | null; name: string | null; profile_complete: boolean; has_interest: boolean };
-type Audience = AudienceRow & { tier: 1 | 2 | 3 };
+type AudienceRow = { id: string; email: string | null; name: string | null; profile_complete: boolean; has_interest: boolean; has_related: boolean };
+// match = relationship to this gig (drives the email copy variant).
+type Match = "interest" | "related" | "engaged";
+type Audience = AudienceRow & { match: Match; rank: number };
 
-// Priority tier: interest-match first, then completed profiles, then the rest.
-function tierFor(u: AudienceRow): 1 | 2 | 3 {
-  if (u.has_interest) return 1;
+// interest → declared interest is THIS gig's category
+// related  → interested in one of the admin-selected related fields
+// engaged  → otherwise active on the platform
+function matchFor(u: AudienceRow): Match {
+  if (u.has_interest) return "interest";
+  if (u.has_related) return "related";
+  return "engaged";
+}
+// Email send priority: interest, then related, then completed-profile, then rest.
+function rankFor(u: AudienceRow): number {
+  if (u.has_interest) return 0;
+  if (u.has_related) return 1;
   if (u.profile_complete) return 2;
   return 3;
+}
+
+// Accepts an array or a comma-separated string of category labels.
+function parseCategories(input: unknown): string[] {
+  if (Array.isArray(input)) return input.map((s) => String(s).trim()).filter(Boolean);
+  if (typeof input === "string") return input.split(",").map((s) => s.trim()).filter(Boolean);
+  return [];
 }
 
 // GET ?gigId=... — preview counts without sending anything.
@@ -28,30 +46,33 @@ export async function GET(req: Request) {
     if ("error" in admin) return admin.error;
     const service = admin.service;
 
-    const gigId = new URL(req.url).searchParams.get("gigId");
+    const url = new URL(req.url);
+    const gigId = url.searchParams.get("gigId");
     if (!gigId) return NextResponse.json({ error: "gigId required" }, { status: 400 });
+    const extraCategories = parseCategories(url.searchParams.get("related"));
 
     const gig = await loadGig(service, gigId);
     if (!gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    const { audience } = await resolveTargets(service, gig);
+    const { audience } = await resolveTargets(service, gig, extraCategories);
     const sent = await alreadySent(service, gigId);
     const emailPending = audience.filter((u) => !sent.email.has(u.id) && u.email);
 
     return NextResponse.json({
       gig: { id: gig.id, title: gig.title, price: gig.price, category: gig.category, company: gig.company },
       audienceTotal: audience.length,
-      tiers: {
-        interest: audience.filter((u) => u.tier === 1).length,
-        completeProfile: audience.filter((u) => u.tier === 2).length,
-        engaged: audience.filter((u) => u.tier === 3).length,
+      // How many fall into each relationship bucket (the three email designs).
+      buckets: {
+        interest: audience.filter((u) => u.match === "interest").length,
+        related: audience.filter((u) => u.match === "related").length,
+        engaged: audience.filter((u) => u.match === "engaged").length,
       },
       inapp: { sent: sent.inapp.size, remaining: audience.filter((u) => !sent.inapp.has(u.id)).length },
       email: {
         sent: sent.email.size,
         remaining: emailPending.length,
-        // Default per-gig email target: only the interest-matched (tier 1).
-        tier1Remaining: emailPending.filter((u) => u.tier === 1).length,
+        interestRemaining: emailPending.filter((u) => u.match === "interest").length,
+        relatedRemaining: emailPending.filter((u) => u.match === "related").length,
       },
     });
   } catch (err: any) {
@@ -66,27 +87,31 @@ export async function POST(req: Request) {
     if ("error" in admin) return admin.error;
     const { service, adminEmail } = admin;
 
-    // emailTier caps which tiers receive email. Default 1 = interest-matched only
-    // (most personalized, smallest volume — stays well under the Resend free cap).
-    // Pass 3 to deliberately reach all engaged students in batches.
-    const { gigId, channel = "both", test = false, emailLimit = EMAIL_BATCH_DEFAULT, emailTier = 1 } = await req.json();
+    // audienceMode chooses which email design / who receives this send:
+    //   interest → only students whose interest is this gig's category
+    //   related  → only students into the chosen related fields (relatedCategories)
+    //   engaged  → everyone active (each still gets the copy for THEIR match)
+    const body = await req.json();
+    const { gigId, channel = "email", test = false, emailLimit = EMAIL_BATCH_DEFAULT } = body;
+    const audienceMode: Match = (["interest", "related", "engaged"].includes(body.audienceMode) ? body.audienceMode : "interest");
+    const relatedCategories = parseCategories(body.relatedCategories);
     if (!gigId) return NextResponse.json({ error: "gigId required" }, { status: 400 });
     if (!["inapp", "email", "both"].includes(channel)) {
       return NextResponse.json({ error: "channel must be inapp | email | both" }, { status: 400 });
     }
-    const maxTier = Math.min(3, Math.max(1, Number(emailTier) || 1)) as 1 | 2 | 3;
 
     const gig = await loadGig(service, gigId);
     if (!gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    let { audience, posterUserId } = await resolveTargets(service, gig);
+    let { audience, posterUserId } = await resolveTargets(service, gig, relatedCategories);
 
     // Test mode: only the acting admin receives it (never logged, so a real run still reaches everyone).
+    // The admin row is stamped with the mode being tested so the right email design renders.
     if (test) {
-      audience = audience.filter((u) => u.email === adminEmail);
+      audience = audience.filter((u) => u.email === adminEmail).map((u) => ({ ...u, match: audienceMode }));
       if (audience.length === 0) {
         const { data: me } = await service.from("users").select("id, email, name").eq("email", adminEmail).maybeSingle();
-        if (me) audience = [{ id: me.id, email: me.email, name: me.name, profile_complete: true, has_interest: true, tier: 1 }];
+        if (me) audience = [{ id: me.id, email: me.email, name: me.name, profile_complete: true, has_interest: true, has_related: false, match: audienceMode, rank: 0 }];
       }
     }
 
@@ -108,11 +133,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // --- Email (batched, respects Resend daily cap) — highest-intent tier first ---
+    // --- Email (batched, respects Resend daily cap) — highest-intent first ---
     if (channel === "email" || channel === "both") {
+      // "engaged" mode reaches everyone; interest/related restrict to that bucket.
+      const inMode = (u: Audience) => audienceMode === "engaged" || u.match === audienceMode;
       const pending = audience
-        .filter((u) => u.id !== posterUserId && u.email && !sent.email.has(u.id) && u.tier <= maxTier)
-        .sort((a, b) => a.tier - b.tier);
+        .filter((u) => u.id !== posterUserId && u.email && !sent.email.has(u.id) && inMode(u))
+        .sort((a, b) => a.rank - b.rank);
       const batch = pending.slice(0, Math.max(0, Number(emailLimit) || 0));
       result.emailRemaining = pending.length - batch.length;
 
@@ -125,7 +152,7 @@ export async function POST(req: Request) {
             gigTitle: gig.title,
             gigId: gig.id,
             amount: gig.price,
-            extra: { category: gig.category, company: gig.company, profileIncomplete: u.profile_complete ? "0" : "1", tier: u.tier },
+            extra: { category: gig.category, company: gig.company, profileIncomplete: u.profile_complete ? "0" : "1", match: u.match },
           });
           if (r.ok) {
             result.emailSent++;
@@ -163,11 +190,15 @@ async function loadGig(service: any, gigId: string) {
 
 async function resolveTargets(
   service: any,
-  gig: { category: string | null; company_id: string | null; poster_id?: string | null }
+  gig: { category: string | null; company_id: string | null; poster_id?: string | null },
+  extraCategories: string[] = []
 ): Promise<{ audience: Audience[]; posterUserId: string | null }> {
-  const { data, error } = await service.rpc("gig_alert_audience", { p_category: gig.category });
+  const { data, error } = await service.rpc("gig_alert_audience", {
+    p_category: gig.category,
+    p_extra_categories: extraCategories,
+  });
   if (error) throw new Error(error.message);
-  const audience: Audience[] = ((data as AudienceRow[]) || []).map((u) => ({ ...u, tier: tierFor(u) }));
+  const audience: Audience[] = ((data as AudienceRow[]) || []).map((u) => ({ ...u, match: matchFor(u), rank: rankFor(u) }));
 
   // Don't alert the poster (company account or student poster).
   let posterUserId: string | null = gig.poster_id ?? null;

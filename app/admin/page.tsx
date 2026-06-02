@@ -7,6 +7,12 @@ import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, RefreshCcw, Building2, UserCheck, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 
+// Interest taxonomy used for "related field" targeting in the broadcast tab.
+const BROADCAST_CATEGORIES = [
+  "Commerce & Finance", "Design & Creative", "Academics & Gigs", "Tech & Engineering",
+  "Writing & Content", "Marketing & PR", "Science & Medical", "Law & Humanities", "Data & Research",
+];
+
 export default function AdminDashboardPage() {
     const supabase = supabaseBrowser();
     const router = useRouter();
@@ -24,6 +30,7 @@ export default function AdminDashboardPage() {
     const [selectedGigId, setSelectedGigId] = useState<string>("");
     const [broadcastPreview, setBroadcastPreview] = useState<any>(null);
     const [broadcastBusy, setBroadcastBusy] = useState(false);
+    const [relatedCats, setRelatedCats] = useState<string[]>([]);
 
     // Payouts state
     const [payouts, setPayouts] = useState<any[]>([]);
@@ -111,12 +118,12 @@ export default function AdminDashboardPage() {
         setBroadcastGigs(data || []);
     };
 
-    const loadBroadcastPreview = async (gigId: string) => {
-        setSelectedGigId(gigId);
-        setBroadcastPreview(null);
-        if (!gigId) return;
+    const loadBroadcastPreview = async (gigId: string, related: string[] = relatedCats) => {
+        if (gigId !== selectedGigId) setSelectedGigId(gigId);
+        if (!gigId) { setBroadcastPreview(null); return; }
         try {
-            const res = await fetch(`/api/admin/broadcast-gig?gigId=${gigId}`);
+            const q = related.length ? `&related=${encodeURIComponent(related.join(","))}` : "";
+            const res = await fetch(`/api/admin/broadcast-gig?gigId=${gigId}${q}`);
             const data = await res.json();
             if (res.ok) setBroadcastPreview(data);
             else toast.error(data.error || "Failed to load preview.");
@@ -125,10 +132,22 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const runBroadcast = async (channel: "inapp" | "email" | "both", test: boolean, emailTier: 1 | 3 = 1) => {
+    // Toggle a related-field category and refresh the bucket counts.
+    const toggleRelated = (cat: string) => {
+        const next = relatedCats.includes(cat) ? relatedCats.filter((c) => c !== cat) : [...relatedCats, cat];
+        setRelatedCats(next);
+        if (selectedGigId) loadBroadcastPreview(selectedGigId, next);
+    };
+
+    const runBroadcast = async (
+        opts: { channel: "inapp" | "email"; audienceMode?: "interest" | "related" | "engaged"; test?: boolean }
+    ) => {
+        const { channel, audienceMode = "interest", test = false } = opts;
         if (!selectedGigId) return;
-        if (!test && channel !== "inapp") {
-            const who = emailTier === 1 ? "students interested in this category" : "all engaged students (in batches of 90)";
+        if (!test && channel === "email") {
+            const who = audienceMode === "interest" ? "students interested in this exact field"
+                : audienceMode === "related" ? "students in the related fields you picked"
+                : "all engaged students (batched 90/run)";
             if (!confirm(`Send personalized emails to ${who} now? This cannot be undone.`)) return;
         }
         setBroadcastBusy(true);
@@ -136,7 +155,7 @@ export default function AdminDashboardPage() {
             const res = await fetch("/api/admin/broadcast-gig", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ gigId: selectedGigId, channel, test, emailTier }),
+                body: JSON.stringify({ gigId: selectedGigId, channel, test, audienceMode, relatedCategories: relatedCats }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -558,36 +577,71 @@ export default function AdminDashboardPage() {
                                             </div>
                                         </div>
 
-                                        {broadcastPreview.tiers && (
-                                            <div className="text-[10px] text-[#666] uppercase tracking-widest leading-relaxed border border-[#222] bg-[#0B0B11] p-4 space-y-1">
-                                                <div className="text-[#888] font-bold mb-2">Email priority order (highest intent first):</div>
-                                                <div>1 · Interested in {broadcastPreview.gig?.category || "category"}: <span className="text-white font-black">{broadcastPreview.tiers.interest}</span></div>
-                                                <div>2 · Completed profile: <span className="text-white font-black">{broadcastPreview.tiers.completeProfile}</span></div>
-                                                <div>3 · Otherwise engaged: <span className="text-white font-black">{broadcastPreview.tiers.engaged}</span></div>
-                                            </div>
-                                        )}
-                                        <p className="text-[10px] text-[#666] uppercase tracking-widest leading-relaxed">
-                                            Bell &amp; push are free, instant, and reach everyone. Email defaults to interest-matched students only (most personal, stays under the Resend free cap) — use &ldquo;all engaged&rdquo; only for a big push, it sends 90/run across days. Already-emailed students are skipped automatically.
-                                        </p>
+                                        {/* Bell + push — free, instant, reaches everyone */}
+                                        <button onClick={() => runBroadcast({ channel: "inapp" })} disabled={broadcastBusy}
+                                            className="w-full px-6 py-5 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-20">
+                                            {broadcastBusy ? "..." : `Send bell + push — free (${broadcastPreview.inapp.remaining})`}
+                                        </button>
 
-                                        <div className="flex flex-wrap gap-px bg-[#222] border border-[#222]">
-                                            <button onClick={() => runBroadcast("inapp", false)} disabled={broadcastBusy}
-                                                className="flex-1 min-w-[140px] px-6 py-5 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-20">
-                                                {broadcastBusy ? "..." : `Send bell + push (${broadcastPreview.inapp.remaining})`}
-                                            </button>
-                                            <button onClick={() => runBroadcast("email", true, 1)} disabled={broadcastBusy}
-                                                className="flex-1 min-w-[140px] px-6 py-5 bg-[#0a0a0a] text-[#8825F5] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#8825F5] hover:text-white disabled:opacity-20">
-                                                Test email to me
-                                            </button>
-                                            <button onClick={() => runBroadcast("email", false, 1)} disabled={broadcastBusy || (broadcastPreview.email.tier1Remaining ?? 0) === 0}
-                                                className="flex-1 min-w-[140px] px-6 py-5 bg-[#8825F5] text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#6f1ed1] disabled:opacity-20">
-                                                {broadcastBusy ? "..." : `Email interested (${broadcastPreview.email.tier1Remaining ?? 0})`}
-                                            </button>
-                                            <button onClick={() => runBroadcast("email", false, 3)} disabled={broadcastBusy || broadcastPreview.email.remaining === 0}
-                                                className="flex-1 min-w-[140px] px-6 py-5 bg-[#0a0a0a] text-[#888] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#111] hover:text-white disabled:opacity-20">
-                                                {broadcastBusy ? "..." : `Email all engaged (90/run)`}
-                                            </button>
+                                        {/* Related-field selector: defines who counts as "related" */}
+                                        <div className="border border-[#222] bg-[#0B0B11] p-4 space-y-3">
+                                            <div className="text-[10px] text-[#888] font-bold uppercase tracking-widest">Include related fields (optional)</div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {BROADCAST_CATEGORIES.filter((c) => c !== broadcastPreview.gig?.category).map((cat) => (
+                                                    <button key={cat} onClick={() => toggleRelated(cat)} disabled={broadcastBusy}
+                                                        className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider border transition-colors ${relatedCats.includes(cat) ? "bg-[#8825F5] text-white border-[#8825F5]" : "bg-transparent text-[#888] border-[#333] hover:border-[#555]"}`}>
+                                                        {cat}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
+
+                                        {/* The three email designs */}
+                                        <div className="space-y-px bg-[#222] border border-[#222]">
+                                            {/* 1 · Interested (gig's own field) */}
+                                            <div className="bg-[#0a0a0a] p-5 flex items-center justify-between gap-4 flex-wrap">
+                                                <div className="min-w-[200px]">
+                                                    <div className="text-[11px] font-black text-white uppercase tracking-wider">1 · Interested — {broadcastPreview.email.interestRemaining ?? 0} to send</div>
+                                                    <div className="text-[10px] text-[#666] mt-1">Subject: personalized &ldquo;New [your field] gig for you&rdquo;</div>
+                                                </div>
+                                                <div className="flex gap-px">
+                                                    <button onClick={() => runBroadcast({ channel: "email", audienceMode: "interest", test: true })} disabled={broadcastBusy}
+                                                        className="px-4 py-3 bg-[#111] text-[#8825F5] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#8825F5] hover:text-white disabled:opacity-20">Test</button>
+                                                    <button onClick={() => runBroadcast({ channel: "email", audienceMode: "interest" })} disabled={broadcastBusy || (broadcastPreview.email.interestRemaining ?? 0) === 0}
+                                                        className="px-4 py-3 bg-[#8825F5] text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#6f1ed1] disabled:opacity-20">Send</button>
+                                                </div>
+                                            </div>
+                                            {/* 2 · Related fields */}
+                                            <div className="bg-[#0a0a0a] p-5 flex items-center justify-between gap-4 flex-wrap">
+                                                <div className="min-w-[200px]">
+                                                    <div className="text-[11px] font-black text-white uppercase tracking-wider">2 · Related fields — {broadcastPreview.email.relatedRemaining ?? 0} to send</div>
+                                                    <div className="text-[10px] text-[#666] mt-1">Subject: &ldquo;New paid gig you might like&rdquo; · pick fields above first</div>
+                                                </div>
+                                                <div className="flex gap-px">
+                                                    <button onClick={() => runBroadcast({ channel: "email", audienceMode: "related", test: true })} disabled={broadcastBusy || relatedCats.length === 0}
+                                                        className="px-4 py-3 bg-[#111] text-[#8825F5] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#8825F5] hover:text-white disabled:opacity-20">Test</button>
+                                                    <button onClick={() => runBroadcast({ channel: "email", audienceMode: "related" })} disabled={broadcastBusy || (broadcastPreview.email.relatedRemaining ?? 0) === 0}
+                                                        className="px-4 py-3 bg-[#8825F5] text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#6f1ed1] disabled:opacity-20">Send</button>
+                                                </div>
+                                            </div>
+                                            {/* 3 · All engaged */}
+                                            <div className="bg-[#0a0a0a] p-5 flex items-center justify-between gap-4 flex-wrap">
+                                                <div className="min-w-[200px]">
+                                                    <div className="text-[11px] font-black text-white uppercase tracking-wider">3 · All engaged — {broadcastPreview.email.remaining ?? 0} to send</div>
+                                                    <div className="text-[10px] text-[#666] mt-1">Subject: &ldquo;New paid gig&rdquo; · 90/run across days</div>
+                                                </div>
+                                                <div className="flex gap-px">
+                                                    <button onClick={() => runBroadcast({ channel: "email", audienceMode: "engaged", test: true })} disabled={broadcastBusy}
+                                                        className="px-4 py-3 bg-[#111] text-[#8825F5] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#8825F5] hover:text-white disabled:opacity-20">Test</button>
+                                                    <button onClick={() => runBroadcast({ channel: "email", audienceMode: "engaged" })} disabled={broadcastBusy || (broadcastPreview.email.remaining ?? 0) === 0}
+                                                        className="px-4 py-3 bg-[#0a0a0a] text-[#888] border border-[#333] text-[9px] font-black uppercase tracking-[0.2em] hover:text-white disabled:opacity-20">Send</button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-[10px] text-[#666] uppercase tracking-widest leading-relaxed">
+                                            Each design is personalized per student. Already-emailed students are skipped automatically — re-run on later days to finish any leftovers.
+                                        </p>
                                     </div>
                                 )}
                             </div>
