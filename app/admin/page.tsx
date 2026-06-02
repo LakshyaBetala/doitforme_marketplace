@@ -125,15 +125,18 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const runBroadcast = async (channel: "inapp" | "email" | "both", test: boolean) => {
+    const runBroadcast = async (channel: "inapp" | "email" | "both", test: boolean, emailTier: 1 | 3 = 1) => {
         if (!selectedGigId) return;
-        if (!test && channel !== "inapp" && !confirm(`Send emails to up to 90 students now? This cannot be undone.`)) return;
+        if (!test && channel !== "inapp") {
+            const who = emailTier === 1 ? "students interested in this category" : "all engaged students (in batches of 90)";
+            if (!confirm(`Send personalized emails to ${who} now? This cannot be undone.`)) return;
+        }
         setBroadcastBusy(true);
         try {
             const res = await fetch("/api/admin/broadcast-gig", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ gigId: selectedGigId, channel, test }),
+                body: JSON.stringify({ gigId: selectedGigId, channel, test, emailTier }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -564,21 +567,25 @@ export default function AdminDashboardPage() {
                                             </div>
                                         )}
                                         <p className="text-[10px] text-[#666] uppercase tracking-widest leading-relaxed">
-                                            In-app bell is free &amp; instant. Email sends tier-1 first, in batches of 90/run (Resend daily cap) — re-run on later days to finish the rest. Already-sent students are skipped automatically.
+                                            Bell &amp; push are free, instant, and reach everyone. Email defaults to interest-matched students only (most personal, stays under the Resend free cap) — use &ldquo;all engaged&rdquo; only for a big push, it sends 90/run across days. Already-emailed students are skipped automatically.
                                         </p>
 
                                         <div className="flex flex-wrap gap-px bg-[#222] border border-[#222]">
                                             <button onClick={() => runBroadcast("inapp", false)} disabled={broadcastBusy}
                                                 className="flex-1 min-w-[140px] px-6 py-5 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-20">
-                                                {broadcastBusy ? "..." : `Send bell (${broadcastPreview.inapp.remaining})`}
+                                                {broadcastBusy ? "..." : `Send bell + push (${broadcastPreview.inapp.remaining})`}
                                             </button>
-                                            <button onClick={() => runBroadcast("email", true)} disabled={broadcastBusy}
+                                            <button onClick={() => runBroadcast("email", true, 1)} disabled={broadcastBusy}
                                                 className="flex-1 min-w-[140px] px-6 py-5 bg-[#0a0a0a] text-[#8825F5] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#8825F5] hover:text-white disabled:opacity-20">
                                                 Test email to me
                                             </button>
-                                            <button onClick={() => runBroadcast("email", false)} disabled={broadcastBusy || broadcastPreview.email.remaining === 0}
-                                                className="flex-1 min-w-[140px] px-6 py-5 bg-[#0a0a0a] text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#111] disabled:opacity-20">
-                                                {broadcastBusy ? "..." : `Send email batch (90)`}
+                                            <button onClick={() => runBroadcast("email", false, 1)} disabled={broadcastBusy || (broadcastPreview.email.tier1Remaining ?? 0) === 0}
+                                                className="flex-1 min-w-[140px] px-6 py-5 bg-[#8825F5] text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#6f1ed1] disabled:opacity-20">
+                                                {broadcastBusy ? "..." : `Email interested (${broadcastPreview.email.tier1Remaining ?? 0})`}
+                                            </button>
+                                            <button onClick={() => runBroadcast("email", false, 3)} disabled={broadcastBusy || broadcastPreview.email.remaining === 0}
+                                                className="flex-1 min-w-[140px] px-6 py-5 bg-[#0a0a0a] text-[#888] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#111] hover:text-white disabled:opacity-20">
+                                                {broadcastBusy ? "..." : `Email all engaged (90/run)`}
                                             </button>
                                         </div>
                                     </div>

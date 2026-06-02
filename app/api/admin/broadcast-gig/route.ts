@@ -47,7 +47,12 @@ export async function GET(req: Request) {
         engaged: audience.filter((u) => u.tier === 3).length,
       },
       inapp: { sent: sent.inapp.size, remaining: audience.filter((u) => !sent.inapp.has(u.id)).length },
-      email: { sent: sent.email.size, remaining: emailPending.length },
+      email: {
+        sent: sent.email.size,
+        remaining: emailPending.length,
+        // Default per-gig email target: only the interest-matched (tier 1).
+        tier1Remaining: emailPending.filter((u) => u.tier === 1).length,
+      },
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
@@ -61,11 +66,15 @@ export async function POST(req: Request) {
     if ("error" in admin) return admin.error;
     const { service, adminEmail } = admin;
 
-    const { gigId, channel = "both", test = false, emailLimit = EMAIL_BATCH_DEFAULT } = await req.json();
+    // emailTier caps which tiers receive email. Default 1 = interest-matched only
+    // (most personalized, smallest volume — stays well under the Resend free cap).
+    // Pass 3 to deliberately reach all engaged students in batches.
+    const { gigId, channel = "both", test = false, emailLimit = EMAIL_BATCH_DEFAULT, emailTier = 1 } = await req.json();
     if (!gigId) return NextResponse.json({ error: "gigId required" }, { status: 400 });
     if (!["inapp", "email", "both"].includes(channel)) {
       return NextResponse.json({ error: "channel must be inapp | email | both" }, { status: 400 });
     }
+    const maxTier = Math.min(3, Math.max(1, Number(emailTier) || 1)) as 1 | 2 | 3;
 
     const gig = await loadGig(service, gigId);
     if (!gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
@@ -102,7 +111,7 @@ export async function POST(req: Request) {
     // --- Email (batched, respects Resend daily cap) — highest-intent tier first ---
     if (channel === "email" || channel === "both") {
       const pending = audience
-        .filter((u) => u.id !== posterUserId && u.email && !sent.email.has(u.id))
+        .filter((u) => u.id !== posterUserId && u.email && !sent.email.has(u.id) && u.tier <= maxTier)
         .sort((a, b) => a.tier - b.tier);
       const batch = pending.slice(0, Math.max(0, Number(emailLimit) || 0));
       result.emailRemaining = pending.length - batch.length;
