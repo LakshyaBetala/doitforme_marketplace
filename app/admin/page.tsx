@@ -188,6 +188,33 @@ export default function AdminDashboardPage() {
         setBroadcastBusy(false);
     };
 
+    const deleteGig = async () => {
+        if (!selectedGigId) return;
+        const g = broadcastGigs.find((x) => x.id === selectedGigId);
+        if (!confirm(`Permanently DELETE "${g?.title || "this post"}"? This removes the post and its applications/messages and cannot be undone.`)) return;
+        setBroadcastBusy(true);
+        try {
+            const res = await fetch("/api/admin/delete-gig", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ gigId: selectedGigId }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || "Delete failed.");
+            } else {
+                toast.success(`Deleted "${data.deleted}".`);
+                setBroadcastPreview(null);
+                setSelectedGigId("");
+                setRelatedCats([]);
+                fetchBroadcastGigs();
+            }
+        } catch (e: any) {
+            toast.error(e.message || "Network error.");
+        }
+        setBroadcastBusy(false);
+    };
+
     const fetchPayouts = async () => {
         const { data, error } = await supabase
             .from("payout_queue")
@@ -664,6 +691,18 @@ export default function AdminDashboardPage() {
                                         <p className="text-[10px] text-[#666] uppercase tracking-widest leading-relaxed">
                                             Each design is personalized per student. Already-emailed students are skipped automatically — re-run on later days to finish any leftovers.
                                         </p>
+
+                                        {/* Danger zone: delete a stale / irrelevant post */}
+                                        <div className="border border-red-500/30 bg-red-500/[0.04] p-5 space-y-3">
+                                            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-red-400">Danger zone</div>
+                                            <p className="text-[10px] text-[#888] uppercase tracking-widest leading-relaxed">
+                                                Permanently delete this post (and its applications &amp; messages). Blocked automatically if it has any payment, escrow, payout or ratings history.
+                                            </p>
+                                            <button onClick={deleteGig} disabled={broadcastBusy}
+                                                className="w-full px-6 py-4 bg-red-600/90 text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-red-600 disabled:opacity-20">
+                                                {broadcastBusy ? "..." : "Delete this post permanently"}
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
