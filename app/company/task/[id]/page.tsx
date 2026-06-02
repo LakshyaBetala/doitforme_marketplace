@@ -30,6 +30,19 @@ export default function CompanyTaskHubPage() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [sortOption, setSortOption] = useState<"NEWEST" | "RATING" | "EXPERIENCE">("NEWEST");
 
+  // Limited edit (only while open & nobody hired)
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const EDIT_CATEGORIES = [
+    "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
+    "Commerce & Finance", "Academics & Gigs", "Data & Research", "Writing & Content",
+    "Marketing & PR", "Other",
+  ];
+
   useEffect(() => {
     async function loadData() {
       if (!gigId) return;
@@ -145,10 +158,48 @@ export default function CompanyTaskHubPage() {
     setSelectedWorkerId(null);
   };
 
+  const openEdit = () => {
+    setEditTitle(gig.title || "");
+    setEditDescription(gig.description || "");
+    setEditCategory(gig.category || "Other");
+    setEditPrice(String(gig.price ?? ""));
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    setSavingEdit(true);
+    try {
+      const res = await fetch("/api/company/edit-task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gigId: gig.id,
+          title: editTitle,
+          description: editDescription,
+          category: editCategory,
+          price: editPrice,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Couldn't save changes.");
+      } else {
+        setGig((g: any) => ({ ...g, ...data.gig }));
+        setShowEditModal(false);
+        toast.success("Task updated");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Network error.");
+    }
+    setSavingEdit(false);
+  };
+
   if (loading) return <div className="h-screen bg-[#0B0B11] flex justify-center items-center"><Loader2 className="animate-spin text-white w-8 h-8" /></div>;
   if (!gig) return null;
 
   const acceptedCount = applications.filter(a => a.status === 'accepted').length;
+  const hasApplicants = applications.length > 0;
+  const canEdit = gig.status === 'open' && acceptedCount === 0;
 
   const labelClass = "block text-[10px] font-bold text-[#444] uppercase tracking-widest mb-2";
 
@@ -204,6 +255,11 @@ export default function CompanyTaskHubPage() {
            </div>
 
            <div className="shrink-0 flex gap-4 w-full lg:w-auto">
+              {canEdit && (
+                <button onClick={openEdit} className="flex-1 lg:flex-none px-8 py-4 bg-white text-black hover:bg-gray-200 text-[10px] font-black uppercase tracking-widest transition-all">
+                  Edit Task
+                </button>
+              )}
               <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 lg:flex-none px-8 py-4 bg-[#111] border border-[#222] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest transition-all">
                 Preview Task
               </button>
@@ -477,6 +533,50 @@ export default function CompanyTaskHubPage() {
         </div>
 
       </div>
+
+      {/* EDIT TASK MODAL — limited edit while open & nobody hired */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 bg-[#0B0B11]/95 backdrop-blur-sm flex items-center justify-center p-6 overflow-y-auto" onClick={(e) => e.target === e.currentTarget && setShowEditModal(false)}>
+          <div className="bg-[#0a0a0a] border border-[#222] p-8 md:p-10 w-full max-w-lg relative animate-in zoom-in-95 duration-200 my-8">
+            <button onClick={() => setShowEditModal(false)} className="absolute top-6 right-6 text-[#444] hover:text-white transition-colors"><X size={18} /></button>
+            <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-2">Edit Task</h3>
+            <p className="text-[10px] font-bold text-[#666] uppercase tracking-widest mb-8 leading-relaxed">Refine your post to attract better applicants. Locks once you hire someone.</p>
+
+            <div className="space-y-6">
+              <div>
+                <label className={labelClass}>Title</label>
+                <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} maxLength={120}
+                  className="w-full bg-[#0B0B11] border border-[#222] p-4 text-white font-bold text-sm focus:outline-none focus:border-white transition-colors" />
+              </div>
+              <div>
+                <label className={labelClass}>Description</label>
+                <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={5}
+                  className="w-full bg-[#0B0B11] border border-[#222] p-4 text-white text-sm leading-relaxed focus:outline-none focus:border-white transition-colors resize-none" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Category</label>
+                  <select value={editCategory} onChange={(e) => setEditCategory(e.target.value)}
+                    className="w-full bg-[#0B0B11] border border-[#222] p-4 text-white font-bold text-sm focus:outline-none focus:border-white transition-colors">
+                    {EDIT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Budget / Worker (₹)</label>
+                  <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} disabled={hasApplicants}
+                    className="w-full bg-[#0B0B11] border border-[#222] p-4 text-white font-black text-sm focus:outline-none focus:border-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed" />
+                  {hasApplicants && <p className="text-[9px] text-[#555] uppercase tracking-widest mt-2 leading-relaxed">Price locked — applicants applied at the listed rate.</p>}
+                </div>
+              </div>
+            </div>
+
+            <button onClick={handleSaveEdit} disabled={savingEdit || !editTitle.trim() || !editDescription.trim()}
+              className="w-full mt-10 p-5 bg-white text-black font-black uppercase tracking-[0.3em] text-xs transition-all disabled:opacity-30 hover:bg-gray-200 flex items-center justify-center gap-2">
+              {savingEdit ? <><Loader2 size={14} className="animate-spin" /> Saving</> : "Save Changes"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* INCENTIVE MODAL */}
       {showIncentiveModal && (
