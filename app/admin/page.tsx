@@ -159,11 +159,27 @@ export default function AdminDashboardPage() {
             });
             const data = await res.json();
             if (!res.ok) {
-                toast.error(data.error || "Broadcast failed.");
+                toast.error(data.error || "Broadcast failed (HTTP error).");
             } else if (test) {
-                toast.success(`Test email sent (${data.emailSent} to you). Check your inbox.`);
+                if (channel === "inapp") {
+                    if (data.inappError) toast.error(`Test bell failed: ${data.inappError}`);
+                    else if (data.inappSent) toast.success("Test bell sent to YOUR account — open /dashboard to see it.");
+                    else toast.error("Test bell: no target found (couldn't locate your user row).");
+                } else {
+                    if (data.emailFailed || data.emailError) toast.error(`Test email failed: ${data.emailError || "not sent"}`);
+                    else if (data.emailSent) toast.success("Test email sent to you — check inbox + spam.");
+                    else toast.error("Test email: nothing sent.");
+                }
+            } else if (data.inappError) {
+                toast.error(`Bell failed: ${data.inappError}`);
+            } else if (data.emailFailed && data.emailError) {
+                toast.error(`${data.emailSent} sent, ${data.emailFailed} failed — ${data.emailError}`);
+                loadBroadcastPreview(selectedGigId);
             } else {
-                toast.success(`Sent — bell: ${data.inappSent}, email: ${data.emailSent}${data.emailRemaining ? ` (${data.emailRemaining} left, run again tomorrow)` : ""}`);
+                const summary = channel === "inapp"
+                    ? `bell ${data.inappSent}/${data.inappTargets}`
+                    : `email ${data.emailSent}`;
+                toast.success(`Sent — ${summary}${data.emailRemaining ? ` (${data.emailRemaining} left, run again tomorrow)` : ""}`);
                 loadBroadcastPreview(selectedGigId);
             }
         } catch (e: any) {
@@ -578,10 +594,16 @@ export default function AdminDashboardPage() {
                                         </div>
 
                                         {/* Bell + push — free, instant, reaches everyone */}
-                                        <button onClick={() => runBroadcast({ channel: "inapp" })} disabled={broadcastBusy}
-                                            className="w-full px-6 py-5 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-20">
-                                            {broadcastBusy ? "..." : `Send bell + push — free (${broadcastPreview.inapp.remaining})`}
-                                        </button>
+                                        <div className="flex gap-px bg-[#222] border border-[#222]">
+                                            <button onClick={() => runBroadcast({ channel: "inapp", test: true })} disabled={broadcastBusy}
+                                                className="px-5 py-5 bg-[#111] text-[#8825F5] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#8825F5] hover:text-white disabled:opacity-20">
+                                                {broadcastBusy ? "..." : "Test bell to me"}
+                                            </button>
+                                            <button onClick={() => runBroadcast({ channel: "inapp" })} disabled={broadcastBusy}
+                                                className="flex-1 px-6 py-5 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-20">
+                                                {broadcastBusy ? "..." : `Send bell + push — free (${broadcastPreview.inapp.remaining})`}
+                                            </button>
+                                        </div>
 
                                         {/* Related-field selector: defines who counts as "related" */}
                                         <div className="border border-[#222] bg-[#0B0B11] p-4 space-y-3">

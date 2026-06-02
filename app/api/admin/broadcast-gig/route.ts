@@ -117,19 +117,28 @@ export async function POST(req: Request) {
 
     const sent = test ? { inapp: new Set<string>(), email: new Set<string>() } : await alreadySent(service, gigId);
     const link = `/gig/${gig.id}`;
-    const result = { inappSent: 0, emailSent: 0, emailFailed: 0, emailRemaining: 0 };
+    const result = {
+      inappSent: 0, inappTargets: 0, inappError: null as string | null,
+      emailSent: 0, emailFailed: 0, emailRemaining: 0, emailError: null as string | null,
+    };
 
     // --- In-app bell (free, no cap) ---
     if (channel === "inapp" || channel === "both") {
       const targets = audience.filter((u) => u.id !== posterUserId && !sent.inapp.has(u.id));
+      result.inappTargets = targets.length;
       if (targets.length) {
         const content = `New paid gig: "${gig.title}"${gig.price ? ` — ₹${gig.price}` : ""}${gig.category ? ` (${gig.category})` : ""}`;
         const notifications = targets.map((u) => ({ user_id: u.id, type: "gig", content, link, is_read: false }));
         const { error: nErr } = await service.from("notifications").insert(notifications);
-        if (!nErr && !test) {
-          await service.from("gig_alerts_sent").insert(targets.map((u) => ({ gig_id: gig.id, user_id: u.id, channel: "inapp" })));
+        if (nErr) {
+          result.inappError = nErr.message;
+        } else {
+          if (!test) {
+            const { error: logErr } = await service.from("gig_alerts_sent").insert(targets.map((u) => ({ gig_id: gig.id, user_id: u.id, channel: "inapp" })));
+            if (logErr) result.inappError = `Sent, but failed to log: ${logErr.message}`;
+          }
+          result.inappSent = targets.length;
         }
-        if (!nErr) result.inappSent = targets.length;
       }
     }
 
@@ -159,9 +168,11 @@ export async function POST(req: Request) {
             if (!test) await service.from("gig_alerts_sent").insert({ gig_id: gig.id, user_id: u.id, channel: "email" });
           } else {
             result.emailFailed++;
+            result.emailError = r.skipped || "Email provider rejected the send";
           }
-        } catch {
+        } catch (e: any) {
           result.emailFailed++;
+          result.emailError = e?.message || "Email send threw an error";
         }
         await new Promise((res) => setTimeout(res, 120)); // gentle pacing
       }
