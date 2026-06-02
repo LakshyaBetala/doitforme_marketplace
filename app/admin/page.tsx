@@ -14,10 +14,16 @@ export default function AdminDashboardPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     
     // Tabs state
-    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC">("PAYOUTS");
+    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "BROADCAST">("PAYOUTS");
 
     // Pending student-ID review state
     const [pendingKyc, setPendingKyc] = useState<any[]>([]);
+
+    // Broadcast (new-gig alerts) state
+    const [broadcastGigs, setBroadcastGigs] = useState<any[]>([]);
+    const [selectedGigId, setSelectedGigId] = useState<string>("");
+    const [broadcastPreview, setBroadcastPreview] = useState<any>(null);
+    const [broadcastBusy, setBroadcastBusy] = useState(false);
 
     // Payouts state
     const [payouts, setPayouts] = useState<any[]>([]);
@@ -54,7 +60,8 @@ export default function AdminDashboardPage() {
             fetchPayouts(),
             fetchCompanies(),
             fetchPendingUsers(),
-            fetchPendingKyc()
+            fetchPendingKyc(),
+            fetchBroadcastGigs()
         ]);
         setLoading(false);
     };
@@ -92,6 +99,55 @@ export default function AdminDashboardPage() {
             toast.error(err.message || "Network error.");
         }
         setProcessingId(null);
+    };
+
+    // --- BROADCAST (new-gig alerts) ---
+    const fetchBroadcastGigs = async () => {
+        const { data } = await supabase
+            .from("gigs")
+            .select("id, title, price, category, created_at, status")
+            .order("created_at", { ascending: false })
+            .limit(25);
+        setBroadcastGigs(data || []);
+    };
+
+    const loadBroadcastPreview = async (gigId: string) => {
+        setSelectedGigId(gigId);
+        setBroadcastPreview(null);
+        if (!gigId) return;
+        try {
+            const res = await fetch(`/api/admin/broadcast-gig?gigId=${gigId}`);
+            const data = await res.json();
+            if (res.ok) setBroadcastPreview(data);
+            else toast.error(data.error || "Failed to load preview.");
+        } catch (e: any) {
+            toast.error(e.message || "Network error.");
+        }
+    };
+
+    const runBroadcast = async (channel: "inapp" | "email" | "both", test: boolean) => {
+        if (!selectedGigId) return;
+        if (!test && channel !== "inapp" && !confirm(`Send emails to up to 90 students now? This cannot be undone.`)) return;
+        setBroadcastBusy(true);
+        try {
+            const res = await fetch("/api/admin/broadcast-gig", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ gigId: selectedGigId, channel, test }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || "Broadcast failed.");
+            } else if (test) {
+                toast.success(`Test email sent (${data.emailSent} to you). Check your inbox.`);
+            } else {
+                toast.success(`Sent — bell: ${data.inappSent}, email: ${data.emailSent}${data.emailRemaining ? ` (${data.emailRemaining} left, run again tomorrow)` : ""}`);
+                loadBroadcastPreview(selectedGigId);
+            }
+        } catch (e: any) {
+            toast.error(e.message || "Network error.");
+        }
+        setBroadcastBusy(false);
     };
 
     const fetchPayouts = async () => {
@@ -254,6 +310,9 @@ export default function AdminDashboardPage() {
                 </button>
                 <button onClick={() => setActiveTab("PENDING_KYC")} className={getTabClass("PENDING_KYC")}>
                     Student IDs ({pendingKyc.length})
+                </button>
+                <button onClick={() => setActiveTab("BROADCAST")} className={getTabClass("BROADCAST")}>
+                    Broadcast Gig
                 </button>
             </div>
 
@@ -456,6 +515,67 @@ export default function AdminDashboardPage() {
                                     <p className="text-[#444] text-[10px] font-bold uppercase tracking-[0.3em]">No IDs awaiting review.</p>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* BROADCAST: alert engaged students about a new gig */}
+                    {activeTab === "BROADCAST" && (
+                        <div className="max-w-3xl space-y-8">
+                            <div className="border border-[#222] bg-[#0a0a0a] p-8 space-y-6">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-[0.3em] text-[#444] block mb-3">Select a gig to broadcast</label>
+                                    <select
+                                        value={selectedGigId}
+                                        onChange={(e) => loadBroadcastPreview(e.target.value)}
+                                        className="w-full bg-[#0B0B11] border border-[#222] text-white text-sm p-4 font-bold focus:outline-none focus:border-[#444]"
+                                    >
+                                        <option value="">— Choose a gig —</option>
+                                        {broadcastGigs.map((g) => (
+                                            <option key={g.id} value={g.id}>
+                                                {g.title}{g.price ? ` · ₹${g.price}` : ""}{g.category ? ` · ${g.category}` : ""} ({g.status})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {broadcastPreview && (
+                                    <div className="space-y-6 animate-in fade-in duration-300">
+                                        <div className="grid grid-cols-3 gap-px bg-[#222] border border-[#222] text-center">
+                                            <div className="bg-[#0a0a0a] py-6">
+                                                <div className="text-3xl font-black text-white italic">{broadcastPreview.audienceTotal}</div>
+                                                <div className="text-[9px] font-black uppercase tracking-widest text-[#444] mt-2">Engaged audience</div>
+                                            </div>
+                                            <div className="bg-[#0a0a0a] py-6">
+                                                <div className="text-3xl font-black text-white italic">{broadcastPreview.inapp.remaining}</div>
+                                                <div className="text-[9px] font-black uppercase tracking-widest text-[#444] mt-2">Bell — to send</div>
+                                            </div>
+                                            <div className="bg-[#0a0a0a] py-6">
+                                                <div className="text-3xl font-black text-white italic">{broadcastPreview.email.remaining}</div>
+                                                <div className="text-[9px] font-black uppercase tracking-widest text-[#444] mt-2">Email — to send</div>
+                                            </div>
+                                        </div>
+
+                                        <p className="text-[10px] text-[#666] uppercase tracking-widest leading-relaxed">
+                                            In-app bell is free &amp; instant. Email sends in batches of 90/run (Resend daily cap) — re-run on later days to finish the rest. Already-sent students are skipped automatically.
+                                        </p>
+
+                                        <div className="flex flex-wrap gap-px bg-[#222] border border-[#222]">
+                                            <button onClick={() => runBroadcast("inapp", false)} disabled={broadcastBusy}
+                                                className="flex-1 min-w-[140px] px-6 py-5 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-20">
+                                                {broadcastBusy ? "..." : `Send bell (${broadcastPreview.inapp.remaining})`}
+                                            </button>
+                                            <button onClick={() => runBroadcast("email", true)} disabled={broadcastBusy}
+                                                className="flex-1 min-w-[140px] px-6 py-5 bg-[#0a0a0a] text-[#8825F5] text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#8825F5] hover:text-white disabled:opacity-20">
+                                                Test email to me
+                                            </button>
+                                            <button onClick={() => runBroadcast("email", false)} disabled={broadcastBusy || broadcastPreview.email.remaining === 0}
+                                                className="flex-1 min-w-[140px] px-6 py-5 bg-[#0a0a0a] text-white text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#111] disabled:opacity-20">
+                                                {broadcastBusy ? "..." : `Send email batch (90)`}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>

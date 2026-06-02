@@ -20,7 +20,8 @@ type EmailKind =
   | "company_approved"
   | "company_pro_activated"
   | "kyc_approved"
-  | "kyc_rejected";
+  | "kyc_rejected"
+  | "new_gig_alert";
 
 interface BaseArgs {
   to: string;
@@ -182,6 +183,31 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p>We couldn't verify the ID you uploaded. <strong>Reason:</strong> ${reason}</p>
           <p>Please upload a clear, well-lit photo of the front of your school, college, or university ID card — any institution works.</p>
           <p><a href="${SITE}/verify-id" class="cta">Re-upload ID</a></p>
+        `,
+      };
+    }
+
+    case "new_gig_alert": {
+      const category = args.extra?.category ? escapeHtml(String(args.extra.category)) : null;
+      const company = args.extra?.company ? escapeHtml(String(args.extra.company)) : null;
+      const profileIncomplete = String(args.extra?.profileIncomplete || "") === "1";
+      return {
+        subject: `New paid gig: ${args.gigTitle || "a new opportunity"}${rupees ? ` — ${rupees}` : ""}`,
+        preheader: `${company ? company + " just posted" : "A new gig just dropped"}${category ? ` in ${category}` : ""}. Be one of the first to apply.`,
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>A new paid gig${category ? ` in <strong>${category}</strong>` : ""} just went live on doitforme${company ? ` from <strong>${company}</strong>` : ""}. Early applicants get seen first.</p>
+          <table role="presentation" width="100%" style="margin:6px 0 18px;border-collapse:separate;">
+            <tr><td style="background:#f4f0fb;border:1px solid #e6dcfa;border-radius:12px;padding:16px 18px;">
+              <div style="font-size:16px;font-weight:700;color:#111111;line-height:1.35;">${title}</div>
+              ${rupees ? `<div style="font-size:15px;font-weight:700;color:#8825F5;margin-top:6px;">${rupees}</div>` : ""}
+              ${category ? `<div style="font-size:12px;color:#666666;margin-top:4px;">${category}${company ? ` · ${company}` : ""}</div>` : ""}
+            </td></tr>
+          </table>
+          <p><a href="${url}" class="cta">View &amp; apply</a></p>
+          ${profileIncomplete
+            ? `<p class="muted">Tip: posters pick workers with a complete profile first. <a href="${SITE}/profile">Finish your worker profile</a> (2 mins) to stand out.</p>`
+            : `<p class="muted">All payments stay in escrow until the work is delivered — never share UPI directly.</p>`}
         `,
       };
     }
