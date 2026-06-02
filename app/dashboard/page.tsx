@@ -167,9 +167,9 @@ export default function Dashboard() {
           1. TOP BAR (Global Navigation)
       -------------------------------------------------- */}
       <header className="h-[70px] md:h-[80px] bg-gradient-to-r from-[#0B1021] to-[#070B1A] border-b border-white/[0.08] flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 md:gap-6 min-w-0 flex-1">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group shrink-0">
             <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg overflow-hidden flex items-center justify-center">
               <Image src="/Doitforme_logo.png" alt="DoItForMe" fill className="object-contain" />
             </div>
@@ -177,7 +177,7 @@ export default function Dashboard() {
           </Link>
 
           {/* Search Bar */}
-          <div className="flex relative w-48 md:w-80">
+          <div className="flex relative w-full max-w-[150px] md:max-w-none md:w-80 min-w-0">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
@@ -190,7 +190,7 @@ export default function Dashboard() {
         </div>
 
         {/* Global Actions */}
-        <div className="flex items-center gap-3 md:gap-4 relative">
+        <div className="flex items-center gap-2 md:gap-4 relative shrink-0 pl-2">
 
           <Link href="/profile#refer" className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-brand-purple/20 border border-brand-purple/30 rounded-lg shadow-sm hover:bg-brand-purple/30 transition-colors">
             <Gift size={14} className="text-brand-purple" />

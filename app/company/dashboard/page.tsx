@@ -155,10 +155,16 @@ function CompanyDashboard() {
         );
     }
 
-    const filteredGigs = myGigs.filter(gig => 
+    const filteredGigs = myGigs.filter(gig =>
         gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         gig.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    // A gig past its deadline is hidden from student feeds (see app/feed) but its
+    // DB status stays 'open' — so flag it here too, otherwise the dashboard shows
+    // an expired posting as if it were still live.
+    const isExpired = (gig: any) => gig.deadline && new Date(gig.deadline).getTime() < Date.now();
+    const activeCount = filteredGigs.filter((g) => !isExpired(g)).length;
+    const expiredCount = filteredGigs.length - activeCount;
 
     return (
         <div className="h-[100dvh] bg-[var(--background)] text-white flex flex-col font-sans overflow-hidden selection:bg-[#8825F5]/30 selection:text-white relative">
@@ -275,7 +281,7 @@ function CompanyDashboard() {
                                 Active Postings
                             </h2>
                             <div className="bg-white/10 border border-white/20 px-3 py-1 rounded-full text-xs font-medium text-zinc-300">
-                                {filteredGigs.length} UNITS
+                                {activeCount} ACTIVE{expiredCount > 0 ? ` · ${expiredCount} EXPIRED` : ""}
                             </div>
                         </div>
                         
@@ -292,15 +298,19 @@ function CompanyDashboard() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredGigs.map(gig => (
-                                    <Link href={`/company/task/${gig.id}`} key={gig.id} className="group relative border border-white/10 bg-white/[0.03] backdrop-blur-md rounded-2xl p-8 hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
-                                        
+                                    <Link href={`/company/task/${gig.id}`} key={gig.id} className={`group relative border border-white/10 bg-white/[0.03] backdrop-blur-md rounded-2xl p-8 hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] ${isExpired(gig) ? "opacity-60" : ""}`}>
+
                                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
 
                                         <div className="relative z-10 flex justify-between items-start mb-6">
                                             <span className="text-xs font-medium text-zinc-500 transition-colors uppercase font-mono bg-black/40 px-2 py-1 rounded border border-white/5">
                                                 ID: {gig.id.split('-')[0]}
                                             </span>
-                                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]"></div>
+                                            {isExpired(gig) ? (
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">Expired</span>
+                                            ) : (
+                                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]"></div>
+                                            )}
                                         </div>
                                         
                                         <h3 className="relative z-10 font-bold text-white text-xl tracking-tight mb-8 line-clamp-2 leading-tight transition-colors">
