@@ -555,8 +555,16 @@ export default function AdminDashboardPage() {
                                             </div>
                                         </div>
 
+                                        {broadcastPreview.tiers && (
+                                            <div className="text-[10px] text-[#666] uppercase tracking-widest leading-relaxed border border-[#222] bg-[#0B0B11] p-4 space-y-1">
+                                                <div className="text-[#888] font-bold mb-2">Email priority order (highest intent first):</div>
+                                                <div>1 · Interested in {broadcastPreview.gig?.category || "category"}: <span className="text-white font-black">{broadcastPreview.tiers.interest}</span></div>
+                                                <div>2 · Completed profile: <span className="text-white font-black">{broadcastPreview.tiers.completeProfile}</span></div>
+                                                <div>3 · Otherwise engaged: <span className="text-white font-black">{broadcastPreview.tiers.engaged}</span></div>
+                                            </div>
+                                        )}
                                         <p className="text-[10px] text-[#666] uppercase tracking-widest leading-relaxed">
-                                            In-app bell is free &amp; instant. Email sends in batches of 90/run (Resend daily cap) — re-run on later days to finish the rest. Already-sent students are skipped automatically.
+                                            In-app bell is free &amp; instant. Email sends tier-1 first, in batches of 90/run (Resend daily cap) — re-run on later days to finish the rest. Already-sent students are skipped automatically.
                                         </p>
 
                                         <div className="flex flex-wrap gap-px bg-[#222] border border-[#222]">

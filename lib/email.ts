@@ -52,6 +52,23 @@ function gigUrl(gigId?: string | null): string {
   return gigId ? `${SITE}/gig/${gigId}` : SITE;
 }
 
+// Per-category personalization for new-gig alerts. `short` drives the subject,
+// `angle` is the one-line hook in the body that speaks to that field.
+const CATEGORY_COPY: Record<string, { short: string; angle: string }> = {
+  "Commerce & Finance": { short: "finance", angle: "real finance &amp; tax work that actually builds your CV — GST, compliance and live client exposure, not theory." },
+  "Design & Creative": { short: "design", angle: "real client design work you can put straight into your portfolio." },
+  "Academics & Gigs": { short: "academics", angle: "paid academic work — tutoring, projects and assignments in your subject." },
+  "Tech & Engineering": { short: "tech", angle: "hands-on engineering work you can ship and show off." },
+  "Writing & Content": { short: "writing", angle: "paid writing &amp; content work for real brands." },
+  "Marketing & PR": { short: "marketing", angle: "real marketing, outreach and PR experience that counts." },
+  "Science & Medical": { short: "science", angle: "research and science-focused gigs in your domain." },
+  "Law & Humanities": { short: "law", angle: "law &amp; humanities work — research, drafting and more." },
+  "Data & Research": { short: "data", angle: "data and research projects that pay." },
+};
+function categoryCopy(category?: string | null) {
+  return (category && CATEGORY_COPY[category]) || { short: "", angle: "a fresh paid opportunity that fits you." };
+}
+
 function render(kind: EmailKind, args: BaseArgs): RenderResult {
   const name = escapeHtml(args.recipientName || "there");
   const title = escapeHtml(args.gigTitle || "your gig");
@@ -188,16 +205,33 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
     }
 
     case "new_gig_alert": {
-      const category = args.extra?.category ? escapeHtml(String(args.extra.category)) : null;
+      const rawCategory = args.extra?.category ? String(args.extra.category) : null;
+      const category = rawCategory ? escapeHtml(rawCategory) : null;
       const company = args.extra?.company ? escapeHtml(String(args.extra.company)) : null;
       const profileIncomplete = String(args.extra?.profileIncomplete || "") === "1";
+      const tier = Number(args.extra?.tier || 3);
+      const { short, angle } = categoryCopy(rawCategory);
+
+      // Tier-based reason line — why this student is getting the email.
+      const reasonLine =
+        tier === 1
+          ? `Because you told us you're into <strong>${category || "this area"}</strong>, this one's a strong match.`
+          : tier === 2
+            ? `Your profile is complete, so you're exactly who posters shortlist first.`
+            : `A fresh opportunity from the doitforme board, picked for you.`;
+
+      const subject =
+        tier === 1 && short
+          ? `New ${short} gig for you: ${args.gigTitle || "a new opportunity"}${rupees ? ` (${rupees})` : ""}`
+          : `New paid gig: ${args.gigTitle || "a new opportunity"}${rupees ? ` — ${rupees}` : ""}`;
+
       return {
-        subject: `New paid gig: ${args.gigTitle || "a new opportunity"}${rupees ? ` — ${rupees}` : ""}`,
+        subject,
         preheader: `${company ? company + " just posted" : "A new gig just dropped"}${category ? ` in ${category}` : ""}. Be one of the first to apply.`,
         bodyHtml: `
           <p>Hi ${name},</p>
-          <p>A new paid gig${category ? ` in <strong>${category}</strong>` : ""} just went live on doitforme${company ? ` from <strong>${company}</strong>` : ""}. Early applicants get seen first.</p>
-          <table role="presentation" width="100%" style="margin:6px 0 18px;border-collapse:separate;">
+          <p>${reasonLine} It's ${angle}</p>
+          <table role="presentation" width="100%" style="margin:8px 0 18px;border-collapse:separate;">
             <tr><td style="background:#f4f0fb;border:1px solid #e6dcfa;border-radius:12px;padding:16px 18px;">
               <div style="font-size:16px;font-weight:700;color:#111111;line-height:1.35;">${title}</div>
               ${rupees ? `<div style="font-size:15px;font-weight:700;color:#8825F5;margin-top:6px;">${rupees}</div>` : ""}
