@@ -227,6 +227,10 @@ function AuthPage() {
       provider: "google",
       options: {
         redirectTo: redirectUrl.toString(),
+        // Force Google's account chooser instead of silently re-using the
+        // already signed-in session — otherwise a company Google account
+        // gets auto-selected and bounced as "enterprise_account".
+        queryParams: { prompt: "select_account" },
       },
     });
     if (error) {
