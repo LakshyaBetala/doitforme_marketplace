@@ -208,16 +208,8 @@ function ChatRoomContent() {
             { event: "INSERT", schema: "public", table: "messages", filter: `gig_id=eq.${roomId}` },
             (payload: any) => {
               const newMessage = payload.new as Message;
-              setMessages((prev) => [...prev, newMessage]);
-
-              const allMagicChips = [
-                "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
-                "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
-              ];
-
-              if (!posterMode && newMessage.sender_id === user.id && newMessage.message_type !== 'offer' && !allMagicChips.includes(newMessage.content)) {
-                setMsgCount(prev => prev + 1);
-              }
+              // Dedup: the sender already appended this optimistically.
+              setMessages((prev) => prev.some((x) => x.id === newMessage.id) ? prev : [...prev, newMessage]);
             }
           )
           .subscribe();
@@ -243,6 +235,22 @@ function ChatRoomContent() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, selectedApplicantId]);
+
+  // Keep the applicant's "messages used" count in sync with the actual messages,
+  // regardless of whether they arrived optimistically or via realtime.
+  useEffect(() => {
+    if (isPoster || !currentUser) return;
+    const freeChips = [
+      "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
+      "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
+    ];
+    const mine = messages.filter((m) =>
+      m.sender_id === currentUser.id &&
+      m.message_type !== 'offer' &&
+      !freeChips.includes(m.content)
+    );
+    setMsgCount(mine.length);
+  }, [messages, isPoster, currentUser]);
 
   const sendMessage = async (txt?: string, type: 'text' | 'offer' | 'image' = 'text', amount?: number) => {
     if (isSending) return;
@@ -283,6 +291,12 @@ function ChatRoomContent() {
       if (!res.ok) {
         toast.error(json.message || json.error || "Failed");
         return;
+      }
+
+      // Show the sent message immediately rather than waiting for the realtime
+      // echo (which may lag); the realtime handler dedupes by id.
+      if (json.message?.id) {
+        setMessages((prev) => prev.some((x) => x.id === json.message.id) ? prev : [...prev, json.message]);
       }
 
       if (type === 'text' && !txt) setInput("");
@@ -376,10 +390,17 @@ function ChatRoomContent() {
 
   // --- DERIVED STATE ---
   const activeMessages = messages.filter(m => {
-    if (!isPoster) return true;
-    if (!selectedApplicantId) return false;
-    return (m.sender_id === currentUser?.id && m.receiver_id === selectedApplicantId) ||
-      (m.sender_id === selectedApplicantId && m.receiver_id === currentUser?.id);
+    if (isPoster) {
+      if (!selectedApplicantId) return false;
+      return (m.sender_id === currentUser?.id && m.receiver_id === selectedApplicantId) ||
+        (m.sender_id === selectedApplicantId && m.receiver_id === currentUser?.id);
+    }
+    // Applicant: only the thread between me and the poster. (Admins can read every
+    // message via RLS's is_admin() bypass, so without this an admin-applicant would
+    // see other applicants' threads mixed in.)
+    const posterId = gig?.poster_id;
+    return (m.sender_id === currentUser?.id && m.receiver_id === posterId) ||
+      (m.sender_id === posterId && m.receiver_id === currentUser?.id);
   });
 
   const magicChips = ["I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"];
@@ -493,10 +514,14 @@ function ChatRoomContent() {
         {/* TRANSACTION CARD (Sticky) */}
         <div className="bg-[#1A1A24] border-b border-white/5 p-3 flex items-center gap-3 shrink-0">
           <div className="w-10 h-10 rounded-lg bg-zinc-800 relative overflow-hidden shrink-0 border border-white/10">
-            {gig?.images && gig.images.length > 0 
-              ? <Image src={supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl} alt="Gig" fill className="object-cover" />
-              : <Briefcase className="p-2 w-full h-full text-white/50" />
-            }
+            {(() => {
+              // images[] can also hold non-image attachments (e.g. a COMPANY_TASK
+              // requirements PDF) — only render an actual image, else the icon.
+              const firstImage = gig?.images?.find((img) => /\.(jpe?g|png|webp|gif|avif)$/i.test(img));
+              return firstImage
+                ? <Image src={supabase.storage.from("gig-images").getPublicUrl(firstImage).data.publicUrl} alt="Gig" fill className="object-cover" />
+                : <Briefcase className="p-2 w-full h-full text-white/50" />;
+            })()}
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-xs font-bold text-white/90 truncate">{gig.title}</h3>

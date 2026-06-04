@@ -188,6 +188,9 @@ export default function WorkerSetupPage() {
     const completionCount = completionItems.filter(i => i.done).length;
     const completionPct = Math.round((completionCount / completionItems.length) * 100);
 
+    // The three things actually required to apply: phone, UPI, and at least one of skills/resume.
+    const requiredMet = !!phone.trim() && !!upiId.trim() && (skills.length > 0 || !!existingResumeUrl || !!resumeFile);
+
     // Extract resume filename from URL
     const resumeFilename = existingResumeUrl 
         ? decodeURIComponent(existingResumeUrl.split('/').pop()?.split('?')[0] || 'resume')
@@ -222,8 +225,8 @@ export default function WorkerSetupPage() {
                     </div>
                 </div>
 
-                {/* Apply Required Banner */}
-                {fromApply && (
+                {/* Apply Required Banner — only when something's still missing */}
+                {fromApply && !requiredMet && (
                     <div className="mb-8 relative overflow-hidden bg-gradient-to-r from-red-500/10 via-[#8825F5]/10 to-blue-500/10 border-2 border-red-500/30 rounded-3xl p-6 shadow-[0_0_40px_rgba(255,0,0,0.1)] animate-in fade-in slide-in-from-top-4">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
                         <div className="flex items-start md:items-center gap-5 relative z-10">
@@ -234,9 +237,26 @@ export default function WorkerSetupPage() {
                                 <h2 className="text-xl md:text-2xl font-black text-white tracking-tight mb-2 uppercase text-red-100">Action Required to Apply</h2>
                                 <p className="text-sm md:text-base text-white/90 leading-relaxed font-medium">
                                     You cannot apply for tasks until you provide the following details below: <br className="hidden md:block"/>
-                                    <span className="text-amber-400 font-bold">1. Phone Number</span> (for Direct Connect) &nbsp;•&nbsp; 
-                                    <span className="text-amber-400 font-bold">2. UPI ID</span> (for Escrow Payouts) &nbsp;•&nbsp; 
+                                    <span className="text-amber-400 font-bold">1. Phone Number</span> (for Direct Connect) &nbsp;•&nbsp;
+                                    <span className="text-amber-400 font-bold">2. UPI ID</span> (for Escrow Payouts) &nbsp;•&nbsp;
                                     <span className="text-[#C9A9FF] font-bold">3. Skills or Resume</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* All set — required details are present, just save to continue */}
+                {fromApply && requiredMet && (
+                    <div className="mb-8 relative overflow-hidden bg-green-500/10 border-2 border-green-500/30 rounded-3xl p-6 animate-in fade-in slide-in-from-top-4">
+                        <div className="flex items-start md:items-center gap-5">
+                            <div className="p-3 bg-green-500/20 rounded-2xl shrink-0">
+                                <CheckCircle size={28} className="text-green-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight mb-1">You're all set to apply</h2>
+                                <p className="text-sm md:text-base text-white/80 leading-relaxed">
+                                    Your required details are filled in. Tap <span className="font-bold text-green-400">Save Profile</span> below and we'll take you straight back to the task.
                                 </p>
                             </div>
                         </div>
