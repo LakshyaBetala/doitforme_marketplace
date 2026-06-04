@@ -12,6 +12,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useModeration } from "@/app/hooks/useModeration";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
+import { displayIndianPhone } from "@/lib/phone";
 
 interface Message {
   id: string;
@@ -507,7 +508,10 @@ function ChatRoomContent() {
              <p className="text-sm">
                 You can now contact <span className="font-bold">{isPoster ? applicantProfile?.name : (gig as any).users?.name}</span> directly via WhatsApp/Phone: 
                 <span className="font-black text-[#C9A9FF] tracking-widest ml-2 bg-black/40 px-3 py-1 rounded-lg border border-[#C9A9FF]/20 selection:bg-[#C9A9FF]/40">
-                  {isPoster ? (applicantProfile as any)?.phone || 'No phone provided' : (gig as any).users?.phone || 'No phone provided'}
+                  {(() => {
+                    const p = isPoster ? (applicantProfile as any)?.phone : (gig as any).users?.phone;
+                    return p ? displayIndianPhone(p) : 'No phone provided';
+                  })()}
                 </span>
              </p>
            </div>

@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { normalizeIndianPhone } from "@/lib/phone";
 
 export async function POST(req: Request) {
     try {
@@ -104,7 +105,7 @@ export async function POST(req: Request) {
         if (portfolio_links !== undefined) updateData.portfolio_links = portfolio_links;
         if (experience !== undefined) updateData.experience = experience;
         if (bio !== undefined) updateData.bio = bio;
-        if (phone !== undefined) updateData.phone = phone;
+        if (phone !== undefined) updateData.phone = normalizeIndianPhone(phone) || phone;
         if (upi_id !== undefined) updateData.upi_id = upi_id;
         if (resume_url !== undefined) updateData.resume_url = resume_url;
 

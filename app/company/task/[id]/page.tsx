@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import { toast } from "sonner";
+import { toWhatsAppNumber } from "@/lib/phone";
 import {
   Loader2, ArrowLeft, Users, Download, ShieldCheck, FileText, CheckCircle2, Gift, MessageCircle, AlertTriangle, X, ArrowRight
 } from "lucide-react";
@@ -432,12 +433,14 @@ export default function CompanyTaskHubPage() {
                                     toast.error("Worker hasn't provided a phone number.");
                                     return;
                                   }
-                                  const phoneStr = String(worker.phone);
-                                  const cleanPhone = phoneStr.replace(/\D/g, '');
-                                  const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                                  const finalPhone = toWhatsAppNumber(worker.phone);
+                                  if (!finalPhone) {
+                                    toast.error("Worker hasn't provided a valid phone number.");
+                                    return;
+                                  }
                                   const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
                                   window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
-                                  
+
                                   await updateApplicationStatus(app.id, 'pending');
                                 }} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
                                   WhatsApp
@@ -459,9 +462,11 @@ export default function CompanyTaskHubPage() {
                               <div className="flex">
                                 {isDirect && worker?.phone && (
                                   <button onClick={() => {
-                                    const phoneStr = String(worker.phone);
-                                    const cleanPhone = phoneStr.replace(/\D/g, '');
-                                    const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                                    const finalPhone = toWhatsAppNumber(worker.phone);
+                                    if (!finalPhone) {
+                                      toast.error("Worker hasn't provided a valid phone number.");
+                                      return;
+                                    }
                                     const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
                                     window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
                                   }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all border-r border-[#222] flex items-center justify-center gap-2">
@@ -499,9 +504,11 @@ export default function CompanyTaskHubPage() {
                             <>
                               {isDirect && worker?.phone && (
                                 <button onClick={() => {
-                                  const phoneStr = String(worker.phone);
-                                  const cleanPhone = phoneStr.replace(/\D/g, '');
-                                  const finalPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+                                  const finalPhone = toWhatsAppNumber(worker.phone);
+                                  if (!finalPhone) {
+                                    toast.error("Worker hasn't provided a valid phone number.");
+                                    return;
+                                  }
                                   const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
                                   window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
                                 }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-r border-[#222]">

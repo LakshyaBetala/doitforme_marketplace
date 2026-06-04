@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { normalizeIndianPhone } from "@/lib/phone";
 
 export async function POST(req: Request) {
   try {
@@ -78,7 +79,9 @@ export async function POST(req: Request) {
 
     // Smart data: keep old, overwrite only if new data sent
     const finalName = name || existingUser?.name || email.split("@")[0];
-    const finalPhone = phone || existingUser?.phone || null;
+    // Always store the canonical 10-digit form (strip +91 / stray country-code
+    // digits) so WhatsApp deep links build correctly later.
+    const finalPhone = phone ? (normalizeIndianPhone(phone) || phone) : (existingUser?.phone || null);
     const finalCollege = college || existingUser?.college || null;
     const finalUpi = upi_id || existingUser?.upi_id || null;
     const finalKyc = existingUser?.kyc_verified || false;
