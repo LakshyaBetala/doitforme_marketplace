@@ -41,6 +41,7 @@ export async function POST(req: Request) {
         let bio: string | undefined;
         let phone: string | undefined;
         let upi_id: string | undefined;
+        let resume_url: string | undefined;
         let resumeFile: File | null = null;
 
         if (contentType.includes("multipart/form-data") || contentType.includes("application/x-www-form-urlencoded")) {
@@ -82,7 +83,10 @@ export async function POST(req: Request) {
                 resumeFile = file;
             }
         } else {
-            // Fallback: JSON body
+            // Preferred path: JSON body. The client uploads the resume directly to
+            // Supabase Storage (browser → storage) and sends only the resulting URL
+            // here. This avoids pushing a multipart file through the serverless
+            // function, which was failing on mobile uploads ("Failed to fetch").
             const body = await req.json();
             skills = body.skills;
             portfolio_links = body.portfolio_links;
@@ -90,6 +94,9 @@ export async function POST(req: Request) {
             bio = body.bio;
             phone = body.phone;
             upi_id = body.upi_id;
+            if (typeof body.resume_url === "string" && body.resume_url) {
+                resume_url = body.resume_url;
+            }
         }
 
         const updateData: Record<string, any> = {};
@@ -99,6 +106,7 @@ export async function POST(req: Request) {
         if (bio !== undefined) updateData.bio = bio;
         if (phone !== undefined) updateData.phone = phone;
         if (upi_id !== undefined) updateData.upi_id = upi_id;
+        if (resume_url !== undefined) updateData.resume_url = resume_url;
 
         // Handle resume upload if present
         if (resumeFile) {

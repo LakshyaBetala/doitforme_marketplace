@@ -95,9 +95,10 @@ export default function WorkerSetupPage() {
         setLoading(true);
 
         if (fromApply) {
-            if (!phone.trim()) return setError("Phone number is required to apply.");
-            if (!upiId.trim()) return setError("UPI ID is required to apply.");
+            if (!phone.trim()) { setLoading(false); return setError("Phone number is required to apply."); }
+            if (!upiId.trim()) { setLoading(false); return setError("UPI ID is required to apply."); }
             if (skills.length === 0 && !existingResumeUrl && !resumeFile) {
+                setLoading(false);
                 return setError("You must add at least one skill or upload a resume.");
             }
         }
@@ -110,24 +111,49 @@ export default function WorkerSetupPage() {
             }
         }
 
-        const formData = new FormData();
-        formData.append("skills", JSON.stringify(skills));
-        formData.append("portfolio_links", JSON.stringify(portfolioLinks));
-        formData.append("experience", experience);
-        formData.append("phone", phone.trim());
-        formData.append("upi_id", upiId.trim());
-        if (resumeFile) {
-            if (resumeFile.size > 2 * 1024 * 1024) {
-                setLoading(false);
-                return setError("Resume must be less than 2MB.");
-            }
-            formData.append("resume", resumeFile);
+        if (resumeFile && resumeFile.size > 2 * 1024 * 1024) {
+            setLoading(false);
+            return setError("Resume must be less than 2MB.");
         }
 
         try {
+            // Upload the resume straight from the browser to Supabase Storage rather
+            // than POSTing a multipart file through the serverless function — that
+            // path was dropping on mobile and surfacing as "Failed to fetch".
+            let resumeUrl: string | null = existingResumeUrl;
+            if (resumeFile) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                    setLoading(false);
+                    return setError("Your session expired. Please log in again.");
+                }
+                const ext = resumeFile.name.split('.').pop()?.toLowerCase() || 'pdf';
+                const path = `${user.id}/resume_${Date.now()}.${ext}`;
+                const { error: uploadError } = await supabase.storage
+                    .from("resumes")
+                    .upload(path, resumeFile, {
+                        upsert: true,
+                        cacheControl: "3600",
+                        contentType: resumeFile.type || undefined,
+                    });
+                if (uploadError) {
+                    setLoading(false);
+                    return setError(`Resume upload failed: ${uploadError.message}`);
+                }
+                resumeUrl = supabase.storage.from("resumes").getPublicUrl(path).data.publicUrl;
+            }
+
             const res = await fetch("/api/profile/worker-setup", {
                 method: "POST",
-                body: formData,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    skills,
+                    portfolio_links: portfolioLinks,
+                    experience,
+                    phone: phone.trim(),
+                    upi_id: upiId.trim(),
+                    resume_url: resumeUrl || undefined,
+                }),
             });
 
             const data = await res.json();
