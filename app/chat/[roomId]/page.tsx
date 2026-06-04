@@ -11,6 +11,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useModeration } from "@/app/hooks/useModeration";
+import { friendlyError, friendlyHttpError } from "@/lib/errors";
 
 interface Message {
   id: string;
@@ -289,7 +290,9 @@ function ChatRoomContent() {
       const json = await res.json();
 
       if (!res.ok) {
-        toast.error(json.message || json.error || "Failed");
+        // Message-limit / moderation come back as friendly 403/400 text — keep those;
+        // otherwise classify by status.
+        toast.error(json.message || friendlyHttpError(res.status, json.error));
         return;
       }
 
@@ -302,7 +305,7 @@ function ChatRoomContent() {
       if (type === 'text' && !txt) setInput("");
 
     } catch (e) {
-      toast.error("Network error.");
+      toast.error(friendlyError(e));
     } finally {
       setIsSending(false);
     }
@@ -333,8 +336,7 @@ function ChatRoomContent() {
       await sendMessage(publicUrl, 'image');
 
     } catch (err: any) {
-      console.error(err);
-      toast.error("Upload failed: " + err.message);
+      toast.error(friendlyError(err));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -373,11 +375,11 @@ function ChatRoomContent() {
         setOfferToAccept(null);
         toast.success("Offer accepted! Hustler has been notified.");
       } else {
-        const json = await res.json();
-        toast.error(json.error || "Failed to accept offer");
+        const json = await res.json().catch(() => ({}));
+        toast.error(friendlyHttpError(res.status, json?.error));
       }
     } catch (e) {
-      toast.error("Network error");
+      toast.error(friendlyError(e));
     } finally {
       setIsAccepting(false);
     }

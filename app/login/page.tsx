@@ -7,6 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff, Wallet, Gift, ArrowRight } from "lucide-react";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
+import { friendlyError } from "@/lib/errors";
 
 // --- BACKGROUND COMPONENT ---
 function BackgroundBlobs() {
@@ -142,13 +143,8 @@ function AuthPage() {
 
     setLoading(false);
 
-    // Map native Supabase errors to friendly messages
     if (error) {
-      if (error.message.includes("Invalid login credentials") || error.message.includes("Signups not allowed")) {
-        setMessage("Account not found or incorrect password. Please Sign Up below.");
-      } else {
-        setMessage(error.message);
-      }
+      setMessage(friendlyError(error));
     }
   };
 
@@ -186,7 +182,7 @@ function AuthPage() {
 
     if (error) {
       setLoading(false);
-      return setMessage(error.message);
+      return setMessage(friendlyError(error));
     }
 
     if (data.user) {
@@ -234,7 +230,7 @@ function AuthPage() {
       },
     });
     if (error) {
-      setMessage(error.message);
+      setMessage(friendlyError(error));
       setLoading(false);
     }
   };

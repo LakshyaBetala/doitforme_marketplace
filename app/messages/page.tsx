@@ -11,6 +11,7 @@ import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangl
 import Avatar from "@/components/ui/Avatar";
 import StatusBadge, { statusToTone } from "@/components/ui/StatusBadge";
 import EmptyState from "@/components/ui/EmptyState";
+import { friendlyError, friendlyHttpError } from "@/lib/errors";
 import { MessageSquare } from "lucide-react";
 
 export default function ChatPage() {
@@ -467,7 +468,7 @@ function MessagesContent() {
             }
 
             if (!res.ok) {
-                toast.error(data.message || data.error || "Failed to send.");
+                toast.error(data.message || friendlyHttpError(res.status, data.error));
                 return;
             }
 
@@ -478,8 +479,7 @@ function MessagesContent() {
             }
 
         } catch (err: any) {
-            console.error("Send Error:", err);
-            toast.error("Failed to send message. Please try again.");
+            toast.error(friendlyError(err));
         } finally {
             setIsSending(false);
         }
@@ -512,12 +512,11 @@ function MessagesContent() {
                 setActiveGigStatus('assigned');
                 setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, offer_status: 'accepted' } : m));
             } else {
-                const json = await res.json();
-                toast.error(json.error || "Failed to accept offer");
+                const json = await res.json().catch(() => ({}));
+                toast.error(friendlyHttpError(res.status, json?.error));
             }
         } catch (e) {
-            console.error(e);
-            toast.error("Network error");
+            toast.error(friendlyError(e));
         }
     };
 
@@ -546,11 +545,11 @@ function MessagesContent() {
                     created_at: new Date().toISOString()
                 }]);
             } else {
-                const data = await res.json();
-                toast.error(data.error || "Failed to approve work.");
+                const data = await res.json().catch(() => ({}));
+                toast.error(friendlyHttpError(res.status, data?.error));
             }
         } catch (err) {
-            toast.error("Network error. Please try again.");
+            toast.error(friendlyError(err));
         }
     };
 
@@ -576,10 +575,10 @@ function MessagesContent() {
                     created_at: new Date().toISOString()
                 }]);
             } else {
-                toast.error(data.error || "Failed to raise dispute.");
+                toast.error(friendlyHttpError(res.status, data?.error));
             }
         } catch (err) {
-            toast.error("Network error.");
+            toast.error(friendlyError(err));
         } finally {
             setIsDisputing(false);
         }
@@ -611,8 +610,7 @@ function MessagesContent() {
             await sendMessage(undefined, 'image', publicUrl);
 
         } catch (err: any) {
-            console.error(err);
-            toast.error("Upload failed: " + err.message);
+            toast.error(friendlyError(err));
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = "";

@@ -10,6 +10,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { containsSensitiveInfo } from "@/lib/moderation-rules";
 import { useModeration } from "@/app/hooks/useModeration";
 import { useGigFormStore } from "@/store/useGigFormStore";
+import { friendlyError } from "@/lib/errors";
 import Image from "next/image";
 import {
   Loader2, Send, X, Camera, FileText, Image as ImageIcon, MapPin, BriefcaseIcon, ShoppingBagIcon, ChevronLeft, ChevronRight, CheckCircle
@@ -214,8 +215,7 @@ export default function PostGigWizard() {
       router.push("/dashboard");
 
     } catch (err: any) {
-      console.error("Submission Error:", err);
-      setError(err?.message || "Something went wrong.");
+      setError(friendlyError(err));
       setLoading(false);
     }
   };

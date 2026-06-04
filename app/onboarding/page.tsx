@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Phone, GraduationCap, Wallet, ArrowRight, AtSign, CheckCircle2, XCircle } from "lucide-react";
 import Image from "next/image";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
+import { friendlyError, friendlyHttpError } from "@/lib/errors";
 
 export default function OnboardingPage() {
     const supabase = supabaseBrowser();
@@ -135,13 +136,13 @@ export default function OnboardingPage() {
             const data = await res.json();
             if (!res.ok) {
                 setLoading(false);
-                return setError(data.error || "Something went wrong.");
+                return setError(friendlyHttpError(res.status, data?.error));
             }
 
             router.push("/dashboard");
-        } catch {
+        } catch (err) {
             setLoading(false);
-            setError("Network error. Please try again.");
+            setError(friendlyError(err));
         }
     };
 

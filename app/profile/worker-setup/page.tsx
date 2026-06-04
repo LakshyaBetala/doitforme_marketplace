@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Upload, Plus, X, Briefcase, Link as LinkIcon, Star, CheckCircle, FileText, ExternalLink, Sparkles, Shield, AlertTriangle } from "lucide-react";
+import { friendlyError, friendlyHttpError } from "@/lib/errors";
 
 export default function WorkerSetupPage() {
     const supabase = supabaseBrowser();
@@ -138,7 +139,7 @@ export default function WorkerSetupPage() {
                     });
                 if (uploadError) {
                     setLoading(false);
-                    return setError(`Resume upload failed: ${uploadError.message}`);
+                    return setError(friendlyError(uploadError));
                 }
                 resumeUrl = supabase.storage.from("resumes").getPublicUrl(path).data.publicUrl;
             }
@@ -158,7 +159,7 @@ export default function WorkerSetupPage() {
 
             const data = await res.json();
             if (!res.ok) {
-                setError(data.error || "Failed to save profile.");
+                setError(friendlyHttpError(res.status, data?.error));
             } else {
                 setSuccess(true);
                 setTimeout(() => {
@@ -170,7 +171,7 @@ export default function WorkerSetupPage() {
                 }, 2000);
             }
         } catch (err: any) {
-            setError(err.message || "Network error. Please try again.");
+            setError(friendlyError(err));
         } finally {
             setLoading(false);
         }

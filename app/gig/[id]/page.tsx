@@ -8,6 +8,7 @@ import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/Statu
 import Skeleton from "@/components/ui/Skeleton";
 import Image from "next/image";
 import { toast } from "sonner";
+import { friendlyError, friendlyHttpError } from "@/lib/errors";
 
 export default function GigDetailsPage() {
   const params = useParams();
@@ -109,19 +110,15 @@ export default function GigDetailsPage() {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        // Clean error messages
-        let msg = errorData.error || "Failed to apply";
-        if (msg.toLowerCase().includes("duplicate") || msg.toLowerCase().includes("already applied")) {
-          msg = "You have already applied for this task.";
-        }
-        throw new Error(msg);
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(friendlyHttpError(res.status, errorData?.error));
+        return;
       }
 
       toast.success("Application submitted successfully!");
       router.push(`/chat/${gigId}`);
     } catch (err: any) {
-      toast.error(err.message || "Something went wrong. Please try again.");
+      toast.error(friendlyError(err));
     } finally {
       setIsApplying(false);
     }
