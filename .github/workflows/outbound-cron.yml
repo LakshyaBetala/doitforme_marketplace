@@ -1,0 +1,36 @@
+name: Outbound Client Acquisition Loop
+on:
+  schedule:
+    # Runs everyday at 02:30 UTC (8:00 AM IST)
+    - cron: '30 2 * * *'
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions UI for testing
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python Runtime
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip' # Automatically caches dependencies for lightning-fast runs
+
+    - name: Install Project Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r scripts/outbound-agent/requirements.txt
+    - name: Execute Scraper and Pitcher Cascade
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        ASVA_DEMO_URL: ${{ secrets.ASVA_DEMO_URL }}
+      run: |
+        echo "Running Scraper Engine..."
+        python scripts/outbound-agent/scraper.py
+        echo "Running AI Pitch Architect..."
+        python scripts/outbound-agent/pitcher.py
+        echo "Pipeline execution completed successfully."
