@@ -51,23 +51,33 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "This item is no longer available." }, { status: 400 });
         }
 
-        // 2.5 Check Applicant Limit for Free Accounts
+        // 2.5 Applicant cap. Free posters cap at 10; Pro companies at 50.
+        // The cap exists so posters aren't buried (the busiest gig hit 110
+        // applications and its poster never replied to any of them), but it has
+        // to be high enough that a real, well-paid company task isn't turning
+        // away good applicants an hour after it goes live.
+        const FREE_APPLICANT_CAP = 10;
+        const PRO_APPLICANT_CAP = 50;
+
         const { count: appCount } = await supabase
             .from("applications")
             .select("*", { count: 'exact', head: true })
             .eq("gig_id", gigId);
 
-        if (appCount !== null && appCount >= 10) {
-            // Pro companies have unlimited applicants; free tier caps at 10.
+        if (appCount !== null && appCount >= FREE_APPLICANT_CAP) {
             const { data: posterCompany } = await supabase
                 .from("companies")
                 .select("pro_until")
                 .eq("user_id", gig.poster_id)
-                .single();
+                .maybeSingle();
 
-            const isPro = posterCompany?.pro_until && new Date(posterCompany.pro_until) > new Date();
-            if (!isPro) {
-                return NextResponse.json({ error: "This task has reached its maximum limit of 10 applicants. Poster is on the free tier." }, { status: 403 });
+            const isPro = !!posterCompany?.pro_until && new Date(posterCompany.pro_until) > new Date();
+            const cap = isPro ? PRO_APPLICANT_CAP : FREE_APPLICANT_CAP;
+
+            if (appCount >= cap) {
+                return NextResponse.json({
+                    error: `This task has reached its limit of ${cap} applicants and is no longer accepting new ones.`,
+                }, { status: 403 });
             }
         }
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Loader2, ArrowLeft, MapPin, Shield, ShieldCheck, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check, ChevronLeft, ChevronRight, FileText, Download, Share2 } from "lucide-react";
+import { Loader2, ArrowLeft, MapPin, Shield, ShieldCheck, Building2, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check, ChevronLeft, ChevronRight, FileText, Download, Share2 } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 import Skeleton from "@/components/ui/Skeleton";
 import Image from "next/image";
@@ -416,6 +416,32 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                 </p>
               </div>
             </div>
+
+            {/* Company tasks are real businesses with real budgets and a
+                reputation to protect. Set expectations BEFORE the pitch, not in
+                a terms blob after it — a student who reads this and backs out is
+                a better outcome than one who ghosts a paying company. */}
+            {isCompanyTask && (
+              <div className="p-4 md:p-5 rounded-2xl border border-[#8825F5]/25 bg-[#8825F5]/[0.06] space-y-3">
+                <p className="text-[13px] font-bold text-white flex items-center gap-2">
+                  <Building2 size={15} className="text-[#C9A9FF]" />
+                  Before you apply to a company task
+                </p>
+                <ul className="space-y-2 text-[12px] text-zinc-400 leading-relaxed">
+                  {[
+                    "Only apply if you can genuinely deliver this — companies rate you, and it sticks to your profile.",
+                    "Reply within 24 hours once they message you. Going quiet loses the task and hurts your score.",
+                    "Hit the deadline you agree to. Ask for more time before it passes, never after.",
+                    "Keep everything on the platform. Payment is held in escrow and released when the work is approved.",
+                  ].map((rule) => (
+                    <li key={rule} className="flex items-start gap-2">
+                      <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                      <span>{rule}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <div className="space-y-4">
               <label className="text-xs font-semibold text-zinc-400 block">Application Pitch</label>

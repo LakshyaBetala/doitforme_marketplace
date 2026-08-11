@@ -1,12 +1,19 @@
 import { test, expect } from '@playwright/test';
 
-// Define the test credentials provided
-const EMAIL = 'lakshbetala15@gmail.com';
-const PASSWORD = 'Laksh2804!';
+// QUARANTINED 2026-08-12 — do not re-enable as-is. Three blockers:
+//   1. It signs in with a password, but Supabase here is configured for email
+//      OTP only (magic links disabled), so this flow cannot pass.
+//   2. The credentials below are real and live in source control. Rotate them
+//      and move to an env var before this test runs again.
+//   3. The app talks to the PRODUCTION Supabase project even against a local
+//      dev server, so a passing run would insert real gigs into live data.
+// Safe coverage of the same surfaces now lives in tests/smoke.spec.ts.
+const EMAIL = process.env.E2E_EMAIL ?? '';
+const PASSWORD = process.env.E2E_PASSWORD ?? '';
 
 test.describe('Marketplace Golden Path', () => {
-  
-  test('Company can log in, post a gig, and view it in dashboard', async ({ browser }) => {
+
+  test.skip('Company can log in, post a gig, and view it in dashboard', async ({ browser }) => {
     // 1. Setup Company Context
     const companyContext = await browser.newContext();
     const companyPage = await companyContext.newPage();

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee, Users, Sparkles } from "lucide-react";
+import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee, Users, Sparkles, Zap } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "./StatusBadge";
 
 /**
@@ -50,7 +50,18 @@ function timeAgo(dateString?: string | null) {
   return `${Math.floor(seconds / 86400)}d`;
 }
 
-function TypePill({ listing_type, market_type }: { listing_type?: string | null; market_type?: string | null }) {
+function TypePill({ listing_type, market_type, isPriority }: { listing_type?: string | null; market_type?: string | null; isPriority?: boolean }) {
+  // A Pro company's task is the highest-intent listing on the platform: a real
+  // business, real budget, and a cap of 50 applicants instead of 10. It gets the
+  // one loud label so students can spot paid company work at a glance.
+  if (listing_type === "COMPANY_TASK" && isPriority) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#8825F5] text-white border border-[#8825F5] text-[10px] font-semibold tracking-tight uppercase">
+        <Zap size={10} />
+        Priority
+      </span>
+    );
+  }
   if (listing_type === "MARKET") {
     return (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60 border border-white/[0.08] text-[10px] font-medium tracking-tight uppercase">
@@ -116,7 +127,7 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
               </div>
             )}
             <div className="absolute top-2 left-2 z-10">
-              <TypePill listing_type={gig.listing_type} market_type={gig.market_type} />
+              <TypePill listing_type={gig.listing_type} market_type={gig.market_type} isPriority={isHighlighted} />
             </div>
             {gig.price != null && gig.market_type !== "REQUEST" && (
               <div className="absolute top-2 right-2 z-10 inline-flex items-center px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-white">
@@ -162,7 +173,7 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
     <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
       <div className={`bg-[#13131A] rounded-2xl p-5 md:p-6 border transition-colors flex flex-col h-full ${detailedRing}`}>
         <div className="flex items-center justify-between mb-3">
-          <TypePill listing_type={gig.listing_type} market_type={gig.market_type} />
+          <TypePill listing_type={gig.listing_type} market_type={gig.market_type} isPriority={isHighlighted} />
           {isHighlighted && (
             <span className="text-[10px] font-medium tracking-tight text-[#C9A9FF] uppercase">Featured</span>
           )}

@@ -20,6 +20,7 @@ import Avatar from "@/components/ui/Avatar";
 import GigCard from "@/components/ui/GigCard";
 import EmptyState from "@/components/ui/EmptyState";
 import Skeleton, { GigCardSkeleton } from "@/components/ui/Skeleton";
+import ProfileCompletion from "@/components/ProfileCompletion";
 
 export default function Dashboard() {
   const supabase = supabaseBrowser();
@@ -254,7 +255,10 @@ export default function Dashboard() {
 
           <div className="relative max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-24 md:pb-8">
 
-            {/* Profile Completion Alert Removed: We now only gate application on the task page itself */}
+            {/* Claim-your-page: the retention surface for users who have no gig
+                to do yet. Sits above the KYC prompt because a shareable profile
+                is a reason to come back; ID verification is not. */}
+            <ProfileCompletion user={user?.user_metadata} />
 
             {/* KYC Verification Prompt */}
             {user && !user.user_metadata?.kyc_verified && (
