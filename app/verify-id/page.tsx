@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import VerificationTips from "@/components/VerificationTips";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -215,6 +216,11 @@ export default function VerifyIDPage() {
               <span><strong>Couldn&apos;t verify your last upload.</strong> {reason} Please re-upload a clear photo of the front of your ID.</span>
             </div>
           )}
+
+          {/* Tips BEFORE the upload zone. Shown ahead of the picker because the
+              photo is taken in the next three seconds — after the upload it is
+              just an explanation of why they failed. */}
+          <VerificationTips className="mb-6" />
 
           <div 
             onDragOver={onDragOver}

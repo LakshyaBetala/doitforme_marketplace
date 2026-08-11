@@ -452,6 +452,37 @@ export default function PostGigWizard() {
                 <p className="text-white/50 text-sm">Where, when, and how much.</p>
               </div>
 
+              {/* What happens next, stated before they commit. A poster who
+                  doesn't know the escrow rules abandons applicants (85% of them
+                  never got a reply) — mostly because nobody told them they were
+                  expected to respond, or that the money moves automatically. */}
+              <div className="p-5 rounded-2xl border border-white/[0.08] bg-white/[0.02]">
+                <p className="text-[13px] font-semibold text-white mb-3">
+                  {postKind === "SERVICE" ? "How you'll get paid" : "What happens after you post"}
+                </p>
+                <ul className="space-y-2.5 text-[12px] text-white/60 leading-relaxed">
+                  {(postKind === "SERVICE"
+                    ? [
+                        "People browse the Talent directory and message you directly.",
+                        "Agree the work in chat, then they fund it — you never start unpaid.",
+                        "Deliver, they approve, and the money is released to your UPI.",
+                        "A platform fee is deducted only when you actually get paid.",
+                      ]
+                    : [
+                        "Students apply. Reply within 24 hours — unanswered posts close automatically after 7 days.",
+                        "Pick someone and pay into escrow. We hold the money; they don't get it until you approve.",
+                        "You have 24 hours after delivery to approve or request changes.",
+                        "Keep it on the platform — paying outside escrow means no protection if the work never arrives.",
+                      ]
+                  ).map((line) => (
+                    <li key={line} className="flex items-start gap-2">
+                      <CheckCircle2 size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
               <div className="space-y-6">
                 <div className="space-y-3">
                   <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">

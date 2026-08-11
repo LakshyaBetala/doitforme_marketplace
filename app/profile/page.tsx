@@ -22,6 +22,37 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const [profile, setProfile] = useState<any>(null);
+
+  /**
+   * Live profile stats.
+   *
+   * jobs_completed, total_earned, rating and recommendation_count are all
+   * written by server-side triggers and RPCs (increment_worker_stats,
+   * sync_recommendation_count) that the browser never sees. Without a
+   * subscription a worker had to hard-refresh to notice they'd been paid or
+   * recommended — the two moments most worth showing immediately.
+   */
+  useEffect(() => {
+    if (!profile?.id) return;
+    const supabase = supabaseBrowser();
+    const channel = supabase
+      .channel(`user_stats:${profile.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "users", filter: `id=eq.${profile.id}` },
+        (payload: any) => {
+          const next = payload.new || {};
+          setProfile((prev: any) => (prev ? { ...prev, ...next } : prev));
+          setStats((prev: any) => ({
+            ...prev,
+            completed: next.jobs_completed ?? prev?.completed ?? 0,
+            earnings: next.total_earned ?? prev?.earnings ?? 0,
+          }));
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.id]);
   const [stats, setStats] = useState({ completed: 0, earnings: 0, isLightningResponder: false, avgResponseTime: 0 });
   const [loading, setLoading] = useState(true);
 

@@ -51,6 +51,29 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "This item is no longer available." }, { status: 400 });
         }
 
+        // Company tasks are verified-students-only.
+        //
+        // This is what finally makes ID verification worth doing: it gated
+        // nothing before, so 145 of 1056 users had bothered. Companies want
+        // vetted people and students want company work, so putting the two
+        // behind the same door serves both sides instead of taxing one.
+        if (gig.listing_type === 'COMPANY_TASK') {
+            const { data: applicantKyc } = await supabase
+                .from('users')
+                .select('kyc_status, kyc_verified')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            const isVerified = applicantKyc?.kyc_verified === true || applicantKyc?.kyc_status === 'approved';
+            if (!isVerified) {
+                return NextResponse.json({
+                    error: "Verification required",
+                    message: "Company tasks are open to verified students only. Verifying takes about a minute — upload your student ID and most people are approved instantly.",
+                    code: "KYC_REQUIRED",
+                }, { status: 403 });
+            }
+        }
+
         // 2.5 Applicant cap. Free posters cap at 10; Pro companies at 50.
         // The cap exists so posters aren't buried (the busiest gig hit 110
         // applications and its poster never replied to any of them), but it has

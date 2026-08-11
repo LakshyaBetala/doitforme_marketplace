@@ -40,7 +40,7 @@ export default function GigDetailsPage() {
       if (user) {
         const { data: profileData } = await supabase
           .from('users')
-          .select('skills, resume_url, portfolio_links, name, phone, upi_id')
+          .select('skills, resume_url, portfolio_links, name, phone, upi_id, kyc_status, kyc_verified')
           .eq('id', user.id)
           .single();
         if (profileData) setUserProfile(profileData);
@@ -101,8 +101,16 @@ export default function GigDetailsPage() {
       return;
     }
 
+    // Company tasks are verified-only (enforced server-side too). Checking here
+    // means the gate appears BEFORE someone writes a pitch, not after.
+    if (isCompanyTask && !(userProfile?.kyc_verified || userProfile?.kyc_status === "approved")) {
+      toast.error("Company tasks need a verified student ID — it takes about a minute.");
+      router.push(`/verify-id?next=/gig/${gigId}`);
+      return;
+    }
+
     setIsApplying(true);
-    
+
     try {
       const res = await fetch("/api/gig/apply", {
         method: "POST",
