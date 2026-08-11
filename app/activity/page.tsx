@@ -332,7 +332,11 @@ export default function ActivityHubPage() {
                 </div>
 
                 {/* Worker contact info for active gigs */}
-                {gig.worker && ['assigned', 'AWAITING_FUNDS', 'SUBMITTED', 'delivered', 'completed'].includes(gig.status) && (
+                {/* Contact details unlock only once escrow actually HOLDS money.
+                    This previously included AWAITING_FUNDS, so a poster could
+                    accept someone, take their phone number, and never pay —
+                    which is the exact off-platform leak escrow exists to stop. */}
+                {gig.worker && ['HELD', 'ESCROW_FUNDED', 'PAYOUT_PENDING'].includes(gig.payment_status) && (
                   <div className="p-3 bg-[#C9A9FF]/5 rounded-xl text-sm mb-3 border border-[#C9A9FF]/10 flex items-center justify-between gap-2">
                     <div>
                       <span className="text-white/50 text-xs">Hustler:</span> <span className="font-bold text-white">{gig.worker.name}</span>
@@ -446,7 +450,10 @@ export default function ActivityHubPage() {
 
 
                    {/* Poster contact info for active gigs */}
-                  {app.status === 'accepted' && gig.poster && ['assigned', 'AWAITING_FUNDS', 'SUBMITTED', 'delivered', 'completed'].includes(gig.status) && (
+                  {/* Same rule for the worker: the poster's number appears only
+                      after the money is in escrow, so neither side can trade
+                      contact details before the platform is committed. */}
+                  {app.status === 'accepted' && gig.poster && ['HELD', 'ESCROW_FUNDED', 'PAYOUT_PENDING'].includes(gig.payment_status) && (
                     <div className="p-3 bg-white/5 rounded-xl text-sm mb-3 border border-white/5 flex items-center justify-between gap-2">
                       <div>
                         <span className="text-white/50 text-xs">Client:</span> <span className="font-bold text-white">{gig.poster.name}</span>

@@ -19,6 +19,7 @@ type EmailKind =
   | "dispute_opened"
   | "changes_requested"
   | "poster_nudge"
+  | "hire_followup"
   | "application_closed"
   | "company_approved"
   | "company_pro_activated"
@@ -151,6 +152,23 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p>You applied to <strong>${title}</strong> and the poster never responded, so we've closed the listing. You're not waiting on anything — that one's done.</p>
           <p>Sorry it wasn't a better experience. We're now closing abandoned listings automatically so this stops happening.</p>
           <p><a href="${SITE}/feed" class="cta">See gigs that are actually active</a></p>
+        `,
+      };
+
+    // Sent to BOTH sides when a funded gig has gone quiet for 24h. The hire
+    // notification is easy to miss, and a job nobody starts is money sitting in
+    // escrow doing nothing for either party.
+    case "hire_followup":
+      return {
+        subject: `Nothing has started yet — ${args.gigTitle || "your gig"}`,
+        preheader: "The payment is secured. A quick message gets it moving.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>The payment for <strong>${title}</strong> is already held safely, but there
+             haven't been any messages since. Work usually stalls here simply because
+             nobody sent the first one.</p>
+          <p><a href="${SITE}/chat/${args.gigId}" class="cta">Open the chat</a></p>
+          <p class="muted">Keep everything here — the money is only released once the work is approved.</p>
         `,
       };
 

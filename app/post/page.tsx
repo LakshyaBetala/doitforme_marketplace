@@ -111,7 +111,10 @@ export default function PostGigWizard() {
     const p = Number(price);
     if (Number.isNaN(p) || p < 1) return "Please enter a valid price/budget.";
     if (listingType === "HUSTLE") {
-      if (p < 20) return "Minimum budget is ₹20.";
+      // Rs 100 floor. Below this the 5-10% take is a rounding error, the
+      // gateway fee is proportionally huge, and the listings were mostly
+      // noise ("Rs 50 - I'm interested in codings").
+      if (p < 100) return "Minimum budget is ₹100.";
       if (mode !== "Online" && !location.trim()) return "Location is required for offline tasks.";
     }
     if (listingType === "MARKET" && marketType === "RENT") {

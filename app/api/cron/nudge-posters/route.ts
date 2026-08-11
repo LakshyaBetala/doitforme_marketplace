@@ -204,7 +204,67 @@ export async function GET(req: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, ...result });
+    // --- STAGE 3: post-hire silence ---
+    //
+    // The moment after hiring is where deals die quietly. Both sides get one
+    // notification when the hire happens, and if either misses it the work
+    // simply never starts — nobody is waiting on a screen, and neither knows
+    // whether the other has seen anything.
+    //
+    // Folded into this cron rather than a fourth job because Vercel Hobby allows
+    // one run per day per job and three are already scheduled.
+    const silenceCutoff = new Date(now - 24 * 3600e3).toISOString();
+    const { data: active } = await supabase
+      .from("gigs")
+      .select("id, title, poster_id, assigned_worker_id, escrow_locked_at, payment_status")
+      .eq("status", "assigned")
+      .in("payment_status", ["HELD", "ESCROW_FUNDED"])
+      .not("assigned_worker_id", "is", null)
+      .lt("escrow_locked_at", silenceCutoff)
+      .limit(BATCH);
+
+    let pokedPairs = 0;
+    for (const gig of active || []) {
+      // Has anyone said anything since the money landed?
+      const { count: recentMsgs } = await supabase
+        .from("messages")
+        .select("*", { count: "exact", head: true })
+        .eq("gig_id", gig.id)
+        .gt("created_at", gig.escrow_locked_at);
+
+      if ((recentMsgs || 0) > 0) continue;
+
+      pokedPairs++;
+      const link = `${SITE}/chat/${gig.id}`;
+
+      await notify(
+        gig.assigned_worker_id!,
+        {
+          telegram: `<b>You've been hired and the money is already held</b>\n<i>${gig.title}</i> is waiting on you. Message the poster to get started.\n<a href="${link}">Open the chat</a>`,
+          email: { kind: "hire_followup", args: { gigTitle: gig.title, gigId: gig.id } },
+        },
+        {
+          type: "hire_followup",
+          content: `You're hired for "${gig.title}" and the payment is secured. Say hello to get started.`,
+          link: `/chat/${gig.id}`,
+        }
+      );
+
+      await notify(
+        gig.poster_id,
+        {
+          telegram: `<b>Your hire hasn't started yet</b>\nNobody has messaged on <i>${gig.title}</i> since you paid. A quick hello usually gets it moving.\n<a href="${link}">Open the chat</a>`,
+          email: { kind: "hire_followup", args: { gigTitle: gig.title, gigId: gig.id } },
+        },
+        {
+          type: "hire_followup",
+          content: `No messages yet on "${gig.title}". Send a note so the work can start.`,
+          link: `/chat/${gig.id}`,
+        }
+      );
+    }
+
+    return NextResponse.json({ success: true, ...result, pokedPairs });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("nudge-posters error:", message);
