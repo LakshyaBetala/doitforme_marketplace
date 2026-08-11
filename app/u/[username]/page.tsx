@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import TrustSignals from "@/components/TrustSignals";
 import Link from "next/link";
 import { Star, ShieldCheck, Briefcase, GraduationCap, ExternalLink, Calendar, MapPin } from "lucide-react";
 import { supabaseServer } from "@/lib/supabaseServer";
@@ -170,6 +171,17 @@ export default async function PublicProfilePage({
                   {subtitle && <span>{subtitle}</span>}
                 </div>
               )}
+              {/* Trust row. Ratings need a completed, paid gig and there are none
+                  yet, so every profile shows an empty star block. Jobs done and
+                  peer recommendations work from day one and give a poster
+                  something real to choose between applicants on. */}
+              <TrustSignals
+                userId={user.id}
+                jobsCompleted={user.jobs_completed}
+                kycVerified={user.kyc_verified}
+                className="mt-4"
+              />
+
               {user.bio && (
                 <p className="text-sm text-white/70 mt-4 leading-relaxed max-w-2xl whitespace-pre-line">
                   {user.bio}

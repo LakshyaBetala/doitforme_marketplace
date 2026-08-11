@@ -416,6 +416,25 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                   The poster funds the task before you start, and we hold it. Finish the work and
                   the money is released to you — they can&apos;t disappear with it.
                 </p>
+                {/* Reassurance at the exact moment of doubt. "Will I actually get
+                    paid, and when?" is the question every applicant has here, and
+                    leaving it unanswered is why people push to settle over UPI
+                    instead. Concrete timing beats vague promises. */}
+                <ul className="mt-4 space-y-2 text-[12px] text-zinc-400 leading-relaxed">
+                  <li className="flex items-start gap-2">
+                    <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                    Money is locked before you start — you never work unpaid.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                    After you deliver, the poster has 24 hours to approve. If they don&apos;t,
+                    it releases to you automatically.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                    Payouts go to your UPI. Add it after you&apos;re hired — not now.
+                  </li>
+                </ul>
                 <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">
                   A small platform fee is deducted from your payout only when you actually get paid.
                 </p>
