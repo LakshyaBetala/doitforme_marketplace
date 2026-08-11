@@ -1,5 +1,5 @@
 {
-  "comment": "Hobby plan allows ONCE-PER-DAY cron jobs only. Anything more frequent fails at deploy time with 'Hobby accounts are limited to daily cron jobs'. Timing is also only accurate to the hour (a 07:30 job fires somewhere in 07:00-07:59), so nothing here may depend on precise minutes. Upgrade to Pro to run process-payouts more than once a day.",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
       "path": "/api/cron/auto-release",

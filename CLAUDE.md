@@ -74,6 +74,13 @@ Strategy pivot recorded in [supabase/migrations/20260619_managed_mode.sql](supab
 
 When touching gig/payment code, the canonical reference for state transitions and RLS is [supabase/migrations/20260421_standardize_naming_and_rls.sql](supabase/migrations/20260421_standardize_naming_and_rls.sql) (RLS baseline) and [supabase/migrations/v6_master.sql](supabase/migrations/v6_master.sql).
 
+### Vercel deploy constraints (read before touching [vercel.json](vercel.json))
+Two rules that fail the **deploy**, not the build, so `npm run build` passing locally proves nothing:
+- **`vercel.json` is schema-validated and has no comment syntax.** Any unrecognised top-level key (e.g. `"comment"`) fails deployment on both production and preview. Document constraints here instead.
+- **Hobby allows once-per-day crons only.** `0 * * * *` or `*/30 * * * *` fail with *"Hobby accounts are limited to daily cron jobs"*. Hobby timing is also hour-accurate only — a `30 7 * * *` job fires anywhere in 07:00–07:59, so nothing may depend on precise minutes. Pro is required for anything more frequent.
+
+Both are guarded by [tests/unit/vercel-config.test.mjs](tests/unit/vercel-config.test.mjs), which also asserts every scheduled path has a matching route file. Run `npm run test:unit` before pushing config changes.
+
 ### Cron (auto-release)
 [vercel.json](vercel.json) schedules a daily GET to `/api/cron/auto-release`. The handler requires an `x-cron-secret` header matching `CRON_SECRET` env var, then scans `gigs` where `status='DELIVERED' AND auto_release_at < now() AND payment_status='HELD' AND dispute_reason IS NULL` in batches of 50 and transitions them to `completed` / `PAYOUT_PENDING`. A near-duplicate handler exists at [app/cron/auto-release/route.ts](app/cron/auto-release/route.ts) (note: **no `/api`** prefix) — it is *not* the one wired into [vercel.json](vercel.json); the scheduled path is the one under `app/api/`. Don't edit the wrong one.
 
