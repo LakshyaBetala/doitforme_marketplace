@@ -84,33 +84,56 @@ export async function POST(req: Request) {
       "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
     ];
 
-    // Only enforce limit if:
-    // 1. User is Applicant
-    // 2. Gig is Open (Pre-agreement)
-    // 3. Message Type is NOT 'offer'
-    // 4. Content is NOT a Magic Chip
-    if (isApplicant && isPreAgreement && type !== 'offer' && !MAGIC_CHIPS.includes(content)) {
+    // Pre-agreement conversation cap.
+    //
+    // The cap exists to stop a deal being negotiated and completed entirely in
+    // chat, off-platform — the primary abuse vector here. Once someone is
+    // actually hired the conversation is unlimited, because by then the work
+    // and the money are on-platform and long threads are exactly what we want.
+    //
+    // Deliberate choices:
+    //  - Counted ACROSS BOTH participants, not per-sender. A per-sender cap let
+    //    a pair exchange double the messages, which defeated the point.
+    //  - Applies to the poster too. It was applicant-only, so a poster could
+    //    carry the whole off-platform negotiation themselves.
+    //  - Offers and quick-reply chips never count; they move a deal forward.
+    //  - The number is NEVER shown. Telling people "5 of 10 used" turns a guard
+    //    rail into a countdown they optimise against, usually by immediately
+    //    swapping contact details.
+    const PRE_AGREEMENT_MESSAGE_CAP = 10;
+
+    // "Agreed" = this pair is actually working together. gig.status alone was
+    // wrong: a multi-worker gig stays 'open' while filling, so an already-hired
+    // worker kept getting capped.
+    const otherParty = isPoster ? receiverId : user.id;
+    const { data: acceptedApp } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('gig_id', gigId)
+      .eq('worker_id', otherParty)
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    const isAgreed = Boolean(acceptedApp) || gig.assigned_worker_id === otherParty || !isPreAgreement;
+
+    if (!isAgreed && type !== 'offer' && !MAGIC_CHIPS.includes(content)) {
       const { count, error: countError } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('gig_id', gigId)
-        .eq('sender_id', user.id)
-        .neq('message_type', 'offer') // Don't count offers
-        .not('content', 'in', `(${MAGIC_CHIPS.map(c => `"${c}"`).join(',')})`); // Don't count chips
+        .in('sender_id', [user.id, receiverId])
+        .neq('message_type', 'offer')
+        .neq('message_type', 'system')
+        .not('content', 'in', `(${MAGIC_CHIPS.map(c => `"${c}"`).join(',')})`);
 
       if (countError) throw countError;
 
-      // Dynamic Limits based on Listing Type and Market Type
-      let limit = 5; // Default for HUSTLE
-
-      if (gig.listing_type === 'MARKET') {
-        limit = 10; // Unified Limit for V6 (Sell, Rent, Request)
-      }
-
-      if ((count || 0) >= limit) {
+      if ((count || 0) >= PRE_AGREEMENT_MESSAGE_CAP) {
         return NextResponse.json({
           error: "Limit Reached",
-          message: `Limit Reached: ${limit} Messages. Wait for acceptance or make an offer.`
+          message: isPoster
+            ? "Hire them to keep chatting — messages are unlimited once you do."
+            : "Send an offer to keep chatting — messages are unlimited once you're hired.",
         }, { status: 403 });
       }
     }

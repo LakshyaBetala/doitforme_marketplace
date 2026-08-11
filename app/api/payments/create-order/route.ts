@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
-import { platformFeeFor, gatewayFeeFor, audienceForGig } from "@/lib/fees";
+import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
 
 export async function POST(req: Request) {
   try {
@@ -72,24 +72,25 @@ export async function POST(req: Request) {
     const price = finalPrice;
     const jobsCompleted = recipientProfile?.jobs_completed || 0;
 
-    let deposit = 0;
+    // Rentals hold a refundable deposit on top of the price; hustles never do.
+    const deposit = gig.market_type === "RENT" ? Number(gig.security_deposit || 0) : 0;
 
     // Take rate by audience (see lib/fees.ts): student economy 5%, business 10%.
     // Managed is a business delivery mode — still 10%, not a separate rate.
+    //
+    // All arithmetic goes through buildPaymentBreakdown so the Cashfree order,
+    // the transaction record, the escrow row and manual_release_escrow cannot
+    // drift apart. Verified by tests/unit/payout.test.mjs.
     const feeAudience = audienceForGig(gig);
-    let platformFee = platformFeeFor(price, feeAudience);
-    let renterFee = 0;
-    let netWorkerPay = price - platformFee;
+    const b = buildPaymentBreakdown({ price, deposit, audience: feeAudience });
+
+    const platformFee = b.platformFee;
+    const netWorkerPay = b.netWorkerPay;
+    const renterFee = 0;
     const discountApplied = false;
-
-    // Subtotal (Base charge before Gateway)
-    // Logic: User Pays: Price + Deposit + Renter Fee (if applicable)
-    const subtotal = price + deposit + renterFee;
-
-    // Gateway Fee (2% applied on everything)
-    const gatewayFee = gatewayFeeFor(subtotal);
-
-    const totalAmount = subtotal + gatewayFee;
+    const subtotal = b.subtotal;
+    const gatewayFee = b.gatewayFee;
+    const totalAmount = b.total;
 
     // Shorten orderId to avoid 50 character limit in Cashfree
     const orderId = `ord_${Date.now()}_${gigId.split('-')[0]}`;

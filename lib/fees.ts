@@ -41,3 +41,64 @@ export function platformFeeFor(price: number, audience: FeeAudience = "STUDENT")
 export function gatewayFeeFor(subtotal: number): number {
   return Math.ceil(subtotal * GATEWAY_FEE_RATE);
 }
+
+export interface PaymentBreakdown {
+  /** Task price agreed with the worker. */
+  basePrice: number;
+  /** Refundable rental deposit, 0 for normal gigs. */
+  deposit: number;
+  /** Platform commission, deducted from the worker's payout. */
+  platformFee: number;
+  /** Cashfree pass-through, added on top and paid by the payer. */
+  gatewayFee: number;
+  /** basePrice + deposit, before the gateway fee. */
+  subtotal: number;
+  /** What the payer is actually charged. */
+  total: number;
+  /** What is held in escrow (price + deposit). */
+  amountHeld: number;
+  /** What the worker receives on release. Deposit is refunded, never paid out. */
+  netWorkerPay: number;
+  audience: FeeAudience;
+}
+
+/**
+ * The single arithmetic for a gig payment. Every number the payer sees, the
+ * escrow row stores, and the payout queue pays out comes from here.
+ *
+ * Kept as one pure function because these values have to agree across four
+ * places (Cashfree order, transactions.provider_data, the escrow row, and
+ * manual_release_escrow). When they were computed inline they could drift, and
+ * a drift here means either the worker is underpaid or we are.
+ *
+ * Invariants (enforced by tests/unit/payout.test.mjs):
+ *   total       = basePrice + deposit + gatewayFee
+ *   amountHeld  = basePrice + deposit
+ *   netWorkerPay = basePrice - platformFee   (deposit excluded)
+ *   0 <= netWorkerPay <= basePrice
+ */
+export function buildPaymentBreakdown(args: {
+  price: number;
+  deposit?: number;
+  audience: FeeAudience;
+}): PaymentBreakdown {
+  const basePrice = Math.max(0, Math.round(args.price));
+  const deposit = Math.max(0, Math.round(args.deposit ?? 0));
+  const platformFee = platformFeeFor(basePrice, args.audience);
+  const subtotal = basePrice + deposit;
+  const gatewayFee = gatewayFeeFor(subtotal);
+
+  return {
+    basePrice,
+    deposit,
+    platformFee,
+    gatewayFee,
+    subtotal,
+    total: subtotal + gatewayFee,
+    amountHeld: subtotal,
+    // The deposit belongs to the renter and is refunded on release — paying it
+    // to the worker would hand over money that is not theirs.
+    netWorkerPay: basePrice - platformFee,
+    audience: args.audience,
+  };
+}

@@ -73,9 +73,9 @@ function ChatRoomContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  // Message Limits
-  const [msgCount, setMsgCount] = useState(0);
-  const [msgLimit, setMsgLimit] = useState(0);
+  // Realtime connection state. Surfaced to the user because a chat that has
+  // silently stopped receiving looks identical to a quiet one.
+  const [liveStatus, setLiveStatus] = useState<"live" | "reconnecting">("live");
 
   // Offer State
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
@@ -95,6 +95,44 @@ function ChatRoomContent() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  /**
+   * Re-read the thread and merge in anything missed.
+   *
+   * Realtime is a delivery optimisation, never the source of truth: events sent
+   * while the socket was down are gone forever, so every reconnect has to be
+   * followed by a catch-up read. Merging by id keeps optimistic sends intact.
+   */
+  const resyncRef = useRef<() => Promise<void>>(async () => {});
+  resyncRef.current = async () => {
+    if (!roomId) return;
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("gig_id", roomId)
+      .order("created_at", { ascending: true });
+    if (!data) return;
+    setMessages((prev) => {
+      const seen = new Set(prev.map((m) => m.id));
+      const merged = [...prev, ...data.filter((m: Message) => !seen.has(m.id))];
+      return merged.sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+    });
+  };
+
+  // Backgrounding a tab suspends the websocket on mobile. Coming back to the
+  // foreground, or regaining connectivity, must trigger a catch-up read — the
+  // socket may report itself healthy while having missed everything.
+  useEffect(() => {
+    const onWake = () => {
+      if (document.visibilityState === "visible") void resyncRef.current();
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("online", onWake);
+    return () => {
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("online", onWake);
+    };
+  }, []);
 
   // 1. Load Data
   useEffect(() => {
@@ -187,9 +225,6 @@ function ChatRoomContent() {
           // APPLICANT
           setApplicantProfile(null);
 
-          let limit = 5;
-          setMsgLimit(limit);
-
           const allMagicChips = [
             "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
             "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
@@ -200,10 +235,15 @@ function ChatRoomContent() {
             m.message_type !== 'offer' &&
             !allMagicChips.includes(m.content)
           );
-          setMsgCount(myMsgs.length);
         }
 
-        // Realtime subscription
+        // Realtime subscription.
+        //
+        // The socket WILL drop: switching wifi to mobile data, locking the
+        // phone, or backgrounding the tab all kill it. Previously .subscribe()
+        // was called with no status handler, so after a drop messages simply
+        // stopped arriving — silently, with the chat still looking live. On
+        // mobile that is the normal case, not an edge case.
         const channel = supabase.channel(`chat:${roomId}`)
           .on(
             "postgres_changes",
@@ -214,7 +254,15 @@ function ChatRoomContent() {
               setMessages((prev) => prev.some((x) => x.id === newMessage.id) ? prev : [...prev, newMessage]);
             }
           )
-          .subscribe();
+          .subscribe((status: string) => {
+            if (status === "SUBSCRIBED") {
+              setLiveStatus("live");
+              // Catch up on anything sent while we were disconnected.
+              void resyncRef.current();
+            } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+              setLiveStatus("reconnecting");
+            }
+          });
 
         channelRef.current = channel;
         setLoading(false);
@@ -238,21 +286,9 @@ function ChatRoomContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, selectedApplicantId]);
 
-  // Keep the applicant's "messages used" count in sync with the actual messages,
-  // regardless of whether they arrived optimistically or via realtime.
-  useEffect(() => {
-    if (isPoster || !currentUser) return;
-    const freeChips = [
-      "Available?", "Best Price?", "Where to meet?", "Can I see more pics?",
-      "I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"
-    ];
-    const mine = messages.filter((m) =>
-      m.sender_id === currentUser.id &&
-      m.message_type !== 'offer' &&
-      !freeChips.includes(m.content)
-    );
-    setMsgCount(mine.length);
-  }, [messages, isPoster, currentUser]);
+  // (The client-side "messages used" counter was removed — the cap is enforced
+  // server-side in /api/chat/send and is deliberately not surfaced. See the note
+  // where the progress bar used to render.)
 
   const sendMessage = async (txt?: string, type: 'text' | 'offer' | 'image' = 'text', amount?: number) => {
     if (isSending) return;
@@ -768,18 +804,27 @@ function ChatRoomContent() {
             </div>
           )}
 
-          {/* Visual Limit (Applicant Only) */}
-          {!isPoster && gig.status === 'open' && (
-            <div className="w-full bg-white/10 h-1 relative">
-              <div
-                className={`h-full transition duration-500 ${msgCount >= msgLimit ? 'bg-red-500' : 'bg-[#C9A9FF]'}`}
-                style={{ width: `${Math.min((msgCount / msgLimit) * 100, 100)}%` }}
-              />
-              <div className="absolute -top-6 right-4 text-[10px] font-bold text-white/50 bg-[#121217] px-2 py-0.5 rounded border border-white/10">
-                {msgCount}/{msgLimit} Messages Used
-              </div>
+          {/* Connection state. A chat whose socket has dropped looks exactly
+              like a chat where nobody is talking, so the difference has to be
+              visible — otherwise people assume they were ignored. */}
+          {liveStatus === "reconnecting" && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="px-4 py-2 flex items-center justify-center gap-2 text-xs text-amber-300/90 bg-amber-500/10 border-b border-amber-500/20"
+            >
+              <Loader2 size={12} className="animate-spin shrink-0" />
+              Reconnecting — new messages will appear once you&apos;re back online.
             </div>
           )}
+
+          {/* The pre-agreement message cap is deliberately NOT shown.
+              A visible "3/5 Messages Used" counter turns a guard rail into a
+              countdown: people spend their remaining messages racing to swap
+              phone numbers, which is the exact behaviour the cap exists to
+              prevent. The cap is enforced server-side in /api/chat/send and
+              surfaces only if someone actually reaches it, as a nudge toward
+              making an offer rather than a scolding. */}
 
           {/* Magic Chips */}
           <div className="flex gap-2 overflow-x-auto px-4 py-3 no-scrollbar">
@@ -787,7 +832,7 @@ function ChatRoomContent() {
               <button
                 key={i}
                 onClick={() => sendMessage(chip)}
-                disabled={isSending || (!isPoster && msgCount >= msgLimit)}
+                disabled={isSending}
                 className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition-colors disabled:opacity-50 touch-manipulation"
               >
                 {chip}
