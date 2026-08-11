@@ -75,6 +75,8 @@ export default function FeedPage() {
         .from("gigs")
         .select("*, users:poster_id!inner(college), applications(count)")
         .eq("status", "open")
+        // Hide anything already assigned/in progress — see dashboard note.
+        .is("assigned_worker_id", null)
         .order("is_featured", { ascending: false })
         .order("created_at", { ascending: false })
         .range(from, to);

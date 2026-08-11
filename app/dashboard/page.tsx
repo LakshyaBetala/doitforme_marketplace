@@ -79,6 +79,10 @@ export default function Dashboard() {
           .or(`listing_type.eq.COMPANY_TASK,created_at.gt.${thirtyDaysAgo}`)
           // Demand only. SERVICE listings are self-promotion and live at /talent.
           .in("listing_type", ["HUSTLE", "COMPANY_TASK", "SERVICE"])
+          // Exclude work already under way. A gig can still be status='open'
+          // while partially staffed (multi-worker) or already handed to someone,
+          // and showing it wastes an applicant's time on something they cannot get.
+          .is("assigned_worker_id", null)
           .order("created_at", { ascending: false })
           .limit(20),
         supabase.from("referrals").select("id").eq("referrer_id", authUser.id),
