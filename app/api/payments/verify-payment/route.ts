@@ -41,7 +41,14 @@ export async function POST(req: Request) {
     // 1. Verify payment with Cashfree directly
     let validPayment: any = null;
 
-    if (process.env.NODE_ENV !== 'development') {
+    // The bypass below must require BOTH a non-production build and an explicit
+    // opt-in flag. Keying it on NODE_ENV alone meant a single misconfigured
+    // environment variable would make every payment succeed for free, with no
+    // call to Cashfree at all. Fails safe: absent the flag, we always verify.
+    const allowFakePayments =
+      process.env.NODE_ENV === 'development' && process.env.ALLOW_FAKE_PAYMENTS === 'true';
+
+    if (!allowFakePayments) {
       const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
       const response = await fetch(`https://${CASHFREE_ENV}.cashfree.com/pg/orders/${orderId}/payments`, {
         method: "GET",
@@ -105,7 +112,7 @@ export async function POST(req: Request) {
     // Previously guarded by `cfAmount > 0`, so a missing or zero payment_amount
     // from Cashfree skipped verification entirely and funded escrow anyway.
     // A partial or zero payment must never mark a gig funded.
-    if (process.env.NODE_ENV !== 'development') {
+    if (!allowFakePayments) {
       const cfAmount = Number(validPayment?.payment_amount);
       const dbAmount = Number(txn.amount || 0);
       if (!Number.isFinite(cfAmount) || cfAmount <= 0 || Math.abs(cfAmount - dbAmount) > 1) {
@@ -175,8 +182,26 @@ export async function POST(req: Request) {
     }, { onConflict: 'gig_id,worker_id' });
 
     if (escrowError) {
-      // Log but DO NOT throw — the escrow row is secondary. Gig status MUST still update.
-      console.error("Escrow upsert warning (non-fatal):", escrowError.message);
+      // NOT non-fatal. The escrow row IS the record that money is being held and
+      // who it is owed to. Marking the gig ESCROW_FUNDED without it means the
+      // payer has been charged, the worker is assigned, and nothing tracks the
+      // liability — release and refund both key off this row. Stop here and
+      // leave the gig unfunded so it can be retried, rather than silently
+      // creating money we cannot account for.
+      console.error(`CRITICAL: escrow upsert failed for gig ${gigId} order ${orderId}:`, escrowError.message);
+
+      // Release the idempotency claim we took above, otherwise this order is
+      // wedged forever: the retry (and the Cashfree webhook) would both see
+      // status=COMPLETED and skip, leaving a paid order permanently unsettled.
+      await supabaseAdmin
+        .from("transactions")
+        .update({ status: "PENDING" })
+        .eq("id", txn.id);
+
+      return NextResponse.json(
+        { error: "Payment received but could not be recorded. Our team has been notified — do not pay again." },
+        { status: 500 }
+      );
     }
 
     // 8. Update applications FIRST to count them properly

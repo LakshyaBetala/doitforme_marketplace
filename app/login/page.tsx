@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { checkUpi } from "@/lib/upi";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -161,8 +162,8 @@ function AuthPage() {
       return setMessage("Please enter your university name.");
     }
 
-    const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
-    if (upiId && !upiRegex.test(upiId)) {
+    // Shared validator — see lib/upi.ts
+    if (upiId && !checkUpi(upiId).valid) {
       setLoading(false);
       return setMessage("Invalid UPI ID format. (e.g., name@oksbi)");
     }

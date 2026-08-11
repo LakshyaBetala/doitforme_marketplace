@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { normalizeIndianPhone } from "@/lib/phone";
 import { isValidSource } from "@/lib/attribution";
+import { checkUpi } from "@/lib/upi";
 
 export async function POST(req: Request) {
   try {
@@ -60,11 +61,17 @@ export async function POST(req: Request) {
     }
 
     // Validate UPI ID Format
+    let normalizedUpi: string | null = null;
     if (upi_id) {
-      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
-      if (!upiRegex.test(upi_id)) {
-        return NextResponse.json({ error: "Invalid UPI ID format. Example: name@oksbi" }, { status: 400 });
+      // Server-side gate. lib/upi.ts is the single source of truth; the old
+      // inline regex allowed a 256-char local part and "..@a" style garbage.
+      const upiCheck = checkUpi(upi_id);
+      if (!upiCheck.valid) {
+        return NextResponse.json({ error: upiCheck.error || "Invalid UPI ID." }, { status: 400 });
       }
+      // Persist the NORMALISED form so the same destination can never be stored
+      // as two different strings (case, stray zero-width characters).
+      normalizedUpi = upiCheck.normalized;
     }
 
     // Admin Client (Bypasses RLS for user upsert operations)
@@ -87,7 +94,7 @@ export async function POST(req: Request) {
     // digits) so WhatsApp deep links build correctly later.
     const finalPhone = phone ? (normalizeIndianPhone(phone) || phone) : (existingUser?.phone || null);
     const finalCollege = college || existingUser?.college || null;
-    const finalUpi = upi_id || existingUser?.upi_id || null;
+    const finalUpi = normalizedUpi || existingUser?.upi_id || null;
     const finalKyc = existingUser?.kyc_verified || false;
     // Once a username is claimed it's permanent for this iteration — no overwrite of an existing one.
     const finalUsername = existingUser?.username || cleanedUsername || null;

@@ -48,6 +48,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
+  // 1b. Replay window. The signature covers the timestamp, so a captured payload
+  // stays valid forever without this. Idempotency limits the blast radius but
+  // does not stop an old event being replayed against a re-created order.
+  // Cashfree sends epoch seconds; 5 minutes is generous for their retries.
+  const REPLAY_WINDOW_SECONDS = 300;
+  const ts = Number(timestamp);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > REPLAY_WINDOW_SECONDS) {
+    console.error(`[cashfree-webhook] stale or invalid timestamp: ${timestamp}`);
+    return NextResponse.json({ error: "Stale webhook" }, { status: 401 });
+  }
+
   let payload: any;
   try {
     payload = JSON.parse(rawBody);

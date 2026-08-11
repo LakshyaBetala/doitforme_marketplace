@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  // tests/unit/ holds pure-function tests for node's runner (npm run test:unit).
+  // Without this Playwright picks them up and fails on the import syntax.
+  testIgnore: ['unit/**'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

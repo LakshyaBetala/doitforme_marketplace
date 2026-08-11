@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { checkUpi } from "@/lib/upi";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Upload, Plus, X, Briefcase, Link as LinkIcon, Star, CheckCircle, FileText, ExternalLink, Sparkles, Shield, AlertTriangle } from "lucide-react";
@@ -109,8 +110,8 @@ export default function WorkerSetupPage() {
         }
 
         if (upiId.trim()) {
-            const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
-            if (!upiRegex.test(upiId.trim())) {
+            // Shared validator — see lib/upi.ts
+            if (!checkUpi(upiId).valid) {
                 setLoading(false);
                 return setError("Invalid UPI ID format. (e.g., name@oksbi)");
             }

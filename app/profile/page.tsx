@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { checkUpi } from "@/lib/upi";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
@@ -319,8 +320,8 @@ export default function ProfilePage() {
 
     let finalUpiId = profile.upi_id;
     if (!profile.upi_id && editUpiId.trim()) {
-      const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
-      if (!upiRegex.test(editUpiId.trim())) {
+      // Shared validator — see lib/upi.ts
+      if (!checkUpi(editUpiId.trim()).valid) {
         setSaveMessage({ type: 'error', text: 'Invalid UPI ID format. (e.g., name@oksbi)' });
         setSaving(false);
         return;
