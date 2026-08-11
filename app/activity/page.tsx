@@ -22,6 +22,41 @@ function StatusBadge({ status }: { status: string }) {
   return <CanonicalStatusBadge tone={statusToTone(status)}>{label}</CanonicalStatusBadge>;
 }
 
+
+/**
+ * One clear state for the worker, from their point of view.
+ *
+ * The card used to render `app.status === 'accepted' ? gig.status : app.status`,
+ * which mixed two different state machines: an accepted worker on a gig that was
+ * still filling saw "Open", and a worker whose gig had been taken by someone
+ * else saw nothing at all. Neither told them what they actually needed to know —
+ * am I hired, am I waiting, or is this over?
+ */
+function workerState(app: any, gig: any): { label: string; tone: "neutral" | "info" | "success" | "warning" | "danger"; hint?: string } {
+  const gigStatus = String(gig?.status || "").toLowerCase();
+  const appStatus = String(app?.status || "").toLowerCase();
+
+  if (["cancelled", "expired"].includes(gigStatus)) {
+    return { label: "Closed", tone: "neutral", hint: "The poster took this down. You're not waiting on it." };
+  }
+  if (["closed", "rejected"].includes(appStatus)) {
+    return { label: "Not selected", tone: "neutral", hint: "They went with someone else this time." };
+  }
+  // Taken by somebody else while this application was still pending.
+  if (gig?.assigned_worker_id && gig.assigned_worker_id !== app.worker_id && appStatus !== "accepted") {
+    return { label: "Filled", tone: "neutral", hint: "Someone else was hired for this." };
+  }
+  if (appStatus === "accepted") {
+    if (gigStatus === "completed") return { label: "Paid", tone: "success" };
+    if (["delivered", "submitted"].includes(gigStatus)) {
+      return { label: "Awaiting approval", tone: "info", hint: "They have 24 hours to approve, then it releases automatically." };
+    }
+    if (["assigned"].includes(gigStatus)) return { label: "In progress", tone: "info" };
+    return { label: "Hired", tone: "success", hint: "Waiting for the poster to pay into escrow." };
+  }
+  return { label: "Applied", tone: "warning", hint: "Waiting to hear back from the poster." };
+}
+
 function CountdownTimer({ targetDate }: { targetDate: string }) {
   const [timeLeft, setTimeLeft] = useState('');
 
@@ -329,7 +364,7 @@ export default function ActivityHubPage() {
                   if (gig.assigned_worker_id) return null;
                   return (
                     <button
-                      onClick={() => router.push(`/chat/${gig.id}`)}
+                      onClick={() => router.push(`/gig/${gig.id}/applicants`)}
                       className={`w-full mb-3 p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition ${
                         applicantCount > 0
                           ? "bg-[var(--brand-purple)]/[0.08] border-[var(--brand-purple)]/25 hover:bg-[var(--brand-purple)]/[0.14]"
@@ -359,6 +394,9 @@ export default function ActivityHubPage() {
                 })()}
 
                 <div className="flex flex-col md:flex-row gap-2 mt-3 border-t border-white/5 pt-3">
+                   <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
+                     <Briefcase size={14} /> View gig
+                   </button>
                    <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
                      <MessageSquare size={14} /> Chat
                    </button>
@@ -390,7 +428,7 @@ export default function ActivityHubPage() {
            {activeTab === "WORKING" && workingGigs.map(app => {
              const gig = app.gig;
              if(!gig) return null;
-             const displayStatus = app.status === 'accepted' ? gig.status : app.status;
+             const ws = workerState(app, gig);
 
              return (
                <div key={app.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#C9A9FF]/30 transition group">
@@ -398,9 +436,10 @@ export default function ActivityHubPage() {
                      <div className="flex-1 min-w-0">
                        <h3 className="font-bold text-white text-lg truncate">{gig.title}</h3>
                        <p className="text-white font-semibold flex items-center gap-1"><IndianRupee size={12} /> {app.negotiated_price || gig.price}</p>
+                       {ws.hint && <p className="text-xs text-white/50 mt-1.5 leading-relaxed">{ws.hint}</p>}
                      </div>
                      <div className="shrink-0 max-w-[50%] flex justify-end">
-                        <StatusBadge status={displayStatus} />
+                        <CanonicalStatusBadge tone={ws.tone}>{ws.label}</CanonicalStatusBadge>
                      </div>
                   </div>
 
@@ -429,6 +468,9 @@ export default function ActivityHubPage() {
                   )}
 
                   <div className="flex flex-col md:flex-row gap-2 mt-3 border-t border-white/5 pt-3">
+                     <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
+                       <Briefcase size={14} /> View gig
+                     </button>
                      <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
                        <MessageSquare size={14} /> Chat
                      </button>

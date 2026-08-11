@@ -51,8 +51,12 @@ export async function POST(req: Request) {
     const basePrice = application?.negotiated_price ? Number(application.negotiated_price) : Number(gig.price);
     const deposit = Number(gig.security_deposit) || 0;
 
-    if (basePrice < 500) {
-      return NextResponse.json({ error: "Escrow is available for gigs ₹500 and above. For smaller jobs, use Direct Connect." }, { status: 400 });
+    // No price floor. This used to refuse escrow below Rs 500 and push people to
+    // "Direct Connect" — but the median gig is Rs 499, so the majority of jobs
+    // were steered off-platform by design, which is why 223 of 267 applications
+    // went Direct and GMV stayed at zero. Direct is gone; escrow is the only path.
+    if (!Number.isFinite(basePrice) || basePrice < 1) {
+      return NextResponse.json({ error: "This gig doesn't have a valid price." }, { status: 400 });
     }
 
     const supabaseAdmin = createClient(
