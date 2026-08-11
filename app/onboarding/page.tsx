@@ -157,7 +157,7 @@ export default function OnboardingPage() {
         }
     };
 
-    const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all appearance-none";
+    const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition appearance-none";
 
     return (
         <div className="flex items-center justify-center min-h-[100dvh] p-4 md:p-6 bg-[#0B0B11] text-white relative overflow-hidden">
@@ -304,7 +304,7 @@ export default function OnboardingPage() {
                                         key={s.value}
                                         type="button"
                                         onClick={() => setSignupSource(s.value)}
-                                        className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all touch-manipulation ${
+                                        className={`px-3 py-2 rounded-xl text-xs font-medium border transition touch-manipulation ${
                                             active
                                                 ? "bg-[#8825F5] border-[#8825F5] text-white"
                                                 : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
@@ -340,7 +340,7 @@ export default function OnboardingPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] active:scale-[0.98] hover:opacity-90 text-white p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation flex items-center justify-center gap-2 min-h-[44px]"
+                            className="w-full bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] active:scale-[0.98] hover:opacity-90 text-white p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition font-bold shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation flex items-center justify-center gap-2 min-h-[44px]"
                         >
                             {loading ? (
                                 <Loader2 className="animate-spin w-5 h-5" />

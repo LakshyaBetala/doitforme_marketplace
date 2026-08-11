@@ -80,7 +80,7 @@ export default function NotificationSettingsPage() {
                     href={`https://t.me/${TELEGRAM_BOT}?start=${userId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-[#0097FF]/10 border border-[#0097FF]/20 hover:bg-[#0097FF]/20 text-[#0097FF] text-xs font-bold rounded-xl transition-all"
+                    className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-[#0097FF]/10 border border-[#0097FF]/20 hover:bg-[#0097FF]/20 text-[#0097FF] text-xs font-bold rounded-xl transition"
                   >
                     <Send size={14} /> Connect Telegram
                   </a>

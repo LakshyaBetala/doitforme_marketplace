@@ -180,7 +180,7 @@ export default function LandingPage() {
           </nav>
           <div className="flex items-center gap-1">
             <button onClick={goEarn} className="text-[13px] font-medium text-white/70 hover:text-white px-3 py-2 transition-colors">{userEmail ? "Dashboard" : "Log in"}</button>
-            <button onClick={goHire} className="text-[13px] font-medium text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 px-4 py-2 rounded-full transition-all">Get work done</button>
+            <button onClick={goHire} className="text-[13px] font-medium text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 px-4 py-2 rounded-full transition">Get work done</button>
           </div>
         </div>
       </header>
@@ -200,10 +200,10 @@ export default function LandingPage() {
               Post a task, match with a verified student, and pay only when the work is approved. Design, research, decks, data and more, every payment protected by escrow.
             </p>
             <div className="mt-9 flex flex-col sm:flex-row gap-3 max-w-md">
-              <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition-all flex items-center justify-center gap-2">
+              <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition flex items-center justify-center gap-2">
                 I need work done <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
               </button>
-              <button onClick={goEarn} className="px-6 py-3.5 rounded-full text-[15px] font-semibold text-white/90 border border-white/12 hover:bg-white/[0.04] transition-all">
+              <button onClick={goEarn} className="px-6 py-3.5 rounded-full text-[15px] font-semibold text-white/90 border border-white/12 hover:bg-white/[0.04] transition">
                 I want to earn
               </button>
             </div>
@@ -239,7 +239,7 @@ export default function LandingPage() {
 
           <div>
             {CATEGORIES.map(([num, title, desc], i) => (
-              <button key={num} onClick={goHire} className={`group w-full text-left flex items-center gap-6 py-6 ${i === 0 ? "border-t" : ""} border-b border-white/[0.07] hover:px-3 transition-all`}>
+              <button key={num} onClick={goHire} className={`group w-full text-left flex items-center gap-6 py-6 ${i === 0 ? "border-t" : ""} border-b border-white/[0.07] hover:px-3 transition`}>
                 <span className="text-[12px] font-mono text-white/25 tabular-nums">{num}</span>
                 <div className="flex-1">
                   <h3 className="text-lg md:text-xl font-semibold tracking-tight group-hover:text-[var(--brand-purple-soft)] transition-colors" style={display}>{title}</h3>
@@ -249,7 +249,7 @@ export default function LandingPage() {
               </button>
             ))}
             {/* Open-ended capstone: signals the list is examples, not a closed menu */}
-            <button onClick={goHire} className="group w-full text-left flex items-center gap-6 py-6 border-b border-white/[0.07] hover:px-3 transition-all">
+            <button onClick={goHire} className="group w-full text-left flex items-center gap-6 py-6 border-b border-white/[0.07] hover:px-3 transition">
               <span className="text-[12px] font-mono text-[var(--brand-purple-soft)]/50 tabular-nums">08</span>
               <div className="flex-1">
                 <h3 className="text-lg md:text-xl font-semibold tracking-tight text-[var(--brand-purple-soft)]" style={display}>Anything else</h3>
@@ -290,7 +290,7 @@ export default function LandingPage() {
             <p className="text-white/55 mt-4 max-w-md leading-relaxed text-[15px]">
               One click and DoItForMe assigns a vetted student, runs the timeline, and reviews the work before it reaches you. You deal with us, never a stranger. The fee stays a flat 10%.
             </p>
-            <button onClick={goHire} className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition-all">
+            <button onClick={goHire} className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition">
               Let us handle it <ArrowRight size={15} />
             </button>
           </div>
@@ -318,7 +318,7 @@ export default function LandingPage() {
             <p className="text-white/55 mt-4 max-w-md leading-relaxed text-[15px]">
               Get verified once, then take on tasks that match what you are good at. Deliver, get approved, and the payout lands in your UPI. A flat 5 to 10% fee, nothing hidden.
             </p>
-            <button onClick={goEarn} className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-semibold text-white border border-white/12 hover:bg-white/[0.04] transition-all">
+            <button onClick={goEarn} className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-semibold text-white border border-white/12 hover:bg-white/[0.04] transition">
               Start earning <ArrowRight size={15} />
             </button>
           </div>
@@ -406,10 +406,10 @@ export default function LandingPage() {
             </h2>
             <p className="text-white/55 mt-4 max-w-sm text-[15px] leading-relaxed">Post your first task in minutes, or start earning from your skills today. Every payment protected by escrow.</p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md">
-              <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition-all flex items-center justify-center gap-2">
+              <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition flex items-center justify-center gap-2">
                 I need work done <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
               </button>
-              <button onClick={goEarn} className="px-6 py-3.5 rounded-full text-[15px] font-semibold text-white/90 border border-white/12 hover:bg-white/[0.04] transition-all">I want to earn</button>
+              <button onClick={goEarn} className="px-6 py-3.5 rounded-full text-[15px] font-semibold text-white/90 border border-white/12 hover:bg-white/[0.04] transition">I want to earn</button>
             </div>
           </div>
           <div className="relative h-56 md:h-[340px] flex items-end justify-center order-1 md:order-2">

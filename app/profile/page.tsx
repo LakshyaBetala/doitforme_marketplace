@@ -455,7 +455,7 @@ export default function ProfilePage() {
                 <p className="text-xs text-amber-400/70 mt-0.5">Missing: {missingFields.join(", ")}. Complete your profile to post and apply.</p>
               </div>
             </div>
-            <button onClick={startEditing} className="shrink-0 px-5 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-bold rounded-xl transition-all active:scale-95 whitespace-nowrap">
+            <button onClick={startEditing} className="shrink-0 px-5 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-bold rounded-xl transition active:scale-95 whitespace-nowrap">
               Complete Profile
             </button>
           </div>
@@ -495,7 +495,7 @@ export default function ProfilePage() {
                     <button
                       onClick={startEditing}
                       disabled={!canEdit}
-                      className="px-4 py-2 md:px-5 md:py-2.5 bg-black/20 hover:bg-[#8825F5] border border-white/10 hover:border-[#8825F5] text-white text-xs font-bold rounded-xl transition-all active:scale-95 disabled:opacity-40 disabled:hover:bg-black/20 disabled:cursor-not-allowed flex items-center gap-2 backdrop-blur-sm shadow-lg"
+                      className="px-4 py-2 md:px-5 md:py-2.5 bg-black/20 hover:bg-[#8825F5] border border-white/10 hover:border-[#8825F5] text-white text-xs font-bold rounded-xl transition active:scale-95 disabled:opacity-40 disabled:hover:bg-black/20 disabled:cursor-not-allowed flex items-center gap-2 backdrop-blur-sm shadow-lg"
                     >
                       <Edit2 size={12} /> {canEdit ? 'Edit Profile' : 'Locked'}
                     </button>
@@ -504,14 +504,14 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={cancelEditing}
-                      className="px-4 py-2 md:py-2.5 bg-black/20 border border-white/10 text-white/60 text-xs font-bold rounded-xl hover:bg-white/5 hover:text-white transition-all active:scale-95 backdrop-blur-sm"
+                      className="px-4 py-2 md:py-2.5 bg-black/20 border border-white/10 text-white/60 text-xs font-bold rounded-xl hover:bg-white/5 hover:text-white transition active:scale-95 backdrop-blur-sm"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={saveProfile}
                       disabled={saving}
-                      className="px-5 py-2 md:py-2.5 bg-[#8825F5] text-white text-xs font-bold rounded-xl hover:bg-[#7D5FFF] transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(136,37,245,0.3)]"
+                      className="px-5 py-2 md:py-2.5 bg-[#8825F5] text-white text-xs font-bold rounded-xl hover:bg-[#7D5FFF] transition active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(136,37,245,0.3)]"
                     >
                       {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                       {saving ? "Saving..." : "Save"}
@@ -563,7 +563,7 @@ export default function ProfilePage() {
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         placeholder="Your name"
-                        className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                        className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
                       />
                     </div>
                     {!profile.username && (
@@ -579,7 +579,7 @@ export default function ProfilePage() {
                             onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
                             placeholder="username"
                             maxLength={20}
-                            className="w-full pl-9 pr-11 py-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                            className="w-full pl-9 pr-11 py-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
                           />
                           <div className="absolute right-4 top-1/2 -translate-y-1/2">
                               {usernameStatus === "checking" && <Loader2 size={14} className="text-white/40 animate-spin" />}
@@ -649,7 +649,7 @@ export default function ProfilePage() {
                       value={editPhone}
                       onChange={(e) => setEditPhone(e.target.value)}
                       placeholder="Phone number"
-                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
                     />
                   ) : (
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
@@ -670,7 +670,7 @@ export default function ProfilePage() {
                       value={editUpiId}
                       onChange={(e) => setEditUpiId(e.target.value)}
                       placeholder="name@oksbi"
-                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
                     />
                   ) : (
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
@@ -695,7 +695,7 @@ export default function ProfilePage() {
                             placeholder="University Name"
                             value={editCustomCollege}
                             onChange={(e) => setEditCustomCollege(e.target.value)}
-                            className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition-all"
+                            className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
                           />
                         </div>
                       )}
@@ -730,7 +730,7 @@ export default function ProfilePage() {
                             setEditPreferences([...editPreferences, cat]);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all ${editPreferences.includes(cat) ? 'bg-[#8825F5] text-white border-[#8825F5]' : 'bg-black/20 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'}`}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition ${editPreferences.includes(cat) ? 'bg-[#8825F5] text-white border-[#8825F5]' : 'bg-black/20 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'}`}
                       >
                         {cat}
                       </button>
@@ -803,7 +803,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 {profile.kyc_status !== "manual_review" && (
-                  <Link href="/verify-id" className="w-full sm:w-auto px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-xs font-bold rounded-xl transition-all whitespace-nowrap text-center">
+                  <Link href="/verify-id" className="w-full sm:w-auto px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-xs font-bold rounded-xl transition whitespace-nowrap text-center">
                     {profile.kyc_status === "rejected" ? "Re-upload ID" : "Verify Now"}
                   </Link>
                 )}
@@ -812,7 +812,7 @@ export default function ProfilePage() {
 
             {/* Worker Setup CTA */}
             <div className="rounded-[32px] border border-white/5 bg-[var(--card)] p-6 md:p-8 flex flex-col gap-6 shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-[50px] pointer-events-none transition-all"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-[50px] pointer-events-none transition"></div>
               
               <div className="flex items-start gap-4 relative z-10">
                 <div className="p-3 bg-white/5 rounded-xl shrink-0 border border-white/5">
@@ -824,7 +824,7 @@ export default function ProfilePage() {
                 </div>
               </div>
               
-              <Link href="/profile/worker-setup" className="w-full py-3.5 bg-white/10 border border-white/10 text-white font-bold rounded-xl text-center hover:bg-white/20 active:scale-95 transition-all relative z-10 text-sm">
+              <Link href="/profile/worker-setup" className="w-full py-3.5 bg-white/10 border border-white/10 text-white font-bold rounded-xl text-center hover:bg-white/20 active:scale-95 transition relative z-10 text-sm">
                 {profile.skills && profile.skills.length > 0 ? "Edit Details" : "Setup Profile"}
               </Link>
             </div>
@@ -850,7 +850,7 @@ export default function ProfilePage() {
                         setCodeCopied(true);
                         setTimeout(() => setCodeCopied(false), 2000);
                       }}
-                      className="p-1.5 rounded-md hover:bg-white/10 text-zinc-500 hover:text-white transition-all"
+                      className="p-1.5 rounded-md hover:bg-white/10 text-zinc-500 hover:text-white transition"
                     >
                       {codeCopied ? <CheckCircle2 size={14} className="text-emerald-400" /> : <Copy size={14} />}
                     </button>
@@ -866,7 +866,7 @@ export default function ProfilePage() {
                         setTimeout(() => setCodeCopied(false), 2000);
                       }
                     }}
-                    className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/5 text-white text-xs font-bold rounded-xl hover:bg-white/10 transition-all active:scale-95 whitespace-nowrap"
+                    className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/5 text-white text-xs font-bold rounded-xl hover:bg-white/10 transition active:scale-95 whitespace-nowrap"
                   >
                     Share
                   </button>

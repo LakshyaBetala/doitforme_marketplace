@@ -167,7 +167,7 @@ export default function CompanyOnboardingPage() {
         }
     };
 
-    const inputClass = "w-full px-5 py-4 bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all text-sm font-medium rounded-2xl shadow-inner shadow-black/20";
+    const inputClass = "w-full px-5 py-4 bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition text-sm font-medium rounded-2xl shadow-inner shadow-black/20";
     const labelClass = "block text-xs font-medium text-zinc-400 mb-2 pl-1";
 
     return (
@@ -383,7 +383,7 @@ export default function CompanyOnboardingPage() {
 
                                     <div>
                                         <label className={labelClass}>What talent are you looking for?</label>
-                                        <textarea className={`${inputClass} resize-none h-24`} value={companyDetails} onChange={e => setCompanyDetails(e.target.value)} disabled={loading} placeholder="E.g. We need campus ambassadors for our app launch across 10 universities..." />
+                                        <textarea className={`${inputClass} resize-none h-24`} value={companyDetails} onChange={e => setCompanyDetails(e.target.value)} disabled={loading} placeholder="E.g. We need campus ambassadors for our app launch across 10 universities…" />
                                     </div>
 
                                     {error && (
@@ -395,7 +395,7 @@ export default function CompanyOnboardingPage() {
                                     <button
                                         type="submit"
                                         disabled={loading}
-                                        className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition-all rounded-full disabled:opacity-50 flex items-center justify-center gap-2 mt-8 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
+                                        className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition rounded-full disabled:opacity-50 flex items-center justify-center gap-2 mt-8 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
                                     >
                                         {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <>Complete Registration <ArrowRight size={18} /></>}
                                     </button>
@@ -427,7 +427,7 @@ export default function CompanyOnboardingPage() {
                                     <button
                                         onClick={handleConflictProceed}
                                         disabled={loading}
-                                        className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition-all rounded-full disabled:opacity-50 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
+                                        className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition rounded-full disabled:opacity-50 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
                                     >
                                         {loading ? <Loader2 className="animate-spin mx-auto w-5 h-5" /> : "Acknowledge & Upgrade Account"}
                                     </button>
@@ -460,7 +460,7 @@ export default function CompanyOnboardingPage() {
                                             <button
                                                 type="submit"
                                                 disabled={loading || otp.length !== 6}
-                                                className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition-all rounded-full disabled:opacity-50 flex justify-center items-center gap-2 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
+                                                className="w-full bg-white text-black p-4 text-[15px] font-semibold hover:bg-zinc-200 transition rounded-full disabled:opacity-50 flex justify-center items-center gap-2 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]"
                                             >
                                                 {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Verify Code"}
                                             </button>

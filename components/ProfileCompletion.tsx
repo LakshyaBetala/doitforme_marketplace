@@ -90,7 +90,7 @@ export default function ProfileCompletion({ user }: Props) {
       <div className="flex items-center gap-3 mb-4">
         <div className="h-1.5 flex-1 rounded-full bg-white/[0.06] overflow-hidden">
           <div
-            className="h-full bg-[var(--brand-purple)] rounded-full transition-all duration-500"
+            className="h-full bg-[var(--brand-purple)] rounded-full transition duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -118,14 +118,14 @@ export default function ProfileCompletion({ user }: Props) {
       <div className="flex flex-col sm:flex-row gap-2">
         <Link
           href={next.href}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--brand-purple)] hover:opacity-90 text-white text-sm font-semibold transition-all active:scale-[0.99] min-h-[44px]"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--brand-purple)] hover:opacity-90 text-white text-sm font-semibold transition active:scale-[0.99] min-h-[44px]"
         >
           {next.label} <ArrowRight size={16} />
         </Link>
         {profileUrl && (
           <button
             onClick={share}
-            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white text-sm font-semibold transition-all active:scale-[0.99] min-h-[44px]"
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white text-sm font-semibold transition active:scale-[0.99] min-h-[44px]"
           >
             <Share2 size={15} /> Share
           </button>

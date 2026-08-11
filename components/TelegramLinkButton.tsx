@@ -23,7 +23,7 @@ export default function TelegramLinkButton({
     return (
       <div className="w-full relative group">
         <div className="absolute inset-0 bg-[#0088cc]/10 rounded-xl blur pointer-events-none"></div>
-        <div className="p-4 rounded-xl border border-[#0088cc]/30 bg-[#1A1A24] flex items-center justify-between relative z-10 transition-all">
+        <div className="p-4 rounded-xl border border-[#0088cc]/30 bg-[#1A1A24] flex items-center justify-between relative z-10 transition">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center shrink-0">
               <CheckCircle2 size={20} />
@@ -40,11 +40,11 @@ export default function TelegramLinkButton({
 
   return (
     <div className="w-full relative group">
-      <div className="absolute inset-0 bg-[#0088cc]/20 rounded-xl blur group-hover:bg-[#0088cc]/30 transition-all pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[#0088cc]/20 rounded-xl blur group-hover:bg-[#0088cc]/30 transition pointer-events-none"></div>
       <button 
         onClick={handleConnect} 
         disabled={clicked}
-        className="w-full p-4 rounded-xl border border-[#0088cc]/50 bg-[#1A1A24] hover:bg-[#1A1A24] flex flex-col items-center justify-center gap-2 relative z-10 transition-all active:scale-[0.98]"
+        className="w-full p-4 rounded-xl border border-[#0088cc]/50 bg-[#1A1A24] hover:bg-[#1A1A24] flex flex-col items-center justify-center gap-2 relative z-10 transition active:scale-[0.98]"
       >
         <div className="flex items-center gap-2 font-bold text-white text-base">
           <Send className="text-[#0088cc] w-5 h-5" />

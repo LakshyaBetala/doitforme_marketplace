@@ -221,7 +221,7 @@ export default function VerifyIDPage() {
             onDragLeave={onDragLeave}
             onDrop={onDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`relative group cursor-pointer border-2 border-dashed rounded-3xl p-8 transition-all duration-300 min-h-[300px] flex flex-col items-center justify-center ${
+            className={`relative group cursor-pointer border-2 border-dashed rounded-3xl p-8 transition duration-300 min-h-[300px] flex flex-col items-center justify-center ${
               isDragging 
                 ? "border-brand-purple bg-brand-purple/10 scale-[1.02]" 
                 : preview 

@@ -143,7 +143,7 @@ export default function CompanyPublicProfile() {
            ) : (
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                {gigs.map(gig => (
-                 <Link href={`/gig/${gig.id}`} key={gig.id} className="bg-[#0F172A] border border-[#1E293B] hover:border-indigo-500/50 rounded-2xl p-6 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] transition-all flex flex-col group min-h-[200px]">
+                 <Link href={`/gig/${gig.id}`} key={gig.id} className="bg-[#0F172A] border border-[#1E293B] hover:border-indigo-500/50 rounded-2xl p-6 hover:shadow-[0_0_30px_rgba(99,102,241,0.15)] transition flex flex-col group min-h-[200px]">
                    <div className="mb-3">
                      <span className="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 text-[10px] uppercase font-black tracking-widest rounded-lg border border-indigo-500/20">
                          {gig.listing_type === 'COMPANY_TASK' ? 'Company Task' : gig.listing_type}

@@ -84,13 +84,18 @@ export default function GigDetailsPage() {
   const handleApply = async () => {
     if (!currentUser) return router.push(`/login?next=/gig/${gigId}`);
 
-    // Profile Gate: Require at least skills OR resume, plus phone and UPI ID
+    // Profile gate: skills OR resume, plus a phone number.
+    //
+    // UPI deliberately NOT required here. Asking for bank details before someone
+    // has earned a single rupee is the steepest possible ask at the least
+    // motivated moment, and it gated every first application. It's collected at
+    // payout time instead, where the user has money waiting and every reason to
+    // provide it — see the payout flow and the ProfileCompletion nudge.
     const hasSkills = userProfile?.skills && userProfile.skills.length > 0;
     const hasResume = !!userProfile?.resume_url;
     const hasPhone = !!userProfile?.phone;
-    const hasUpiId = !!userProfile?.upi_id;
 
-    if ((!hasSkills && !hasResume) || !hasPhone || !hasUpiId) {
+    if ((!hasSkills && !hasResume) || !hasPhone) {
       toast.error("Please complete your profile to continue.");
       router.push(`/profile/worker-setup?from=apply&gigId=${gigId}`);
       return;
@@ -182,7 +187,7 @@ export default function GigDetailsPage() {
       <div className="absolute bottom-40 left-0 w-[400px] h-[400px] bg-[#8825F5]/10 rounded-full blur-[150px] pointer-events-none" />
 
       {/* TOP HEADER BAR */}
-      <div className={`sticky top-0 z-30 bg-white/[0.02] backdrop-blur-2xl border-b border-white/5 transition-all`}>
+      <div className={`sticky top-0 z-30 bg-white/[0.02] backdrop-blur-2xl border-b border-white/5 transition`}>
         <div className="max-w-2xl mx-auto flex items-center justify-between p-4 px-6 md:px-0">
           <button onClick={() => (window.history.length > 2 && document.referrer.includes(window.location.host)) ? router.back() : router.push('/dashboard')} className={`flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium`}>
             <ArrowLeft size={16} /> Return
@@ -251,7 +256,7 @@ export default function GigDetailsPage() {
         {/* POSTER CARD */}
         {poster && (
           <div className={`p-8 rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-md flex items-center gap-6 shadow-lg shadow-black/20`}>
-            <div className={`w-20 h-20 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0 shadow-inner group-hover:border-[#8825F5]/50 transition-all`}>
+            <div className={`w-20 h-20 rounded-full border border-white/20 overflow-hidden bg-white/5 shrink-0 shadow-inner group-hover:border-[#8825F5]/50 transition`}>
               {poster.avatar_url ? (
                 <Image src={poster.avatar_url} alt="Poster" width={80} height={80} className="object-cover w-full h-full" />
               ) : (
@@ -268,7 +273,7 @@ export default function GigDetailsPage() {
             {!isMyGig && (
               <button 
                 onClick={handleMessagePoster}
-                className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all hover:scale-105 active:scale-95 shadow-sm`}
+                className={`shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white transition hover:scale-105 active:scale-95 shadow-sm`}
               >
                 <MessageCircle size={20} />
               </button>
@@ -292,7 +297,7 @@ export default function GigDetailsPage() {
                   const docUrl = supabase.storage.from('gig-images').getPublicUrl(doc).data.publicUrl;
                   const fileName = doc.split('/').pop() || `Document ${i + 1}`;
                   return (
-                    <a key={i} href={docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/[0.06] hover:border-[#8825F5]/30 transition-all group">
+                    <a key={i} href={docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/[0.06] hover:border-[#8825F5]/30 transition group">
                       <div className="w-10 h-10 rounded-lg bg-[#8825F5]/10 flex items-center justify-center shrink-0"><FileText size={18} className="text-[#C9A9FF]" /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{fileName}</p>
@@ -328,14 +333,14 @@ export default function GigDetailsPage() {
           <div className="max-w-2xl mx-auto flex gap-4 pointer-events-auto">
             <button 
               onClick={handleMessagePoster} 
-              className={`flex-shrink-0 w-14 h-14 md:w-auto md:px-8 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white font-semibold text-sm transition-all active:scale-95 flex items-center justify-center gap-3 backdrop-blur-xl shadow-lg`}
+              className={`flex-shrink-0 w-14 h-14 md:w-auto md:px-8 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-white font-semibold text-sm transition active:scale-95 flex items-center justify-center gap-3 backdrop-blur-xl shadow-lg`}
             >
               <MessageCircle size={22} />
               <span className="hidden md:inline">Inquiry</span>
             </button>
             <button 
               onClick={() => setIsApplyModalOpen(true)} 
-              className={`flex-1 py-4 bg-white text-black hover:bg-zinc-200 transition-all font-semibold text-[15px] rounded-full active:scale-95 flex items-center justify-center gap-3 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]`}
+              className={`flex-1 py-4 bg-white text-black hover:bg-zinc-200 transition font-semibold text-[15px] rounded-full active:scale-95 flex items-center justify-center gap-3 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]`}
             >
               <Send size={18} /> Apply for Task
             </button>
@@ -448,8 +453,8 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
               <textarea 
                 value={offerPitch}
                 onChange={e => setOfferPitch(e.target.value)}
-                placeholder="Explain why you're a good fit for this gig..."
-                className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-sm font-medium text-white outline-none focus:border-[#8825F5]/50 focus:ring-1 focus:ring-[#8825F5]/50 resize-none transition-all placeholder:text-zinc-600 shadow-inner"
+                placeholder="Explain why you're a good fit for this gig…"
+                className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-sm font-medium text-white outline-none focus:border-[#8825F5]/50 focus:ring-1 focus:ring-[#8825F5]/50 resize-none transition placeholder:text-zinc-600 shadow-inner"
                 rows={4}
               />
             </div>
@@ -457,7 +462,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
             {/* TERMS & CONDITIONS CHECKBOX */}
             <div className="pt-4 border-t border-white/5 mt-4">
               <label className="flex items-start gap-3 cursor-pointer group">
-                 <div className={`w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-all ${termsAccepted ? 'bg-[#8825F5] border-[#8825F5]' : 'bg-black/50 border-white/20 group-hover:border-[#8825F5]/50'}`}>
+                 <div className={`w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition ${termsAccepted ? 'bg-[#8825F5] border-[#8825F5]' : 'bg-black/50 border-white/20 group-hover:border-[#8825F5]/50'}`}>
                     {termsAccepted && <Check size={14} className="text-white" />}
                  </div>
                  <input 
@@ -475,7 +480,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
             <button 
               onClick={handleApply}
               disabled={isApplying || !termsAccepted}
-              className={`w-full py-4 text-[15px] font-semibold rounded-full transition-all flex items-center justify-center gap-3 ${
+              className={`w-full py-4 text-[15px] font-semibold rounded-full transition flex items-center justify-center gap-3 ${
                 (isApplying || !termsAccepted) 
                 ? 'bg-white/5 text-zinc-500 cursor-not-allowed border border-white/5' 
                 : 'bg-white text-black hover:bg-zinc-200 active:scale-95 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]'
@@ -541,7 +546,7 @@ function GigImageGallery({ gig, supabase, isCompanyTask }: { gig: any; supabase:
           {/* Dots */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
             {imageFiles.map((_: any, i: number) => (
-              <button key={i} onClick={() => setCurrentIndex(i)} className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-white w-5' : 'bg-white/40 hover:bg-white/60'}`} />
+              <button key={i} onClick={() => setCurrentIndex(i)} className={`w-2 h-2 rounded-full transition ${i === currentIndex ? 'bg-white w-5' : 'bg-white/40 hover:bg-white/60'}`} />
             ))}
           </div>
         </>

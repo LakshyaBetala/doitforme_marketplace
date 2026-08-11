@@ -97,7 +97,11 @@ export default function WorkerSetupPage() {
 
         if (fromApply) {
             if (!phone.trim()) { setLoading(false); return setError("Phone number is required to apply."); }
-            if (!upiId.trim()) { setLoading(false); return setError("UPI ID is required to apply."); }
+            // UPI is intentionally NOT required to apply — it's asked for at
+            // payout time, when the user has money waiting. Requiring bank
+            // details before a first application gated every new applicant at
+            // the moment they were least invested. Format is still validated
+            // below if they choose to fill it in now.
             if (skills.length === 0 && !existingResumeUrl && !resumeFile) {
                 setLoading(false);
                 return setError("You must add at least one skill or upload a resume.");
@@ -197,7 +201,7 @@ export default function WorkerSetupPage() {
         ? decodeURIComponent(existingResumeUrl.split('/').pop()?.split('?')[0] || 'resume')
         : null;
 
-    const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all appearance-none";
+    const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition appearance-none";
     const labelStyle = "block text-sm font-bold text-white/80 mb-2";
     const sectionCardStyle = "bg-[#121217]/80 border border-white/[0.06] rounded-2xl p-5 md:p-6";
 
@@ -277,7 +281,7 @@ export default function WorkerSetupPage() {
                     </div>
                     <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
                         <div 
-                            className={`h-full rounded-full transition-all duration-700 ${completionPct === 100 ? 'bg-green-500' : completionPct >= 50 ? 'bg-[#8825F5]' : 'bg-amber-500'}`}
+                            className={`h-full rounded-full transition duration-700 ${completionPct === 100 ? 'bg-green-500' : completionPct >= 50 ? 'bg-[#8825F5]' : 'bg-amber-500'}`}
                             style={{ width: `${completionPct}%` }}
                         />
                     </div>
@@ -418,7 +422,7 @@ export default function WorkerSetupPage() {
                         <label className={labelStyle}>Experience / About</label>
                         <textarea
                             rows={4}
-                            placeholder="Briefly describe your relevant experience, degrees, or certifications..."
+                            placeholder="Briefly describe your relevant experience, degrees, or certifications…"
                             className={`${inputStyle} resize-none`}
                             value={experience}
                             onChange={(e) => setExperience(e.target.value)}
@@ -456,7 +460,7 @@ export default function WorkerSetupPage() {
                         
                         <div 
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-full border-2 border-dashed border-white/20 hover:border-[#8825F5]/50 bg-[#0B0B11] rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all group"
+                            className="w-full border-2 border-dashed border-white/20 hover:border-[#8825F5]/50 bg-[#0B0B11] rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition group"
                         >
                             <div className="w-12 h-12 rounded-full bg-white/5 group-hover:bg-[#8825F5]/10 flex items-center justify-center mb-3 transition-colors">
                                 <Upload className="text-white/50 group-hover:text-[#8825F5]" size={24} />

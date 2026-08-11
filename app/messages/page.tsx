@@ -699,7 +699,7 @@ function MessagesContent() {
                                 <div
                                     key={chat.conversationKey}
                                     onClick={() => setActiveChat(chat.conversationKey)}
-                                    className={`p-3 mx-2 my-1 rounded-xl cursor-pointer flex gap-3 transition-all hover:bg-white/5 ${activeChat === chat.conversationKey ? 'bg-white/10' : ''}`}
+                                    className={`p-3 mx-2 my-1 rounded-xl cursor-pointer flex gap-3 transition hover:bg-white/5 ${activeChat === chat.conversationKey ? 'bg-white/10' : ''}`}
                                 >
                                     <div className="relative shrink-0">
                                         <Avatar
@@ -777,21 +777,21 @@ function MessagesContent() {
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => approveWork(activeConversation.gig_id)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--brand-purple)] hover:brightness-110 text-white rounded-xl text-xs font-bold transition-all active:scale-95 whitespace-nowrap"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--brand-purple)] hover:brightness-110 text-white rounded-xl text-xs font-bold transition active:scale-95 whitespace-nowrap"
                                     >
                                         <CheckCircle2 size={13} />
                                         Approve
                                     </button>
                                     <button
                                         onClick={() => setShowChangesModal(true)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 rounded-xl text-xs font-bold transition-all active:scale-95 whitespace-nowrap"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 rounded-xl text-xs font-bold transition active:scale-95 whitespace-nowrap"
                                     >
                                         <RotateCcw size={13} />
                                         Request changes
                                     </button>
                                     <button
                                         onClick={() => setShowDisputeModal(true)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/50 border border-white/10 rounded-xl text-xs font-bold transition-all active:scale-95 whitespace-nowrap"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/50 border border-white/10 rounded-xl text-xs font-bold transition active:scale-95 whitespace-nowrap"
                                     >
                                         <AlertTriangle size={13} />
                                         Dispute
@@ -814,7 +814,7 @@ function MessagesContent() {
                                         Never miss a reply!
                                         <div className="group relative hidden md:block">
                                             <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[10px] cursor-help">?</span>
-                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[#1A1A24] border border-white/10 rounded-lg text-[10px] text-white/70 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all text-center z-50">
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[#1A1A24] border border-white/10 rounded-lg text-[10px] text-white/70 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition text-center z-50">
                                                 Web notifications only work when the app is open. Telegram ensures you get instantly notified.
                                             </div>
                                         </div>
@@ -849,7 +849,7 @@ function MessagesContent() {
                                         <button
                                             onClick={sendOffer}
                                             disabled={!offerAmount || Number(offerAmount) <= 0}
-                                            className="w-full py-3 bg-brand-purple text-white font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-brand-purple/20"
+                                            className="w-full py-3 bg-brand-purple text-white font-bold rounded-xl active:scale-95 transition shadow-lg shadow-brand-purple/20"
                                         >
                                             Send Offer
                                         </button>
@@ -895,7 +895,7 @@ function MessagesContent() {
                                                         </button>
                                                         <button
                                                             onClick={() => acceptOffer(msg)}
-                                                            className="py-2 rounded-lg bg-[var(--brand-purple)] text-white text-xs font-semibold hover:brightness-110 transition-all"
+                                                            className="py-2 rounded-lg bg-[var(--brand-purple)] text-white text-xs font-semibold hover:brightness-110 transition"
                                                         >
                                                             Accept
                                                         </button>
@@ -990,10 +990,10 @@ function MessagesContent() {
                                             onChange={(e) => setNewMessage(e.target.value)}
                                             placeholder={isLimitReached ? "Waiting for acceptance..." : "Type a message..."}
                                             disabled={isLimitReached}
-                                            className="flex-1 bg-[#1A1A24] text-white text-sm px-4 py-2.5 rounded-full border border-white/10 focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5]/20 outline-none transition-all disabled:opacity-50 min-w-0"
+                                            className="flex-1 bg-[#1A1A24] text-white text-sm px-4 py-2.5 rounded-full border border-white/10 focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5]/20 outline-none transition disabled:opacity-50 min-w-0"
                                         />
                                         <button type="submit" disabled={!newMessage.trim() || isLimitReached || isSending}
-                                            className="p-2.5 bg-[var(--brand-purple)] hover:brightness-110 transition-all disabled:opacity-50 text-white rounded-full shrink-0"
+                                            className="p-2.5 bg-[var(--brand-purple)] hover:brightness-110 transition disabled:opacity-50 text-white rounded-full shrink-0"
                                         >
                                             <Send size={16} className="translate-x-0.5" />
                                         </button>
@@ -1043,7 +1043,7 @@ function MessagesContent() {
             {/* Lightbox */}
             {selectedImage && (
                 <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
-                    <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
+                    <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition"><X className="w-8 h-8" /></button>
                     <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
                         <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" unoptimized quality={100} />
                     </div>
@@ -1065,13 +1065,13 @@ function MessagesContent() {
                         <textarea
                             value={disputeReason}
                             onChange={(e) => setDisputeReason(e.target.value)}
-                            placeholder="Describe what was not delivered as agreed..."
+                            placeholder="Describe what was not delivered as agreed…"
                             className="w-full bg-black/20 text-white text-sm p-4 rounded-xl border border-white/10 focus:border-red-500/50 outline-none resize-none h-28 mb-4"
                         />
                         <button
                             onClick={() => raiseDispute(activeConversation.gig_id)}
                             disabled={isDisputing || !disputeReason.trim()}
-                            className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            className="w-full py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
                         >
                             {isDisputing ? <Loader2 size={16} className="animate-spin" /> : <AlertTriangle size={16} />}
                             Freeze & Raise Dispute
@@ -1095,13 +1095,13 @@ function MessagesContent() {
                         <textarea
                             value={changesFeedback}
                             onChange={(e) => setChangesFeedback(e.target.value)}
-                            placeholder="What needs to change? Be specific so they can fix it fast..."
+                            placeholder="What needs to change? Be specific so they can fix it fast…"
                             className="w-full bg-black/20 text-white text-sm p-4 rounded-xl border border-white/10 focus:border-[var(--brand-purple)]/50 outline-none resize-none h-28 mb-4"
                         />
                         <button
                             onClick={() => requestChanges(activeConversation.gig_id)}
                             disabled={isRequestingChanges || !changesFeedback.trim()}
-                            className="w-full py-3 bg-[var(--brand-purple)] hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                            className="w-full py-3 bg-[var(--brand-purple)] hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
                         >
                             {isRequestingChanges ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
                             Send back for changes

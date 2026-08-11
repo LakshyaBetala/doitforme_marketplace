@@ -115,7 +115,7 @@ export default function UniversitySelect({ value, onChange }: Props) {
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base flex justify-between items-center cursor-pointer hover:border-[#8825F5]/50 focus:border-[#8825F5] focus:outline-none focus:ring-1 focus:ring-[#8825F5] transition-all group shadow-sm text-left"
+                className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base flex justify-between items-center cursor-pointer hover:border-[#8825F5]/50 focus:border-[#8825F5] focus:outline-none focus:ring-1 focus:ring-[#8825F5] transition group shadow-sm text-left"
             >
                 <div className="flex items-center gap-3 pr-4 flex-1 overflow-hidden">
                     <Building2 size={18} className="text-white/40 group-hover:text-brand-purple shrink-0 transition-colors" />
@@ -137,7 +137,7 @@ export default function UniversitySelect({ value, onChange }: Props) {
                         <Search size={18} className="text-white/40 ml-1" />
                         <input
                             type="text"
-                            placeholder="Type to search..."
+                            placeholder="Type to search…"
                             className="bg-transparent border-none outline-none text-white text-base w-full font-sans placeholder:text-white/30"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -170,7 +170,7 @@ export default function UniversitySelect({ value, onChange }: Props) {
                                                     setIsOpen(false);
                                                     setSearch("");
                                                 }}
-                                                className={`w-full text-left px-4 py-3 rounded-xl text-sm md:text-base cursor-pointer flex items-center justify-between transition-all group ${value === col
+                                                className={`w-full text-left px-4 py-3 rounded-xl text-sm md:text-base cursor-pointer flex items-center justify-between transition group ${value === col
                                                     ? 'bg-[#8825F5]/20 text-white font-bold border border-[#8825F5]/30'
                                                     : 'text-white/70 hover:bg-white/5 hover:text-white border border-transparent'
                                                     }`}
@@ -196,7 +196,7 @@ export default function UniversitySelect({ value, onChange }: Props) {
                                             setIsOpen(false);
                                             setSearch("");
                                         }}
-                                        className="w-full text-left px-4 py-3 rounded-xl text-sm md:text-base bg-[#8825F5]/15 border border-[#8825F5]/30 text-white hover:bg-[#8825F5]/25 transition-all flex items-center gap-3"
+                                        className="w-full text-left px-4 py-3 rounded-xl text-sm md:text-base bg-[#8825F5]/15 border border-[#8825F5]/30 text-white hover:bg-[#8825F5]/25 transition flex items-center gap-3"
                                     >
                                         <div className="w-8 h-8 rounded-full bg-[#8825F5]/20 flex items-center justify-center shrink-0">
                                             <Check size={14} className="text-brand-purple" strokeWidth={3} />

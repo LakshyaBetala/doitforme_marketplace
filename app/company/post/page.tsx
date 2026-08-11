@@ -228,7 +228,7 @@ export default function CompanyPostTask() {
   }
 
   const labelClass = "block text-[10px] font-bold text-[#888] uppercase tracking-widest mb-3";
-  const inputClass = "w-full bg-[#0a0a0a] border border-[#222] rounded-none p-5 text-sm font-medium text-white outline-none focus:border-white transition-all placeholder:text-[#333]";
+  const inputClass = "w-full bg-[#0a0a0a] border border-[#222] rounded-none p-5 text-sm font-medium text-white outline-none focus:border-white transition placeholder:text-[#333]";
 
   return (
     <div className="min-h-screen bg-[#0B0B11] text-white pt-12 pb-24 px-4 flex justify-center relative font-sans selection:bg-white selection:text-black">
@@ -317,7 +317,7 @@ export default function CompanyPostTask() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
                 <label className={labelClass}>Task Title</label>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="E.G. CAMPUS AMBASSADOR PROGRAM..." className={inputClass} />
+                <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="E.G. CAMPUS AMBASSADOR PROGRAM…" className={inputClass} />
               </div>
 
               <div className="space-y-3">
@@ -330,7 +330,7 @@ export default function CompanyPostTask() {
 
             <div className="space-y-3">
               <label className={labelClass}>Task Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="DETAILED OBJECTIVES, EXPECTATIONS, AND DELIVERABLES..." className={`${inputClass} h-48 resize-none`} />
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="DETAILED OBJECTIVES, EXPECTATIONS, AND DELIVERABLES…" className={`${inputClass} h-48 resize-none`} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -354,7 +354,7 @@ export default function CompanyPostTask() {
                   <label className={labelClass}>Work Mode</label>
                   <div className="flex gap-px bg-[#222] border border-[#222]">
                     {["Online", "Offline (On-Site)"].map((m) => (
-                      <button key={m} onClick={() => setMode(m)} className={`flex-1 px-4 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${mode === m ? "bg-white text-black" : "bg-[#0a0a0a] text-[#444] hover:text-white"}`}>
+                      <button key={m} onClick={() => setMode(m)} className={`flex-1 px-4 py-4 text-[10px] font-black uppercase tracking-widest transition ${mode === m ? "bg-white text-black" : "bg-[#0a0a0a] text-[#444] hover:text-white"}`}>
                         {m}
                       </button>
                     ))}
@@ -371,7 +371,7 @@ export default function CompanyPostTask() {
                     className={`${inputClass} pl-12`}
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder="FULL ADDRESS OR CAMPUS VENUE..."
+                    placeholder="FULL ADDRESS OR CAMPUS VENUE…"
                   />
                 </div>
               </div>
@@ -393,7 +393,7 @@ export default function CompanyPostTask() {
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 <input ref={fileInputRef} type="file" accept="image/*, .pdf" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
                 
-                <button onClick={() => fileInputRef.current?.click()} className="w-32 h-32 bg-[#0a0a0a] border border-[#222] hover:border-white flex flex-col items-center justify-center shrink-0 transition-all group">
+                <button onClick={() => fileInputRef.current?.click()} className="w-32 h-32 bg-[#0a0a0a] border border-[#222] hover:border-white flex flex-col items-center justify-center shrink-0 transition group">
                   <FileText className="w-6 h-6 text-[#444] group-hover:text-white mb-3" />
                   <span className="text-[9px] text-[#444] group-hover:text-white font-bold uppercase tracking-[0.2em]">Add Files</span>
                 </button>
@@ -403,7 +403,7 @@ export default function CompanyPostTask() {
                   return (
                     <div key={i} className="relative w-32 h-32 border border-[#222] shrink-0 group bg-[#0a0a0a]">
                       {isImage ? (
-                        <Image src={src} alt="Preview" fill className="object-cover grayscale hover:grayscale-0 transition-all" />
+                        <Image src={src} alt="Preview" fill className="object-cover grayscale hover:grayscale-0 transition" />
                       ) : (
                         <div className="flex flex-col items-center justify-center h-full p-4 text-center">
                           <FileText size={24} className="mb-2 text-white" />
@@ -418,7 +418,7 @@ export default function CompanyPostTask() {
             </div>
 
             <div className="pt-12">
-               <button onClick={handleSubmit} disabled={loading} className={`w-full p-6 font-black text-xs uppercase tracking-[0.4em] transition-all flex justify-center items-center gap-3 ${loading ? 'bg-[#111] text-[#333]' : 'bg-white text-black hover:bg-gray-200'}`}>
+               <button onClick={handleSubmit} disabled={loading} className={`w-full p-6 font-black text-xs uppercase tracking-[0.4em] transition flex justify-center items-center gap-3 ${loading ? 'bg-[#111] text-[#333]' : 'bg-white text-black hover:bg-gray-200'}`}>
                 {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <><CheckCircle size={18} /> Post Task</>}
               </button>
               <div className="mt-4 text-center">

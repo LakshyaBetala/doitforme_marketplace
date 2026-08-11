@@ -129,7 +129,7 @@ export default function CompanyProfilePage() {
   if (!company) return <div className="min-h-screen bg-[#0B0B11] text-white flex justify-center items-center font-bold uppercase tracking-widest text-xs">Company profile not found.</div>;
 
   const labelClass = "text-[10px] font-bold text-[#444] uppercase tracking-widest mb-3 block";
-  const inputClass = "w-full bg-[#0a0a0a] border border-[#222] rounded-none p-5 text-sm font-medium text-white outline-none focus:border-white transition-all placeholder:text-[#333] disabled:opacity-50";
+  const inputClass = "w-full bg-[#0a0a0a] border border-[#222] rounded-none p-5 text-sm font-medium text-white outline-none focus:border-white transition placeholder:text-[#333] disabled:opacity-50";
 
   return (
     <main className="min-h-[100dvh] bg-[#0B0B11] p-6 lg:p-12 pb-36 text-white selection:bg-white selection:text-black font-sans relative">
@@ -186,7 +186,7 @@ export default function CompanyProfilePage() {
               
               {/* Logo Presentation */}
               <div className="relative group">
-                <div className="w-32 h-32 md:w-40 md:h-40 bg-[#0a0a0a] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden transition-all duration-500">
+                <div className="w-32 h-32 md:w-40 md:h-40 bg-[#0a0a0a] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden transition duration-500">
                    {company.logo_url || company.avatar_url ? (
                      <Image src={company.logo_url || company.avatar_url} alt="Logo" width={160} height={160} className="object-cover w-full h-full" />
                    ) : (
@@ -229,15 +229,15 @@ export default function CompanyProfilePage() {
 
            <div className="shrink-0 w-full lg:w-auto">
              {!isEditing ? (
-                <button onClick={startEditing} className="w-full lg:w-auto px-10 py-5 bg-white text-black text-xs font-black uppercase tracking-[0.3em] hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
+                <button onClick={startEditing} className="w-full lg:w-auto px-10 py-5 bg-white text-black text-xs font-black uppercase tracking-[0.3em] hover:bg-gray-200 transition flex items-center justify-center gap-2">
                   <Edit2 size={14} /> Edit Profile
                 </button>
              ) : (
                 <div className="flex items-center gap-px bg-[#222] w-full border border-[#222]">
-                  <button onClick={cancelEditing} className="flex-1 lg:flex-none px-6 py-5 bg-[#0a0a0a] text-[#444] hover:text-white text-[10px] font-black uppercase tracking-widest transition-all">
+                  <button onClick={cancelEditing} className="flex-1 lg:flex-none px-6 py-5 bg-[#0a0a0a] text-[#444] hover:text-white text-[10px] font-black uppercase tracking-widest transition">
                     Discard
                   </button>
-                  <button onClick={saveProfile} disabled={saving} className="flex-1 lg:flex-none px-10 py-5 bg-white text-black text-xs font-black uppercase tracking-[0.3em] hover:bg-gray-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                  <button onClick={saveProfile} disabled={saving} className="flex-1 lg:flex-none px-10 py-5 bg-white text-black text-xs font-black uppercase tracking-[0.3em] hover:bg-gray-200 transition disabled:opacity-50 flex items-center justify-center gap-2">
                     {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                     Save Changes
                   </button>
@@ -293,7 +293,7 @@ export default function CompanyProfilePage() {
             <div className="space-y-4 pt-4 border-t border-[#222]">
               <label className={labelClass}>About</label>
               {isEditing ? (
-                <textarea rows={6} placeholder="Describe what your company does, your mission, and the kind of talent you're looking for..." value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className={`${inputClass} resize-none leading-relaxed`} />
+                <textarea rows={6} placeholder="Describe what your company does, your mission, and the kind of talent you're looking for…" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} className={`${inputClass} resize-none leading-relaxed`} />
               ) : (
                  <div className="text-sm text-[#888] leading-relaxed max-w-3xl font-medium whitespace-pre-wrap">{company.description || 'No description added yet.'}</div>
               )}

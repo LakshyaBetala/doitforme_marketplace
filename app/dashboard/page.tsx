@@ -195,7 +195,7 @@ export default function Dashboard() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
             <input
               type="text"
-              placeholder="Search hustles..."
+              placeholder="Search hustles…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[var(--card)] border border-white/[0.08] rounded-full py-2 pl-9 pr-4 text-xs md:text-sm text-white placeholder:text-zinc-500 focus:border-brand-purple/50 focus:outline-none transition-colors shadow-inner"
@@ -268,7 +268,7 @@ export default function Dashboard() {
 
             {/* KYC Verification Prompt */}
             {user && !user.user_metadata?.kyc_verified && (
-              <Link href="/verify-id" className="block bg-[var(--brand-purple)]/[0.08] border border-[var(--brand-purple)]/25 rounded-2xl p-4 flex items-center gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500 group hover:bg-[var(--brand-purple)]/[0.12] transition-all active:scale-[0.99]">
+              <Link href="/verify-id" className="block bg-[var(--brand-purple)]/[0.08] border border-[var(--brand-purple)]/25 rounded-2xl p-4 flex items-center gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500 group hover:bg-[var(--brand-purple)]/[0.12] transition active:scale-[0.99]">
                 <div className="p-2 bg-[var(--brand-purple)]/15 rounded-xl shrink-0">
                   <ShieldCheck size={20} className="text-[var(--brand-purple-soft)]" />
                 </div>
@@ -276,7 +276,7 @@ export default function Dashboard() {
                   <p className="text-sm font-semibold text-white mb-0.5">Verify your Student ID</p>
                   <p className="text-xs text-white/55">Upload your college ID to unlock all features and build trust.</p>
                 </div>
-                <span className="shrink-0 px-4 py-2 bg-[var(--brand-purple)] text-white text-xs font-semibold rounded-xl group-hover:brightness-110 transition-all">
+                <span className="shrink-0 px-4 py-2 bg-[var(--brand-purple)] text-white text-xs font-semibold rounded-xl group-hover:brightness-110 transition">
                   Verify now
                 </span>
               </Link>
@@ -297,12 +297,17 @@ export default function Dashboard() {
                   <div className="flex gap-4">
                     <div>
                       <span className="text-xl font-semibold text-white tracking-tight tabular-nums">{hustleCount}</span>
-                      <span className="text-[10px] font-medium text-white/45 ml-1.5">Hustles</span>
+                      <span className="text-[10px] font-medium text-white/45 ml-1.5">Tasks</span>
                     </div>
                     <div className="w-px h-6 bg-white/[0.1] self-center"></div>
                     <div>
                       <span className="text-xl font-semibold text-white tracking-tight tabular-nums">{companyTaskCount}</span>
                       <span className="text-[10px] font-medium text-white/45 ml-1.5">Company</span>
+                    </div>
+                    <div className="w-px h-6 bg-white/[0.1] self-center"></div>
+                    <div>
+                      <span className="text-xl font-semibold text-white tracking-tight tabular-nums">{serviceCount}</span>
+                      <span className="text-[10px] font-medium text-white/45 ml-1.5">For hire</span>
                     </div>
                   </div>
                 </div>
@@ -311,7 +316,7 @@ export default function Dashboard() {
 
             {/* Layer 2: Quick Action Bar */}
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link href="/post" className="group relative flex items-center gap-5 p-6 md:p-7 bg-[var(--card)] border border-white/[0.08] text-white rounded-3xl hover:border-[#8825F5]/40 active:scale-[0.99] transition-all overflow-hidden">
+              <Link href="/post" className="group relative flex items-center gap-5 p-6 md:p-7 bg-[var(--card)] border border-white/[0.08] text-white rounded-3xl hover:border-[#8825F5]/40 active:scale-[0.99] transition overflow-hidden">
                 {/* purple wash on hover */}
                 <span aria-hidden className="pointer-events-none absolute -right-12 -bottom-12 w-44 h-44 rounded-full bg-[#8825F5]/15 blur-3xl opacity-60 group-hover:opacity-100 transition-opacity" />
                 <div className="relative w-14 h-14 rounded-2xl bg-[#8825F5] flex items-center justify-center shrink-0 shadow-[0_8px_24px_-8px_rgba(136,37,245,0.6)]">
@@ -322,7 +327,7 @@ export default function Dashboard() {
                   <span className="block text-xs md:text-sm text-white/55 mt-1">Need something done? Get offers in minutes.</span>
                 </div>
               </Link>
-              <Link href="/activity" className="group relative flex items-center gap-5 p-6 md:p-7 bg-[var(--card)] border border-white/[0.08] text-white rounded-3xl hover:border-white/[0.18] active:scale-[0.99] transition-all">
+              <Link href="/activity" className="group relative flex items-center gap-5 p-6 md:p-7 bg-[var(--card)] border border-white/[0.08] text-white rounded-3xl hover:border-white/[0.18] active:scale-[0.99] transition">
                 <div className="w-14 h-14 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center shrink-0">
                   <Briefcase size={22} className="text-white/85" />
                 </div>
@@ -348,16 +353,16 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   {/* Type Filters */}
                   <div className="flex items-center bg-[var(--card)] rounded-full p-1 border border-white/[0.08] overflow-x-auto scrollbar-hide shrink-0 max-w-[calc(100vw-120px)] md:max-w-none touch-pan-x">
-                    <FeedTab label="Work available" active={feedType === 'TASKS'} onClick={() => handleFeedTypeChange('TASKS')} />
-                    <FeedTab label="Company" active={feedType === 'COMPANY_TASK'} onClick={() => handleFeedTypeChange('COMPANY_TASK')} />
-                    <FeedTab label="Talent" active={feedType === 'SERVICE'} onClick={() => handleFeedTypeChange('SERVICE')} />
+                    <FeedTab label="Find work" active={feedType === 'TASKS'} onClick={() => handleFeedTypeChange('TASKS')} />
+                    <FeedTab label="From companies" active={feedType === 'COMPANY_TASK'} onClick={() => handleFeedTypeChange('COMPANY_TASK')} />
+                    <FeedTab label="Hire someone" active={feedType === 'SERVICE'} onClick={() => handleFeedTypeChange('SERVICE')} />
                   </div>
 
                   {/* Campus Filter */}
                   <div className="relative">
                     <button
                       onClick={() => setIsFilterOpen(!isFilterOpen)}
-                      className={`p-2 rounded-full border transition-all ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
+                      className={`p-2 rounded-full border transition ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
                     >
                       <Filter size={16} />
                     </button>
@@ -389,7 +394,7 @@ export default function Dashboard() {
                     <div className="relative">
                       <button
                         onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}
-                        className={`p-2 rounded-full border transition-all ${categoryFilter !== 'ALL' ? 'bg-[var(--brand-purple)] text-white border-[var(--brand-purple)]' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
+                        className={`p-2 rounded-full border transition ${categoryFilter !== 'ALL' ? 'bg-[var(--brand-purple)] text-white border-[var(--brand-purple)]' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
                         title="Filter by Category"
                       >
                         <Tags size={16} />
@@ -466,7 +471,7 @@ export default function Dashboard() {
 
 function SidebarLink({ href, icon: Icon, label, active, badge }: any) {
   return (
-    <Link href={href} className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group ${active ? 'bg-brand-purple/10 text-brand-purple' : 'text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
+    <Link href={href} className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition group ${active ? 'bg-brand-purple/10 text-brand-purple' : 'text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
       <div className="flex items-center gap-3 text-sm font-bold">
         <Icon size={18} className={active ? 'text-brand-purple' : 'text-zinc-500 group-hover:text-white transition-colors'} />
         {label}
@@ -480,7 +485,7 @@ function SidebarLink({ href, icon: Icon, label, active, badge }: any) {
 
 function StatCard({ title, value, icon: Icon, color, bg, subtext, progress }: any) {
   return (
-    <div className="bg-[var(--card)] border border-white/[0.08] rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl transition-all h-[150px] flex flex-col justify-between">
+    <div className="bg-[var(--card)] border border-white/[0.08] rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl transition h-[150px] flex flex-col justify-between">
       <div className="flex justify-between items-start relative z-10 mb-2">
         <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center ${color} shadow-inner group-hover:scale-110 transition-transform`}>
           <Icon size={20} />
@@ -512,7 +517,7 @@ function StatCard({ title, value, icon: Icon, color, bg, subtext, progress }: an
 
 function FeedTab({ label, active, onClick }: any) {
   return (
-    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${active ? 'bg-white/10 text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}>
+    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${active ? 'bg-white/10 text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}>
       {label}
     </button>
   );
@@ -594,7 +599,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
             <button
               key={cat}
               onClick={() => handleToggle(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all touch-manipulation ${selected.includes(cat) ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.4)]' : 'bg-white/[0.04] border-white/[0.08] text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition touch-manipulation ${selected.includes(cat) ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.4)]' : 'bg-white/[0.04] border-white/[0.08] text-zinc-400 hover:text-white hover:border-zinc-600'}`}
             >
               {cat}
             </button>
@@ -603,7 +608,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
         <button
           onClick={handleSave}
           disabled={loading || selected.length === 0}
-          className="w-full bg-brand-purple hover:bg-[#7D5FFF] text-white py-3.5 md:py-4 rounded-xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center shrink-0 touch-manipulation"
+          className="w-full bg-brand-purple hover:bg-[#7D5FFF] text-white py-3.5 md:py-4 rounded-xl font-bold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center shrink-0 touch-manipulation"
         >
           {loading ? "Saving..." : `Save Preferences (${selected.length}/5)`}
         </button>

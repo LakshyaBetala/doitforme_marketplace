@@ -374,7 +374,7 @@ export default function AdminDashboardPage() {
   if (!isAdmin) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center text-white font-black uppercase tracking-[0.4em]">Unauthorized Access // Terminal Locked</div>;
 
   const getTabClass = (tab: typeof activeTab) => `
-    px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all border-r border-[#222]
+    px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition border-r border-[#222]
     ${activeTab === tab ? "bg-white text-black" : "bg-transparent text-[#444] hover:text-white hover:bg-[#111]"}
   `;
 
@@ -396,10 +396,10 @@ export default function AdminDashboardPage() {
                     </h1>
                 </div>
                 <div className="flex items-center gap-px bg-[#222] border border-[#222]">
-                    <button onClick={fetchAllData} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition-all">
+                    <button onClick={fetchAllData} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition">
                         <RefreshCcw size={20} />
                     </button>
-                    <Link href="/dashboard" className="px-8 py-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] font-black uppercase tracking-widest transition-all">
+                    <Link href="/dashboard" className="px-8 py-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] font-black uppercase tracking-widest transition">
                         Exit to Client Node
                     </Link>
                 </div>
@@ -524,7 +524,7 @@ export default function AdminDashboardPage() {
                                                         <button
                                                             onClick={() => markAsPaid(p.id)}
                                                             disabled={!!processingId}
-                                                            className="px-8 py-4 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] transition-all hover:bg-gray-200 disabled:opacity-20 active:scale-95"
+                                                            className="px-8 py-4 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] transition hover:bg-gray-200 disabled:opacity-20 active:scale-95"
                                                         >
                                                             {processingId === p.id ? "Processing..." : "Authorize Payout"}
                                                         </button>
@@ -544,7 +544,7 @@ export default function AdminDashboardPage() {
                             <div className="flex flex-col md:flex-row gap-px bg-[#222] border border-[#222] max-w-2xl">
                                 <input
                                     type="text"
-                                    placeholder="Enter Organizational Identity..."
+                                    placeholder="Enter Organizational Identity…"
                                     value={newCompanyName}
                                     onChange={(e) => setNewCompanyName(e.target.value)}
                                     className="flex-1 bg-[#0a0a0a] p-6 text-[10px] font-black uppercase tracking-widest text-white outline-none placeholder:text-[#222] focus:bg-[#111]"
@@ -552,7 +552,7 @@ export default function AdminDashboardPage() {
                                 <button
                                     onClick={addCompany}
                                     disabled={addingCompany || !newCompanyName.trim()}
-                                    className="bg-white text-black px-10 py-6 text-[9px] font-black uppercase tracking-[0.2em] transition-all hover:bg-gray-200 disabled:opacity-20 flex items-center gap-2"
+                                    className="bg-white text-black px-10 py-6 text-[9px] font-black uppercase tracking-[0.2em] transition hover:bg-gray-200 disabled:opacity-20 flex items-center gap-2"
                                 >
                                     <Plus size={16} /> Deploy Unit
                                 </button>
@@ -573,7 +573,7 @@ export default function AdminDashboardPage() {
                                         <div className="flex items-center gap-px bg-[#222] border border-[#222]">
                                             <button
                                                 onClick={() => toggleCompanyActive(company.id, company.is_active)}
-                                                className={`flex-1 px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${
+                                                className={`flex-1 px-4 py-2 text-[9px] font-black uppercase tracking-widest transition ${
                                                     company.is_active ? "bg-white text-black" : "bg-transparent text-[#444] hover:text-white"
                                                 }`}
                                             >
@@ -614,7 +614,7 @@ export default function AdminDashboardPage() {
                                             <button
                                                 onClick={() => verifyUser(user.id)}
                                                 disabled={!!processingId}
-                                                className="w-full lg:w-auto px-12 py-6 bg-white text-black text-[10px] font-black uppercase tracking-[0.3em] transition-all hover:bg-gray-200 disabled:opacity-20 flex items-center justify-center gap-3"
+                                                className="w-full lg:w-auto px-12 py-6 bg-white text-black text-[10px] font-black uppercase tracking-[0.3em] transition hover:bg-gray-200 disabled:opacity-20 flex items-center justify-center gap-3"
                                             >
                                                 {processingId === user.id ? <Loader2 className="animate-spin w-4 h-4" /> : <UserCheck size={18} />}
                                                 Grant Clearance

@@ -251,7 +251,14 @@ function VerifyContent() {
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={1}
-              className="w-12 h-14 rounded-xl border border-white/10 bg-[#0B0B11] text-center text-2xl font-bold text-white focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all caret-[#8825F5]"
+              // iOS and Android only offer to autofill an emailed/SMS code when
+              // they can see one-time-code on the field the user is focused on.
+              // Login here is OTP-only, so without this every single sign-in
+              // requires manually copying six digits between apps. Set on the
+              // first box; the existing onPaste handler distributes the rest.
+              autoComplete={i === 0 ? "one-time-code" : "off"}
+              aria-label={`Verification code digit ${i + 1}`}
+              className="w-12 h-14 rounded-xl border border-white/10 bg-[#0B0B11] text-center text-2xl font-bold text-white focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition caret-[#8825F5]"
               value={digit}
               onChange={(e) => handleChange(e.target.value, i)}
               onKeyDown={(e) => handleKeyDown(e, i)}
@@ -270,7 +277,7 @@ function VerifyContent() {
           <button
             onClick={verifyOTP}
             disabled={loading}
-            className="w-full bg-[#8825F5] hover:bg-[#7a1fe0] text-white font-bold py-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(136,37,245,0.3)] hover:shadow-[0_0_30px_rgba(136,37,245,0.5)] flex items-center justify-center gap-2"
+            className="w-full bg-[#8825F5] hover:bg-[#7a1fe0] text-white font-bold py-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition shadow-[0_0_20px_rgba(136,37,245,0.3)] hover:shadow-[0_0_30px_rgba(136,37,245,0.5)] flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Verify & Continue"}
           </button>

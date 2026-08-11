@@ -122,7 +122,7 @@ export default function PayoutsPage() {
                             </div>
                             <p className="text-white/80 font-medium">No earnings yet. The sloth&apos;s wallet is empty.</p>
                             <p className="text-white/50 text-sm mt-1">Land your first task and watch this fill up.</p>
-                            <Link href="/feed" className="inline-block mt-4 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold uppercase tracking-wider transition-all">
+                            <Link href="/feed" className="inline-block mt-4 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold uppercase tracking-wider transition">
                                 Find Work
                             </Link>
                         </div>

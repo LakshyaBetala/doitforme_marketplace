@@ -593,7 +593,7 @@ function ChatRoomContent() {
                   <button
                     onClick={sendOffer}
                     disabled={!offerAmount || Number(offerAmount) <= 0}
-                    className="w-full py-3 bg-[#C9A9FF] text-black font-bold rounded-xl active:scale-95 transition-all shadow-lg shadow-[#C9A9FF]/20 touch-manipulation"
+                    className="w-full py-3 bg-[#C9A9FF] text-black font-bold rounded-xl active:scale-95 transition shadow-lg shadow-[#C9A9FF]/20 touch-manipulation"
                   >
                     Send Offer
                   </button>
@@ -772,7 +772,7 @@ function ChatRoomContent() {
           {!isPoster && gig.status === 'open' && (
             <div className="w-full bg-white/10 h-1 relative">
               <div
-                className={`h-full transition-all duration-500 ${msgCount >= msgLimit ? 'bg-red-500' : 'bg-[#C9A9FF]'}`}
+                className={`h-full transition duration-500 ${msgCount >= msgLimit ? 'bg-red-500' : 'bg-[#C9A9FF]'}`}
                 style={{ width: `${Math.min((msgCount / msgLimit) * 100, 100)}%` }}
               />
               <div className="absolute -top-6 right-4 text-[10px] font-bold text-white/50 bg-[#121217] px-2 py-0.5 rounded border border-white/10">
@@ -810,7 +810,7 @@ function ChatRoomContent() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-white/70 border border-white/5 transition-all shrink-0 disabled:opacity-50 touch-manipulation"
+              className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-white/70 border border-white/5 transition shrink-0 disabled:opacity-50 touch-manipulation"
               title="Attach Image"
             >
               {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
@@ -824,13 +824,13 @@ function ChatRoomContent() {
               onFocus={loadModel}
               placeholder={isUploading ? "Uploading image..." : "Type a message..."}
               disabled={isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="flex-1 bg-[#1A1A24] border border-white/10 rounded-full px-6 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition-all disabled:opacity-50"
+              className="flex-1 bg-[#1A1A24] border border-white/10 rounded-full px-6 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition disabled:opacity-50"
             />
 
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() || isSending || isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="w-12 h-12 rounded-full bg-brand-purple hover:bg-brand-purple/90 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:hover:bg-brand-purple shrink-0 shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation"
+              className="w-12 h-12 rounded-full bg-brand-purple hover:bg-brand-purple/90 text-white flex items-center justify-center transition disabled:opacity-50 disabled:hover:bg-brand-purple shrink-0 shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation"
             >
               <Send size={18} className="ml-1" />
             </button>
@@ -841,7 +841,7 @@ function ChatRoomContent() {
       {/* Lightbox */}
       {selectedImage && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
-          <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all"><X className="w-8 h-8" /></button>
+          <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition"><X className="w-8 h-8" /></button>
           <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
             <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
           </div>

@@ -223,7 +223,7 @@ export default function ActivityHubPage() {
            )}
 
            {activeTab === "HIRING" && hiringGigs.map(gig => (
-             <div key={gig.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#C9A9FF]/30 transition-all group">
+             <div key={gig.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#C9A9FF]/30 transition group">
                 <div className="flex justify-between items-start mb-3">
                    <div className="flex-1 min-w-0">
                      <h3 className="font-bold text-white text-lg truncate">{gig.title}</h3>
@@ -255,18 +255,18 @@ export default function ActivityHubPage() {
                 )}
 
                 <div className="flex flex-col md:flex-row gap-2 mt-3 border-t border-white/5 pt-3">
-                   <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition-all text-center flex items-center justify-center gap-2 border border-white/5">
+                   <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
                      <MessageSquare size={14} /> Chat
                    </button>
 
                    {gig.status === 'AWAITING_FUNDS' && gig.payment_gateway !== 'DIRECT' && (
-                     <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 py-2.5 rounded-xl bg-[#8825F5] hover:bg-[#7a1de0] text-white font-bold text-sm transition-all shadow-lg shadow-[#C9A9FF]/20 flex items-center gap-2 justify-center">
+                     <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 py-2.5 rounded-xl bg-[#8825F5] hover:bg-[#7a1de0] text-white font-bold text-sm transition shadow-lg shadow-[#C9A9FF]/20 flex items-center gap-2 justify-center">
                        <ShieldCheck size={14} /> Fund Escrow (3%)
                      </button>
                    )}
 
                    {(gig.status === 'SUBMITTED' || gig.status === 'delivered' || (gig.status === 'assigned' && gig.payment_gateway === 'DIRECT')) && (
-                     <button onClick={() => handleApproveWork(gig.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition-all shadow-lg shadow-green-500/20 flex items-center gap-2 justify-center">
+                     <button onClick={() => handleApproveWork(gig.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition shadow-lg shadow-green-500/20 flex items-center gap-2 justify-center">
                        <CheckCircle size={14} /> {gig.payment_gateway === 'DIRECT' ? 'Close Task' : 'Approve & Release'}
                      </button>
                    )}
@@ -280,7 +280,7 @@ export default function ActivityHubPage() {
              const displayStatus = app.status === 'accepted' ? gig.status : app.status;
 
              return (
-               <div key={app.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#C9A9FF]/30 transition-all group">
+               <div key={app.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-5 hover:border-[#C9A9FF]/30 transition group">
                   <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                      <div className="flex-1 min-w-0">
                        <h3 className="font-bold text-white text-lg truncate">{gig.title}</h3>
@@ -316,7 +316,7 @@ export default function ActivityHubPage() {
                   )}
 
                   <div className="flex flex-col md:flex-row gap-2 mt-3 border-t border-white/5 pt-3">
-                     <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition-all text-center flex items-center justify-center gap-2 border border-white/5">
+                     <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
                        <MessageSquare size={14} /> Chat
                      </button>
 
@@ -327,7 +327,7 @@ export default function ActivityHubPage() {
                      )}
 
                      {app.status === 'accepted' && (gig.status === 'assigned') && (
-                       <button onClick={() => handleSubmitWork(gig.id, app.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-[#8825F5] hover:bg-[#7a1de0] text-white font-bold text-sm transition-all shadow-lg shadow-[#C9A9FF]/20 flex items-center gap-2 justify-center">
+                       <button onClick={() => handleSubmitWork(gig.id, app.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-[#8825F5] hover:bg-[#7a1de0] text-white font-bold text-sm transition shadow-lg shadow-[#C9A9FF]/20 flex items-center gap-2 justify-center">
                          <ArrowRight size={14} /> {gig.payment_gateway === 'DIRECT' ? 'Mark as Done' : 'Submit Work'}
                        </button>
                      )}
@@ -359,13 +359,13 @@ export default function ActivityHubPage() {
               type="url"
               value={submitLink}
               onChange={(e) => setSubmitLink(e.target.value)}
-              placeholder="Delivery link (optional): Drive, Figma, GitHub..."
+              placeholder="Delivery link (optional): Drive, Figma, GitHub…"
               className="w-full bg-black/20 text-white text-sm p-3 rounded-xl border border-white/10 focus:border-[var(--brand-purple)]/50 outline-none mb-4"
             />
             <button
               onClick={submitWork}
               disabled={isSubmitting || !submitNote.trim()}
-              className="w-full py-3 bg-[var(--brand-purple)] hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              className="w-full py-3 bg-[var(--brand-purple)] hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
               Submit for review

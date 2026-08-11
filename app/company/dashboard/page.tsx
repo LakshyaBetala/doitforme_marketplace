@@ -189,21 +189,21 @@ function CompanyDashboard() {
                         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
                         <input
                             type="text"
-                            placeholder="Search your tasks..."
+                            placeholder="Search your tasks…"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-11 pr-4 text-sm font-medium text-white placeholder:text-zinc-500 focus:border-[#8825F5]/50 focus:ring-1 focus:ring-[#8825F5]/50 focus:outline-none transition-all"
+                            className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-11 pr-4 text-sm font-medium text-white placeholder:text-zinc-500 focus:border-[#8825F5]/50 focus:ring-1 focus:ring-[#8825F5]/50 focus:outline-none transition"
                         />
                     </div>
                 </div>
 
                 <div className="flex items-center gap-4 relative">
-                    <button onClick={() => router.push('/messages')} className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/10 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-all">
+                    <button onClick={() => router.push('/messages')} className="w-10 h-10 flex items-center justify-center bg-white/5 border border-white/10 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition">
                         <MessageSquare size={18} />
                     </button>
 
                     <div className="relative">
-                        <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-3 pl-2 pr-4 py-1.5 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition-all">
+                        <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-3 pl-2 pr-4 py-1.5 bg-white/5 border border-white/10 rounded-full hover:bg-white/10 transition">
                             <div className="w-7 h-7 bg-[#0B0B11] rounded-full flex items-center justify-center overflow-hidden border border-white/10">
                                 {user?.user_metadata?.avatar_url ? (
                                     <Image src={user.user_metadata.avatar_url} alt="Logo" width={28} height={28} className="object-cover w-full h-full" />
@@ -263,12 +263,12 @@ function CompanyDashboard() {
                                 <button
                                     onClick={handleGetPro}
                                     disabled={upgrading}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-full bg-white/[0.06] border border-white/10 hover:bg-white/10 text-white transition-all disabled:opacity-60"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-full bg-white/[0.06] border border-white/10 hover:bg-white/10 text-white transition disabled:opacity-60"
                                 >
                                     <Sparkles size={16} className="text-[var(--brand-purple-soft)]" /> {upgrading ? "Opening…" : "Get Pro · ₹299/mo"}
                                 </button>
                             )}
-                            <Link href={isVerifiedCompany ? "/company/post" : "#"} className={`flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-full transition-all ${isVerifiedCompany ? 'bg-[var(--brand-purple)] text-white hover:brightness-110' : 'bg-white/5 text-zinc-500 cursor-not-allowed border border-white/10'}`}>
+                            <Link href={isVerifiedCompany ? "/company/post" : "#"} className={`flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-full transition ${isVerifiedCompany ? 'bg-[var(--brand-purple)] text-white hover:brightness-110' : 'bg-white/5 text-zinc-500 cursor-not-allowed border border-white/10'}`}>
                                 <Plus size={18} /> Post a task
                             </Link>
                         </div>
@@ -298,7 +298,7 @@ function CompanyDashboard() {
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredGigs.map(gig => (
-                                    <Link href={`/company/task/${gig.id}`} key={gig.id} className={`group relative border border-white/[0.08] bg-[var(--card)] rounded-2xl p-8 hover:bg-[var(--card-elevated)] hover:border-white/[0.16] transition-all duration-300 ${isExpired(gig) ? "opacity-60" : ""}`}>
+                                    <Link href={`/company/task/${gig.id}`} key={gig.id} className={`group relative border border-white/[0.08] bg-[var(--card)] rounded-2xl p-8 hover:bg-[var(--card-elevated)] hover:border-white/[0.16] transition duration-300 ${isExpired(gig) ? "opacity-60" : ""}`}>
 
                                         <div className="relative z-10 flex justify-between items-start mb-6">
                                             <span className="text-xs font-medium text-white/40 font-mono bg-black/30 px-2 py-1 rounded border border-white/[0.06]">

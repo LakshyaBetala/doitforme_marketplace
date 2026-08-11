@@ -202,8 +202,8 @@ function AuthPage() {
   };
 
   // --- STYLES ---
-  const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition-all appearance-none";
-  const buttonStyle = "w-full bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] active:scale-[0.98] hover:opacity-90 text-white p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all font-bold shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation";
+  const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition appearance-none";
+  const buttonStyle = "w-full bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] active:scale-[0.98] hover:opacity-90 text-white p-4 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition font-bold shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation";
 
   // --- GOOGLE OAUTH ---
   const handleGoogleLogin = async () => {
@@ -259,7 +259,7 @@ function AuthPage() {
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-white hover:bg-zinc-100 active:scale-[0.98] transition-all font-bold text-black text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mb-6"
+          className="w-full flex items-center justify-center gap-3 p-4 rounded-xl bg-white hover:bg-zinc-100 active:scale-[0.98] transition font-bold text-black text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-lg mb-6"
         >
           <svg width="20" height="20" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -285,7 +285,7 @@ function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setLoginMethod("PASSWORD")}
-                  className={`flex-1 text-[10px] md:text-xs py-2.5 rounded-lg font-bold transition-all active:scale-95 touch-manipulation ${loginMethod === "PASSWORD" ? "bg-[#8825F5] text-white shadow-lg" : "text-white/50 hover:text-white"
+                  className={`flex-1 text-[10px] md:text-xs py-2.5 rounded-lg font-bold transition active:scale-95 touch-manipulation ${loginMethod === "PASSWORD" ? "bg-[#8825F5] text-white shadow-lg" : "text-white/50 hover:text-white"
                     }`}
                 >
                   Password
@@ -293,7 +293,7 @@ function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setLoginMethod("OTP")}
-                  className={`flex-1 text-[10px] md:text-xs py-2.5 rounded-lg font-bold transition-all active:scale-95 touch-manipulation ${loginMethod === "OTP" ? "bg-[#8825F5] text-white shadow-lg" : "text-white/50 hover:text-white"
+                  className={`flex-1 text-[10px] md:text-xs py-2.5 rounded-lg font-bold transition active:scale-95 touch-manipulation ${loginMethod === "OTP" ? "bg-[#8825F5] text-white shadow-lg" : "text-white/50 hover:text-white"
                     }`}
                 >
                   OTP / Magic Link
@@ -479,7 +479,7 @@ function AuthPage() {
           
           <div className="mt-8 pt-8 border-t border-white/10">
             <p className="text-white/40 text-[10px] uppercase tracking-widest font-bold mb-3">Hiring Talent?</p>
-            <Link href="/company/login" className="group flex items-center justify-between bg-black/40 hover:bg-black/80 border border-white/10 hover:border-white/30 p-4 rounded-xl transition-all w-full">
+            <Link href="/company/login" className="group flex items-center justify-between bg-black/40 hover:bg-black/80 border border-white/10 hover:border-white/30 p-4 rounded-xl transition w-full">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
                   <Image src="/logo.png" alt="Company" width={16} height={16} className="opacity-70 group-hover:opacity-100 transition-opacity" />

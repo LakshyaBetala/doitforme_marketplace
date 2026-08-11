@@ -219,9 +219,9 @@ export default function FeedPage() {
         {!loading && (
           <div className="flex items-center justify-center gap-4 mb-6">
             <div className="flex items-center justify-center gap-4 mb-6">
-              <button onClick={() => { setCampusFilter('ALL'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all ${campusFilter === 'ALL' ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/10'}`}>All Campuses</button>
+              <button onClick={() => { setCampusFilter('ALL'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition ${campusFilter === 'ALL' ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/10'}`}>All Campuses</button>
               <div className="w-px h-4 bg-white/10"></div>
-              <button onClick={() => { setCampusFilter('MY_CAMPUS'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition-all flex items-center gap-2 ${campusFilter === 'MY_CAMPUS' ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/10'}`}>
+              <button onClick={() => { setCampusFilter('MY_CAMPUS'); setPage(0); setHasMore(true); setTimeout(() => fetchGigs(0, true), 0); }} className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-full transition flex items-center gap-2 ${campusFilter === 'MY_CAMPUS' ? 'bg-white text-black' : 'bg-white/10 text-white/60 hover:bg-white/10'}`}>
                 <MapPin size={12} /> My Campus
               </button>
             </div>
@@ -287,7 +287,7 @@ export default function FeedPage() {
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/10 border border-white/5 text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+                  className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/10 border border-white/5 text-xs font-bold uppercase tracking-wider transition disabled:opacity-50"
                 >
                   {loadingMore ? "Loading..." : "Load More"}
                 </button>

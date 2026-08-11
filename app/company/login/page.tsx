@@ -63,7 +63,7 @@ export default function CompanyLoginPage() {
     setTimeout(() => router.push("/company/dashboard"), 1000);
   };
 
-  const inputClass = "w-full p-4 bg-[var(--card)] border border-white/[0.08] text-white focus:outline-none focus:border-[var(--brand-purple)] focus:ring-1 focus:ring-[var(--brand-purple)]/30 transition-all text-sm font-medium rounded-xl placeholder:text-white/30";
+  const inputClass = "w-full p-4 bg-[var(--card)] border border-white/[0.08] text-white focus:outline-none focus:border-[var(--brand-purple)] focus:ring-1 focus:ring-[var(--brand-purple)]/30 transition text-sm font-medium rounded-xl placeholder:text-white/30";
   const labelClass = "block text-[11px] font-medium text-white/55 uppercase tracking-[0.1em] mb-2";
 
   const FEATURES = [
@@ -163,7 +163,7 @@ export default function CompanyLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[var(--brand-purple)] text-white hover:brightness-110 active:scale-[0.99] p-4 rounded-xl disabled:opacity-50 transition-all font-semibold text-sm flex items-center justify-center gap-2"
+              className="w-full bg-[var(--brand-purple)] text-white hover:brightness-110 active:scale-[0.99] p-4 rounded-xl disabled:opacity-50 transition font-semibold text-sm flex items-center justify-center gap-2"
             >
               {loading ? "Signing in..." : <>Sign in <ArrowRight size={16} /></>}
             </button>

@@ -257,11 +257,11 @@ export default function CompanyTaskHubPage() {
 
            <div className="shrink-0 flex gap-4 w-full lg:w-auto">
               {canEdit && (
-                <button onClick={openEdit} className="flex-1 lg:flex-none px-8 py-4 bg-white text-black hover:bg-gray-200 text-[10px] font-black uppercase tracking-widest transition-all">
+                <button onClick={openEdit} className="flex-1 lg:flex-none px-8 py-4 bg-white text-black hover:bg-gray-200 text-[10px] font-black uppercase tracking-widest transition">
                   Edit Task
                 </button>
               )}
-              <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 lg:flex-none px-8 py-4 bg-[#111] border border-[#222] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest transition-all">
+              <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 lg:flex-none px-8 py-4 bg-[#111] border border-[#222] hover:bg-[#222] text-[10px] font-black uppercase tracking-widest transition">
                 Preview Task
               </button>
            </div>
@@ -363,7 +363,7 @@ export default function CompanyTaskHubPage() {
                       
                      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-8">
                        <div className="flex flex-col sm:flex-row items-start gap-6 md:gap-8 w-full md:flex-1">
-                          <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition-all">
+                          <div className="w-16 h-16 bg-[#0B0B11] border border-[#222] rounded-xl flex items-center justify-center overflow-hidden shrink-0 transition">
                             <Avatar src={worker?.avatar_url} fallback={worker?.name || "U"} className="w-full h-full rounded-none" textClassName="text-xl font-black italic uppercase text-[#333]" />
                           </div>
                          <div className="space-y-4 w-full">
@@ -442,15 +442,15 @@ export default function CompanyTaskHubPage() {
                                   window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
 
                                   await updateApplicationStatus(app.id, 'pending');
-                                }} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                }} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2">
                                   WhatsApp
                                 </button>
                               ) : (
-                                <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all">
+                                <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] md:text-[9px] font-black uppercase tracking-widest transition">
                                   {hiringId === app.id ? 'Processing...' : '🛡️ Hire via Escrow'}
                                 </button>
                               )}
-                              <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition-all border-l border-[#222]">Reject</button>
+                              <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition border-l border-[#222]">Reject</button>
                             </>
                           )}
                           {isPending && (
@@ -469,7 +469,7 @@ export default function CompanyTaskHubPage() {
                                     }
                                     const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
                                     window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
-                                  }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all border-r border-[#222] flex items-center justify-center gap-2">
+                                  }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition border-r border-[#222] flex items-center justify-center gap-2">
                                     WhatsApp
                                   </button>
                                 )}
@@ -492,11 +492,11 @@ export default function CompanyTaskHubPage() {
                                     } finally {
                                       setHiringId(null);
                                     }
-                                  }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-yellow-500 hover:text-black text-[9px] font-black uppercase tracking-widest transition-all">
+                                  }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-yellow-500 hover:text-black text-[9px] font-black uppercase tracking-widest transition">
                                     ✓ Hire
                                   </button>
                                 )}
-                                <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition-all border-l border-[#222]">Reject</button>
+                                <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest transition border-l border-[#222]">Reject</button>
                               </div>
                             </div>
                           )}
@@ -511,22 +511,22 @@ export default function CompanyTaskHubPage() {
                                   }
                                   const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
                                   window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
-                                }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-r border-[#222]">
+                                }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[9px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2 border-r border-[#222]">
                                   WhatsApp
                                 </button>
                               )}
                               {!isDirect && (
-                                <button onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#8825F5] hover:text-white text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 border-r border-[#222]">
+                                <button onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#8825F5] hover:text-white text-[9px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2 border-r border-[#222]">
                                   <MessageCircle size={12} /> Platform Chat
                                 </button>
                               )}
-                              <button onClick={() => { setSelectedWorkerId(app.worker_id); setShowIncentiveModal(true); }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                              <button onClick={() => { setSelectedWorkerId(app.worker_id); setShowIncentiveModal(true); }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[9px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2">
                                 <Gift size={12} /> Incentive
                               </button>
                             </>
                           )}
                           {!isAccepted && (
-                            <button onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition-all flex items-center justify-center border-l border-[#222]">
+                            <button onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition flex items-center justify-center border-l border-[#222]">
                               <MessageCircle size={16} />
                             </button>
                           )}
@@ -578,7 +578,7 @@ export default function CompanyTaskHubPage() {
             </div>
 
             <button onClick={handleSaveEdit} disabled={savingEdit || !editTitle.trim() || !editDescription.trim()}
-              className="w-full mt-10 p-5 bg-white text-black font-black uppercase tracking-[0.3em] text-xs transition-all disabled:opacity-30 hover:bg-gray-200 flex items-center justify-center gap-2">
+              className="w-full mt-10 p-5 bg-white text-black font-black uppercase tracking-[0.3em] text-xs transition disabled:opacity-30 hover:bg-gray-200 flex items-center justify-center gap-2">
               {savingEdit ? <><Loader2 size={14} className="animate-spin" /> Saving</> : "Save Changes"}
             </button>
           </div>
@@ -617,7 +617,7 @@ export default function CompanyTaskHubPage() {
              <button 
                onClick={grantIncentive}
                disabled={!incentiveAmount}
-               className="w-full p-6 bg-white text-black font-black uppercase tracking-[0.3em] text-xs transition-all disabled:opacity-30 hover:bg-gray-200"
+               className="w-full p-6 bg-white text-black font-black uppercase tracking-[0.3em] text-xs transition disabled:opacity-30 hover:bg-gray-200"
              >
                Authorize (Coming Soon)
              </button>
