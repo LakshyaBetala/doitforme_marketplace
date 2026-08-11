@@ -4,6 +4,7 @@ import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 import RealtimeListener from "@/components/RealtimeListener";
+import AttributionCapture from "@/components/AttributionCapture";
 import NotificationManager from "@/components/NotificationManager";
 import { SpeedInsights } from "@vercel/speed-insights/next"// Request notification permission
 
@@ -27,14 +28,14 @@ export const metadata: Metadata = {
   creator: "DoItForMe",
   publisher: "DoItForMe",
   formatDetection: { email: false, address: false, telephone: false },
-  icons: { icon: "/Doitforme_logo.png", shortcut: "/Doitforme_logo.png", apple: "/Doitforme_logo.png" },
+  icons: { icon: "/logo.png", shortcut: "/logo.png", apple: "/logo.png" },
   openGraph: {
     title: "DoItForMe – India's Campus Freelance Network",
     description:
       "700+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
     url: "https://www.doitforme.in",
     siteName: "DoItForMe",
-    images: [{ url: "/Doitforme_logo.png", width: 1200, height: 630, alt: "DoItForMe – India's Campus Freelance Network" }],
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "DoItForMe – India's Campus Freelance Network" }],
     type: "website",
     locale: "en_IN",
   },
@@ -43,7 +44,7 @@ export const metadata: Metadata = {
     title: "DoItForMe – India's Campus Freelance Network",
     description:
       "700+ verified students earning by completing real tasks. Escrow-protected. Instant UPI payouts.",
-    images: ["/Doitforme_logo.png"],
+    images: ["/logo.png"],
     creator: "@doitformein",
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in'),
@@ -73,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "@type": "Organization",
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
-    "logo": "https://www.doitforme.in/Doitforme_logo.png",
+    "logo": "https://www.doitforme.in/logo.png",
     "description": "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies.",
     "foundingDate": "2024",
     "areaServed": "IN",
@@ -107,6 +108,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <rect width="100%" height="100%" filter="url(#noise)" />
           </svg>
         </div>
+
+        {/* Vercel Speed Insights — the import existed since launch but the
+            component was never rendered, so no Core Web Vitals were ever
+            collected. Mounting it is what turns the dashboard on. */}
+        <SpeedInsights />
+
+        {/* First-touch signup attribution (referrer / UTM -> localStorage) */}
+        <AttributionCapture />
 
         {/* Realtime Notification Listener */}
         <RealtimeListener />

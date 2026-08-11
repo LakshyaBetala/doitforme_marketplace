@@ -3,11 +3,15 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { normalizeIndianPhone } from "@/lib/phone";
+import { isValidSource } from "@/lib/attribution";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, name, phone, college, upi_id, username } = body;
+    const {
+      email, name, phone, college, upi_id, username,
+      signup_source, signup_source_detail, referrer, landing,
+    } = body;
 
     // Username format validation — same rules as /api/auth/check-username
     const USERNAME_FORMAT = /^[a-z][a-z0-9_]{2,19}$/;
@@ -88,6 +92,16 @@ export async function POST(req: Request) {
     // Once a username is claimed it's permanent for this iteration — no overwrite of an existing one.
     const finalUsername = existingUser?.username || cleanedUsername || null;
 
+    // Attribution is WRITE-ONCE. Profile edits re-POST here, so without this the
+    // original source would be clobbered (or nulled) every time someone updates
+    // their phone number, and the cohort numbers would silently rot.
+    const clip = (v: unknown, n: number) =>
+      typeof v === "string" && v.trim() ? v.trim().slice(0, n) : null;
+    const finalSource = existingUser?.signup_source ?? (isValidSource(signup_source) ? signup_source : null);
+    const finalSourceDetail = existingUser?.signup_source_detail ?? clip(signup_source_detail, 120);
+    const finalReferrer = existingUser?.signup_referrer ?? clip(referrer, 300);
+    const finalLanding = existingUser?.signup_landing ?? clip(landing, 300);
+
     // If a NEW username was requested but the user already has one, ignore silently.
     // If a NEW username was requested AND it conflicts with another user, fail loud.
     if (cleanedUsername && !existingUser?.username) {
@@ -102,21 +116,37 @@ export async function POST(req: Request) {
     }
 
     // Upsert user (with verified ID from session)
-    const { error: userError } = await supabase
+    const core = {
+      id: id,
+      email: email,
+      name: finalName,
+      phone: finalPhone,
+      college: finalCollege,
+      upi_id: finalUpi,
+      username: finalUsername,
+      kyc_verified: finalKyc,
+      updated_at: new Date().toISOString(),
+    };
+
+    let { error: userError } = await supabase
       .from("users")
       .upsert({
-        id: id,
-        email: email,
-        name: finalName,
-        phone: finalPhone,
-        college: finalCollege,
-        upi_id: finalUpi,
-        username: finalUsername,
-        kyc_verified: finalKyc,
-        updated_at: new Date().toISOString(),
+        ...core,
+        signup_source: finalSource,
+        signup_source_detail: finalSourceDetail,
+        signup_referrer: finalReferrer,
+        signup_landing: finalLanding,
       })
       .select()
       .single();
+
+    // The attribution columns arrive in 20260812_growth_instrumentation.sql. If
+    // the deploy lands before the migration does, retry without them rather than
+    // hard-failing: losing a signup costs far more than losing its attribution.
+    if (userError && (userError.code === "PGRST204" || userError.code === "42703")) {
+      console.warn("create-user: attribution columns missing, run 20260812_growth_instrumentation.sql");
+      ({ error: userError } = await supabase.from("users").upsert(core).select().single());
+    }
 
     if (userError) {
       console.error("API: User Upsert Error:", userError);

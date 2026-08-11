@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
 import Link from "next/link";
-import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X, CheckCircle2, FileText, Download } from "lucide-react";
+import { Send, ArrowLeft, MoreVertical, Phone, Video, Search, Star, AlertTriangle, User, Loader2, IndianRupee, Paperclip, X, CheckCircle2, FileText, Download, RotateCcw, MapPin } from "lucide-react";
 import Avatar from "@/components/ui/Avatar";
 import StatusBadge, { statusToTone } from "@/components/ui/StatusBadge";
 import EmptyState from "@/components/ui/EmptyState";
@@ -73,6 +73,9 @@ function MessagesContent() {
     const [showDisputeModal, setShowDisputeModal] = useState(false);
     const [disputeReason, setDisputeReason] = useState("");
     const [isDisputing, setIsDisputing] = useState(false);
+    const [showChangesModal, setShowChangesModal] = useState(false);
+    const [changesFeedback, setChangesFeedback] = useState("");
+    const [isRequestingChanges, setIsRequestingChanges] = useState(false);
 
     // Location Alert State
     const [hasSentLocationAlert, setHasSentLocationAlert] = useState(false);
@@ -584,6 +587,38 @@ function MessagesContent() {
         }
     };
 
+    const requestChanges = async (gigId: string) => {
+        if (!changesFeedback.trim()) return toast.error("Tell the worker what to change.");
+        setIsRequestingChanges(true);
+        try {
+            const res = await fetch("/api/gig/request-changes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ gigId, feedback: changesFeedback })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                toast.success("Changes requested. The worker can revise and resubmit.");
+                setShowChangesModal(false);
+                setChangesFeedback("");
+                setActiveGigStatus('assigned');
+                setMessages(prev => [...prev, {
+                    id: Date.now().toString(),
+                    gig_id: gigId,
+                    content: `Changes requested:\n\n"${changesFeedback.trim()}"\n\nWorker can revise and resubmit.`,
+                    message_type: 'system',
+                    created_at: new Date().toISOString()
+                }]);
+            } else {
+                toast.error(friendlyHttpError(res.status, data?.error));
+            }
+        } catch (err) {
+            toast.error(friendlyError(err));
+        } finally {
+            setIsRequestingChanges(false);
+        }
+    };
+
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -622,8 +657,9 @@ function MessagesContent() {
     const isPosterView = activeConversation?.gig?.poster_id === user?.id;
     const isPhysicalGig = activeConversation?.gig?.is_physical === true;
     const isMarketGig = false;
-    // Approve/disapprove only valid for: poster, non-physical, non-market (Hustle remote), when delivered
-    const canApproveOrDispute = isPosterView && !isPhysicalGig && !isMarketGig && activeGigStatus === 'delivered';
+    // Approve/disapprove only valid for: poster, non-physical, non-market (Hustle remote), when delivered.
+    // Accept legacy 'SUBMITTED' as well as the canonical 'delivered'.
+    const canApproveOrDispute = isPosterView && !isPhysicalGig && !isMarketGig && (activeGigStatus === 'delivered' || activeGigStatus === 'SUBMITTED');
 
     // Update hasSentLocationAlert
     useEffect(() => {
@@ -636,7 +672,7 @@ function MessagesContent() {
 
             {/* SIDEBAR */}
             <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] flex-col border-r border-white/5 bg-[#0B0B11] shrink-0`}>
-                <div className="p-3 border-b border-white/5 flex gap-2 items-center bg-[#121217]">
+                <div className="p-3 border-b border-white/5 flex gap-2 items-center bg-[var(--card)]">
                     <button onClick={() => router.back()} className="p-1.5 -ml-1 hover:bg-white/10 rounded-full transition-colors text-zinc-400 hover:text-white">
                         <ArrowLeft size={16} />
                     </button>
@@ -649,10 +685,10 @@ function MessagesContent() {
                     ) : conversations.length === 0 ? (
                         <div className="p-4">
                             <EmptyState
-                                icon={MessageSquare}
-                                title="No conversations yet"
-                                description="Apply to a gig or post one — chats with the other party will land here."
-                                actionLabel="Browse gigs"
+                                sloth="/sleeping_sloth.png"
+                                title="Inbox zero. The sloth approves."
+                                description="Apply to a task or post one — your chats with the other party will land here."
+                                actionLabel="Browse tasks"
                                 actionHref="/feed"
                             />
                         </div>
@@ -705,7 +741,7 @@ function MessagesContent() {
                 {activeChat ? (
                     <>
                         {/* Header */}
-                        <div className="p-3 border-b border-white/5 bg-[#121217] flex items-center gap-3 z-20 shadow-sm">
+                        <div className="p-3 border-b border-white/5 bg-[var(--card)] flex items-center gap-3 z-20 shadow-sm">
                             <button onClick={() => setActiveChat(null)} className="p-2 -ml-1 hover:bg-white/10 rounded-full shrink-0" aria-label="Back">
                                 <ArrowLeft size={18} />
                             </button>
@@ -723,13 +759,16 @@ function MessagesContent() {
                                 </h2>
                                 <div className="flex items-center gap-2 text-[10px] text-zinc-400 mt-0.5">
                                     {activeConversation?.gig?.title && <span className="opacity-50 truncate">{activeConversation.gig.title}</span>}
-                                    {activeGigStatus && (
-                                        <span className={`font-bold px-1.5 py-0.5 rounded-full ${activeGigStatus === 'completed' ? 'text-green-400 bg-green-500/10' :
-                                                (activeGigStatus === 'assigned' || activeGigStatus === 'delivered') ? 'text-yellow-400 bg-yellow-500/10' :
-                                                    'text-white/30'
-                                            }`}>{activeGigStatus === 'completed' ? '✓ Completed' : (activeGigStatus === 'assigned' || activeGigStatus === 'delivered') ? '● Hired' : activeGigStatus}
-                                        </span>
-                                    )}
+                                    {activeGigStatus && (() => {
+                                        const inReview = activeGigStatus === 'delivered' || activeGigStatus === 'SUBMITTED';
+                                        const hired = activeGigStatus === 'assigned';
+                                        const label = activeGigStatus === 'completed' ? 'Completed' : inReview ? 'In Review' : hired ? 'Hired' : activeGigStatus;
+                                        const tone = activeGigStatus === 'completed' ? 'text-[var(--brand-purple-soft)] bg-[var(--brand-purple)]/10'
+                                            : inReview ? 'text-[#C9A9FF] bg-[#C9A9FF]/10'
+                                            : hired ? 'text-white/70 bg-white/10'
+                                            : 'text-white/30';
+                                        return <span className={`font-bold px-1.5 py-0.5 rounded-full ${tone}`}>{label}</span>;
+                                    })()}
                                 </div>
                             </div>
 
@@ -738,14 +777,21 @@ function MessagesContent() {
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => approveWork(activeConversation.gig_id)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-green-500/20 active:scale-95 whitespace-nowrap"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--brand-purple)] hover:brightness-110 text-white rounded-xl text-xs font-bold transition-all active:scale-95 whitespace-nowrap"
                                     >
                                         <CheckCircle2 size={13} />
                                         Approve
                                     </button>
                                     <button
+                                        onClick={() => setShowChangesModal(true)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/80 border border-white/10 rounded-xl text-xs font-bold transition-all active:scale-95 whitespace-nowrap"
+                                    >
+                                        <RotateCcw size={13} />
+                                        Request changes
+                                    </button>
+                                    <button
                                         onClick={() => setShowDisputeModal(true)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl text-xs font-bold transition-all active:scale-95 whitespace-nowrap"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 text-white/50 border border-white/10 rounded-xl text-xs font-bold transition-all active:scale-95 whitespace-nowrap"
                                     >
                                         <AlertTriangle size={13} />
                                         Dispute
@@ -831,11 +877,11 @@ function MessagesContent() {
                                                     <IndianRupee size={14} className="text-[#8825F5]" />
                                                 </div>
                                                 <div className="p-6 flex flex-col items-center gap-2">
-                                                    <div className="text-3xl font-black text-white tracking-tighter">
+                                                    <div className="text-3xl font-semibold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                                         ₹{msg.offer_amount}
                                                     </div>
                                                     <p className="text-[10px] text-white/60">
-                                                        {isMe ? "Waiting for response..." : "Proposed Price"}
+                                                        {isMe ? "Waiting for response..." : "Proposed price"}
                                                     </p>
                                                 </div>
                                                 {/* Actions for Receiver (Poster) */}
@@ -843,13 +889,13 @@ function MessagesContent() {
                                                     <div className="p-2 grid grid-cols-2 gap-2 bg-black/20">
                                                         <button
                                                             onClick={() => sendMessage(undefined, 'text', `I've declined the offer of ₹${msg.offer_amount}.`)}
-                                                            className="py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20"
+                                                            className="py-2 rounded-lg bg-white/5 text-white/70 border border-white/10 text-xs font-semibold hover:bg-white/10 transition-colors"
                                                         >
                                                             Decline
                                                         </button>
                                                         <button
                                                             onClick={() => acceptOffer(msg)}
-                                                            className="py-2 rounded-lg bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20"
+                                                            className="py-2 rounded-lg bg-[var(--brand-purple)] text-white text-xs font-semibold hover:brightness-110 transition-all"
                                                         >
                                                             Accept
                                                         </button>
@@ -901,19 +947,19 @@ function MessagesContent() {
                         </div>
 
                         {/* Completed Banner & Input */}
-                        <div className="bg-[#121217] border-t border-white/5 z-20">
+                        <div className="bg-[var(--card)] border-t border-white/5 z-20">
                             {isCompleted ? (
-                                <div className="px-4 py-3 flex items-center justify-center gap-2 text-sm text-white/60 bg-green-500/5 border-b border-green-500/10">
-                                    <span className="text-green-400">✓</span>
-                                    {activeGigStatus === 'completed' ? 'Deal completed — chat is now closed.' : 'Gig cancelled — chat is closed.'}
+                                <div className="px-4 py-3 flex items-center justify-center gap-2 text-sm text-white/60 bg-white/[0.03] border-b border-white/[0.06]">
+                                    <CheckCircle2 size={15} className="text-[var(--brand-purple-soft)]" />
+                                    {activeGigStatus === 'completed' ? 'Deal completed. Chat is now closed.' : 'Gig cancelled. Chat is closed.'}
                                 </div>
                             ) : (
                                 <div className="p-3">
                                     {messageLimit && (
-                                        <div className={`mb-2 flex justify-center ${isLimitReached ? 'animate-pulse' : ''}`}>
-                                            <span className={`text-xs px-3 py-1 rounded-full border ${isLimitReached ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                                        <div className="mb-2 flex justify-center">
+                                            <span className={`text-xs px-3 py-1 rounded-full border ${isLimitReached ? 'bg-white/[0.06] border-white/10 text-white/60' : 'bg-[var(--brand-purple)]/10 border-[var(--brand-purple)]/20 text-[var(--brand-purple-soft)]'
                                                 }`}>
-                                                {isLimitReached ? "Limit Reached. Wait for the poster to accept your proposal." : `${messageLimit - messageCount} messages left before acceptance`}
+                                                {isLimitReached ? "Limit reached. Wait for the poster to accept your proposal." : `${messageLimit - messageCount} messages left before acceptance`}
                                             </span>
                                         </div>
                                     )}
@@ -924,9 +970,9 @@ function MessagesContent() {
                                                 type="button"
                                                 onClick={() => sendMessage(undefined, 'system', 'LOCATION_ALERT')}
                                                 disabled={isSending}
-                                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-bold hover:bg-red-500/20 transition-colors animate-pulse disabled:opacity-50"
+                                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 font-semibold hover:bg-red-500/20 transition-colors disabled:opacity-50"
                                             >
-                                                📍 I'm Here at the Location (Notify)
+                                                <MapPin size={16} /> I&apos;m here at the location (notify)
                                             </button>
                                         </div>
                                     )}
@@ -947,7 +993,7 @@ function MessagesContent() {
                                             className="flex-1 bg-[#1A1A24] text-white text-sm px-4 py-2.5 rounded-full border border-white/10 focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5]/20 outline-none transition-all disabled:opacity-50 min-w-0"
                                         />
                                         <button type="submit" disabled={!newMessage.trim() || isLimitReached || isSending}
-                                            className="p-2.5 bg-[#8825F5] hover:bg-[#7b1dd1] disabled:opacity-50 text-white rounded-full shadow-lg shrink-0"
+                                            className="p-2.5 bg-[var(--brand-purple)] hover:brightness-110 transition-all disabled:opacity-50 text-white rounded-full shrink-0"
                                         >
                                             <Send size={16} className="translate-x-0.5" />
                                         </button>
@@ -970,7 +1016,7 @@ function MessagesContent() {
                         </p>
 
                         {!hasTelegramLinked && hasTelegramLinked !== null && (
-                            <div className="max-w-md w-full bg-[#121217] border border-white/10 rounded-2xl p-5 relative z-10 hover:border-brand-purple/30 transition-colors group">
+                            <div className="max-w-md w-full bg-[var(--card)] border border-white/10 rounded-2xl p-5 relative z-10 hover:border-brand-purple/30 transition-colors group">
                                 <div className="flex flex-col sm:flex-row items-start gap-4">
                                     <div className="bg-brand-purple/10 p-3 rounded-xl shrink-0">
                                         <Send className="w-6 h-6 text-brand-purple" />
@@ -1029,6 +1075,36 @@ function MessagesContent() {
                         >
                             {isDisputing ? <Loader2 size={16} className="animate-spin" /> : <AlertTriangle size={16} />}
                             Freeze & Raise Dispute
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Request Changes Modal — Poster only, lightweight revision loop */}
+            {showChangesModal && activeConversation && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                    <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 max-w-sm w-full animate-in zoom-in-95 relative">
+                        <button onClick={() => setShowChangesModal(false)} className="absolute top-4 right-4 text-white/60 hover:text-white">
+                            <X size={18} />
+                        </button>
+                        <div className="w-10 h-10 bg-[var(--brand-purple)]/15 text-[var(--brand-purple-soft)] rounded-full flex items-center justify-center mx-auto mb-3">
+                            <RotateCcw className="w-5 h-5" />
+                        </div>
+                        <h3 className="text-lg font-bold text-center mb-1">Request changes</h3>
+                        <p className="text-center text-white/50 text-xs mb-4">The worker revises and resubmits. Funds stay safely held, no dispute.</p>
+                        <textarea
+                            value={changesFeedback}
+                            onChange={(e) => setChangesFeedback(e.target.value)}
+                            placeholder="What needs to change? Be specific so they can fix it fast..."
+                            className="w-full bg-black/20 text-white text-sm p-4 rounded-xl border border-white/10 focus:border-[var(--brand-purple)]/50 outline-none resize-none h-28 mb-4"
+                        />
+                        <button
+                            onClick={() => requestChanges(activeConversation.gig_id)}
+                            disabled={isRequestingChanges || !changesFeedback.trim()}
+                            className="w-full py-3 bg-[var(--brand-purple)] hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                        >
+                            {isRequestingChanges ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
+                            Send back for changes
                         </button>
                     </div>
                 </div>

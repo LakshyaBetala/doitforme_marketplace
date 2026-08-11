@@ -243,7 +243,7 @@ function AuthPage() {
 
         <div className="flex justify-center mb-6">
           <div className="relative w-12 h-12 md:w-14 md:h-14">
-            <Image src="/Doitforme_logo.png" alt="Logo" fill className="object-contain" />
+            <Image src="/logo.png" alt="Logo" fill className="object-contain" />
           </div>
         </div>
 
@@ -482,7 +482,7 @@ function AuthPage() {
             <Link href="/company/login" className="group flex items-center justify-between bg-black/40 hover:bg-black/80 border border-white/10 hover:border-white/30 p-4 rounded-xl transition-all w-full">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                  <Image src="/Doitforme_logo.png" alt="Company" width={16} height={16} className="opacity-70 group-hover:opacity-100 transition-opacity" />
+                  <Image src="/logo.png" alt="Company" width={16} height={16} className="opacity-70 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <div className="text-left">
                   <p className="text-white text-xs font-bold uppercase tracking-widest leading-none mb-1">Company Portal</p>

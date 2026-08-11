@@ -81,7 +81,12 @@ export async function POST(req: Request) {
             status: 'pending',
             pitch: offerPitch || defaultPitch,
             negotiated_price: offerPrice || null,
-            payment_preference: paymentPreference || "DIRECT"
+            // Escrow-only. Direct payment was offered to applicants as the
+            // "No Platform Fee" option, so 223 of 267 applications chose it —
+            // taking the money, the protection and the fee off-platform, which
+            // is why GMV was zero. Forced server-side: the client no longer
+            // sends a preference, and a crafted request cannot opt out either.
+            payment_preference: "ESCROW"
         }, { onConflict: 'gig_id, worker_id' });
 
         if (appError) throw appError;

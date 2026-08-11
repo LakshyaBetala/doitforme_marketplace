@@ -181,7 +181,7 @@ export default function CompanyOnboardingPage() {
                 <div className="relative z-10 space-y-10">
                     {/* Brand */}
                     <Link href="/" className="flex items-center gap-4 group">
-                        <Image src="/Doitforme_logo.png" alt="DoItForMe" width={44} height={44} className="object-contain transition-transform group-hover:rotate-12" />
+                        <Image src="/logo.png" alt="DoItForMe" width={44} height={44} className="object-contain transition-transform group-hover:rotate-12" />
                         <div className="flex flex-col">
                             <span className="text-2xl font-bold tracking-tight leading-none text-white">DoItForMe</span>
                             <span className="text-[11px] font-medium text-zinc-500 mt-1">Enterprise Registration</span>
@@ -276,7 +276,7 @@ export default function CompanyOnboardingPage() {
                                 Login Instead
                             </Link>
                             <div className="flex items-center gap-2 border-l border-[#333] pl-4">
-                                <Image src="/Doitforme_logo.png" alt="DoItForMe" width={20} height={20} className="object-contain opacity-50" />
+                                <Image src="/logo.png" alt="DoItForMe" width={20} height={20} className="object-contain opacity-50" />
                                 <span className="text-[10px] font-bold text-[#666] uppercase tracking-widest leading-none">DoItForMe</span>
                             </div>
                         </div>

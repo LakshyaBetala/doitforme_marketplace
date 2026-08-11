@@ -78,22 +78,6 @@ input:-webkit-autofill:active {
 }
 
 /* ---------------------------------------
-    CUSTOM CURSOR (ONLY APPLIED TO DESKTOP)
---------------------------------------- */
-@media (min-width: 1024px) {
-
-  .use-sloth-cursor,
-  .use-sloth-cursor a,
-  .use-sloth-cursor button,
-  .use-sloth-cursor input,
-  .use-sloth-cursor select,
-  .use-sloth-cursor textarea,
-  .use-sloth-cursor [role="button"] {
-    cursor: none !important;
-  }
-}
-
-/* ---------------------------------------
     MOBILE OPTIMIZATION 4: SCROLLBARS
 --------------------------------------- */
 /* Hide scrollbars on mobile for a cleaner look while keeping functionality */
@@ -218,21 +202,6 @@ select {
 
 .animate-marquee {
   animation: marquee 30s linear infinite;
-}
-
-/* ---------------------------------------
-    NOISE TEXTURE (PERFORMANCE OPTIMIZED)
---------------------------------------- */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-  z-index: -1;
-  opacity: 0.4;
-  mix-blend-mode: overlay;
-  will-change: transform;
 }
 
 /* ---------------------------------------

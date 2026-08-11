@@ -45,10 +45,10 @@ export async function POST(request: Request) {
     let payoutDestination = gig.assigned_worker_id;
     let payoutAmount = 0; // Will fetch from Escrow
 
-    // Fetch Escrow Record to get the held amount safely
+    // Fetch Escrow Record to get the held amount + the fee charged at funding.
     const { data: escrowRecord, error: escrowFetchError } = await supabaseAdmin
       .from("escrow")
-      .select("amount_held")
+      .select("amount_held, original_amount, platform_fee")
       .eq("gig_id", gigId)
       .maybeSingle();
 
@@ -56,17 +56,17 @@ export async function POST(request: Request) {
       console.error("Escrow Fetch Error:", escrowFetchError);
     }
 
-    const totalHeld = Number(escrowRecord?.amount_held) || 0;
-
     if (!escrowRecord) {
       return NextResponse.json({ error: "Escrow record not found" }, { status: 500 });
     }
 
-    // Hustle — Flat 3% escrow fee deducted from worker payout
-    const feeRate = 0.03;
-    const platformFee = Math.max(0, Math.ceil(totalHeld * feeRate));
+    // Payout base is the task price (original_amount), not amount_held — amount_held
+    // can include a refundable rental deposit. Fee is the one actually charged at
+    // funding (5% student / 10% business). Never recompute the old flat 3%.
+    const payoutBase = Number(escrowRecord.original_amount) || Number(escrowRecord.amount_held) || 0;
+    const platformFee = Math.max(0, Number(escrowRecord.platform_fee) || 0);
 
-    payoutAmount = Math.max(0, totalHeld - platformFee);
+    payoutAmount = Math.max(0, payoutBase - platformFee);
 
 
     if (platformFee > 0) {

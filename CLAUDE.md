@@ -9,9 +9,11 @@ npm run dev     # Next dev server (explicit --webpack, not Turbopack)
 npm run build   # Production build (explicit --webpack)
 npm run start   # Run production build
 npm run lint    # ESLint (next/core-web-vitals + next/typescript)
+npm run test:e2e        # Playwright (auto-starts `npm run dev` on :3000 via webServer)
+npx playwright test tests/golden-path.spec.ts   # run a single spec
 ```
 
-No test framework is configured. `test_onboard.ts` and `test_onboard_rls.ts` at the repo root are ad-hoc scripts, not a suite.
+The only automated tests are Playwright E2E in [tests/](tests/) ([playwright.config.ts](playwright.config.ts) — chromium only, `baseURL` http://localhost:3000). `test_onboard.ts` and `test_onboard_rls.ts` (now under [scripts/maintenance/](scripts/maintenance/)) are ad-hoc scripts, not part of the suite.
 
 Path alias: `@/*` → repo root (see [tsconfig.json](tsconfig.json)).
 
@@ -43,7 +45,9 @@ Two listing types drive branching logic everywhere:
 - `HUSTLE` — service work; the **assigned worker** is the payout recipient.
 - `MARKET` with `market_type` ∈ `SELL | RENT | REQUEST` — product; the **poster (seller)** is the payout recipient. `RENT` additionally tracks `security_deposit` which is refunded to the renter on release.
 
-Escrow flow: payment creates `HELD` funds → delivery sets `status='DELIVERED'` + `auto_release_at = now + 24h` → after 24h the cron releases (or the poster manually releases sooner). The **3% flat platform fee** is deducted from the recipient's payout.
+Escrow flow: payment creates `HELD` funds → delivery sets `status='DELIVERED'` + `auto_release_at = now + 24h` → after 24h the cron releases (or the poster manually releases sooner).
+
+Between "approve" and "dispute" sits a third, lighter path: [app/api/gig/request-changes/route.ts](app/api/gig/request-changes/route.ts). The poster sends written feedback → gig reverts to `status='assigned'` with `auto_release_at = null` and `delivered_at = null` (timer **cancelled**, not paused) → the worker resubmits, which restarts the 24h clock. No admin involvement; dispute remains the heavy path that freezes escrow for review.
 
 Key SQL RPCs (called from API routes, not written as raw SQL in handlers):
 - `manual_release_escrow(p_gig_id)` — called by [app/api/escrow/release/route.ts](app/api/escrow/release/route.ts).
@@ -52,10 +56,26 @@ Key SQL RPCs (called from API routes, not written as raw SQL in handlers):
 - `increment_worker_stats(worker_id, amount)` — updates `jobs_completed` / earnings on payout.
 - `is_admin()` — SQL function that whitelists admin emails (`betala911@gmail.com`, `doitforme.in@gmail.com`); used inside RLS policies.
 
+### Fee model — [lib/fees.ts](lib/fees.ts) is the single source of truth
+Do **not** hardcode a percentage anywhere; import the helpers. (The old "3% flat" rate is gone.)
+- `PLATFORM_FEES` — `STUDENT: 5%`, `BUSINESS: 10%`. Deducted from the **recipient's payout**.
+- `audienceForGig(gig)` — `BUSINESS` when `company_id` is set or `listing_type === 'COMPANY_TASK'`; `STUDENT` otherwise.
+- `GATEWAY_FEE_RATE` (2%) / `gatewayFeeFor(subtotal)` — Cashfree pass-through charged **on top**, paid by the payer.
+- Managed delivery (`is_managed`) is deliberately **not** a separate rate — it is Business 10%, to keep pricing "DoItForMe = 10%".
+
+Both call sites ([create-order](app/api/payments/create-order/route.ts), [cron/auto-release](app/api/cron/auto-release/route.ts)) go through these. create-order persists the full breakdown (incl. `fee_audience`) into `transactions.provider_data.breakdown`; the cron prefers that **stored** fee and only recomputes as a fallback — so historical gigs keep the rate they were priced at when you change the dial.
+
+### Managed Mode + Elite pool
+Strategy pivot recorded in [supabase/migrations/20260619_managed_mode.sql](supabase/migrations/20260619_managed_mode.sql): instead of a zero-commission connection hub (which leaked matches off-platform), DoItForMe can *itself* assign a vetted student and QA the work.
+- `gigs.is_managed` (bool) + `gigs.managed_status` ∈ `UNASSIGNED | ASSIGNED | DELIVERED | CLOSED` — a queue lifecycle **parallel to** the public `gigs.status`; keep both in sync when you touch managed gigs. Set at post time in [app/post/page.tsx](app/post/page.tsx).
+- `users.is_elite` — manually curated top students the assignment UI sorts first.
+- Admin desk: **Managed Queue** tab in [app/admin/page.tsx](app/admin/page.tsx) → [app/api/admin/assign-managed/route.ts](app/api/admin/assign-managed/route.ts). Assignment upserts an `approved` row into `applications` on purpose, so delivery/escrow/payout reuse the identical self-serve code path.
+- That route re-implements the admin check as a **hardcoded `ADMINS` email array**, duplicating the `is_admin()` SQL whitelist. Both lists must be edited together.
+
 When touching gig/payment code, the canonical reference for state transitions and RLS is [supabase/migrations/20260421_standardize_naming_and_rls.sql](supabase/migrations/20260421_standardize_naming_and_rls.sql) (RLS baseline) and [supabase/migrations/v6_master.sql](supabase/migrations/v6_master.sql).
 
 ### Cron (auto-release)
-[vercel.json](vercel.json) schedules a daily GET to `/api/cron/auto-release`. The handler requires an `x-cron-secret` header matching `CRON_SECRET` env var, then scans `gigs` where `status='DELIVERED' AND auto_release_at < now() AND payment_status='HELD' AND dispute_reason IS NULL` in batches of 50 and transitions them to `completed` / `PAYOUT_PENDING`. A parallel route exists at `/api/cron/escrow-auto-release`.
+[vercel.json](vercel.json) schedules a daily GET to `/api/cron/auto-release`. The handler requires an `x-cron-secret` header matching `CRON_SECRET` env var, then scans `gigs` where `status='DELIVERED' AND auto_release_at < now() AND payment_status='HELD' AND dispute_reason IS NULL` in batches of 50 and transitions them to `completed` / `PAYOUT_PENDING`. A near-duplicate handler exists at [app/cron/auto-release/route.ts](app/cron/auto-release/route.ts) (note: **no `/api`** prefix) — it is *not* the one wired into [vercel.json](vercel.json); the scheduled path is the one under `app/api/`. Don't edit the wrong one.
 
 ### Two-tier content moderation
 Posts and chat messages are filtered for phone/UPI/social-handle leakage and illegal content:
@@ -82,6 +102,9 @@ Zustand is used minimally; the only store is [store/useGigFormStore.ts](store/us
 ### Realtime
 [components/RealtimeListener.tsx](components/RealtimeListener.tsx) is mounted globally in [app/layout.tsx](app/layout.tsx). It subscribes to Supabase postgres_changes for `messages` (filtered by `receiver_id`) and gig updates, and surfaces them as Sonner toasts. Don't add a second global listener — extend this one.
 
+### Web push notifications
+Separate from the in-app realtime toasts. The browser subscribes via [app/api/push/subscribe/route.ts](app/api/push/subscribe/route.ts); the server fans out with the `web-push` library through [app/api/push/dispatch/route.ts](app/api/push/dispatch/route.ts). Subscriptions and schema are defined in [supabase/migrations/20260602_web_push.sql](supabase/migrations/20260602_web_push.sql). Env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, and `PUSH_DISPATCH_SECRET` (gates the dispatch route). Managed from [app/settings/notifications/page.tsx](app/settings/notifications/page.tsx).
+
 ### Company vs. Student flows
 `/company/*` routes (onboarding, dashboard, post, task) are a parallel funnel for B2B posters. Companies need manual admin clearance before they can post at scale. The `users` and `companies` tables are both RLS-enabled; policies key off `auth.uid()` and `is_admin()`.
 
@@ -90,9 +113,11 @@ Supabase is configured for **email OTP only** — magic links are disabled. Keep
 
 ## Required environment variables
 From README + handler code:
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), `RESEND_API_KEY` (transactional email — unset = email no-ops).
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), `RESEND_API_KEY` (transactional email — unset = email no-ops), `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
 
 ## Stale-doc warning
+Four tables were dropped on 2026-06-19 ([supabase/migrations/20260619_drop_unused_tables.sql](supabase/migrations/20260619_drop_unused_tables.sql)) — `vasooli_bounties`, `deliveries`, `payout_methods`, `chat_blocked_logs`. Older migrations and schema dumps still reference them. Delivery artifacts live on `gigs.delivery_link` / `delivery_files` + `messages`; payout UPI lives on `users.upi_id` and payouts are manual.
+
 [supabase/README.md](supabase/README.md) references files `supabase/sql/01_..08_*.sql`. That directory was removed in commit `0c8f119` ("Cleanup: remove redundant root sql directory"). The live migrations are in [supabase/migrations/](supabase/migrations/) and are date-stamped (e.g. `20260421_standardize_naming_and_rls.sql`). Trust the dated migrations, not the README's ordering.
 
 ## Design system (read before any UI change)

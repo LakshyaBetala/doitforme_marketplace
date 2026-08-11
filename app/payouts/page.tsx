@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { Loader2, ArrowLeft, Clock, CheckCircle2, XCircle, AlertTriangle, TrendingUp } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 
 interface PayoutRecord {
@@ -87,17 +88,17 @@ export default function PayoutsPage() {
             <div className="max-w-2xl mx-auto space-y-8">
 
                 {/* HERO CARD: SHADOW WALLET */}
-                <div className="bg-gradient-to-br from-[#1A1A24] to-[#121217] border border-white/10 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-brand-purple/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                <div className="bg-[var(--card)] border border-white/[0.08] rounded-3xl p-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--brand-purple)]/[0.12] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
                     <div className="relative z-10">
-                        <div className="flex items-center gap-2 text-brand-purple mb-2">
+                        <div className="flex items-center gap-2 text-[var(--brand-purple-soft)] mb-2">
                             <TrendingUp size={20} />
-                            <span className="text-xs font-bold uppercase tracking-widest">Pending Payouts</span>
+                            <span className="text-xs font-medium uppercase tracking-[0.1em]">Pending payouts</span>
                         </div>
                         <div className="flex items-baseline gap-1">
                             <span className="text-2xl text-white/60 font-light">₹</span>
-                            <span className="text-5xl md:text-6xl font-black tracking-tighter text-white">
+                            <span className="text-5xl md:text-6xl font-semibold tracking-tight text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                 {totalPending.toLocaleString('en-IN')}
                             </span>
                         </div>
@@ -116,11 +117,11 @@ export default function PayoutsPage() {
 
                     {payouts.length === 0 ? (
                         <div className="text-center py-12 bg-[#1A1A24] rounded-3xl border border-white/5 border-dashed">
-                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <AlertTriangle className="text-white/60" />
+                            <div className="relative w-24 h-24 mx-auto mb-4 animate-[float_8s_ease-in-out_infinite]">
+                                <Image src="/moneysloth.png" alt="" fill className="object-contain" sizes="96px" />
                             </div>
-                            <p className="text-white/60 font-medium">No earnings yet.</p>
-                            <p className="text-white/50 text-sm mt-1">Start hustling to see activity here!</p>
+                            <p className="text-white/80 font-medium">No earnings yet. The sloth&apos;s wallet is empty.</p>
+                            <p className="text-white/50 text-sm mt-1">Land your first task and watch this fill up.</p>
                             <Link href="/feed" className="inline-block mt-4 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold uppercase tracking-wider transition-all">
                                 Find Work
                             </Link>

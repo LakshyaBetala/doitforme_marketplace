@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee, Users } from "lucide-react";
+import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee, Users, Sparkles } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "./StatusBadge";
 
 /**
@@ -56,6 +56,17 @@ function TypePill({ listing_type, market_type }: { listing_type?: string | null;
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60 border border-white/[0.08] text-[10px] font-medium tracking-tight uppercase">
         <ShoppingBag size={10} />
         {market_type === "REQUEST" ? "Looking for" : market_type || "Market"}
+      </span>
+    );
+  }
+  // SERVICE = someone advertising their own skills. Neutral tone on purpose:
+  // purple is reserved for demand (Hustle/Company), so a buyer scanning the
+  // page can tell "work available" from "person available" at a glance.
+  if (listing_type === "SERVICE") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60 border border-white/[0.08] text-[10px] font-medium tracking-tight uppercase">
+        <Sparkles size={10} />
+        Offering
       </span>
     );
   }
@@ -140,55 +151,16 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
     );
   }
 
-  // detailed variant
-  if (gig.listing_type === "COMPANY_TASK") {
-    return (
-      <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
-        <div className={`bg-gradient-to-br from-[#0B0B11] to-[#13131A] rounded-2xl p-5 md:p-6 border border-[#8825F5]/30 hover:border-[#8825F5]/60 transition-all flex flex-col h-full relative overflow-hidden shadow-[0_0_15px_rgba(136,37,245,0.1)] hover:shadow-[0_0_25px_rgba(136,37,245,0.2)] group-hover:-translate-y-1`}>
-          {/* Decorative glow */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#8825F5]/20 rounded-full blur-[40px] pointer-events-none group-hover:bg-[#8825F5]/30 transition-colors"></div>
-          
-          <div className="flex items-center justify-between mb-3 relative z-10">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#8825F5]/20 text-[#D4BFFF] border border-[#8825F5]/40 text-[10px] font-black tracking-widest uppercase shadow-[0_0_10px_rgba(136,37,245,0.2)]">
-              <Building2 size={12} />
-              Enterprise
-            </span>
-            {isHighlighted && (
-              <span className="text-[10px] font-bold tracking-widest text-amber-400 uppercase bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">Featured</span>
-            )}
-          </div>
-          <h3 className="font-bold text-white text-lg leading-snug line-clamp-2 mb-3 group-hover:text-[#D4BFFF] transition-colors relative z-10">
-            {gig.title}
-          </h3>
-          <div className="flex items-baseline gap-1 mb-auto relative z-10">
-            {gig.price != null ? (
-              <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-[#D4BFFF] tracking-tight">₹{gig.price}</span>
-            ) : (
-              <span className="text-xs font-semibold text-[#8825F5]">Open offer</span>
-            )}
-          </div>
-          <div className="mt-5 pt-4 border-t border-[#8825F5]/20 flex items-center justify-between relative z-10">
-            <span className="flex items-center gap-1.5 text-[11px] font-medium text-white/60">
-              <MapPin size={11} className="text-[#8825F5]" /> {gig.is_physical ? "On-Site" : "Remote"}
-            </span>
-            <div className="flex items-center gap-2">
-              {hiringLabel && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/15 border border-[#8825F5]/30 px-2 py-0.5 rounded-full">
-                  <Users size={11} /> {hiringLabel}
-                </span>
-              )}
-              {showStatus && <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>}
-              <span className="text-[11px] font-medium text-white/40">{timeAgo(gig.created_at)}</span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    );
-  }
+  // detailed variant — one surface treatment for every listing_type.
+  // COMPANY_TASK is distinguished only by its pill + a hairline purple ring, never a hue change.
+  const isCompany = gig.listing_type === "COMPANY_TASK";
+  const detailedRing = isHighlighted || isCompany
+    ? "border-[#8825F5]/30 hover:border-[#8825F5]/50"
+    : "border-white/[0.08] hover:border-white/[0.16]";
 
   return (
     <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
-      <div className={`bg-[#13131A] rounded-2xl p-5 md:p-6 border transition-colors flex flex-col h-full ${ringClass}`}>
+      <div className={`bg-[#13131A] rounded-2xl p-5 md:p-6 border transition-colors flex flex-col h-full ${detailedRing}`}>
         <div className="flex items-center justify-between mb-3">
           <TypePill listing_type={gig.listing_type} market_type={gig.market_type} />
           {isHighlighted && (
@@ -210,7 +182,7 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
         </div>
         <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-[11px] text-white/50">
-            <MapPin size={11} /> {gig.is_physical ? "Physical" : "Online"}
+            <MapPin size={11} /> {gig.is_physical ? (isCompany ? "On-site" : "Physical") : "Remote"}
             {gig.users?.college && <span className="text-white/30">· {gig.users.college}</span>}
           </span>
           <div className="flex items-center gap-2">

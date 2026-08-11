@@ -17,8 +17,8 @@ self.addEventListener("push", (event) => {
   const url = new URL(data.url || "/dashboard", self.location.origin).href;
   const options = {
     body: data.body || "You have a new update on DoItForMe.",
-    icon: "/Doitforme_logo.png",
-    badge: "/Doitforme_logo.png",
+    icon: "/logo.png",
+    badge: "/logo.png",
     data: { url },
     tag: data.tag || undefined,
     renotify: !!data.tag,

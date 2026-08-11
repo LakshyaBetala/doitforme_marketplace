@@ -7,6 +7,7 @@ import { Loader2, Phone, GraduationCap, Wallet, ArrowRight, AtSign, CheckCircle2
 import Image from "next/image";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
+import { SIGNUP_SOURCES, readFirstTouch } from "@/lib/attribution";
 
 export default function OnboardingPage() {
     const supabase = supabaseBrowser();
@@ -19,6 +20,8 @@ export default function OnboardingPage() {
     const [username, setUsername] = useState("");
     const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
     const [usernameReason, setUsernameReason] = useState<string | null>(null);
+    const [signupSource, setSignupSource] = useState("");
+    const [signupSourceDetail, setSignupSourceDetail] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -91,6 +94,11 @@ export default function OnboardingPage() {
             return setError("Please enter your university name.");
         }
 
+        if (!signupSource) {
+            setLoading(false);
+            return setError("Please tell us how you found us — it genuinely helps.");
+        }
+
         if (upiId) {
             const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
             if (!upiRegex.test(upiId)) {
@@ -130,6 +138,9 @@ export default function OnboardingPage() {
                     college: finalCollege,
                     upi_id: upiId.trim() || undefined,
                     username: cleanUsername || undefined,
+                    signup_source: signupSource,
+                    signup_source_detail: signupSourceDetail.trim() || undefined,
+                    ...readFirstTouch(),
                 }),
             });
 
@@ -162,7 +173,7 @@ export default function OnboardingPage() {
                 {/* Logo */}
                 <div className="flex justify-center mb-6">
                     <div className="relative w-12 h-12 md:w-14 md:h-14">
-                        <Image src="/Doitforme_logo.png" alt="Logo" fill className="object-contain" />
+                        <Image src="/logo.png" alt="Logo" fill className="object-contain" />
                     </div>
                 </div>
 
@@ -277,6 +288,45 @@ export default function OnboardingPage() {
                     <p className="text-[10px] text-white/60 px-1 leading-tight">
                         Optional — needed to receive payouts. You can add it later in Profile.
                     </p>
+
+                    {/* How did you hear about us? Chips beat a <select> here: one tap on
+                        mobile, and every option stays visible so nobody defaults to the
+                        first one. This is our only attribution signal for dark social. */}
+                    <div className="pt-2">
+                        <label className="block text-[10px] font-bold text-white/60 mb-2 ml-1 uppercase tracking-wider">
+                            How did you find us?
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                            {SIGNUP_SOURCES.map((s) => {
+                                const active = signupSource === s.value;
+                                return (
+                                    <button
+                                        key={s.value}
+                                        type="button"
+                                        onClick={() => setSignupSource(s.value)}
+                                        className={`px-3 py-2 rounded-xl text-xs font-medium border transition-all touch-manipulation ${
+                                            active
+                                                ? "bg-[#8825F5] border-[#8825F5] text-white"
+                                                : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10"
+                                        }`}
+                                    >
+                                        {s.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {signupSource === "other" && (
+                            <input
+                                type="text"
+                                placeholder="Where did you hear about us?"
+                                className={`${inputStyle} mt-3`}
+                                value={signupSourceDetail}
+                                onChange={(e) => setSignupSourceDetail(e.target.value)}
+                                maxLength={120}
+                                autoFocus
+                            />
+                        )}
+                    </div>
 
                     {/* Error */}
                     {error && (

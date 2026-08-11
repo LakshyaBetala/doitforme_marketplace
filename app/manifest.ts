@@ -15,13 +15,13 @@ export default function manifest(): MetadataRoute.Manifest {
         lang: 'en-IN',
         icons: [
             {
-                src: '/Doitforme_logo.png',
+                src: '/logo.png',
                 sizes: '192x192',
                 type: 'image/png',
                 purpose: 'any',
             },
             {
-                src: '/Doitforme_logo.png',
+                src: '/logo.png',
                 sizes: '512x512',
                 type: 'image/png',
                 purpose: 'maskable',

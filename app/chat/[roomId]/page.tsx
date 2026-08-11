@@ -753,14 +753,18 @@ function ChatRoomContent() {
         <div className="bg-[#121217] border-t border-white/10 shrink-0 pb-safe">
 
           {/* Chat Closed Banner */}
-          {(gig.status === 'completed' || gig.status === 'cancelled') && (
+          {gig.status === 'completed' && (
+            <div className="px-4 py-3 flex items-center justify-center gap-3 text-sm bg-[var(--brand-purple)]/10 border-b border-[var(--brand-purple)]/20">
+              <div className="relative w-8 h-8 shrink-0">
+                <Image src="/moneysloth.png" alt="" fill className="object-contain" sizes="32px" />
+              </div>
+              <span className="text-white/80 font-medium">Deal done. Money&apos;s on its way, and the sloth salutes you.</span>
+            </div>
+          )}
+          {gig.status === 'cancelled' && (
             <div className="px-4 py-3 flex items-center justify-center gap-2 text-sm text-white/50 bg-white/5 border-b border-white/10">
-              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
-              <span>
-                {gig.status === 'completed'
-                  ? 'This deal is completed. Chat is now closed.'
-                  : 'This gig was cancelled. Chat is closed.'}
-              </span>
+              <CheckCircle className="w-4 h-4 text-white/40 shrink-0" />
+              <span>This gig was cancelled. Chat is closed.</span>
             </div>
           )}
 

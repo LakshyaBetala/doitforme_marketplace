@@ -169,19 +169,19 @@ function CompanyDashboard() {
     return (
         <div className="h-[100dvh] bg-[var(--background)] text-white flex flex-col font-sans overflow-hidden selection:bg-[#8825F5]/30 selection:text-white relative">
             {/* Background Atmosphere */}
-            <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#4F46E5]/10 rounded-full blur-[150px] pointer-events-none" />
-            <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#C9A9FF]/10 rounded-full blur-[150px] pointer-events-none" />
+            <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#8825F5]/[0.08] rounded-full blur-[160px] pointer-events-none" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-[#0097FF]/[0.05] rounded-full blur-[160px] pointer-events-none" />
 
             {/* Header */}
             <header className="h-[70px] md:h-[80px] bg-white/[0.02] backdrop-blur-xl border-b border-white/5 flex items-center justify-between px-6 md:px-10 shrink-0 z-50">
                 <div className="flex items-center gap-8">
                     <Link href="/" className="flex items-center gap-3">
                         <div className="relative w-10 h-10 flex items-center justify-center overflow-hidden">
-                            <Image src="/Doitforme_logo.png" alt="DoItForMe" width={36} height={36} className="object-contain" />
+                            <Image src="/logo.png" alt="DoItForMe" width={36} height={36} className="object-contain" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="font-bold text-lg tracking-tight text-white leading-none">DoItForMe</span>
-                            <span className="text-[11px] font-medium text-zinc-400 mt-0.5">Enterprise Hub</span>
+                            <span className="font-semibold text-lg tracking-tight text-white leading-none" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>DoItForMe</span>
+                            <span className="text-[11px] font-medium text-white/50 mt-0.5">For business</span>
                         </div>
                     </Link>
 
@@ -189,7 +189,7 @@ function CompanyDashboard() {
                         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" />
                         <input
                             type="text"
-                            placeholder="Search deployments..."
+                            placeholder="Search your tasks..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-11 pr-4 text-sm font-medium text-white placeholder:text-zinc-500 focus:border-[#8825F5]/50 focus:ring-1 focus:ring-[#8825F5]/50 focus:outline-none transition-all"
@@ -224,7 +224,7 @@ function CompanyDashboard() {
                                 <div className="h-px bg-white/10 w-full" />
                                 <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 hover:bg-red-500/10 text-sm font-medium text-red-400 transition-colors">
                                     <LogOut size={16} className="mr-3 shrink-0" />
-                                    <span>Terminate Session</span>
+                                    <span>Log out</span>
                                 </button>
                             </div>
                         )}
@@ -236,12 +236,12 @@ function CompanyDashboard() {
                 <div className="max-w-6xl mx-auto space-y-12 pb-24 md:pb-8">
 
                     {!isVerifiedCompany && (
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 flex items-start gap-4 shadow-lg shadow-amber-500/5">
-                            <AlertTriangle size={24} className="text-amber-500 shrink-0 mt-1" />
+                        <div className="bg-amber-500/[0.08] border border-amber-500/20 rounded-2xl p-6 flex items-start gap-4">
+                            <AlertTriangle size={24} className="text-amber-400 shrink-0 mt-1" />
                             <div>
-                                <h3 className="text-[15px] font-semibold text-amber-500 mb-1">Awaiting Enterprise Clearance</h3>
-                                <p className="text-sm text-amber-500/80 font-medium leading-relaxed">
-                                    Your organizational credentials are currently undergoing manual verification. Authorization to deploy multi-worker tasks is pending administrator approval.
+                                <h3 className="text-[15px] font-semibold text-amber-400 mb-1">Verification pending</h3>
+                                <p className="text-sm text-amber-400/75 font-medium leading-relaxed">
+                                    We are reviewing your company details. Posting multi-worker tasks unlocks once an admin approves your account.
                                 </p>
                             </div>
                         </div>
@@ -249,8 +249,8 @@ function CompanyDashboard() {
 
                     <div className="flex flex-col md:flex-row items-end justify-between gap-6 border-b border-white/10 pb-8">
                         <div>
-                            <span className="text-xs font-medium text-[#C9A9FF] mb-2 block">Dashboard Overview</span>
-                            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-none drop-shadow-md">
+                            <span className="text-xs font-medium text-[#C9A9FF] mb-2 block">Dashboard</span>
+                            <h1 className="text-4xl md:text-5xl font-semibold text-white tracking-tight leading-none" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                 {companyName}
                             </h1>
                         </div>
@@ -263,68 +263,66 @@ function CompanyDashboard() {
                                 <button
                                     onClick={handleGetPro}
                                     disabled={upgrading}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-full bg-[#8825F5] hover:bg-[#7a1de0] text-white transition-all disabled:opacity-60"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold rounded-full bg-white/[0.06] border border-white/10 hover:bg-white/10 text-white transition-all disabled:opacity-60"
                                 >
-                                    <Sparkles size={16} /> {upgrading ? "Opening…" : "Get Pro · ₹299/mo"}
+                                    <Sparkles size={16} className="text-[var(--brand-purple-soft)]" /> {upgrading ? "Opening…" : "Get Pro · ₹299/mo"}
                                 </button>
                             )}
-                            <Link href={isVerifiedCompany ? "/company/post" : "#"} className={`flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-full transition-all ${isVerifiedCompany ? 'bg-white text-black hover:bg-zinc-200' : 'bg-white/5 text-zinc-500 cursor-not-allowed border border-white/10'}`}>
-                                <Plus size={18} /> Deploy Task
+                            <Link href={isVerifiedCompany ? "/company/post" : "#"} className={`flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-full transition-all ${isVerifiedCompany ? 'bg-[var(--brand-purple)] text-white hover:brightness-110' : 'bg-white/5 text-zinc-500 cursor-not-allowed border border-white/10'}`}>
+                                <Plus size={18} /> Post a task
                             </Link>
                         </div>
                     </div>
 
                     <section className="space-y-8">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-white flex items-center gap-3">
-                                <span className="w-1.5 h-6 rounded-full bg-[#8825F5]"></span>
-                                Active Postings
+                            <h2 className="text-lg font-semibold text-white flex items-center gap-3 tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                                <span className="w-1.5 h-6 rounded-full bg-[var(--brand-purple)]"></span>
+                                Your tasks
                             </h2>
-                            <div className="bg-white/10 border border-white/20 px-3 py-1 rounded-full text-xs font-medium text-zinc-300">
-                                {activeCount} ACTIVE{expiredCount > 0 ? ` · ${expiredCount} EXPIRED` : ""}
+                            <div className="bg-white/[0.06] border border-white/10 px-3 py-1 rounded-full text-xs font-medium text-white/60">
+                                {activeCount} active{expiredCount > 0 ? ` · ${expiredCount} expired` : ""}
                             </div>
                         </div>
                         
                         {filteredGigs.length === 0 ? (
-                            <div className="py-24 border border-white/10 rounded-3xl bg-white/[0.02] backdrop-blur-md text-center shadow-inner shadow-black/20">
-                                <Building2 size={32} className="mx-auto text-zinc-600 mb-6" />
-                                <p className="text-zinc-400 text-sm font-medium">No active deployments detected.</p>
+                            <div className="py-24 border border-white/10 rounded-3xl bg-white/[0.02] text-center">
+                                <Building2 size={32} className="mx-auto text-white/30 mb-6" />
+                                <p className="text-white/55 text-sm font-medium">No tasks posted yet.</p>
                                 {isVerifiedCompany && (
-                                    <Link href="/company/post" className="inline-block mt-4 text-[#C9A9FF] hover:text-white text-sm font-semibold hover:underline decoration-indigo-400/30 underline-offset-4 transition-colors">
-                                        Initialize New Task →
+                                    <Link href="/company/post" className="inline-block mt-4 text-[#C9A9FF] hover:text-white text-sm font-semibold transition-colors">
+                                        Post your first task →
                                     </Link>
                                 )}
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {filteredGigs.map(gig => (
-                                    <Link href={`/company/task/${gig.id}`} key={gig.id} className={`group relative border border-white/10 bg-white/[0.03] backdrop-blur-md rounded-2xl p-8 hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] ${isExpired(gig) ? "opacity-60" : ""}`}>
-
-                                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
+                                    <Link href={`/company/task/${gig.id}`} key={gig.id} className={`group relative border border-white/[0.08] bg-[var(--card)] rounded-2xl p-8 hover:bg-[var(--card-elevated)] hover:border-white/[0.16] transition-all duration-300 ${isExpired(gig) ? "opacity-60" : ""}`}>
 
                                         <div className="relative z-10 flex justify-between items-start mb-6">
-                                            <span className="text-xs font-medium text-zinc-500 transition-colors uppercase font-mono bg-black/40 px-2 py-1 rounded border border-white/5">
-                                                ID: {gig.id.split('-')[0]}
+                                            <span className="text-xs font-medium text-white/40 font-mono bg-black/30 px-2 py-1 rounded border border-white/[0.06]">
+                                                #{gig.id.split('-')[0]}
                                             </span>
                                             {isExpired(gig) ? (
-                                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">Expired</span>
+                                                <span className="text-[10px] font-medium uppercase tracking-wider text-white/45 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full">Expired</span>
                                             ) : (
-                                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]"></div>
+                                                <div className="w-2 h-2 rounded-full bg-[var(--brand-purple-soft)]"></div>
                                             )}
                                         </div>
-                                        
-                                        <h3 className="relative z-10 font-bold text-white text-xl tracking-tight mb-8 line-clamp-2 leading-tight transition-colors">
+
+                                        <h3 className="relative z-10 font-semibold text-white text-xl tracking-tight mb-8 line-clamp-2 leading-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                             {gig.title}
                                         </h3>
-                                        
-                                        <div className="relative z-10 pt-6 border-t border-white/10 flex items-center justify-between">
+
+                                        <div className="relative z-10 pt-6 border-t border-white/[0.08] flex items-center justify-between">
                                             <div className="flex flex-col">
-                                                <span className="text-xs font-medium text-zinc-500 mb-1">Budget / Node</span>
-                                                <span className="text-lg font-bold text-white">₹{gig.price}</span>
+                                                <span className="text-xs font-medium text-white/45 mb-1">Budget per worker</span>
+                                                <span className="text-lg font-semibold text-white">₹{gig.price}</span>
                                             </div>
                                             <div className="text-right">
-                                                <span className="text-xs font-medium text-zinc-500 mb-1">Scale Units</span>
-                                                <span className="text-sm font-bold text-white bg-white/10 px-3 py-1 rounded-full border border-white/5 inline-block">x{gig.max_workers || 1}</span>
+                                                <span className="text-xs font-medium text-white/45 mb-1">Workers</span>
+                                                <span className="text-sm font-semibold text-white bg-white/[0.06] px-3 py-1 rounded-full border border-white/[0.08] inline-block">x{gig.max_workers || 1}</span>
                                             </div>
                                         </div>
                                     </Link>

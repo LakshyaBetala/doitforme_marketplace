@@ -186,28 +186,26 @@ export async function POST(req: Request) {
         }
         // -----------------------------------
 
-        // --- PHONE/WHATSAPP AUTO-EXCHANGE (System Message) ---
+        // --- CONNECTION ESTABLISHED (System Message) ---
+        // We deliberately DO NOT exchange phone/WhatsApp numbers here anymore.
+        // Auto-handing over contact details was the platform's biggest revenue
+        // leak — every successful match left the platform and we earned ₹0.
+        // Coordination now stays in-app; payment is protected by escrow.
         try {
-            const [posterData, workerData] = await Promise.all([
-                supabaseAdmin.from('users').select('name, phone').eq('id', user.id).single(),
-                supabaseAdmin.from('users').select('name, phone').eq('id', application.worker_id).single(),
-            ]);
-
-            const posterPhone = posterData.data?.phone || 'Not provided';
-            const workerPhone = workerData.data?.phone || 'Not provided';
-            const posterName = posterData.data?.name || 'Poster';
-            const workerName = workerData.data?.name || 'Hustler';
+            const connectMessage = gig.is_managed
+                ? `✅ Offer accepted. Your DoItForMe manager will coordinate the delivery and timeline from here — keep all updates in this chat.`
+                : `✅ Offer accepted! Keep all communication and payment on DoItForMe — fund the escrow to protect both sides. Sharing contact details off-platform voids buyer protection and breaks our terms.`;
 
             await supabaseAdmin.from('messages').insert({
                 gig_id: gig.id,
                 sender_id: user.id,
                 receiver_id: application.worker_id,
-                content: `🔓 Connection Established!\n\n${posterName}: ${posterPhone}\n${workerName}: ${workerPhone}\n\nYou can now contact each other directly via WhatsApp or Phone.`,
+                content: connectMessage,
                 message_type: 'system',
                 is_pre_agreement: false
             });
         } catch (e) {
-            console.error("Phone exchange system message failed:", e);
+            console.error("Connection system message failed:", e);
         }
         // -----------------------------------------------
 

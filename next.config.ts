@@ -31,6 +31,11 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/storage/v1/object/public/**',
       },
+      // Google OAuth profile photos (lh3, and the lh1-lh6 variants).
+      {
+        protocol: 'https',
+        hostname: '**.googleusercontent.com',
+      },
     ],
   },
   serverExternalPackages: ['@xenova/transformers'],

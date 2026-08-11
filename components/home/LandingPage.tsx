@@ -1,32 +1,19 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowRight, CheckCircle2, ShieldCheck, Zap, Lock,
-  DollarSign, ChevronDown, Star, Wallet, Code2, PenTool, Bike, Users, Mail, Clock,
-  Linkedin, Instagram, Briefcase
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, Linkedin, Instagram, Mail } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 // -------------------------------------------------------
-// 1. "VOGUE" PRELOADER (Updated with Asset Awareness)
+// PRELOADER (curtain reveal, asset-aware) — kept by request
 // -------------------------------------------------------
-// -------------------------------------------------------
-// 1. "VOGUE" PRELOADER (Updated with Asset Awareness)
-// -------------------------------------------------------
-const words = ["GIG", "SCALE", "BUILD", "HUSTLE", "DEPLOY"];
+const words = ["DESIGN", "RESEARCH", "DECKS", "DATA", "HUSTLE"];
 
-const Preloader = ({
-  onComplete,
-  isAssetReady
-}: {
-  onComplete: () => void,
-  isAssetReady: boolean
-}) => {
+const Preloader = ({ onComplete, isAssetReady }: { onComplete: () => void; isAssetReady: boolean }) => {
   const [index, setIndex] = useState(0);
   const [showLogo, setShowLogo] = useState(false);
   const [wordsFinished, setWordsFinished] = useState(false);
@@ -37,7 +24,7 @@ const Preloader = ({
         if (prev === words.length - 1) {
           clearInterval(interval);
           setShowLogo(true);
-          setWordsFinished(true); // Signal that cycling is done
+          setWordsFinished(true);
           return prev;
         }
         return prev + 1;
@@ -46,10 +33,9 @@ const Preloader = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Final trigger: Only exit when words are done AND assets are ready
   useEffect(() => {
     if (wordsFinished && isAssetReady) {
-      const timer = setTimeout(onComplete, 1000); // Brief pause on logo
+      const timer = setTimeout(onComplete, 850);
       return () => clearTimeout(timer);
     }
   }, [wordsFinished, isAssetReady, onComplete]);
@@ -57,44 +43,33 @@ const Preloader = ({
   return (
     <motion.div
       initial={{ y: 0 }}
-      exit={{ y: "-100%", transition: { duration: 0.95, ease: [0.76, 0, 0.24, 1] } }}
+      exit={{ y: "-100%", transition: { duration: 0.9, ease: [0.76, 0, 0.24, 1] } }}
       className="fixed inset-0 z-[9999] bg-[#0B0B11] flex items-center justify-center overflow-hidden cursor-wait"
     >
       <AnimatePresence mode="wait">
         {!showLogo ? (
           <motion.h1
             key={index}
-            initial={{ opacity: 0, scale: 1.2, filter: "blur(5px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{ opacity: 0, scale: 0.9, filter: "blur(5px)" }}
-            transition={{ duration: 0.15 }}
-            style={{ color: '#C084FC' }}
-            className="text-6xl md:text-9xl font-black tracking-tighter"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.14 }}
+            style={{ color: "var(--brand-purple-soft)", fontFamily: "'Space Grotesk', sans-serif" }}
+            className="text-4xl md:text-6xl font-bold tracking-tight"
           >
             {words[index]}
           </motion.h1>
         ) : (
           <motion.div
-            initial={{ scale: 1.2, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, ease: "circOut" }}
-            className="relative flex flex-col items-center"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="flex items-center gap-3"
           >
-            <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter">
-              DoItForMe.
-            </h1>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-              className="h-1 bg-gradient-to-r from-[#C084FC] to-[#8825F5] mt-4 w-full shadow-[0_0_30px_rgba(136,37,245,0.8)]"
-            />
-            {/* Subtle indicator if assets are still fetching */}
-            {!isAssetReady && (
-              <p className="mt-4 text-[10px] text-zinc-600 uppercase tracking-widest animate-pulse">
-                Loading Assets...
-              </p>
-            )}
+            <div className="relative w-11 h-11 md:w-12 md:h-12">
+              <Image src="/logo.png" alt="DoItForMe" fill className="object-contain" priority />
+            </div>
+            <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>DoItForMe</h1>
           </motion.div>
         )}
       </AnimatePresence>
@@ -103,99 +78,42 @@ const Preloader = ({
 };
 
 // -------------------------------------------------------
-// UTILITIES & DATA
+// CONTENT
 // -------------------------------------------------------
-const gigsMock = [
-  {
-    id: 1,
-    user: "Aarav P.",
-    role: "Engineering",
-    title: "Technical Architecture Audit",
-    price: "₹5,000",
-    gender: "male",
-  },
-  {
-    id: 2,
-    user: "Sneha K.",
-    role: "Design",
-    title: "Brand Identity for Fintech",
-    price: "₹3,500",
-    gender: "female",
-  },
-  {
-    id: 3,
-    user: "Rohan M.",
-    role: "Dev",
-    title: "Secure API Implementation",
-    price: "₹8,000",
-    gender: "male",
-  },
-  {
-    id: 4,
-    user: "Priya S.",
-    role: "Content",
-    title: "Technical Product Whitepaper",
-    price: "₹4,200",
-    gender: "female",
-  },
-  {
-    id: 5,
-    user: "Arjun D.",
-    role: "Dev",
-    title: "Cloud Infrastructure Setup",
-    price: "₹12,000",
-    gender: "male",
-  },
-  {
-    id: 6,
-    user: "Meera R.",
-    role: "Tutoring",
-    title: "Advanced System Design Coaching",
-    price: "₹2,500",
-    gender: "female",
-  },
+const CATEGORIES = [
+  ["01", "Design & branding", "Logos, decks, social, Canva, UI"],
+  ["02", "Research & leads", "Market scans, lead lists, summaries"],
+  ["03", "Presentations & docs", "Pitch decks, reports, proposals"],
+  ["04", "Data & operations", "Entry, cleanup, testing, uploads"],
+  ["05", "Coding & automation", "Scripts, fixes, small builds"],
+  ["06", "Writing & content", "Articles, captions, scripts, edits"],
+  ["07", "Tutoring & mentoring", "1:1 sessions, mock interviews, notes"],
 ];
 
-// Live Feed items for mobile hero
-const liveFeedItems = [
-  { id: 1, type: "Gig" as const, title: "React Performance Audit", price: "₹4,500" },
-  { id: 2, type: "Gig" as const, title: "Mobile App Logic Review", price: "₹6,000" },
-  { id: 3, type: "Gig" as const, title: "Database Migration Script", price: "₹3,200" },
-  { id: 4, type: "Gig" as const, title: "UI Components Library", price: "₹10,000" },
-  { id: 5, type: "Gig" as const, title: "SEO Performance Audit", price: "₹2,800" },
+const STEPS = [
+  ["Post a task", "Describe what you need and set a budget. Posting is free."],
+  ["Match a student", "Pick a verified student yourself, or let us assign one."],
+  ["Approve and pay", "Funds wait in escrow. You release them only when the work is right."],
 ];
 
-const useScrollPosition = () => {
-  const [scrollY, setScrollY] = useState(0);
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-  return scrollY;
-};
+const FAQS = [
+  ["How does it work?", "Post a task for free. Pick a verified student yourself, or let DoItForMe assign one for you. Your payment is held in escrow and released only once you approve the delivered work."],
+  ["What are the fees?", "Posting is always free. A flat fee comes out of the worker's payout only when work is delivered: 5% for student-to-student tasks, 10% for business tasks, whether self-serve or fully managed."],
+  ["Is my money safe?", "Yes. Funds sit in escrow from the moment you pay, and the student is paid only after you approve. If something is wrong you can request changes or open a dispute, and the money stays held until it is resolved."],
+  ["Who are the students?", "Every student is identity-verified before they can work, across school, college and university. You can see ratings, completion rate and skills before you hire."],
+  ["What is Managed?", "If you would rather not run it yourself, DoItForMe assigns a vetted student, oversees the timeline, and reviews the work before it reaches you. The fee stays a flat 10%."],
+];
 
-// -------------------------------------------------------
-// MAIN COMPONENT
-// -------------------------------------------------------
 export default function LandingPage() {
   const router = useRouter();
-  const scrollY = useScrollPosition();
 
-  // State
-  const [faqTab, setFaqTab] = useState<"students" | "posters">("students");
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [loadingComplete, setLoadingComplete] = useState(false);
-  const [isSlothLoading, setIsSlothLoading] = useState(false);
-  const [clickPos, setClickPos] = useState({ x: 0, y: 0 });
-  const [activeGigIndex, setActiveGigIndex] = useState(0);
-
-  // --- NEW: Preloader and Cooldown Logic ---
   const [isAssetReady, setIsAssetReady] = useState(false);
   const [shouldShowPreloader, setShouldShowPreloader] = useState(true);
-  
-  // Auth state for Admin link
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+
   const supabase = supabaseBrowser();
 
   useEffect(() => {
@@ -204,1089 +122,344 @@ export default function LandingPage() {
     });
   }, [supabase]);
 
-  // 1. Session & Cooldown Check (5 mins)
   useEffect(() => {
-    const LAST_PRELOAD_TIME = "dfm_last_preload";
-    const ONE_HOUR = 2 * 60 * 1000;
-
-    const lastSeen = localStorage.getItem(LAST_PRELOAD_TIME);
+    const KEY = "dfm_last_preload";
+    const WINDOW = 2 * 60 * 1000;
+    const lastSeen = localStorage.getItem(KEY);
     const now = Date.now();
-
-    if (lastSeen && (now - parseInt(lastSeen)) < ONE_HOUR) {
+    if (lastSeen && now - parseInt(lastSeen) < WINDOW) {
       setShouldShowPreloader(false);
       setLoadingComplete(true);
       setIsAssetReady(true);
     } else {
-      localStorage.setItem(LAST_PRELOAD_TIME, now.toString());
+      localStorage.setItem(KEY, now.toString());
     }
   }, []);
 
-  // 2. Asset Preloading (Logo and Sloth)
   useEffect(() => {
-    const criticalImages = ["/Doitforme_logo.png"];
-    let loaded = 0;
-
-    criticalImages.forEach((src) => {
-      const img = new window.Image();
-      img.src = src;
-      img.onload = () => {
-        loaded++;
-        if (loaded === criticalImages.length) {
-          setIsAssetReady(true);
-        }
-      };
-      img.onerror = () => {
-        loaded++;
-        if (loaded === criticalImages.length) setIsAssetReady(true);
-      };
-    });
+    const img = new window.Image();
+    img.src = "/logo.png";
+    img.onload = () => setIsAssetReady(true);
+    img.onerror = () => setIsAssetReady(true);
   }, []);
 
-  const activeGig = gigsMock[activeGigIndex];
-
-  // Cycle Gigs
   useEffect(() => {
-    if (!loadingComplete) return;
-    const interval = setInterval(() => {
-      setActiveGigIndex((prev) => (prev + 1) % gigsMock.length);
-    }, 3500);
-    return () => clearInterval(interval);
-  }, [loadingComplete]);
-
-  // Mobile Live Feed cycling
-  const [mobileFeedIndex, setMobileFeedIndex] = useState(0);
-  useEffect(() => {
-    if (!loadingComplete) return;
-    const interval = setInterval(() => {
-      setMobileFeedIndex((prev) => (prev + 1) % liveFeedItems.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [loadingComplete]);
-
-  const visibleFeedItems = [
-    liveFeedItems[mobileFeedIndex % liveFeedItems.length],
-    liveFeedItems[(mobileFeedIndex + 1) % liveFeedItems.length],
-    liveFeedItems[(mobileFeedIndex + 2) % liveFeedItems.length],
-  ];
-
-  // Mouse Spotlight
-  const mousePos = useRef({ x: 0, y: 0 });
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mousePos.current = { x: e.clientX, y: e.clientY };
-      document.documentElement.style.setProperty('--mouse-x', `${e.clientX}px`);
-      document.documentElement.style.setProperty('--mouse-y', `${e.clientY}px`);
-    };
-    window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) element.scrollIntoView({ behavior: "smooth" });
-  };
+  const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  const goEarn = () => router.push(userEmail ? "/dashboard" : "/login");
+  const goHire = () => router.push("/company/onboarding");
+  const isAdmin = userEmail === "betala911@gmail.com" || userEmail === "doitforme.in@gmail.com";
 
-  const toggleFAQ = (i: number) => {
-    setOpenFaq(openFaq === i ? null : i);
-  };
-
-  const handleLogin = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setClickPos({ x: e.clientX, y: e.clientY });
-    setIsSlothLoading(true);
-    setTimeout(() => router.push("/login"), 1200);
-  };
+  const display = { fontFamily: "'Space Grotesk', sans-serif" } as const;
 
   return (
-    <div className="min-h-screen bg-[#0B0B11] text-white overflow-x-hidden relative selection:bg-brand-purple selection:text-white font-sans touch-manipulation">
-
-      {/* 1. CURTAIN REVEAL (Updated Logic) */}
+    <div className="min-h-screen bg-[var(--background)] text-white relative selection:bg-[var(--brand-purple)] selection:text-white font-sans overflow-x-hidden">
       <AnimatePresence>
         {shouldShowPreloader && !loadingComplete && (
-          <Preloader
-            isAssetReady={isAssetReady}
-            onComplete={() => setLoadingComplete(true)}
-          />
+          <Preloader isAssetReady={isAssetReady} onComplete={() => setLoadingComplete(true)} />
         )}
       </AnimatePresence>
 
-      {/* 2. SLOTH LOADING */}
-      {isSlothLoading && (
-        <div
-          className="fixed z-[10000] pointer-events-none will-change-transform"
-          style={{
-            left: clickPos.x,
-            top: clickPos.y,
-            transform: 'translate(-50%, -20%) translateZ(0)'
-          }}
-        >
-          <div className="relative w-16 h-16 origin-[top_center] animate-[spin_0.4s_linear_infinite]">
-            <Image
-              src="/sloth (1).png"
-              alt="Loading..."
-              fill
-              className="object-contain drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* --- ATMOSPHERE: LIGHTER BLUE & DEEP CYAN --- */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.1, 0.15, 0.1] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-[10%] -left-[10%] w-[60vw] h-[60vw] bg-[#8825F5] rounded-full blur-[150px] opacity-10 will-change-transform"
-          style={{ transform: 'translateZ(0)' }}
-        />
-        <motion.div
-          animate={{ scale: [1, 1.25, 1], opacity: [0.08, 0.12, 0.08] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-          className="absolute top-[10%] right-[-10%] w-[50vw] h-[50vw] bg-[#8825F5] rounded-full blur-[180px] opacity-10 will-change-transform"
-          style={{ transform: 'translateZ(0)' }}
-        />
-      </div>
-
-      {/* MOUSE SPOTLIGHT */}
-      <div
-        className="fixed inset-0 pointer-events-none z-0 transition-opacity duration-700 mix-blend-overlay"
-        style={{
-          background: `radial-gradient(600px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.03), transparent 80%)`
-        }}
-      />
-
-      {/* NAVBAR */}
-      <header className="fixed z-50 w-full top-0 left-0 transition-all duration-500 bg-[#0B0B11]/85 backdrop-blur-2xl border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-14 md:h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 md:gap-3 group">
-            <div className="relative w-9 h-9 md:w-16 md:h-16 transition-transform duration-500 group-hover:rotate-12">
-              <Image src="/Doitforme_logo.png" alt="logo" fill className="object-contain" />
-            </div>
+      {/* ============ NAV ============ */}
+      <header className={`sticky top-0 z-50 transition-colors duration-300 ${scrolled ? "bg-[var(--background)]/80 backdrop-blur-xl border-b border-white/[0.06]" : ""}`}>
+        <div className="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="relative w-7 h-7"><Image src="/logo.png" alt="DoItForMe" fill className="object-contain" /></div>
+            <span className="font-semibold text-base tracking-tight" style={display}>DoItForMe</span>
           </Link>
-
-          <nav className="hidden md:flex items-center gap-3">
-            <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">Process</button>
-            <button onClick={() => scrollToSection('faq')} className="text-sm font-medium text-white/60 hover:text-white transition-colors px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/10">FAQ</button>
-            <Link href="/company/onboarding" className="text-sm font-bold text-purple-400 hover:text-white transition-colors px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/30 shadow-[0_0_10px_rgba(136,37,245,0.2)]">Hire Talent</Link>
-
-            {(userEmail === "betala911@gmail.com" || userEmail === "doitforme.in@gmail.com") && (
-              <Link href="/admin" className="text-sm font-bold text-red-500 hover:text-white transition-colors px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 hover:bg-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]">Access Admin</Link>
-            )}
+          <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-white/50">
+            <button onClick={() => scrollToSection("work")} className="hover:text-white transition-colors">Work</button>
+            <button onClick={() => scrollToSection("how")} className="hover:text-white transition-colors">How it works</button>
+            <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors">Pricing</button>
+            <button onClick={() => scrollToSection("faq")} className="hover:text-white transition-colors">FAQ</button>
+            {isAdmin && <Link href="/admin" className="hover:text-white transition-colors">Admin</Link>}
           </nav>
-
-          <div className="flex items-center gap-3 md:gap-4 md:ml-4">
-            <button onClick={handleLogin} className="px-5 py-2 md:px-6 md:py-2.5 rounded-full text-xs font-bold text-black bg-white hover:bg-zinc-200 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-95 whitespace-nowrap">
-              Login
-            </button>
+          <div className="flex items-center gap-1">
+            <button onClick={goEarn} className="text-[13px] font-medium text-white/70 hover:text-white px-3 py-2 transition-colors">{userEmail ? "Dashboard" : "Log in"}</button>
+            <button onClick={goHire} className="text-[13px] font-medium text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 px-4 py-2 rounded-full transition-all">Get work done</button>
           </div>
         </div>
       </header>
 
-      {/* -------------------------------------------------------
-          HERO SECTION
-      --------------------------------------------------------- */}
-      <section className="relative z-10 lg:min-h-[90vh] overflow-visible">
-        {/* Hero Background Glow */}
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#8825F5]/15 rounded-full blur-[150px]" />
-          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#8825F5]/30 to-transparent" />
-        </div>
-
-        {/* ============ MOBILE HERO (lg:hidden) ============ */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="lg:hidden relative z-10 px-5 pt-28 pb-14 min-h-[90vh] flex flex-col justify-center"
-        >
-          {/* Eyebrow Badge */}
-          <div
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full mb-5 w-fit"
-            style={{
-              background: 'linear-gradient(135deg, rgba(136, 37, 245, 0.15) 0%, rgba(136, 37, 245, 0.05) 100%)',
-              border: '1px solid rgba(136, 37, 245, 0.3)',
-              backdropFilter: 'blur(12px)',
-            }}
-          >
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-[pulse_2s_ease-in-out_infinite] shadow-[0_0_6px_rgba(168,85,247,0.6)]"></span>
-            <span className="text-[10px] font-bold tracking-[0.15em] text-[#C084FC] uppercase">India's Campus Freelance Network</span>
-          </div>
-
-          {/* Headline Block with Floating Sloth */}
-          <div className="relative mb-4">
-            {/* Floating Sloth - top right, repositioned to avoid collision */}
-            <motion.div
-              animate={{
-                y: [0, -8, 0],
-                rotate: [-2, 2, -2],
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -top-6 right-0 z-30 w-[80px] h-[80px] sm:w-[105px] sm:h-[105px]"
-            >
-              <Image
-                src="/hisloth.png"
-                alt="Sloth mascot"
-                width={105}
-                height={105}
-                className="object-contain"
-                style={{ filter: 'drop-shadow(0 0 15px rgba(136, 37, 245, 0.4)) drop-shadow(0 10px 20px rgba(0,0,0,0.3))' }}
-                priority
-              />
-            </motion.div>
-
-            {/* Stacked Headline — Space Grotesk Display */}
-            <div style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white">
-                Earn.
-              </h1>
-              <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] mt-1">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C084FC] via-[#8825F5] to-[#6D28D9]">
-                  Outsource.
-                </span>
-              </h1>
-              <h1 className="text-[2.8rem] font-extrabold leading-[1] tracking-[-0.03em] text-white mt-1">
-                Get it done.
-              </h1>
+      {/* ============ HERO ============ */}
+      <section className="relative max-w-6xl mx-auto px-5 md:px-8 pt-16 md:pt-24 pb-20">
+        <div className="grid lg:grid-cols-[1fr_400px] gap-10 items-center">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={loadingComplete ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] mb-7">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-purple-soft)]" />
+              <span className="text-[11px] font-medium tracking-[0.1em] text-white/60 uppercase">India&apos;s verified student workforce</span>
             </div>
-          </div>
-
-          {/* Subheadline */}
-          <p className="text-[15px] text-[#B8A9D4] leading-relaxed mb-7">
-            The campus freelance network where you earn and outsource skills — all in one place.
-          </p>
-
-          {/* CTA Buttons — Stacked with safe-area padding */}
-          <div className="flex flex-col gap-3 w-full max-w-[340px] mx-auto mb-8 overflow-visible pb-[env(safe-area-inset-bottom)]">
-            <motion.button
-              onClick={handleLogin}
-              whileTap={{ scale: 0.97 }}
-              className="group w-full px-6 py-4 rounded-full text-sm font-bold text-white flex items-center justify-center gap-2 transition-all duration-300 bg-purple-600 hover:bg-purple-700"
-              style={{
-                boxShadow: '0 0 25px rgba(136, 37, 245, 0.35), 0 4px 15px rgba(0, 0, 0, 0.3)',
-              }}
-            >
-              Start Hustling
-              <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
-            </motion.button>
-            <button
-              onClick={() => scrollToSection('how-it-works')}
-              className="w-full px-6 py-4 rounded-full text-sm font-bold text-white/90 border border-purple-500/40 hover:border-purple-400/70 transition-all flex items-center justify-center gap-2 active:scale-[0.97] bg-transparent"
-            >
-              How It Works
-            </button>
-          </div>
-        </motion.div>
-
-        {/* ============ DESKTOP HERO (hidden lg:grid) ============ */}
-        <div className="relative max-w-7xl mx-auto px-6 lg:px-12 pt-20 pb-20 hidden lg:grid lg:grid-cols-2 gap-12 items-center lg:min-h-[85vh]">
-
-          {/* LEFT: CONTENT */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="lg:order-1 text-left flex flex-col items-start relative z-20"
-          >
-
-            {/* Heading */}
-            <h1 className="text-7xl font-black leading-[1.05] tracking-tight text-white mb-4 w-full" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              Earn. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C084FC] via-[#8825F5] to-[#6D28D9]">Outsource.</span><br /> Get it done.
+            <h1 className="font-bold tracking-tight leading-[1.05] text-[clamp(2.4rem,5.5vw,4rem)]" style={display}>
+              Get real work done by<br className="hidden sm:block" /> India&apos;s <span className="text-[var(--brand-purple-soft)]">top students.</span>
             </h1>
-
-            {/* Subheading */}
-            <p className="text-2xl text-white/85 leading-snug mb-4 w-full">
-              <span className="font-bold text-[#C084FC]">India's Campus Freelance Network</span>
+            <p className="mt-6 text-[17px] text-white/60 leading-relaxed max-w-xl">
+              Post a task, match with a verified student, and pay only when the work is approved. Design, research, decks, data and more, every payment protected by escrow.
             </p>
-
-            {/* Description */}
-            <p className="text-base text-zinc-400 leading-relaxed max-w-md mb-10 pr-4">
-              Connect skills with opportunities. Join India's campus freelance network for verified students and companies.
-            </p>
-
-            {/* Desktop: Two Buttons */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleLogin}
-                className="px-7 py-3.5 rounded-full text-sm font-bold border-2 border-white/20 text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 active:scale-95 backdrop-blur-sm shadow-[0_0_15px_rgba(255,255,255,0.05)]"
-              >
-                Explore Campus <ArrowRight size={16} />
+            <div className="mt-9 flex flex-col sm:flex-row gap-3 max-w-md">
+              <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                I need work done <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
               </button>
-              <button
-                onClick={() => scrollToSection('how-it-works')}
-                className="px-7 py-3.5 rounded-full text-sm font-bold border-2 border-white/10 text-white/80 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2 active:scale-95"
-              >
-                How it works
+              <button onClick={goEarn} className="px-6 py-3.5 rounded-full text-[15px] font-semibold text-white/90 border border-white/12 hover:bg-white/[0.04] transition-all">
+                I want to earn
               </button>
             </div>
           </motion.div>
 
-          {/* RIGHT: SLOTH MASCOT + FLOATING CARDS */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={loadingComplete ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative flex items-center justify-center h-[580px] w-full lg:order-2 -ml-16"
-          >
-            {/* Multi-layer purple glow */}
-            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#8825F5]/10 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute top-1/2 left-[45%] -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] bg-[#8825F5]/20 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute top-[55%] left-[45%] -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] bg-[#8825F5]/25 rounded-full blur-[60px] pointer-events-none" />
-            <div className="absolute bottom-[60px] left-[40%] -translate-x-1/2 w-[300px] h-[80px] bg-[#8825F5]/15 rounded-full blur-[40px] pointer-events-none" />
-
-            {/* Sparkle particles */}
-            <div className="absolute top-[15%] left-[30%] w-1.5 h-1.5 bg-white/40 rounded-full animate-pulse pointer-events-none" />
-            <div className="absolute top-[25%] right-[15%] w-1 h-1 bg-white/30 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '0.5s' }} />
-            <div className="absolute bottom-[30%] left-[20%] w-1 h-1 bg-[#8825F5]/50 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '1s' }} />
-            <div className="absolute top-[40%] right-[30%] w-1.5 h-1.5 bg-white/20 rounded-full animate-pulse pointer-events-none" style={{ animationDelay: '1.5s' }} />
-
-            {/* Sloth Mascot */}
-            <motion.div
-              className="relative z-30"
-              style={{ animation: "breathe 4s ease-in-out infinite" }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={loadingComplete ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.8, delay: 0.6 }}
-            >
-              <Image
-                src="/hisloth.png"
-                alt="Hustler mascot"
-                width={440}
-                height={440}
-                className="object-contain"
-                style={{
-                  filter: 'drop-shadow(0 0 30px rgba(136, 37, 245, 0.35)) drop-shadow(0 0 60px rgba(136, 37, 245, 0.2)) drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4))'
-                }}
-                priority
-              />
-            </motion.div>
-
-            {/* Floating: Revolving Gig Card (Top Right) */}
-            <div className="absolute top-[30px] -right-2 z-40">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeGigIndex}
-                  initial={{ opacity: 0, y: 15, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -15, scale: 0.95 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="will-change-transform"
-                >
-                  <div
-                    className="relative p-4 rounded-2xl w-[190px]"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)',
-                      backdropFilter: 'blur(20px)',
-                      WebkitBackdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255,255,255,0.18)',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
-                    }}
-                  >
-                    <div className="flex items-center gap-2.5 mb-2.5">
-                      <div className="w-9 h-9 rounded-full overflow-hidden shadow-md ring-1 ring-white/20">
-                        <img
-                          src={`https://api.dicebear.com/9.x/adventurer/svg?seed=${encodeURIComponent(activeGig.user + (activeGig.gender === 'male' ? ' boy' : ' girl'))}`}
-                          alt={activeGig.user}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <span className="text-sm font-bold text-white">{activeGig.user}</span>
-                    </div>
-                    <p className="text-[11px] text-white/60 font-medium leading-snug mb-2.5">{activeGig.title}</p>
-                    <div className="text-right">
-                      <span className="text-lg font-bold text-[#C084FC]">{activeGig.price}</span>
-                    </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
+          {/* Sloth with a soft radial glow, no hard shape */}
+          <motion.div initial={{ opacity: 0 }} animate={loadingComplete ? { opacity: 1 } : {}} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:flex items-center justify-center h-[380px]">
+            <div className="absolute w-72 h-72 rounded-full bg-[var(--brand-purple)]/20 blur-[90px]" />
+            <div className="relative w-[260px] h-[340px] animate-[float_9s_ease-in-out_infinite]">
+              <Image src="/slohero.png" alt="DoItForMe sloth" fill className="object-contain" priority />
             </div>
-
-            {/* Floating: Funds Released */}
-            <motion.div
-              animate={{ y: [0, 8, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              className="absolute bottom-[140px] -right-4 z-50 will-change-transform"
-            >
-              <div
-                className="flex items-center gap-3 px-5 py-3.5 rounded-2xl"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
-                }}
-              >
-                <div className="p-1.5 bg-green-500/20 rounded-full">
-                  <CheckCircle2 size={22} className="text-green-400" />
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-white">Funds</div>
-                  <div className="text-sm font-bold text-white">Released</div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Floating: Total Earnings */}
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-              className="absolute bottom-[50px] right-[15px] z-40 will-change-transform"
-            >
-              <div
-                className="px-6 py-4 rounded-2xl"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(30, 20, 60, 0.8) 0%, rgba(20, 15, 40, 0.9) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(136, 37, 245, 0.25)',
-                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(136, 37, 245, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)'
-                }}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#C084FC] shadow-[0_0_6px_rgba(192,132,252,0.5)]"></span>
-                  <span className="text-xs font-medium text-white/50">Total Earnings</span>
-                </div>
-                <div className="text-3xl font-bold text-white">₹12,450</div>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
-      </section>
 
-      {/* -------------------------------------------------------
-          SECTION 2: EVERYTHING YOU NEED
-      --------------------------------------------------------- */}
-      <section className="relative z-10 overflow-hidden pt-16 md:pt-24 pb-8 md:pb-12 border-y border-white/5 bg-[#0B0B11]">
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute top-[30%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[600px] bg-[#8825F5]/8 rounded-full blur-[160px]" />
-        </div>
-
-        <div className="relative max-w-6xl mx-auto px-6">
-
-          {/* Heading */}
-          <div className="text-center mb-10 md:mb-14">
-            <h2 className="text-[1.75rem] sm:text-4xl md:text-[2.75rem] lg:text-5xl xl:text-6xl lg:whitespace-nowrap font-black italic leading-[1.1] tracking-tight text-white mb-4 md:mb-5">
-              Secure Architecture. <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/80">Scalable Talent.</span>
-            </h2>
-            <p className="text-sm md:text-base lg:text-lg text-zinc-400 max-w-lg mx-auto">
-              Execute mission-critical projects with verified expertise.
-            </p>
-          </div>
-
-          {/* Two Feature Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 mb-10 md:mb-14">
-            {/* Card 1: Earn Money */}
-            <div
-              className="relative rounded-2xl p-5 pb-6 overflow-hidden group"
-              style={{
-                background: 'linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-              }}
-            >
-              <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-[#8825F5]/10 rounded-full blur-[80px] pointer-events-none" />
-              <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
-                <Image
-                  src="/moneysloth.png"
-                  alt="Earn Money"
-                  width={280}
-                  height={280}
-                  className="object-contain relative z-10"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(136, 37, 245, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
-                />
-                <motion.div
-                  animate={{ y: [0, -5, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="absolute top-4 right-2 z-20"
-                >
-                  <div
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(136, 37, 245, 0.3) 0%, rgba(136, 37, 245, 0.1) 100%)',
-                      backdropFilter: 'blur(12px)',
-                      border: '1px solid rgba(136, 37, 245, 0.3)',
-                    }}
-                  >
-                    <span className="text-[#C084FC]">₹</span>4,500 Payout
-                  </div>
-                </motion.div>
-              </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Build & Earn</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">Monetize your technical skills by solving real-world challenges.</p>
-            </div>
-
-            {/* Card 2: Outsource Tasks */}
-            <div
-              className="relative rounded-2xl p-5 pb-6 overflow-hidden group"
-              style={{
-                background: 'linear-gradient(160deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-              }}
-            >
-              <div className="absolute top-0 left-0 w-[200px] h-[200px] bg-[#8825F5]/10 rounded-full blur-[80px] pointer-events-none" />
-              <div className="relative h-[240px] md:h-[280px] mb-4 flex items-center justify-center overflow-visible">
-                <Image
-                  src="/tasksloth.png"
-                  alt="Deploy Projects"
-                  width={280}
-                  height={280}
-                  className="object-contain relative z-10"
-                  style={{ filter: 'drop-shadow(0 0 20px rgba(136, 37, 245, 0.2)) drop-shadow(0 15px 30px rgba(0, 0, 0, 0.3))' }}
-                />
-                <motion.div
-                  animate={{ y: [0, -6, 0] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-                  className="absolute top-2 right-0 z-20"
-                >
-                  <div
-                    className="px-3 py-2 rounded-xl text-[10px]"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.75) 100%)',
-                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
-                    }}
-                  >
-                    <div className="flex items-center gap-1 text-zinc-600 font-medium mb-0.5">
-                      <ArrowRight size={8} className="rotate-[-45deg]" /> Review App Logic
-                    </div>
-                    <div className="text-right text-sm font-bold text-[#C9A9FF]">₹6,500</div>
-                  </div>
-                </motion.div>
-              </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Deploy Projects</h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">Outsource mission-critical work to a verified talent pool.</p>
-            </div>
-
-          </div>
-
-          {/* Bottom Earnings Ticker */}
-          <div className="flex justify-center">
-            <div
-              className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
-                backdropFilter: 'blur(16px)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
-              }}
-            >
-              <div className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-[#8825F5]/30">
-                <Image src="/Doitforme_logo.png" alt="Avatar" width={32} height={32} className="object-cover" />
-              </div>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeGigIndex}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-sm text-white"
-                >
-                  <span className="font-bold">{activeGig.user.split('.')[0]}</span>
-                  <span className="text-zinc-400"> earned </span>
-                  <span className="font-bold text-[#C084FC]">{activeGig.price}</span>
-                  <span className="text-zinc-400"> this week</span>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
-
-        </div>
-      </section >
-
-      {/* B2B Company Section */}
-      <section className="w-full max-w-5xl mx-auto px-4 py-16">
-        <div className="text-center mb-10">
-          <span className="text-xs font-semibold tracking-widest text-purple-400 uppercase mb-3 block">For Companies</span>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Built for companies too.
-          </h2>
-          <p className="text-gray-400 text-lg max-w-xl mx-auto">
-            Post tasks directly to verified campus talent. No recruiters. No CVs. Fast turnaround.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
-              <ShieldCheck className="w-5 h-5 text-purple-400" />
-            </div>
-            <h3 className="text-white font-semibold mb-2">Verified students</h3>
-            <p className="text-gray-400 text-sm">AI-verified student IDs — school, college or university. Every student is authenticated before they can work.</p>
-          </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
-              <Lock className="w-5 h-5 text-purple-400" />
-            </div>
-            <h3 className="text-white font-semibold mb-2">Escrow protected</h3>
-            <p className="text-gray-400 text-sm">Pay safely into escrow. Funds release only when work is approved. Zero payment risk.</p>
-          </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center mb-4">
-              <Zap className="w-5 h-5 text-purple-400" />
-            </div>
-            <h3 className="text-white font-semibold mb-2">Fast turnaround</h3>
-            <p className="text-gray-400 text-sm">Tasks completed within hours not days. Campus talent is always nearby and always available.</p>
-          </div>
-        </div>
-        <div className="text-center">
-          <Link
-            href="/company/onboarding"
-            className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold px-8 py-3 rounded-xl transition-colors"
-          >
-            Onboard Your Company <ArrowRight className="w-4 h-4" />
-          </Link>
+        {/* Trust strip */}
+        <div className="mt-14 pt-7 border-t border-white/[0.06] flex flex-wrap items-center gap-x-10 gap-y-3">
+          {["Identity-verified students", "Escrow on every task", "24-hour review window", "Flat 5 to 10% fee"].map((t) => (
+            <span key={t} className="text-[13px] text-white/45">{t}</span>
+          ))}
         </div>
       </section>
 
-      {/* -------------------------------------------------------
-          SECTION 3: LIVE CAMPUS FEED
-      --------------------------------------------------------- */}
-      < section className="pt-6 pb-10 md:pt-12 md:pb-32 bg-[#0B0B11] relative z-10 border-y border-white/5 overflow-hidden" >
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-24 items-center">
-
-          {/* LEFT: Static Content */}
-          <div className="relative z-20">
-            {/* Small Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8825F5]/30 bg-[#8825F5]/10 mb-4 w-fit">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-[pulse_2s_infinite]"></span>
-              <span className="text-[10px] font-bold tracking-widest text-[#C084FC] uppercase">Live on your campus</span>
-            </div>
-
-            {/* Headline */}
-            <h2 className="text-2xl sm:text-5xl lg:text-6xl font-black leading-[1.05] tracking-tight text-white mb-3 md:mb-6">
-              See what’s happening right now.
+      {/* ============ WORK (editorial list) ============ */}
+      <section id="work" className="relative max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
+        <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-12 lg:gap-20">
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">Real deliverables</p>
+            <h2 className="font-bold tracking-tight leading-[1.05] text-[clamp(1.9rem,3.5vw,2.8rem)]" style={display}>
+              Not errands.<br />Actual work.
             </h2>
+            <p className="text-white/55 mt-5 max-w-sm leading-relaxed text-[15px]">From a logo by tonight to a clean dataset by Friday. These are just the popular ones. If you can describe it, a verified student can probably do it.</p>
+          </div>
 
-            {/* Supporting Text */}
-            <p className="text-sm md:text-lg text-zinc-400 leading-relaxed mb-5 md:mb-8 max-w-md">
-              Browse real gigs and tasks posted by students on your campus.
-            </p>
-
-            {/* CTA Button */}
-            <button
-              onClick={handleLogin}
-              className="w-full sm:w-auto px-8 py-4 rounded-full text-sm font-bold bg-white text-black hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-            >
-              Explore Campus <ArrowRight size={18} />
+          <div>
+            {CATEGORIES.map(([num, title, desc], i) => (
+              <button key={num} onClick={goHire} className={`group w-full text-left flex items-center gap-6 py-6 ${i === 0 ? "border-t" : ""} border-b border-white/[0.07] hover:px-3 transition-all`}>
+                <span className="text-[12px] font-mono text-white/25 tabular-nums">{num}</span>
+                <div className="flex-1">
+                  <h3 className="text-lg md:text-xl font-semibold tracking-tight group-hover:text-[var(--brand-purple-soft)] transition-colors" style={display}>{title}</h3>
+                  <p className="text-white/40 text-[14px] mt-0.5">{desc}</p>
+                </div>
+                <ArrowUpRight size={20} className="text-white/15 group-hover:text-white/70 transition-colors shrink-0" />
+              </button>
+            ))}
+            {/* Open-ended capstone: signals the list is examples, not a closed menu */}
+            <button onClick={goHire} className="group w-full text-left flex items-center gap-6 py-6 border-b border-white/[0.07] hover:px-3 transition-all">
+              <span className="text-[12px] font-mono text-[var(--brand-purple-soft)]/50 tabular-nums">08</span>
+              <div className="flex-1">
+                <h3 className="text-lg md:text-xl font-semibold tracking-tight text-[var(--brand-purple-soft)]" style={display}>Anything else</h3>
+                <p className="text-white/40 text-[14px] mt-0.5">Describe your task, name a budget, and the right student finds it.</p>
+              </div>
+              <ArrowUpRight size={20} className="text-[var(--brand-purple-soft)]/60 group-hover:text-[var(--brand-purple-soft)] transition-colors shrink-0" />
             </button>
           </div>
-
-          {/* RIGHT: Live Feed Panel & Sloth */}
-          <div className="relative h-[400px] md:h-[550px] w-full flex items-center justify-center lg:justify-end">
-
-            {/* Background Glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#8825F5]/15 rounded-full blur-[100px] pointer-events-none"></div>
-
-            {/* Sloth beside feed */}
-            <div className="absolute top-[60%] lg:top-[50%] -left-40 lg:-left-20 -translate-y-1/2 z-30 hidden md:block">
-              <Image
-                src="/sloth_v2.png"
-                alt="Confident Sloth"
-                width={200}
-                height={200}
-                className="object-contain filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]"
-              />
-            </div>
-
-            {/* Feed Container */}
-            <div className="relative w-full max-w-[420px] h-[400px] md:h-[500px] rounded-3xl border border-white/10 bg-[#0A0A0E]/80 backdrop-blur-xl shadow-2xl overflow-hidden flex flex-col z-20">
-
-              {/* Header */}
-              <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between z-20 relative">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-white uppercase tracking-wider">Live Feed</span>
-                </div>
-                <span className="text-[10px] text-green-400 font-bold bg-green-400/10 px-2.5 py-1.5 rounded-md border border-green-400/20 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Auto-updating
-                </span>
-              </div>
-
-              {/* Feed Items (Auto-scroll animation) */}
-              <div className="flex-1 overflow-hidden relative cursor-pointer group" onClick={handleLogin}>
-                {/* Blur Overlay - Bottom Half */}
-                <div className="absolute inset-x-0 bottom-0 h-[280px] bg-gradient-to-t from-[#0A0A0E] via-[#0A0A0E]/95 to-transparent backdrop-blur-[2px] flex flex-col items-center justify-end pb-10 z-20 group-hover:via-[#0A0A0E]/90 transition-all">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center border border-white/10 backdrop-blur-sm group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(136,37,245,0.2)]">
-                      <Lock size={20} className="text-[#C084FC]" />
-                    </div>
-                    <span className="text-sm font-bold text-white max-w-[200px] text-center drop-shadow-md">
-                      Login to access campus gigs
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-4" style={{ height: '200%' }}>
-                  <motion.div
-                    animate={{ y: ["0%", "-50%"] }}
-                    transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
-                    className="flex flex-col gap-3"
-                  >
-                    {[
-                      { title: "Logo Design Needed", price: "₹800", category: "Freelance", time: "2 min ago" },
-                      { title: "Drop Lab Record to Block 4", price: "₹150", category: "Errand", time: "5 min ago" },
-                      { title: "Teach DSA for Placement Prep", price: "₹600", category: "Tutoring", time: "12 min ago" },
-                      { title: "Build Discord Bot for Server", price: "₹2,000", category: "Dev", time: "18 min ago" },
-                      { title: "Write Blog for College Newsletter", price: "₹500", category: "Content", time: "24 min ago" },
-                    ].map((item, i) => (
-                      <div key={i} className="bg-white/10 border border-white/10 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
-                        <div className="flex justify-between items-start gap-4">
-                          <h4 className="text-sm font-bold text-white leading-tight flex-1">{item.title}</h4>
-                          <span className="text-sm font-bold text-[#C084FC] whitespace-nowrap">{item.price}</span>
-                        </div>
-                        <div className="flex justify-between items-end mt-2">
-                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded bg-[#8825F5]/20 text-[#C084FC] border border-[#8825F5]/30">
-                            {item.category}
-                          </span>
-                          <span className="text-[11px] text-zinc-500 font-medium">{item.time}</span>
-                        </div>
-                      </div>
-                    ))}
-                    {/* Duplicate list to create seamless scrolling */}
-                    {[
-                      { title: "Logo Design Needed", price: "₹800", category: "Freelance", time: "2 min ago" },
-                      { title: "Drop Lab Record to Block 4", price: "₹150", category: "Errand", time: "5 min ago" },
-                      { title: "Teach DSA for Placement Prep", price: "₹600", category: "Tutoring", time: "12 min ago" },
-                      { title: "Build Discord Bot for Server", price: "₹2,000", category: "Dev", time: "18 min ago" },
-                      { title: "Write Blog for College Newsletter", price: "₹500", category: "Content", time: "24 min ago" },
-                    ].map((item, i) => (
-                      <div key={`dup-${i}`} className="bg-white/10 border border-white/10 rounded-2xl p-4 flex flex-col gap-2 relative overflow-hidden">
-                        <div className="flex justify-between items-start gap-4">
-                          <h4 className="text-sm font-bold text-white leading-tight flex-1">{item.title}</h4>
-                          <span className="text-sm font-bold text-[#C084FC] whitespace-nowrap">{item.price}</span>
-                        </div>
-                        <div className="flex justify-between items-end mt-2">
-                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-1 rounded bg-[#8825F5]/20 text-[#C084FC] border border-[#8825F5]/30">
-                            {item.category}
-                          </span>
-                          <span className="text-[11px] text-zinc-500 font-medium">{item.time}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </motion.div>
-                </div>
-              </div>
-            </div>
-
-          </div>
         </div>
-      </section >
+      </section>
 
-
-
-      {/* -------------------------------------------------------
-          THE ESSENTIALS (4 Titles Grid)
-      --------------------------------------------------------- */}
-      < section className="max-w-7xl mx-auto px-6 pt-12 md:pt-20 mb-20 md:mb-32 relative z-10" >
-        <div className="mb-12 text-center md:text-left">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">Why DoItForMe?</h2>
-          <p className="text-zinc-500 text-sm md:text-base">Built for speed, trust, and the campus gig economy.</p>
+      {/* ============ HOW IT WORKS ============ */}
+      <section id="how" className="relative max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
+        <div className="max-w-xl mb-14">
+          <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">How it works</p>
+          <h2 className="font-bold tracking-tight leading-[1.05] text-[clamp(1.9rem,3.5vw,2.8rem)]" style={display}>Three steps, fully protected.</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {[
-            { title: "Campus Gigs", desc: "Post or complete gigs — from quick errands to specialized tasks — all on campus.", icon: Briefcase },
-            { title: "Zero Friction", desc: "No CVs. No Interviews. Just verified students getting things done.", icon: Zap },
-            { title: "Escrow Protected", desc: "Your money is held safely until the gig is done or item is delivered.", icon: ShieldCheck },
-            { title: "Lightning Payouts", desc: "Instant transfers to UPI. No minimum withdrawal limits.", icon: Wallet }
-          ].map((item, i) => (
-            <div key={i} className="p-8 rounded-[32px] bg-white/[0.03] backdrop-blur-md border border-white/10 hover:bg-white/[0.05] transition-all duration-300 group active:scale-95 touch-manipulation hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)]">
-              <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-white mb-6 group-hover:scale-110 transition-transform shadow-inner shadow-black/30">
-                <item.icon size={28} className="drop-shadow-md" />
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
-              <p className="text-sm text-zinc-500 leading-relaxed">{item.desc}</p>
+        <div className="grid md:grid-cols-3 gap-px bg-white/[0.06] rounded-2xl overflow-hidden border border-white/[0.06]">
+          {STEPS.map(([t, d], i) => (
+            <div key={t} className="bg-[var(--card)] p-7 md:p-9">
+              <span className="text-[13px] font-mono text-[var(--brand-purple-soft)]/70">0{i + 1}</span>
+              <h3 className="font-semibold text-lg mt-4" style={display}>{t}</h3>
+              <p className="text-white/50 text-[14px] mt-2 leading-relaxed">{d}</p>
             </div>
           ))}
         </div>
-      </section >
+      </section>
 
-      {/* -------------------------------------------------------
-          SECTION 4: TRANSPARENCY & PRICING
-      --------------------------------------------------------- */}
-      < section id="transparency" className="pt-12 pb-20 md:pt-16 md:pb-32 bg-[#0B0B11] relative z-10 overflow-hidden" >
-        {/* Subtle Background Glows */}
-        < div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#8825F5]/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[#6D28D9]/5 rounded-full blur-[120px] pointer-events-none" />
-
-        <div className="max-w-6xl mx-auto px-6">
-          {/* Header */}
-          <div className="text-center mb-16 relative z-20">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white mb-4">
-              Simple. Transparent. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#C084FC] to-[#8825F5]">Student-Friendly.</span>
+      {/* ============ MANAGED (subtle tinted card) ============ */}
+      <section className="relative max-w-6xl mx-auto px-5 md:px-8 py-10">
+        <div className="relative rounded-3xl border border-white/[0.08] bg-[var(--card)] overflow-hidden grid md:grid-cols-[1.4fr_0.6fr] items-center">
+          <div className="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-[var(--brand-purple)]/[0.12] blur-[100px] pointer-events-none" />
+          <div className="relative p-8 md:p-12">
+            <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">DoItForMe Managed</p>
+            <h2 className="font-bold tracking-tight leading-[1.06] text-[clamp(1.8rem,3.2vw,2.6rem)]" style={display}>
+              Prefer not to manage it? We will.
             </h2>
-            <p className="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto">
-              You keep what you earn. No hidden fees.
+            <p className="text-white/55 mt-4 max-w-md leading-relaxed text-[15px]">
+              One click and DoItForMe assigns a vetted student, runs the timeline, and reviews the work before it reaches you. You deal with us, never a stranger. The fee stays a flat 10%.
             </p>
+            <button onClick={goHire} className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition-all">
+              Let us handle it <ArrowRight size={15} />
+            </button>
           </div>
-
-          {/* Pricing Card */}
-          <div className="max-w-xl mx-auto mb-16">
-
-            {/* Card 1: Services */}
-            <div className="relative rounded-[40px] p-8 lg:p-12 border border-white/10 bg-white/[0.02] backdrop-blur-3xl overflow-hidden group shadow-[0_8px_40px_rgb(0,0,0,0.5)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#8825F5]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-              <div className="relative z-10 flex flex-col h-full">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Services <span className="text-[#C084FC]">(Hustle)</span></h3>
-                    <p className="text-zinc-400 font-medium">Earn by doing tasks</p>
-                  </div>
-                  {/* Small assisting sloth */}
-                  <div className="-mt-8 -mr-4 md:-mr-6 shrink-0 relative z-20">
-                    <Image src="/moneysloth.png" alt="Earn Sloth" width={140} height={140} className="object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]" />
-                  </div>
-                </div>
-
-                <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 size={18} className="text-green-500" />
-                    <span className="text-white font-medium">Post tasks → <span className="text-green-400">Free</span></span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 size={18} className="text-green-500" />
-                    <span className="text-white font-medium">Complete tasks → <span className="text-green-400">Free (Direct Connect)</span></span>
-                  </div>
-                </div>
-
-                {/* Direct Connect vs Escrow Explanation */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Users className="w-4 h-4 text-green-400" />
-                      <span className="text-green-400 font-semibold text-sm">Direct Connect — FREE</span>
-                    </div>
-                    <p className="text-gray-400 text-sm">Connect directly with the student. Communicate, agree on terms, and pay however you choose. Best for trusted connections.</p>
-                  </div>
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <ShieldCheck className="w-4 h-4 text-purple-400" />
-                      <span className="text-purple-400 font-semibold text-sm">Escrow Protection — 3% fee</span>
-                    </div>
-                    <p className="text-gray-400 text-sm">Payment held safely until work is approved. Guaranteed payout for students. Best for new connections and tasks ₹500 and above.</p>
-                  </div>
-                </div>
-
-                {/* Fee Ladder */}
-                <div className="bg-white/10 border border-white/10 rounded-2xl p-5 mb-8">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm text-zinc-400">Direct Connect</span>
-                    <span className="font-bold text-green-400 bg-green-500/10 px-3 py-1 rounded-full text-sm">FREE</span>
-                  </div>
-                  <div className="w-full h-px bg-white/10 mb-3" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-[#C084FC] font-medium flex items-center gap-1"><ShieldCheck size={14} /> Escrow Protection (₹500+)</span>
-                    <span className="font-bold text-[#C084FC] bg-[#C084FC]/10 border border-[#C084FC]/20 px-3 py-1 rounded-full text-sm">3% fee</span>
-                  </div>
-                </div>
-
-                <div className="mt-auto bg-[#8825F5]/10 border border-[#8825F5]/20 rounded-xl py-3 px-4 text-center">
-                  <span className="text-sm font-bold text-[#C084FC]">Free to connect. 3% only when you use Escrow.</span>
-                </div>
-              </div>
+          <div className="relative h-48 md:h-64 flex items-center justify-center">
+            <div className="relative w-40 h-40 md:w-52 md:h-52 animate-[float_8s_ease-in-out_infinite]">
+              <Image src="/tasksloth.png" alt="" fill className="object-contain" sizes="208px" />
             </div>
-          </div>
-
-          {/* Pricing Examples */}
-          <div className="mb-16">
-            <h3 className="text-center font-mono text-zinc-500 uppercase tracking-widest text-sm mb-6">Real Examples</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-              {/* Example 1 - Sell Book */}
-              <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-[32px] p-8 relative overflow-hidden shadow-lg shadow-black/20">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500/80 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
-                <div className="flex justify-between items-end mb-4">
-                  <div>
-                    <h4 className="text-white font-bold mb-1">Sell Book</h4>
-                    <span className="text-2xl font-black text-white">₹500</span>
-                  </div>
-                </div>
-                <div className="space-y-2 pt-4 border-t border-white/10">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Platform fee</span>
-                    <span className="text-white text-sm font-medium">₹0</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-300 font-medium">You receive</span>
-                    <span className="text-green-400 font-bold bg-green-500/10 px-2 py-1 rounded">₹500</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Example 2 - Complete Task */}
-              <div className="bg-white/[0.03] backdrop-blur-md border border-white/10 rounded-[32px] p-8 relative overflow-hidden shadow-lg shadow-black/20">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#8825F5]/80 shadow-[0_0_12px_rgba(136,37,245,0.6)]" />
-                <div className="flex justify-between items-end mb-4">
-                  <div>
-                    <h4 className="text-white font-bold mb-1">Complete Task (Escrow)</h4>
-                    <span className="text-2xl font-black text-white">₹500</span>
-                  </div>
-                </div>
-                <div className="space-y-2 pt-4 border-t border-white/10">
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500 text-sm">Escrow fee (3%)</span>
-                    <span className="text-red-400 text-sm">-₹15</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-zinc-300 font-medium">You receive</span>
-                    <span className="text-[#C084FC] font-bold bg-[#8825F5]/20 px-2 py-1 rounded">₹485</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust Strip */}
-          <div className="border-y border-white/10 py-6 overflow-hidden">
-            <div className="grid grid-cols-2 md:flex md:justify-between items-center gap-4 md:gap-4 max-w-5xl mx-auto">
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 rounded-full bg-white/10"><ShieldCheck size={18} className="text-blue-400" /></div>
-                <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Escrow Protected</span>
-              </div>
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 rounded-full bg-white/10"><Lock size={18} className="text-pink-400" /></div>
-                <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Campus Only</span>
-              </div>
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 rounded-full bg-white/10"><DollarSign size={18} className="text-green-400" /></div>
-                <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">Transparent Fees</span>
-              </div>
-              <div className="flex items-center gap-2 md:gap-3">
-                <div className="p-2 rounded-full bg-white/10"><CheckCircle2 size={18} className="text-brand-purple" /></div>
-                <span className="text-xs md:text-sm font-bold text-white uppercase tracking-wider">No Hidden Charges</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section >
-
-      {/* HOW IT WORKS */}
-      < section id="how-it-works" className="pt-12 pb-16 md:pt-16 md:pb-24 bg-[#0A0A0A] border-y border-white/5 relative z-10" >
-        <div className="max-w-7xl mx-auto px-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-12 text-center">Simple Flow</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 md:gap-8 relative">
-            {/* THE PURPLE ANIMATED LINE (Desktop) */}
-            <div className="hidden md:block absolute top-12 left-[15%] right-[15%] h-[2px] bg-white/10 rounded-full overflow-hidden">
-              <motion.div
-                animate={{ x: ["-100%", "100%"] }}
-                transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
-                className="w-1/2 h-full bg-gradient-to-r from-transparent via-brand-purple to-transparent"
-              />
-            </div>
-
-            {/* Vertical connecting line (Mobile) */}
-            <div className="md:hidden absolute left-7 top-[56px] bottom-[56px] w-[2px] bg-gradient-to-b from-[#8825F5]/40 via-[#8825F5]/20 to-[#8825F5]/40 z-0" />
-
-            {[
-              { step: "01", title: "Create Account", desc: "Sign up and upload your Student ID for verification." },
-              { step: "02", title: "Post or Apply", desc: "Posters pay into safe Escrow. Workers apply to tasks." },
-              { step: "03", title: "Release Funds", desc: "Work approved? Funds are released directly to the worker." }
-            ].map((item, i) => (
-              <div key={i} className="relative z-10 flex flex-row md:flex-col items-center md:items-center text-left md:text-center gap-4 md:gap-0 py-4 md:py-0">
-                <motion.div
-                  initial={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)', boxShadow: '0 0 0px rgba(136, 37, 245, 0), 0 4px 12px rgba(0, 0, 0, 0.3)' }}
-                  whileInView={{ background: 'linear-gradient(135deg, #8825F5 0%, #6D28D9 100%)', boxShadow: '0 0 20px rgba(136, 37, 245, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3)' }}
-                  transition={{ duration: 0.6, delay: i * 0.2 }}
-                  viewport={{ once: true, amount: 0.8 }}
-                  className="w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center text-lg md:text-xl font-bold text-white md:mb-6 z-20 shrink-0 border border-white/10"
-                >{item.step}</motion.div>
-                <div>
-                  <h3 className="text-lg md:text-xl font-bold text-white mb-1 md:mb-2">{item.title}</h3>
-                  <p className="text-zinc-400 max-w-xs text-sm md:text-base">{item.desc}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
-      </section >
+      </section>
 
-
-
-      {/* FAQ */}
-      < section id="faq" className="py-16 md:py-24 max-w-4xl mx-auto px-6 relative z-10" >
-        <div className="text-center mb-10 md:mb-12">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">Common Questions</h2>
-          <div className="inline-flex bg-white/10 rounded-full p-1 border border-white/10">
-            <button onClick={() => setFaqTab("students")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "students" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>For Hustlers</button>
-            <button onClick={() => setFaqTab("posters")} className={`px-6 md:px-8 py-2 rounded-full text-xs md:text-sm font-bold transition-all duration-300 ${faqTab === "posters" ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-white"} active:scale-95`}>For Task Posters</button>
+      {/* ============ EARN (subtle card) ============ */}
+      <section className="relative max-w-6xl mx-auto px-5 md:px-8 py-10">
+        <div className="rounded-3xl border border-white/[0.08] bg-[var(--card)] grid md:grid-cols-[0.55fr_1.45fr] items-center overflow-hidden">
+          <div className="relative h-48 md:h-64 flex items-center justify-center order-2 md:order-1">
+            <div className="relative w-40 h-40 md:w-48 md:h-48 animate-[float_8s_ease-in-out_infinite]">
+              <Image src="/moneysloth.png" alt="" fill className="object-contain" sizes="192px" />
+            </div>
+          </div>
+          <div className="p-8 md:p-12 order-1 md:order-2">
+            <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">For students</p>
+            <h2 className="font-bold tracking-tight leading-[1.06] text-[clamp(1.8rem,3.2vw,2.6rem)]" style={display}>
+              Turn your skills into income.
+            </h2>
+            <p className="text-white/55 mt-4 max-w-md leading-relaxed text-[15px]">
+              Get verified once, then take on tasks that match what you are good at. Deliver, get approved, and the payout lands in your UPI. A flat 5 to 10% fee, nothing hidden.
+            </p>
+            <button onClick={goEarn} className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-semibold text-white border border-white/12 hover:bg-white/[0.04] transition-all">
+              Start earning <ArrowRight size={15} />
+            </button>
           </div>
         </div>
+      </section>
 
-        <div className="space-y-3 md:space-y-4">
-          {(faqTab === "students" ? studentFaq : posterFaq).map((f, i) => (
-            <div key={i} className="border border-white/10 rounded-[24px] bg-white/[0.02] backdrop-blur-md overflow-hidden shadow-lg shadow-black/10">
-              <button onClick={() => toggleFAQ(i)} className="w-full flex items-center justify-between p-6 md:p-8 text-left hover:bg-white/[0.04] transition-colors touch-manipulation">
-                <span className="font-medium text-white text-sm md:text-base pr-4">{f.q}</span>
-                <ChevronDown size={18} className={`text-zinc-500 transition-transform duration-300 shrink-0 ${openFaq === i ? "rotate-180" : ""}`} />
+      {/* ============ PRICING ============ */}
+      <section id="pricing" className="relative max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
+        <div className="max-w-xl mb-12">
+          <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">Pricing</p>
+          <h2 className="font-bold tracking-tight leading-[1.05] text-[clamp(1.9rem,3.5vw,2.8rem)]" style={display}>One flat fee. Nothing hidden.</h2>
+          <p className="text-white/55 mt-4 text-[15px]">Posting is free. The fee comes out of the payout, only when work is delivered and approved.</p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="rounded-2xl border border-white/[0.08] bg-[var(--card)] p-8">
+            <div className="flex items-baseline gap-3">
+              <span className="text-4xl font-bold tracking-tight" style={display}>5%</span>
+              <h3 className="text-[15px] font-medium text-white/70">Student economy</h3>
+            </div>
+            <p className="text-white/45 mt-4 leading-relaxed text-[14px]">Students helping students. Tutoring, decks, design, coding help. The lowest fee, escrow-protected end to end.</p>
+          </div>
+          <div className="rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--card)] p-8">
+            <div className="flex items-baseline gap-3">
+              <span className="text-4xl font-bold tracking-tight text-[var(--brand-purple-soft)]" style={display}>10%</span>
+              <h3 className="text-[15px] font-medium text-white/70">Business work</h3>
+            </div>
+            <p className="text-white/45 mt-4 leading-relaxed text-[14px]">Company tasks, self-serve or fully managed. We can assign and review the delivery for you. The fee stays the same.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ ESCROW TIMELINE ============ */}
+      <section className="relative border-y border-white/[0.06]">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-24">
+          <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-12 lg:gap-20 items-start">
+            <div className="lg:sticky lg:top-28">
+              <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">Safety</p>
+              <h2 className="font-bold tracking-tight leading-[1.05] text-[clamp(1.9rem,3.5vw,2.8rem)]" style={display}>Your money is safe the whole way.</h2>
+            </div>
+            <div className="relative pl-2">
+              <div className="absolute left-[15px] top-3 bottom-3 w-px bg-white/[0.08]" />
+              {[
+                ["You pay", "Funds go into escrow, not to the student."],
+                ["Work is delivered", "The student submits and explains exactly what was done."],
+                ["You review for 24 hours", "Approve it, request changes, or open a dispute."],
+                ["Money is released", "Only on your approval does the payout go out."],
+              ].map(([t, d], i) => (
+                <div key={t} className="relative flex gap-5 pb-8 last:pb-0">
+                  <span className="relative z-10 shrink-0 w-8 h-8 rounded-full bg-[var(--card-elevated)] border border-[var(--brand-purple)]/40 flex items-center justify-center text-[12px] font-semibold text-[var(--brand-purple-soft)]">{i + 1}</span>
+                  <div className="pt-1">
+                    <h4 className="font-semibold text-[16px]" style={display}>{t}</h4>
+                    <p className="text-white/45 text-[14px] mt-0.5 leading-relaxed">{d}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============ FAQ ============ */}
+      <section id="faq" className="relative max-w-3xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
+        <h2 className="font-bold tracking-tight text-center text-[clamp(1.9rem,3.5vw,2.6rem)] mb-12" style={display}>Questions, answered</h2>
+        <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
+          {FAQS.map(([q, a], i) => (
+            <div key={q}>
+              <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full flex items-center justify-between gap-4 py-5 text-left">
+                <span className="font-medium text-[16px]" style={display}>{q}</span>
+                <ChevronDown size={18} className={`shrink-0 text-white/35 transition-transform ${openFaq === i ? "rotate-180" : ""}`} />
               </button>
-              <div className={`px-5 md:px-6 overflow-hidden transition-all duration-300 ${openFaq === i ? 'max-h-60 pb-6 opacity-100' : 'max-h-0 opacity-0'}`}>
-                <p className="text-zinc-400 leading-relaxed text-xs md:text-sm">{f.a}</p>
-              </div>
+              {openFaq === i && <p className="pb-6 -mt-1 text-white/50 leading-relaxed text-[15px] max-w-2xl">{a}</p>}
             </div>
           ))}
         </div>
-      </section >
+      </section>
 
-      {/* FOOTER */}
-      < footer className="w-full bg-[#0B0B11] py-12 border-t border-white/5 relative z-10" >
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8">
-
-          <div className="text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-              <div className="relative w-6 h-6 grayscale opacity-50"><Image src="/Doitforme_logo.png" alt="logo" fill className="object-contain" /></div>
-              <span className="font-bold text-lg text-white">DoItForMe</span>
-            </div>
-            <p className="text-[10px] md:text-xs text-zinc-600">© 2026 DoItForMe. All rights reserved.</p>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
-            <div className="flex gap-6 text-xs md:text-sm text-zinc-500">
-              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
-              <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
-              <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
-            </div>
-
-            <div className="hidden md:block h-4 w-px bg-white/10"></div>
-
-            <div className="flex gap-4">
-              <a
-                href="https://www.linkedin.com/company/doitforme1/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-zinc-500 hover:text-[#0A66C2] transition-colors p-2"
-                aria-label="LinkedIn"
-              >
-                <Linkedin size={20} />
-              </a>
-              <a
-                href="https://www.instagram.com/doitforme.in/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-zinc-500 hover:text-[#E4405F] transition-colors p-2"
-                aria-label="Instagram"
-              >
-                <Instagram size={20} />
-              </a>
+      {/* ============ FINAL CTA (asymmetric, mascot-forward) ============ */}
+      <section className="relative max-w-6xl mx-auto px-5 md:px-8 pb-20">
+        <div className="relative rounded-3xl border border-white/[0.08] bg-[var(--card)] overflow-hidden grid md:grid-cols-[1.25fr_0.75fr] items-center">
+          <div className="absolute -left-16 -bottom-24 w-80 h-80 rounded-full bg-[var(--brand-purple)]/[0.16] blur-[110px] pointer-events-none" />
+          <div className="relative p-9 md:p-14 order-2 md:order-1">
+            <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">Get started</p>
+            <h2 className="font-bold tracking-tight leading-[1.04] text-[clamp(2rem,4vw,3.1rem)]" style={display}>
+              Ready to<br />get it done?
+            </h2>
+            <p className="text-white/55 mt-4 max-w-sm text-[15px] leading-relaxed">Post your first task in minutes, or start earning from your skills today. Every payment protected by escrow.</p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md">
+              <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition-all flex items-center justify-center gap-2">
+                I need work done <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+              </button>
+              <button onClick={goEarn} className="px-6 py-3.5 rounded-full text-[15px] font-semibold text-white/90 border border-white/12 hover:bg-white/[0.04] transition-all">I want to earn</button>
             </div>
           </div>
-
+          <div className="relative h-56 md:h-[340px] flex items-end justify-center order-1 md:order-2">
+            <div className="absolute w-56 h-56 rounded-full bg-[var(--brand-purple)]/[0.10] blur-[80px]" />
+            <div className="relative w-52 h-52 md:w-72 md:h-72 animate-[float_8s_ease-in-out_infinite] -mb-1">
+              <Image src="/hisloth.png" alt="DoItForMe sloth waving" fill className="object-contain" sizes="(max-width:768px) 208px, 288px" />
+            </div>
+          </div>
         </div>
-      </footer >
-    </div >
+      </section>
+
+      {/* ============ FOOTER ============ */}
+      <footer className="relative border-t border-white/[0.06]">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 py-14 grid md:grid-cols-[1.6fr_1fr_1fr] gap-10">
+          <div>
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="relative w-7 h-7"><Image src="/logo.png" alt="DoItForMe" fill className="object-contain" /></div>
+              <span className="font-semibold text-base tracking-tight" style={display}>DoItForMe</span>
+            </Link>
+            <p className="text-white/40 text-[14px] mt-4 max-w-xs leading-relaxed">India&apos;s verified student workforce. Get work done, safely.</p>
+            <div className="flex items-center gap-3 mt-5">
+              <a href="https://www.linkedin.com/company/doitforme" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white/45 hover:text-white transition-colors"><Linkedin size={15} /></a>
+              <a href="https://www.instagram.com/doitforme.in" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white/45 hover:text-white transition-colors"><Instagram size={15} /></a>
+              <a href="mailto:doitforme.in@gmail.com" className="w-9 h-9 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white/45 hover:text-white transition-colors"><Mail size={15} /></a>
+            </div>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35 mb-4">Platform</h4>
+            <ul className="space-y-2.5 text-[14px]">
+              <li><button onClick={() => scrollToSection("how")} className="text-white/50 hover:text-white transition-colors">How it works</button></li>
+              <li><button onClick={() => scrollToSection("pricing")} className="text-white/50 hover:text-white transition-colors">Pricing</button></li>
+              <li><Link href="/company/onboarding" className="text-white/50 hover:text-white transition-colors">Hire talent</Link></li>
+              <li><Link href="/login" className="text-white/50 hover:text-white transition-colors">Start earning</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35 mb-4">Company</h4>
+            <ul className="space-y-2.5 text-[14px]">
+              <li><Link href="/about" className="text-white/50 hover:text-white transition-colors">About</Link></li>
+              <li><Link href="/contact" className="text-white/50 hover:text-white transition-colors">Contact</Link></li>
+              <li><Link href="/terms" className="text-white/50 hover:text-white transition-colors">Terms</Link></li>
+              <li><Link href="/privacy-policy" className="text-white/50 hover:text-white transition-colors">Privacy</Link></li>
+              <li><Link href="/refund-policy" className="text-white/50 hover:text-white transition-colors">Refunds</Link></li>
+            </ul>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto px-5 md:px-8 py-6 border-t border-white/[0.06] text-[12px] text-white/35">
+          © {new Date().getFullYear()} DoItForMe. Made for India&apos;s campuses.
+        </div>
+      </footer>
+    </div>
   );
 }
-
-// -------------------------------------------------------
-// STATIC DATA (FAQs)
-// -------------------------------------------------------
-const studentFaq = [
-  { q: "What is the Hustle platform?", a: "Hustle is where users post short-term campus gigs. You can either post gigs to get help from your peers, or apply to complete them and earn money instantly as a Hustler." },
-  { q: "How do I get paid for my Hustle?", a: "Once your work is approved by the client, funds are released immediately to your linked UPI or bank account. No minimum withdrawal limits." },
-  { q: "What if the client doesn't pay?", a: "They already paid! Funds are held in Escrow before you start working. If you do the work properly, you are 100% guaranteed to get paid." },
-  { q: "What are the fees for Hustling?", a: "Posting and completing gigs is completely FREE with Direct Connect mode. If you opt for Escrow Protection (available for gigs ₹500 and above), a small 3% fee is deducted from your earnings. That's it — no hidden charges." },
-];
-
-const posterFaq = [
-  { q: "How do I post a task on DoItForMe?", a: "Simply go to Dashboard → Post a Task. Describe what you need, set a budget, and students near you will apply within minutes." },
-  { q: "How does payment work for posters?", a: "You pay upfront into escrow. The money is only released to the worker after you approve their work. If they don't deliver, you get a full refund." },
-  { q: "What kind of tasks can I post?", a: "Anything campus-related! Errands, assignments, design work, coding help, event setup, tutoring — you name it." },
-];

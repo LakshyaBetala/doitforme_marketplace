@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { platformFeeFor, audienceForGig } from "@/lib/fees";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -24,11 +25,12 @@ export async function GET(req: Request) {
     const now = new Date().toISOString();
 
     // 1. Fetch eligible gigs (Timer Passed + Held + No Dispute)
-    // Status is stored lowercase ('delivered'); accept both for safety.
+    // Canonical token is 'delivered'; also match legacy 'SUBMITTED'/'DELIVERED'
+    // so no funded gig is ever stranded by a status-token mismatch.
     const { data: gigs, error: gigsErr } = await supabase
       .from("gigs")
       .select("*, worker:users!assigned_worker_id(id, upi_id, jobs_completed), poster:users!poster_id(id, upi_id, jobs_completed)")
-      .in("status", ["delivered", "DELIVERED"])
+      .in("status", ["delivered", "DELIVERED", "SUBMITTED"])
       .lt("auto_release_at", now)
       .in("payment_status", ["HELD", "ESCROW_FUNDED"])
       .is("dispute_reason", null)
@@ -44,11 +46,13 @@ export async function GET(req: Request) {
       const recipient = (gig.listing_type === 'MARKET') ? gig.poster : gig.worker;
       const recipientId = (gig.listing_type === 'MARKET') ? gig.poster_id : gig.assigned_worker_id;
 
-      // Flat 3% escrow fee deducted from worker/seller payout
-      const feeRate = 0.03;
-      const platformFee = Math.ceil(gig.price * feeRate);
+      // Use the fee that was actually charged at funding time (stored on the
+      // gig). Fall back to recomputing from the audience rate (student 5% /
+      // business 10%) — never the old hardcoded 3%, which under-collected.
+      const storedFee = Number(gig.platform_fee) || 0;
+      const platformFee = storedFee > 0 ? storedFee : platformFeeFor(gig.price, audienceForGig(gig));
 
-      const payoutAmount = gig.price - platformFee;
+      const payoutAmount = Math.max(0, gig.price - platformFee);
 
       // Handle Rental Deposit Refund (if applicable)
       if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT' && gig.security_deposit > 0) {
@@ -68,7 +72,7 @@ export async function GET(req: Request) {
         amount: platformFee,
         type: "PLATFORM_FEE",
         status: "COMPLETED",
-        description: `Auto-Release Escrow Fee (3%)`
+        description: `Auto-Release Platform Fee`
       });
 
       console.log(`[AUTO-RELEASE] Fee: ₹${platformFee} | Payout: ₹${payoutAmount} | Recipient: ${recipient?.upi_id}`);

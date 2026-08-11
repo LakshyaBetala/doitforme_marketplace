@@ -29,7 +29,7 @@ export default function CompanyLoginPage() {
     if (!email || !password) {
       setLoading(false);
       setMessageType("error");
-      setMessage("Strictly enter both Corporate Email and Password.");
+      setMessage("Enter both your work email and password.");
       return;
     }
 
@@ -41,7 +41,7 @@ export default function CompanyLoginPage() {
     if (authError || !authData?.user) {
       setLoading(false);
       setMessageType("error");
-      setMessage(authError?.message || "Invalid credentials. Organization not recognized.");
+      setMessage(authError?.message || "Invalid email or password.");
       return;
     }
 
@@ -53,91 +53,79 @@ export default function CompanyLoginPage() {
 
     if (dbUser?.role !== "COMPANY") {
       setMessageType("error");
-      setMessage("Unverified Corporate Account. Redirecting to general public portal...");
+      setMessage("This is not a business account. Taking you to the student app...");
       setTimeout(() => router.push("/dashboard"), 3000);
       return;
     }
 
     setMessageType("success");
-    setMessage("Enterprise verified. Establishing secure dashboard connection...");
+    setMessage("Verified. Opening your dashboard...");
     setTimeout(() => router.push("/company/dashboard"), 1000);
   };
 
-  const inputClass = "w-full p-4 bg-[#0a0a0a] border border-[#333] text-white focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all text-sm font-medium rounded-none placeholder:text-[#555]";
-  const labelClass = "block text-[10px] font-bold text-[#888] uppercase tracking-widest mb-2";
+  const inputClass = "w-full p-4 bg-[var(--card)] border border-white/[0.08] text-white focus:outline-none focus:border-[var(--brand-purple)] focus:ring-1 focus:ring-[var(--brand-purple)]/30 transition-all text-sm font-medium rounded-xl placeholder:text-white/30";
+  const labelClass = "block text-[11px] font-medium text-white/55 uppercase tracking-[0.1em] mb-2";
+
+  const FEATURES = [
+    [ShieldCheck, "Protected payments", "Every task is escrow-backed. Students are paid only when you approve the work."],
+    [ListChecks, "One to fifty workers", "Post a single task or scale it across many students, with delivery tracked per worker."],
+    [Network, "Campus reach", "Your task reaches verified students across campuses the moment you post."],
+  ] as const;
 
   return (
-    <div className="flex min-h-[100dvh] bg-[#0B0B11] text-white font-sans selection:bg-white selection:text-black">
-      
-      {/* Left Side: Editorial Pitch */}
-      <div className="hidden lg:flex w-1/2 flex-col justify-between p-16 border-r border-[#222] bg-[#0a0a0a] relative overflow-hidden">
-        
-        {/* Deep mesh texture for industrial look */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')" }}></div>
+    <div className="flex min-h-[100dvh] bg-[var(--background)] text-white font-sans selection:bg-[var(--brand-purple)] selection:text-white">
 
-        <div className="z-10">
-            <div className="flex items-center gap-3 mb-10">
-              <div className="w-12 h-12 bg-white flex items-center justify-center">
-                <Image src="/Doitforme_logo.png" alt="DoItForMe" width={32} height={32} className="object-contain" />
-              </div>
-              <span className="text-xl font-black tracking-tighter text-white">DoItForMe<span className="text-[#888]">.Enterprise</span></span>
+      {/* Left Side: Editorial Pitch */}
+      <div className="hidden lg:flex w-1/2 flex-col justify-between p-16 border-r border-white/[0.08] bg-[var(--card)] relative overflow-hidden">
+        <div aria-hidden className="absolute -top-24 -left-16 w-96 h-96 rounded-full bg-[var(--brand-purple)]/[0.14] blur-[120px] pointer-events-none" />
+
+        <div className="z-10 relative">
+            <div className="flex items-center gap-3 mb-12">
+              <div className="relative w-10 h-10"><Image src="/logo.png" alt="DoItForMe" fill className="object-contain" /></div>
+              <span className="text-xl font-semibold tracking-tight text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>DoItForMe <span className="text-white/45">for business</span></span>
             </div>
-            
-            <h1 className="text-5xl xl:text-6xl font-black leading-[1.1] tracking-tighter text-white">
-               The B2B<br />Talent Exchange.
+
+            <h1 className="text-5xl xl:text-6xl font-semibold leading-[1.08] tracking-tight text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+               Real work,<br />done by students.
             </h1>
         </div>
 
-        <div className="space-y-6 z-10 border-t border-[#333] pt-10">
-            <div className="flex items-start gap-4">
-              <div className="mt-1"><ShieldCheck size={20} className="text-[#888]" /></div>
-              <div>
-                <p className="text-sm font-bold text-white uppercase tracking-widest">Guaranteed Payouts</p>
-                <p className="text-[#666] text-sm mt-1">100% rigid platform escrow shielding corporate liability.</p>
+        <div className="space-y-6 z-10 relative border-t border-white/[0.08] pt-10">
+            {FEATURES.map(([Icon, title, desc]) => (
+              <div key={title} className="flex items-start gap-4">
+                <div className="mt-0.5"><Icon size={20} className="text-[var(--brand-purple-soft)]" /></div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{title}</p>
+                  <p className="text-white/50 text-sm mt-1 leading-relaxed">{desc}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="mt-1"><ListChecks size={20} className="text-[#888]" /></div>
-              <div>
-                <p className="text-sm font-bold text-white uppercase tracking-widest">Task Auditing</p>
-                <p className="text-[#666] text-sm mt-1">Multi-worker scale management & granular deliverable tracking.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="mt-1"><Network size={20} className="text-[#888]" /></div>
-              <div>
-                <p className="text-sm font-bold text-white uppercase tracking-widest">Network Speed</p>
-                <p className="text-[#666] text-sm mt-1">Instant campus-wide broadcasting and acquisition.</p>
-              </div>
-            </div>
+            ))}
         </div>
       </div>
 
       {/* Right Side: Login Panel */}
       <div className="flex-1 flex flex-col justify-center items-center p-6 lg:p-0 relative">
-        <Link href="/" className="absolute top-6 left-6 flex items-center gap-2 text-[#666] hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+        <Link href="/" className="absolute top-6 left-6 flex items-center gap-2 text-white/45 hover:text-white transition-colors text-xs font-medium">
            <ArrowLeft size={16} /> Home
         </Link>
         <div className="w-full max-w-md mx-auto">
-          
+
           <div className="lg:hidden flex items-center gap-3 mb-12 justify-center mt-8">
-             <div className="w-10 h-10 bg-white flex items-center justify-center p-1">
-                <Image src="/Doitforme_logo.png" alt="Logo" width={24} height={24} className="object-contain" />
-             </div>
-             <span className="text-xl font-black tracking-tighter text-white">B2B<span className="text-[#888]">.Login</span></span>
+             <div className="relative w-9 h-9"><Image src="/logo.png" alt="Logo" fill className="object-contain" /></div>
+             <span className="text-xl font-semibold tracking-tight text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>DoItForMe <span className="text-white/45">for business</span></span>
           </div>
 
           <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-3xl font-black mb-2 tracking-tight">Organization Access</h2>
-            <p className="text-[#888] text-sm">Strictly for authorized enterprise credentials.</p>
+            <h2 className="text-3xl font-semibold mb-2 tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Business log in</h2>
+            <p className="text-white/55 text-sm">Sign in to post tasks and manage your hires.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-               <label className={labelClass}>Corporate Email</label>
+               <label className={labelClass}>Work email</label>
                <input
                  type="email"
-                 placeholder="founder@company.com"
+                 placeholder="you@company.com"
                  className={inputClass}
                  value={email}
                  onChange={(e) => setEmail(e.target.value)}
@@ -146,11 +134,11 @@ export default function CompanyLoginPage() {
             </div>
 
             <div>
-               <label className={labelClass}>Clearance Password</label>
+               <label className={labelClass}>Password</label>
                <div className="relative">
                  <input
                    type={showPassword ? "text" : "password"}
-                   placeholder="Enter encrypted password"
+                   placeholder="Enter your password"
                    className={inputClass}
                    value={password}
                    onChange={(e) => setPassword(e.target.value)}
@@ -159,7 +147,7 @@ export default function CompanyLoginPage() {
                  <button
                    type="button"
                    onClick={() => setShowPassword(!showPassword)}
-                   className="absolute right-4 top-1/2 -translate-y-1/2 text-[#888] hover:text-white p-2 transition-colors"
+                   className="absolute right-4 top-1/2 -translate-y-1/2 text-white/45 hover:text-white p-2 transition-colors"
                  >
                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                  </button>
@@ -167,7 +155,7 @@ export default function CompanyLoginPage() {
             </div>
 
             {message && (
-              <div className={`p-4 border text-xs font-bold uppercase tracking-widest text-center ${messageType === "success" ? "bg-white/10 border-white text-white" : "bg-red-950/30 border-red-500/50 text-red-500"}`}>
+              <div className={`p-4 rounded-xl border text-sm font-medium text-center ${messageType === "success" ? "bg-[var(--brand-purple)]/10 border-[var(--brand-purple)]/30 text-[var(--brand-purple-soft)]" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
                 {message}
               </div>
             )}
@@ -175,18 +163,18 @@ export default function CompanyLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-white text-black hover:bg-gray-200 active:scale-[0.99] p-4 disabled:opacity-50 transition-all font-bold uppercase tracking-widest text-sm flex items-center justify-center gap-2"
+              className="w-full bg-[var(--brand-purple)] text-white hover:brightness-110 active:scale-[0.99] p-4 rounded-xl disabled:opacity-50 transition-all font-semibold text-sm flex items-center justify-center gap-2"
             >
-              {loading ? "Authenticating..." : <>Initialize Session <ArrowRight size={16} /></>}
+              {loading ? "Signing in..." : <>Sign in <ArrowRight size={16} /></>}
             </button>
           </form>
 
-          <div className="mt-12 pt-8 border-t border-[#333] text-center lg:text-left">
-            <p className="text-[#666] text-xs font-bold uppercase tracking-widest">
-               No existing architecture?
+          <div className="mt-12 pt-8 border-t border-white/[0.08] text-center lg:text-left">
+            <p className="text-white/45 text-sm">
+               New to DoItForMe for business?
             </p>
-            <Link href="/company/onboarding" className="text-white hover:underline text-sm font-bold inline-flex items-center mt-3 transition-colors">
-                Register New Enterprise Node <ExternalLink size={14} className="ml-2" />
+            <Link href="/company/onboarding" className="text-white hover:text-[var(--brand-purple-soft)] text-sm font-semibold inline-flex items-center mt-3 transition-colors">
+                Register your company <ExternalLink size={14} className="ml-2" />
             </Link>
           </div>
 

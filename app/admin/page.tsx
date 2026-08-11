@@ -20,7 +20,12 @@ export default function AdminDashboardPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     
     // Tabs state
-    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "BROADCAST">("PAYOUTS");
+    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "MANAGED" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "BROADCAST">("PAYOUTS");
+
+    // Managed Mode queue state
+    const [managedQueue, setManagedQueue] = useState<any[]>([]);
+    const [managedPool, setManagedPool] = useState<any[]>([]);
+    const [managedPick, setManagedPick] = useState<Record<string, string>>({});
 
     // Pending student-ID review state
     const [pendingKyc, setPendingKyc] = useState<any[]>([]);
@@ -68,9 +73,47 @@ export default function AdminDashboardPage() {
             fetchCompanies(),
             fetchPendingUsers(),
             fetchPendingKyc(),
-            fetchBroadcastGigs()
+            fetchBroadcastGigs(),
+            fetchManaged()
         ]);
         setLoading(false);
+    };
+
+    // --- MANAGED MODE ---
+    const fetchManaged = async () => {
+        try {
+            const res = await fetch("/api/admin/assign-managed");
+            const data = await res.json();
+            if (res.ok) {
+                setManagedQueue(data.queue || []);
+                setManagedPool(data.pool || []);
+            }
+        } catch {
+            // non-fatal
+        }
+    };
+
+    const assignManaged = async (gigId: string) => {
+        const workerId = managedPick[gigId];
+        if (!workerId) return toast.error("Pick a student to assign first.");
+        setProcessingId(gigId);
+        try {
+            const res = await fetch("/api/admin/assign-managed", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ gigId, workerId }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || "Failed to assign.");
+            } else {
+                toast.success("Student assigned.");
+                fetchManaged();
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Network error.");
+        }
+        setProcessingId(null);
     };
 
     const fetchPendingKyc = async () => {
@@ -367,6 +410,9 @@ export default function AdminDashboardPage() {
                 <button onClick={() => setActiveTab("PAYOUTS")} className={getTabClass("PAYOUTS")}>
                     Pipeline: Payouts ({payouts.length})
                 </button>
+                <button onClick={() => setActiveTab("MANAGED")} className={getTabClass("MANAGED")}>
+                    Managed Queue ({managedQueue.filter((g) => g.managed_status === "UNASSIGNED").length})
+                </button>
                 <button onClick={() => setActiveTab("COMPANY_LIST")} className={getTabClass("COMPANY_LIST")}>
                     Operational Units ({companies.length})
                 </button>
@@ -390,7 +436,56 @@ export default function AdminDashboardPage() {
                 </div>
             ) : (
                 <div className="min-h-[600px] animate-in fade-in duration-500">
-                    
+
+                    {/* MANAGED QUEUE */}
+                    {activeTab === "MANAGED" && (
+                        <div className="space-y-4">
+                            {managedQueue.length === 0 ? (
+                                <div className="border border-[#222] bg-[#0a0a0a] py-40 text-center">
+                                    <CheckCircle2 size={32} className="mx-auto text-[#222] mb-6" />
+                                    <p className="text-[#444] text-[10px] font-bold uppercase tracking-[0.3em]">No managed tasks in the queue.</p>
+                                </div>
+                            ) : (
+                                managedQueue.map((g) => (
+                                    <div key={g.id} className="border border-[#222] bg-[#0a0a0a] p-5 flex flex-col gap-3">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div>
+                                                <a href={`/gig/${g.id}`} className="font-semibold text-white hover:underline">{g.title}</a>
+                                                <p className="text-xs text-[#666] mt-1">₹{g.price} · {g.category || "—"}</p>
+                                            </div>
+                                            <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider bg-white/5 text-[#888] border border-[#222]">{g.managed_status}</span>
+                                        </div>
+                                        {g.managed_status === "UNASSIGNED" ? (
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <select
+                                                    value={managedPick[g.id] || ""}
+                                                    onChange={(e) => setManagedPick((p) => ({ ...p, [g.id]: e.target.value }))}
+                                                    className="flex-1 min-w-[200px] bg-[#111] border border-[#333] text-white text-sm px-3 py-2 outline-none"
+                                                >
+                                                    <option value="">Assign a student…</option>
+                                                    {managedPool.map((u) => (
+                                                        <option key={u.id} value={u.id}>
+                                                            {u.is_elite ? "⭐ " : ""}{u.name || u.username || u.email} · {u.jobs_completed || 0} done
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <button
+                                                    onClick={() => assignManaged(g.id)}
+                                                    disabled={processingId === g.id}
+                                                    className="px-4 py-2 bg-white text-black text-sm font-bold hover:bg-zinc-200 disabled:opacity-50"
+                                                >
+                                                    {processingId === g.id ? "Assigning…" : "Assign"}
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-[#666]">Assigned · worker {String(g.assigned_worker_id || "").slice(0, 8)}…</p>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+
                     {/* PAYOUTS VIEWS */}
                     {activeTab === "PAYOUTS" && (
                         <div className="space-y-12">

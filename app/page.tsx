@@ -23,9 +23,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   alternates: { canonical: BASE_URL },
   icons: {
-    icon: "/Doitforme_logo.png",
-    apple: "/Doitforme_logo.png",
-    shortcut: "/Doitforme_logo.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
+    shortcut: "/logo.png",
   },
   openGraph: {
     type: "website",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
       "700+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
     images: [
       {
-        url: `${BASE_URL}/Doitforme_logo.png`,
+        url: `${BASE_URL}/logo.png`,
         width: 1200,
         height: 630,
         alt: "DoItForMe – India's Campus Freelance Network",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
     title: "DoItForMe – India's Campus Freelance Network",
     description:
       "700+ verified students earning by completing real tasks. Escrow-protected. Instant UPI payouts. doitforme.in",
-    images: [`${BASE_URL}/Doitforme_logo.png`],
+    images: [`${BASE_URL}/logo.png`],
   },
   robots: {
     index: true,
@@ -91,7 +91,7 @@ export default function Home() {
       "@type": "Organization",
        name: "DoItForMe",
       url: BASE_URL,
-      logo: `${BASE_URL}/Doitforme_logo.png`,
+      logo: `${BASE_URL}/logo.png`,
       description:
         "DoItForMe is India's campus freelance network connecting verified students with peers and companies for real tasks.",
       foundingDate: "2025",

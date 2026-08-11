@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./public/Doitforme_logo.png" alt="DoItForMe Logo" width="120" />
+  <img src="./public/logo.png" alt="DoItForMe Logo" width="120" />
   <h1>DoItForMe</h1>
   <p><strong>India's Premium Student Hustle & Enterprise Gig Network</strong></p>
   

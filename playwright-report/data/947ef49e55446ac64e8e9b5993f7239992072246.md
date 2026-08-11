@@ -14,14 +14,14 @@
 ```
 Error: expect(locator).toBeVisible() failed
 
-Locator: locator('text=Task Title')
+Locator: locator('text=Active Postings').first()
 Expected: visible
 Timeout: 5000ms
 Error: element(s) not found
 
 Call log:
   - Expect "toBeVisible" with timeout 5000ms
-  - waiting for locator('text=Task Title')
+  - waiting for locator('text=Active Postings').first()
 
 ```
 
@@ -33,50 +33,42 @@ Call log:
     - img
   - region "Notifications alt+T"
   - main [ref=e2]:
-    - generic [ref=e3]:
-      - generic [ref=e4]:
-        - generic [ref=e5]:
-          - link "DoItForMe DoItForMe Enterprise Hub" [ref=e6] [cursor=pointer]:
-            - /url: /
-            - img "DoItForMe" [ref=e8]
-            - generic [ref=e9]:
-              - generic [ref=e10]: DoItForMe
-              - generic [ref=e11]: Enterprise Hub
-          - generic [ref=e12]:
-            - img [ref=e13]
-            - textbox "Search deployments..." [ref=e16]
-        - generic [ref=e17]:
-          - button [ref=e18] [cursor=pointer]:
-            - img [ref=e19]
-          - button "T Test Company" [ref=e22] [cursor=pointer]:
-            - generic [ref=e24]: T
-            - generic [ref=e25]: Test Company
-            - img [ref=e26]
-      - main [ref=e28]:
-        - generic [ref=e29]:
-          - generic [ref=e30]:
-            - img [ref=e31]
-            - generic [ref=e33]:
-              - heading "Awaiting Enterprise Clearance" [level=3] [ref=e34]
-              - paragraph [ref=e35]: Your organizational credentials are currently undergoing manual verification. Authorization to deploy multi-worker tasks is pending administrator approval.
-          - generic [ref=e36]:
-            - generic [ref=e37]:
-              - generic [ref=e38]: Dashboard Overview
-              - heading "Test Company" [level=1] [ref=e39]
-            - link "Deploy Task" [ref=e41]:
-              - /url: "#"
-              - img [ref=e42]
-              - text: Deploy Task
-          - generic [ref=e43]:
-            - generic [ref=e44]:
-              - heading "Active Postings" [level=2] [ref=e45]: Active Postings
-              - generic [ref=e47]: 0 UNITS
-            - generic [ref=e48]:
-              - img [ref=e49]
-              - paragraph [ref=e53]: No active deployments detected.
-  - button "Open Next.js Dev Tools" [ref=e59] [cursor=pointer]:
-    - img [ref=e60]
-  - alert [ref=e63]
+    - generic [ref=e4]:
+      - img "Logo" [ref=e7]
+      - heading "Welcome Back" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Login to continue your hustle.
+      - button "Continue with Google" [ref=e10] [cursor=pointer]:
+        - img [ref=e11]
+        - text: Continue with Google
+      - generic [ref=e18]: or
+      - generic [ref=e20]:
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - button "Password" [ref=e23] [cursor=pointer]
+            - button "OTP / Magic Link" [ref=e24] [cursor=pointer]
+          - textbox "Enter your email" [ref=e25]
+          - generic [ref=e26]:
+            - textbox "Enter password" [ref=e27]
+            - button [ref=e28] [cursor=pointer]:
+              - img [ref=e29]
+        - button "Login" [ref=e33] [cursor=pointer]
+      - generic [ref=e34]:
+        - paragraph [ref=e35]:
+          - text: Don't have an account?
+          - button "Sign Up" [ref=e36] [cursor=pointer]
+        - generic [ref=e37]:
+          - paragraph [ref=e38]: Hiring Talent?
+          - link "Company Company Portal Login as an Enterprise" [ref=e39] [cursor=pointer]:
+            - /url: /company/login
+            - generic [ref=e40]:
+              - img "Company" [ref=e42]
+              - generic [ref=e43]:
+                - paragraph [ref=e44]: Company Portal
+                - paragraph [ref=e45]: Login as an Enterprise
+            - img [ref=e46]
+  - button "Open Next.js Dev Tools" [ref=e53] [cursor=pointer]:
+    - img [ref=e54]
+  - alert [ref=e57]
 ```
 
 # Test source
@@ -110,12 +102,12 @@ Call log:
   26 |     await companyPage.goto('/company/dashboard');
   27 |     
   28 |     // Verify Company Dashboard loaded
-  29 |     await expect(companyPage.locator('text=Active Postings').first()).toBeVisible();
+> 29 |     await expect(companyPage.locator('text=Active Postings').first()).toBeVisible();
+     |                                                                       ^ Error: expect(locator).toBeVisible() failed
   30 |     
   31 |     // 4. Post a Gig
   32 |     await companyPage.goto('/company/post');
-> 33 |     await expect(companyPage.locator('text=Task Title')).toBeVisible();
-     |                                                          ^ Error: expect(locator).toBeVisible() failed
+  33 |     await expect(companyPage.locator('text=Task Title')).toBeVisible();
   34 |     
   35 |     // Fill out the gig form
   36 |     await companyPage.fill('input[placeholder*="Title"]', 'Playwright Automated E2E Test Task');

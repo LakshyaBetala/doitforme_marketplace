@@ -1,9 +1,13 @@
 import { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 type EmptyStateProps = {
   icon?: LucideIcon;
+  /** Optional sloth image path (e.g. "/sleeping_sloth.png") — brings the brand's
+   *  playful personality to empty/zero states. Takes precedence over `icon`. */
+  sloth?: string;
   title: string;
   description?: string;
   /** Primary action — either a Link href or an onClick. */
@@ -17,6 +21,7 @@ type EmptyStateProps = {
 
 export default function EmptyState({
   icon: Icon,
+  sloth,
   title,
   description,
   actionLabel,
@@ -29,7 +34,11 @@ export default function EmptyState({
     <div
       className={`bg-[#13131A] border border-white/[0.08] rounded-2xl px-6 py-12 md:py-16 flex flex-col items-center text-center ${className}`}
     >
-      {Icon && (
+      {sloth ? (
+        <div className="relative w-24 h-24 mb-4 opacity-90 animate-[float_8s_ease-in-out_infinite]">
+          <Image src={sloth} alt="" fill className="object-contain" sizes="96px" />
+        </div>
+      ) : Icon && (
         <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
           <Icon size={22} className="text-white/40" strokeWidth={1.6} />
         </div>

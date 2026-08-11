@@ -60,7 +60,7 @@ function AuthTransferContent() {
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
           className="w-24 h-24 relative mb-6"
         >
-          <Image src="/Doitforme_logo.png" alt="DoItForMe" fill className="object-contain" />
+          <Image src="/logo.png" alt="DoItForMe" fill className="object-contain" />
         </motion.div>
         
         <h1 className="text-2xl font-bold mb-2">Switching Platforms...</h1>

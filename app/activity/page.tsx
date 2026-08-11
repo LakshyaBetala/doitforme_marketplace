@@ -3,31 +3,23 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Loader2, Briefcase, IndianRupee, ArrowRight, ShieldCheck, CheckCircle, Clock, Phone, MessageSquare, Zap, AlertTriangle } from "lucide-react";
+import { Loader2, Briefcase, IndianRupee, ArrowRight, ShieldCheck, CheckCircle, Clock, Phone, MessageSquare, Zap, AlertTriangle, X } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import CanonicalStatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
-  'open': { label: 'Open', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-  'assigned': { label: 'In Progress', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
-  'AWAITING_FUNDS': { label: 'Awaiting Escrow', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
-  'SUBMITTED': { label: 'Work Submitted', color: 'text-[#C9A9FF]', bg: 'bg-[#C9A9FF]/10', border: 'border-[#C9A9FF]/20' },
-  'delivered': { label: 'Delivered', color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20' },
-  'completed': { label: 'Completed', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-  'cancelled': { label: 'Cancelled', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
-  'disputed': { label: 'Disputed', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
-  'pending': { label: 'Pending', color: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-500/20' },
-  'approved': { label: 'Approved', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+// In-review states read better with a custom label; everything else flows through the canonical mapper.
+const STATUS_LABEL_OVERRIDES: Record<string, string> = {
+  assigned: "In progress",
+  AWAITING_FUNDS: "Awaiting escrow",
+  SUBMITTED: "In review",
+  delivered: "In review",
 };
 
 function StatusBadge({ status }: { status: string }) {
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG['pending'];
-  return (
-    <span className={`px-2.5 py-1 rounded-lg ${config.bg} ${config.border} border text-[10px] uppercase font-black tracking-widest ${config.color} whitespace-normal text-center leading-tight`}>
-      {config.label}
-    </span>
-  );
+  const label = STATUS_LABEL_OVERRIDES[status] || humanizeStatus(status);
+  return <CanonicalStatusBadge tone={statusToTone(status)}>{label}</CanonicalStatusBadge>;
 }
 
 function CountdownTimer({ targetDate }: { targetDate: string }) {
@@ -47,7 +39,7 @@ function CountdownTimer({ targetDate }: { targetDate: string }) {
   }, [targetDate]);
 
   return (
-    <div className="flex items-center gap-1.5 text-xs text-yellow-400">
+    <div className="flex items-center gap-1.5 text-xs text-[var(--brand-purple-soft)]">
       <Clock size={12} /> {timeLeft}
     </div>
   );
@@ -61,6 +53,12 @@ export default function ActivityHubPage() {
   const [hiringGigs, setHiringGigs] = useState<any[]>([]);
   const [workingGigs, setWorkingGigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Submit-work modal (delivery note + optional link)
+  const [submitGigId, setSubmitGigId] = useState<string | null>(null);
+  const [submitNote, setSubmitNote] = useState("");
+  const [submitLink, setSubmitLink] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     async function loadActivity() {
@@ -101,25 +99,55 @@ export default function ActivityHubPage() {
       }
   };
 
+  // Escrow submit opens the delivery-note modal. Direct (legacy off-platform)
+  // just marks done with no escrow timer.
   const handleSubmitWork = async (gigId: string, applicationId: string, isDirect: boolean = false) => {
-      toast.loading(isDirect ? "Marking as done..." : "Submitting work...");
-      
-      // Set auto_release_at to NOW() + 24 HOURS
-      const releaseDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-      const updateData = isDirect 
-          ? { status: 'SUBMITTED' } 
-          : { status: 'SUBMITTED', auto_release_at: releaseDate };
-          
+      if (!isDirect) {
+          setSubmitGigId(gigId);
+          setSubmitNote("");
+          setSubmitLink("");
+          return;
+      }
+      toast.loading("Marking as done...");
       const { error } = await supabase.from('gigs')
-         .update(updateData)
+         .update({ status: 'delivered' })
          .eq('id', gigId);
-      
-      if(error) toast.error("Failed to submit work");
+      if (error) toast.error("Failed to submit work");
       else {
-          toast.success(isDirect ? "Work marked as done!" : "Work submitted! 24-hour review timer started.");
-          setWorkingGigs(prev => prev.map(app => 
-              app.gig?.id === gigId ? { ...app, gig: { ...app.gig, ...updateData } } : app
+          toast.success("Work marked as done!");
+          setWorkingGigs(prev => prev.map(app =>
+              app.gig?.id === gigId ? { ...app, gig: { ...app.gig, status: 'delivered' } } : app
           ));
+      }
+  };
+
+  // Server-validated submission: requires a note describing the work, posts it
+  // to the poster's chat, sets status to 'delivered' and starts the 24h timer.
+  const submitWork = async () => {
+      if (!submitGigId) return;
+      if (!submitNote.trim()) return toast.error("Describe what you delivered and how.");
+      setIsSubmitting(true);
+      try {
+          const res = await fetch("/api/gig/deliver", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ gigId: submitGigId, note: submitNote, deliveryLink: submitLink.trim() || undefined })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+              toast.error(data?.error || "Failed to submit work");
+          } else {
+              const releaseDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+              toast.success("Work submitted. The poster has 24 hours to review.");
+              setWorkingGigs(prev => prev.map(app =>
+                  app.gig?.id === submitGigId ? { ...app, gig: { ...app.gig, status: 'delivered', auto_release_at: releaseDate, delivery_link: submitLink.trim() || app.gig?.delivery_link } } : app
+              ));
+              setSubmitGigId(null);
+          }
+      } catch (e) {
+          toast.error("Network error. Please try again.");
+      } finally {
+          setIsSubmitting(false);
       }
   };
 
@@ -153,7 +181,7 @@ export default function ActivityHubPage() {
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight">Activity</h1>
+            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Activity</h1>
             <p className="text-xs text-white/50 mt-1">Track every gig you've posted or applied for.</p>
           </div>
           <button onClick={() => router.push('/dashboard')} className="text-xs text-white/60 hover:text-white transition-colors bg-white/[0.04] border border-white/[0.08] px-3 py-2 rounded-xl">← Dashboard</button>
@@ -199,7 +227,7 @@ export default function ActivityHubPage() {
                 <div className="flex justify-between items-start mb-3">
                    <div className="flex-1 min-w-0">
                      <h3 className="font-bold text-white text-lg truncate">{gig.title}</h3>
-                     <p className="text-[#C9A9FF] font-black flex items-center gap-1"><IndianRupee size={12} /> {gig.price}</p>
+                     <p className="text-[#C9A9FF] font-semibold flex items-center gap-1"><IndianRupee size={12} /> {gig.price}</p>
                    </div>
                    <StatusBadge status={gig.status} />
                 </div>
@@ -219,9 +247,9 @@ export default function ActivityHubPage() {
                 )}
 
                 {/* Auto-release countdown */}
-                {gig.status === 'SUBMITTED' && gig.auto_release_at && (
+                {(gig.status === 'SUBMITTED' || gig.status === 'delivered') && gig.auto_release_at && (
                   <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center justify-between">
-                    <span className="text-xs text-yellow-400 font-bold">Auto-release timer:</span>
+                    <span className="text-xs text-white/60 font-medium">Auto-release timer:</span>
                     <CountdownTimer targetDate={gig.auto_release_at} />
                   </div>
                 )}
@@ -256,7 +284,7 @@ export default function ActivityHubPage() {
                   <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                      <div className="flex-1 min-w-0">
                        <h3 className="font-bold text-white text-lg truncate">{gig.title}</h3>
-                       <p className="text-green-400 font-black flex items-center gap-1"><IndianRupee size={12} /> {app.negotiated_price || gig.price}</p>
+                       <p className="text-white font-semibold flex items-center gap-1"><IndianRupee size={12} /> {app.negotiated_price || gig.price}</p>
                      </div>
                      <div className="shrink-0 max-w-[50%] flex justify-end">
                         <StatusBadge status={displayStatus} />
@@ -280,9 +308,9 @@ export default function ActivityHubPage() {
                   )}
 
                   {/* Auto-release countdown for submitted work */}
-                  {gig.status === 'SUBMITTED' && gig.auto_release_at && (
+                  {(gig.status === 'SUBMITTED' || gig.status === 'delivered') && gig.auto_release_at && (
                     <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center justify-between">
-                      <span className="text-xs text-yellow-400 font-bold">Auto-release:</span>
+                      <span className="text-xs text-white/60 font-medium">Auto-release:</span>
                       <CountdownTimer targetDate={gig.auto_release_at} />
                     </div>
                   )}
@@ -311,6 +339,40 @@ export default function ActivityHubPage() {
         </div>
 
       </div>
+
+      {/* SUBMIT WORK MODAL — delivery note (required) + optional link */}
+      {submitGigId && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 max-w-md w-full relative">
+            <button onClick={() => setSubmitGigId(null)} className="absolute top-4 right-4 text-white/60 hover:text-white">
+              <X size={18} />
+            </button>
+            <h3 className="text-lg font-bold mb-1">Submit your work</h3>
+            <p className="text-white/50 text-xs mb-4">Describe exactly what you delivered and how. If files were shared off-platform, say where. The poster has 24 hours to approve or request changes; funds stay safely in escrow until they approve.</p>
+            <textarea
+              value={submitNote}
+              onChange={(e) => setSubmitNote(e.target.value)}
+              placeholder="What did you deliver? e.g. Final deck with 12 slides, sources cited, shared via the link below."
+              className="w-full bg-black/20 text-white text-sm p-4 rounded-xl border border-white/10 focus:border-[var(--brand-purple)]/50 outline-none resize-none h-28 mb-3"
+            />
+            <input
+              type="url"
+              value={submitLink}
+              onChange={(e) => setSubmitLink(e.target.value)}
+              placeholder="Delivery link (optional): Drive, Figma, GitHub..."
+              className="w-full bg-black/20 text-white text-sm p-3 rounded-xl border border-white/10 focus:border-[var(--brand-purple)]/50 outline-none mb-4"
+            />
+            <button
+              onClick={submitWork}
+              disabled={isSubmitting || !submitNote.trim()}
+              className="w-full py-3 bg-[var(--brand-purple)] hover:brightness-110 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            >
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
+              Submit for review
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

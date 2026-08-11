@@ -59,6 +59,7 @@ export default function Dashboard() {
 
       const nowIso = new Date().toISOString();
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
       // ⚡ Run all DB fetches in parallel instead of sequentially
       const [dbUserRes, unreadRes, gigsRes, refsRes, ptsRes] = await Promise.all([
@@ -69,6 +70,12 @@ export default function Dashboard() {
           .neq("poster_id", authUser.id)
           .eq("status", "open")
           .or(`deadline.is.null,deadline.gt.${nowIso}`)
+          // Same age rule as /feed, which this list had drifted away from: it was
+          // filtering only on status, so 90-day-old listings still surfaced here.
+          // Hustles age out at 30 days; company roles never do.
+          .or(`listing_type.eq.COMPANY_TASK,created_at.gt.${thirtyDaysAgo}`)
+          // Demand only. SERVICE listings are self-promotion and live at /talent.
+          .in("listing_type", ["HUSTLE", "COMPANY_TASK"])
           .order("created_at", { ascending: false })
           .limit(20),
         supabase.from("referrals").select("id").eq("referrer_id", authUser.id),
@@ -166,14 +173,14 @@ export default function Dashboard() {
       {/* --------------------------------------------------
           1. TOP BAR (Global Navigation)
       -------------------------------------------------- */}
-      <header className="h-[70px] md:h-[80px] bg-gradient-to-r from-[#0B1021] to-[#070B1A] border-b border-white/[0.08] flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
+      <header className="h-[64px] md:h-[72px] bg-[var(--background)]/80 backdrop-blur-xl border-b border-white/[0.08] flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
         <div className="flex items-center gap-2 md:gap-6 min-w-0 flex-1">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group shrink-0">
-            <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-lg overflow-hidden flex items-center justify-center">
-              <Image src="/Doitforme_logo.png" alt="DoItForMe" fill className="object-contain" />
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            <div className="relative w-8 h-8 md:w-9 md:h-9 rounded-lg overflow-hidden flex items-center justify-center">
+              <Image src="/logo.png" alt="DoItForMe" fill className="object-contain" />
             </div>
-            <span className="font-black text-xl italic tracking-tighter hidden md:block group-hover:text-brand-purple transition-colors">DoItForMe</span>
+            <span className="font-semibold text-lg tracking-tight hidden md:block transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>DoItForMe</span>
           </Link>
 
           {/* Search Bar */}
@@ -204,7 +211,7 @@ export default function Dashboard() {
 
           <NotificationBell />
 
-          <div className="h-6 w-px bg-[#1E293B] mx-1 md:mx-2"></div>
+          <div className="h-6 w-px bg-white/10 mx-1 md:mx-2"></div>
 
           {/* Profile Dropdown */}
           <div className="relative">
@@ -222,7 +229,7 @@ export default function Dashboard() {
                 </Link>
                 <InstallAppButton />
                 <EnableNotificationsButton />
-                <div className="h-px bg-[#1E293B] my-1"></div>
+                <div className="h-px bg-white/10 my-1"></div>
                 <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 hover:bg-red-500/10 text-sm text-red-400 transition-colors">
                   <LogOut size={16} className="mr-3 shrink-0" />
                   <span className="font-medium">Logout</span>
@@ -251,16 +258,16 @@ export default function Dashboard() {
 
             {/* KYC Verification Prompt */}
             {user && !user.user_metadata?.kyc_verified && (
-              <Link href="/verify-id" className="block bg-purple-500/10 border border-purple-500/30 rounded-2xl p-4 flex items-center gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500 group hover:bg-purple-500/15 transition-all active:scale-[0.99]">
-                <div className="p-2 bg-purple-500/20 rounded-xl shrink-0">
-                  <ShieldCheck size={20} className="text-purple-400" />
+              <Link href="/verify-id" className="block bg-[var(--brand-purple)]/[0.08] border border-[var(--brand-purple)]/25 rounded-2xl p-4 flex items-center gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500 group hover:bg-[var(--brand-purple)]/[0.12] transition-all active:scale-[0.99]">
+                <div className="p-2 bg-[var(--brand-purple)]/15 rounded-xl shrink-0">
+                  <ShieldCheck size={20} className="text-[var(--brand-purple-soft)]" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-purple-300 mb-0.5">Verify your Student ID</p>
-                  <p className="text-xs text-purple-300/60">Upload your college ID to unlock all features and build trust.</p>
+                  <p className="text-sm font-semibold text-white mb-0.5">Verify your Student ID</p>
+                  <p className="text-xs text-white/55">Upload your college ID to unlock all features and build trust.</p>
                 </div>
-                <span className="shrink-0 px-4 py-2 bg-purple-600 border border-purple-500/30 text-white text-xs font-bold rounded-xl group-hover:bg-purple-700 transition-all">
-                  Verify Now
+                <span className="shrink-0 px-4 py-2 bg-[var(--brand-purple)] text-white text-xs font-semibold rounded-xl group-hover:brightness-110 transition-all">
+                  Verify now
                 </span>
               </Link>
             )}
@@ -269,23 +276,23 @@ export default function Dashboard() {
             <section className="bg-[var(--card)] border border-white/[0.08] rounded-3xl p-5 md:p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group mb-4">
               <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-purple/10 blur-[100px] rounded-full pointer-events-none"></div>
               <div className="relative z-10 w-full md:w-auto mb-4 md:mb-0">
-                <h1 className="text-xl md:text-2xl font-black text-white tracking-tight mb-1">Good afternoon, {username.split(' ')[0]}.</h1>
-                <p className="text-zinc-400 text-xs md:text-sm">Live work from peers and companies — pick your hustle.</p>
+                <h1 className="text-xl md:text-2xl font-semibold text-white tracking-tight mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Good afternoon, {username.split(' ')[0]}.</h1>
+                <p className="text-white/55 text-xs md:text-sm">Live work from peers and companies. Pick your task.</p>
               </div>
               <div className="hidden md:flex relative z-10 items-center justify-end">
                 <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-5 py-3 backdrop-blur-md flex items-center gap-6">
                   <div>
-                    <p className="text-[10px] text-brand-purple font-black uppercase tracking-widest mb-1 shadow-sm flex items-center gap-1.5"><Zap size={10} className="fill-brand-purple" /> Opportunities</p>
+                    <p className="text-[11px] text-[var(--brand-purple-soft)] font-medium tracking-[0.1em] uppercase mb-1 flex items-center gap-1.5"><Zap size={10} className="fill-[var(--brand-purple-soft)]" /> Open now</p>
                   </div>
                   <div className="flex gap-4">
                     <div>
-                      <span className="text-xl font-black text-white">{hustleCount}</span>
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase ml-1.5">Hustles</span>
+                      <span className="text-xl font-semibold text-white tracking-tight">{hustleCount}</span>
+                      <span className="text-[10px] font-medium text-white/45 ml-1.5">Hustles</span>
                     </div>
                     <div className="w-px h-6 bg-white/[0.1] self-center"></div>
                     <div>
-                      <span className="text-xl font-black text-white">{companyTaskCount}</span>
-                      <span className="text-[10px] font-bold text-zinc-500 uppercase ml-1.5">Company</span>
+                      <span className="text-xl font-semibold text-white tracking-tight">{companyTaskCount}</span>
+                      <span className="text-[10px] font-medium text-white/45 ml-1.5">Company</span>
                     </div>
                   </div>
                 </div>
@@ -322,10 +329,10 @@ export default function Dashboard() {
             <section>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sticky top-0 bg-[var(--background)]/90 backdrop-blur-md py-4 z-20">
                 <div>
-                  <h2 className="text-xl font-black text-white flex items-center gap-2 mb-1">
-                    Live Feed <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse hidden sm:inline-block"></span>
+                  <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-1 tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    Live feed <span className="w-2 h-2 rounded-full bg-[var(--brand-purple-soft)] animate-pulse hidden sm:inline-block"></span>
                   </h2>
-                  <p className="text-xs text-zinc-400 font-medium">Fresh hustles from students and companies</p>
+                  <p className="text-xs text-white/50">Fresh tasks from students and companies</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -371,7 +378,7 @@ export default function Dashboard() {
                     <div className="relative">
                       <button
                         onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}
-                        className={`p-2 rounded-full border transition-all ${categoryFilter !== 'ALL' ? 'bg-brand-pink text-white border-brand-pink' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
+                        className={`p-2 rounded-full border transition-all ${categoryFilter !== 'ALL' ? 'bg-[var(--brand-purple)] text-white border-[var(--brand-purple)]' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
                         title="Filter by Category"
                       >
                         <Tags size={16} />
@@ -390,10 +397,10 @@ export default function Dashboard() {
                               <button
                                 key={cat}
                                 onClick={() => { setCategoryFilter(cat); setIsCategoryFilterOpen(false); }}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${categoryFilter === cat ? 'bg-brand-pink/20 text-brand-pink' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
+                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between ${categoryFilter === cat ? 'bg-[var(--brand-purple)]/15 text-[var(--brand-purple-soft)]' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
                               >
                                 {cat}
-                                {categoryFilter === cat && <div className="w-1.5 h-1.5 rounded-full bg-brand-pink"></div>}
+                                {categoryFilter === cat && <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-purple-soft)]"></div>}
                               </button>
                             ))}
                           </div>
@@ -406,10 +413,10 @@ export default function Dashboard() {
 
               {filteredGigs.length === 0 ? (
                 <EmptyState
-                  icon={Search}
-                  title="Nothing matches your filters yet"
-                  description="Try clearing a filter or switching campus scope. New gigs post throughout the day."
-                  actionLabel="Post a gig"
+                  sloth="/sleeping_sloth.png"
+                  title="No tasks here. Even the sloth dozed off."
+                  description="Try clearing a filter or switching campus scope. New tasks post throughout the day."
+                  actionLabel="Post a task"
                   actionHref="/post"
                 />
               ) : (
@@ -454,7 +461,7 @@ function SidebarLink({ href, icon: Icon, label, active, badge }: any) {
         {label}
       </div>
       {badge && (
-        <span className="px-2 py-0.5 rounded-md bg-brand-purple text-white text-[10px] font-black">{badge}</span>
+        <span className="px-2 py-0.5 rounded-md bg-[var(--brand-purple)] text-white text-[10px] font-semibold">{badge}</span>
       )}
     </Link>
   );
@@ -469,7 +476,7 @@ function StatCard({ title, value, icon: Icon, color, bg, subtext, progress }: an
         </div>
       </div>
       <div className="relative z-10 flex-1 flex flex-col justify-end">
-        <div className="text-2xl md:text-3xl font-black text-white tracking-tight mb-0.5">{value}</div>
+        <div className="text-2xl md:text-3xl font-semibold text-white tracking-tight mb-0.5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{value}</div>
         <div className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1.5">{title}</div>
 
         {progress ? (
@@ -478,7 +485,7 @@ function StatCard({ title, value, icon: Icon, color, bg, subtext, progress }: an
               <span className="text-[9px] text-zinc-500 font-medium">Goal: ₹{progress.target.toLocaleString()}</span>
               <span className="text-[9px] text-brand-purple font-bold">₹{progress.current.toLocaleString()} / ₹{progress.target.toLocaleString()}</span>
             </div>
-            <div className="w-full h-1.5 bg-[#1E293B] rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
               <div className="h-full bg-brand-purple rounded-full" style={{ width: `${Math.min(100, Math.max(0, (progress.current / progress.target) * 100))}%` }}></div>
             </div>
           </div>
@@ -494,7 +501,7 @@ function StatCard({ title, value, icon: Icon, color, bg, subtext, progress }: an
 
 function FeedTab({ label, active, onClick }: any) {
   return (
-    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${active ? 'bg-[#1E293B] text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}>
+    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${active ? 'bg-white/10 text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}>
       {label}
     </button>
   );
@@ -567,7 +574,7 @@ function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: an
             <Star size={28} className="text-brand-purple md:w-8 md:h-8" />
           </div>
         </div>
-        <h2 className="text-xl md:text-2xl font-black text-white text-center mb-2 shrink-0">Your Interests?</h2>
+        <h2 className="text-xl md:text-2xl font-semibold text-white text-center mb-2 shrink-0 tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Your interests?</h2>
         <p className="text-xs md:text-sm text-zinc-400 text-center mb-5 md:mb-6 shrink-0">
           Select 1 to 5 categories to get personalized opportunities and stand out to buyers. Highly recommended!
         </p>

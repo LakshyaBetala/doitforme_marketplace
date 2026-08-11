@@ -13,7 +13,7 @@ import { useGigFormStore } from "@/store/useGigFormStore";
 import { friendlyError } from "@/lib/errors";
 import Image from "next/image";
 import {
-  Loader2, Send, X, Camera, FileText, Image as ImageIcon, MapPin, BriefcaseIcon, ShoppingBagIcon, ChevronLeft, ChevronRight, CheckCircle
+  Loader2, Send, X, Camera, FileText, Image as ImageIcon, MapPin, BriefcaseIcon, ShoppingBagIcon, ChevronLeft, ChevronRight, CheckCircle, CheckCircle2
 } from "lucide-react";
 
 export default function PostGigWizard() {
@@ -25,7 +25,12 @@ export default function PostGigWizard() {
   const store = useGigFormStore();
   const { listingType, marketType, itemCondition, category, title, description, githubLink, price, securityDeposit, mode, location, deadlineDate, deadlineTime } = store;
 
-  const [step, setStep] = useState(2);
+  // Step 1 is the fork that decides which side of the marketplace this is:
+  // a TASK someone needs done, or a SERVICE the poster is advertising. Getting
+  // this wrong is what filled the task feed with sellers, so it is asked first
+  // and has no default — the user must choose.
+  const [postKind, setPostKind] = useState<"TASK" | "SERVICE" | null>(null);
+  const [step, setStep] = useState(1);
   // --- LOCAL STATE ---
   const [user, setUser] = useState<any | null>(null);
   const [userLoading, setUserLoading] = useState(true);
@@ -40,6 +45,7 @@ export default function PostGigWizard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  const [managed, setManaged] = useState(false);
 
   useEffect(() => {
     setMinDate(new Date().toISOString().split("T")[0]);
@@ -85,7 +91,7 @@ export default function PostGigWizard() {
 
   // --- VALIDATION PER STEP ---
   const validateStep1 = () => {
-    if (!listingType) return "Please select a listing type.";
+    if (!postKind) return "Pick one so we know where to put your post.";
     return null;
   };
 
@@ -132,7 +138,7 @@ export default function PostGigWizard() {
 
   const prevStep = () => {
     setError("");
-    setStep(s => Math.max(2, s - 1)); // step 1 was removed; clamp at 2
+    setStep(s => Math.max(1, s - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -173,7 +179,8 @@ export default function PostGigWizard() {
       const deadlineISO = deadlineDate ? new Date(`${deadlineDate}T${deadlineTime || "23:59:59"}`).toISOString() : null;
 
       const payload = {
-        listing_type: "HUSTLE",
+        // SERVICE = self-promotion shopfront, excluded from the task feed.
+        listing_type: postKind === "SERVICE" ? "SERVICE" : "HUSTLE",
         category,
         market_type: null,
         item_condition: null,
@@ -188,6 +195,8 @@ export default function PostGigWizard() {
         deadline: deadlineISO,
         github_link: (category === "Tech & Engineering" || category === "Academics & Gigs") && githubLink.trim() ? githubLink.trim() : null,
         status: "open",
+        is_managed: managed,
+        managed_status: managed ? "UNASSIGNED" : null,
         created_at: new Date().toISOString()
       };
 
@@ -250,7 +259,7 @@ export default function PostGigWizard() {
         {/* PROGRESS HEADER */}
         <div className="flex items-center justify-between mb-8">
           <button
-            onClick={() => step > 2 ? prevStep() : router.back()}
+            onClick={() => step > 1 ? prevStep() : router.back()}
             className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors px-3 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.16]"
             aria-label="Back"
           >
@@ -260,18 +269,18 @@ export default function PostGigWizard() {
 
           <div className="flex flex-col items-center">
             <div className="flex gap-2">
-              {[2, 3].map(i => (
+              {[1, 2, 3].map(i => (
                 <div key={i} className={`h-1.5 w-14 rounded-full transition-colors duration-300 ${i === step ? 'bg-[#8825F5]' : i < step ? 'bg-white' : 'bg-white/10'}`} />
               ))}
             </div>
             <span className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A9FF]">
-              Post a hustle
+              {postKind === "SERVICE" ? "Offer a service" : "Post a hustle"}
             </span>
           </div>
 
           <div className="w-[72px] sm:w-[88px] flex items-center justify-end">
             <span className="text-[10px] uppercase tracking-widest text-white/50">
-              {step === 3 ? "Final" : `Step ${step - 1} / 2`}
+              {step === 3 ? "Final" : `Step ${step} / 3`}
             </span>
           </div>
         </div>
@@ -282,14 +291,64 @@ export default function PostGigWizard() {
           </div>
         )}
 
-        {/* STEP 1 Removed */}
+        {/* STEP 1: WHICH SIDE OF THE MARKETPLACE IS THIS? */}
+        {step === 1 && (
+          <div className="space-y-8 animate-in fade-in-50 slide-in-from-right-8 duration-300">
+            <div className="space-y-2 mb-8">
+              <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                What are you posting?
+              </h1>
+              <p className="text-sm text-white/60">
+                These go to two different places, so pick the one that fits.
+              </p>
+            </div>
+
+            <div className="grid gap-4">
+              {([
+                {
+                  kind: "TASK" as const,
+                  title: "I need something done",
+                  blurb: "You're paying someone. Goes to the task feed, students apply, payment is held in escrow until you approve the work.",
+                  example: "“Need a 700-word blog post by Friday — ₹500”",
+                },
+                {
+                  kind: "SERVICE" as const,
+                  title: "I'm offering a service",
+                  blurb: "You're the one getting paid. Goes to the Talent directory where people browse and hire you — it won't sit in the task feed.",
+                  example: "“I make college PPTs — from ₹100”",
+                },
+              ]).map((opt) => {
+                const active = postKind === opt.kind;
+                return (
+                  <button
+                    key={opt.kind}
+                    type="button"
+                    onClick={() => setPostKind(opt.kind)}
+                    className={`text-left p-6 rounded-2xl border transition-all active:scale-[0.99] ${
+                      active
+                        ? "bg-[var(--brand-purple)]/[0.12] border-[var(--brand-purple)]/50"
+                        : "bg-[var(--card)] border-white/[0.08] hover:border-white/20"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <h2 className="text-lg font-semibold">{opt.title}</h2>
+                      {active && <CheckCircle2 size={20} className="text-[#C9A9FF] shrink-0 mt-0.5" />}
+                    </div>
+                    <p className="text-sm text-white/60 mt-2 leading-relaxed">{opt.blurb}</p>
+                    <p className="text-xs text-white/40 mt-3 italic">{opt.example}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* STEP 2: DETAILS */}
         {
           step === 2 && (
             <div className="space-y-8 animate-in fade-in-50 slide-in-from-right-8 duration-300">
               <div className="space-y-2 mb-8">
-                <h1 className="text-3xl font-black">The Details</h1>
+                <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>The details</h1>
                 <p className="text-white/50 text-sm">
                   {listingType === 'HUSTLE'
                     ? 'Tell exactly what task you need done.'
@@ -384,7 +443,7 @@ export default function PostGigWizard() {
           step === 3 && (
             <div className="space-y-8 animate-in fade-in-50 slide-in-from-right-8 duration-300">
               <div className="space-y-2 mb-8">
-                <h1 className="text-3xl font-black">Logistics & Price</h1>
+                <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Logistics & price</h1>
                 <p className="text-white/50 text-sm">Where, when, and how much.</p>
               </div>
 
@@ -395,7 +454,7 @@ export default function PostGigWizard() {
                   </label>
                   <div className="relative">
                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl text-white/60 font-mono">₹</span>
-                    <input type="number" inputMode="decimal" value={price} onChange={(e) => store.setField('price', e.target.value)} placeholder="500" className="w-full bg-[#1A1A24] border border-white/10 rounded-2xl py-5 pl-12 pr-5 text-4xl font-black text-white outline-none focus:border-brand-purple/50 transition-all shadow-inner tracking-tighter" />
+                    <input type="number" inputMode="decimal" value={price} onChange={(e) => store.setField('price', e.target.value)} placeholder="500" style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="w-full bg-[var(--card-elevated)] border border-white/10 rounded-2xl py-5 pl-12 pr-5 text-4xl font-semibold text-white outline-none focus:border-[var(--brand-purple)]/50 transition-all tracking-tight" />
                   </div>
                 </div>
 
@@ -534,14 +593,38 @@ export default function PostGigWizard() {
           )
         }
 
+        {/* MANAGED MODE — let DoItForMe assign + QA (higher take, less hassle) */}
+        {step === 3 && listingType === "HUSTLE" && (
+          <button
+            type="button"
+            onClick={() => setManaged((m) => !m)}
+            className={`mt-6 w-full text-left p-5 rounded-2xl border transition-all ${managed ? "bg-brand-purple/10 border-brand-purple/50" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
+          >
+            <div className="flex items-start gap-4">
+              <div className={`mt-0.5 h-5 w-5 shrink-0 rounded-md border flex items-center justify-center transition-all ${managed ? "bg-brand-purple border-brand-purple" : "border-white/30"}`}>
+                {managed && <CheckCircle size={14} className="text-white" />}
+              </div>
+              <div>
+                <p className="font-semibold text-white flex items-center gap-2">
+                  Let DoItForMe assign the best talent
+                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-brand-purple/20 text-[#C9A9FF] border border-brand-purple/30">MANAGED</span>
+                </p>
+                <p className="text-[13px] text-white/50 leading-relaxed mt-1">
+                  We hand-pick a vetted student, manage the timeline, and review the work before you pay. No sifting through applicants. Same flat fee.
+                </p>
+              </div>
+            </div>
+          </button>
+        )}
+
         {/* BOTTOM ACTION BAR */}
         <div className="pt-8 flex justify-end">
           {step < 3 ? (
-            <button onClick={nextStep} className="w-full md:w-auto px-10 py-5 rounded-2xl bg-white hover:bg-zinc-200 text-black font-black text-lg transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)] flex justify-center items-center gap-2 active:scale-95 group">
+            <button onClick={nextStep} className="w-full md:w-auto px-10 py-5 rounded-2xl bg-white hover:bg-zinc-200 text-black font-semibold text-lg transition-all flex justify-center items-center gap-2 active:scale-95 group">
               Continue <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
             </button>
           ) : (
-            <button onClick={handleSubmit} disabled={loading} className={`w-full px-10 py-5 rounded-2xl font-black text-lg transition-all flex justify-center items-center gap-2 active:scale-95 shadow-[0_0_30px_rgba(136,37,245,0.3)] ${loading ? 'bg-zinc-800 text-white/50' : 'bg-brand-purple hover:bg-[#7D5FFF] text-white group'}`}>
+            <button onClick={handleSubmit} disabled={loading} className={`w-full px-10 py-5 rounded-2xl font-semibold text-lg transition-all flex justify-center items-center gap-2 active:scale-95 ${loading ? 'bg-zinc-800 text-white/50' : 'bg-[var(--brand-purple)] hover:brightness-110 text-white group'}`}>
               {loading ? <Loader2 className="animate-spin w-6 h-6" /> : <><CheckCircle size={22} /> {
                 listingType === 'HUSTLE' ? 'Post Hustle' :
                   marketType === 'SELL' ? 'List Item for Sale' :

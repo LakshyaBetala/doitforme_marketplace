@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Loader2, ArrowLeft, MapPin, Shield, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check, ChevronLeft, ChevronRight, FileText, Download, Share2 } from "lucide-react";
+import { Loader2, ArrowLeft, MapPin, Shield, ShieldCheck, MessageCircle, Clock, Users, Send, AlertTriangle, X, Check, ChevronLeft, ChevronRight, FileText, Download, Share2 } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 import Skeleton from "@/components/ui/Skeleton";
 import Image from "next/image";
@@ -27,7 +27,7 @@ export default function GigDetailsPage() {
   // Apply Modal State
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [offerPitch, setOfferPitch] = useState("");
-  const [paymentPref, setPaymentPref] = useState<"DIRECT" | "ESCROW">("DIRECT");
+
   const [isApplying, setIsApplying] = useState(false);
 
   useEffect(() => {
@@ -105,7 +105,6 @@ export default function GigDetailsPage() {
         body: JSON.stringify({
           gigId,
           offerPitch,
-          paymentPreference: paymentPref
         })
       });
 
@@ -355,8 +354,6 @@ export default function GigDetailsPage() {
           isApplying={isApplying}
           offerPitch={offerPitch}
           setOfferPitch={setOfferPitch}
-          paymentPref={paymentPref}
-          setPaymentPref={setPaymentPref}
           isCompanyTask={isCompanyTask}
         />
       )}
@@ -365,8 +362,7 @@ export default function GigDetailsPage() {
   );
 }
 
-function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isApplying, offerPitch, setOfferPitch, paymentPref, setPaymentPref, isCompanyTask }: any) {
-  const [riskAccepted, setRiskAccepted] = useState(false);
+function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isApplying, offerPitch, setOfferPitch, isCompanyTask }: any) {
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Lock body scroll when modal is open
@@ -392,72 +388,32 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
 
         <div className="space-y-10">
             
-            {/* PAYMENT PREFERENCE TOGGLE */}
+            {/* PAYMENT — ESCROW ONLY.
+                This used to be a choice, with Direct Connect labelled "No
+                Platform Fee" and escrow gated behind price >= 500. Since the
+                median gig is Rs 499, most applicants could not pick escrow even
+                if they wanted to — 223 of 267 applications went Direct, taking
+                the money, the protection and the fee off-platform. Both the
+                choice and the price gate are gone; the server forces ESCROW. */}
             <div className="space-y-4">
-              <label className="text-xs font-semibold text-zinc-400 block mb-4">Payment Method</label>
-              
-              <div className="flex flex-col gap-3">
-                
-                {/* DIRECT CONNECT */}
-                <button 
-                  onClick={() => setPaymentPref("DIRECT")} 
-                  className={`p-4 md:p-6 flex flex-col items-start gap-3 md:gap-4 transition-all text-left rounded-2xl border ${paymentPref === "DIRECT" ? "bg-white/10 border-[#8825F5]/50 shadow-[0_0_20px_rgba(136,37,245,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <p className="font-bold text-base md:text-lg tracking-tight text-white flex items-center gap-2">⚡ Direct Connect</p>
-                    <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "DIRECT" ? 'bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>No Platform Fee</span>
-                  </div>
-                  <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed">Connect directly via WhatsApp. Handle payment between yourselves — no platform involvement.</p>
-                </button>
+              <label className="text-xs font-semibold text-zinc-400 block mb-4">Payment</label>
 
-                {/* DIRECT CONNECT WARNING & CHECKBOX */}
-                {paymentPref === "DIRECT" && (
-                  <div className="p-3 md:p-5 bg-red-500/10 border border-red-500/20 rounded-2xl space-y-3 md:space-y-4 animate-in zoom-in-95 duration-200 shadow-inner">
-                    <div className="flex items-start gap-3">
-                       <AlertTriangle size={20} className="text-red-400 shrink-0 mt-0.5" />
-                       <div className="space-y-1">
-                         <p className="text-[13px] font-bold text-red-400 leading-tight">Risk Authorization Required</p>
-                         <p className="text-[11px] text-red-400/80 font-medium leading-relaxed">
-                           This channel is unshielded. The platform assumes zero liability for financial delivery or dispute mediation. 
-                         </p>
-                       </div>
-                    </div>
-                    
-                    <label className="flex items-center gap-4 cursor-pointer group pt-2 border-t border-red-500/10">
-                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${riskAccepted ? 'bg-red-500 border-red-500' : 'bg-black/50 border-white/20 group-hover:border-red-500/50'}`}>
-                          {riskAccepted && <Check size={14} className="text-white" />}
-                       </div>
-                       <input 
-                         type="checkbox" 
-                         className="hidden" 
-                         checked={riskAccepted} 
-                         onChange={(e) => setRiskAccepted(e.target.checked)} 
-                       />
-                       <span className={`text-sm font-medium transition-colors ${riskAccepted ? 'text-white' : 'text-zinc-400 group-hover:text-red-400'}`}>
-                         I acknowledge and assume all external transaction risks.
-                       </span>
-                    </label>
-                  </div>
-                )}
-                
-                {/* ESCROW CONNECT */}
-                {gig.price >= 500 ? (
-                  <button 
-                    onClick={() => setPaymentPref("ESCROW")} 
-                    className={`p-4 md:p-6 flex flex-col items-start gap-3 md:gap-4 transition-all text-left rounded-2xl border ${paymentPref === "ESCROW" ? "bg-white/10 border-[#8825F5]/50 shadow-[0_0_20px_rgba(136,37,245,0.15)] shadow-inner backdrop-blur-md" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <p className="font-bold text-base md:text-lg tracking-tight text-white flex items-center gap-2">🛡️ Secure Escrow</p>
-                      <span className={`px-3 py-1 text-[10px] font-semibold rounded-full border ${paymentPref === "ESCROW" ? 'bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30' : 'bg-white/5 text-zinc-500 border-white/10'}`}>3% Platform Fee</span>
-                    </div>
-                    <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed">Payment held securely until you deliver. Guaranteed payout subject to a 3% platform fee.</p>
-                  </button>
-                ) : (
-                  <div className="p-4 md:p-6 bg-white/[0.01] border border-white/5 rounded-2xl opacity-40 cursor-not-allowed">
-                    <p className="font-bold text-base md:text-lg text-zinc-600 tracking-tight flex items-center gap-2">🛡️ Secure Escrow</p>
-                    <p className="text-[11px] font-semibold text-red-500/80 mt-2 bg-red-500/10 px-2 py-1 rounded inline-block">Available for tasks ₹500+</p>
-                  </div>
-                )}
+              <div className="p-4 md:p-6 rounded-2xl border border-[#8825F5]/30 bg-[#8825F5]/[0.08]">
+                <div className="flex items-center justify-between w-full gap-3">
+                  <p className="font-bold text-base md:text-lg tracking-tight text-white flex items-center gap-2">
+                    <ShieldCheck size={18} className="text-[#C9A9FF]" /> Secure Escrow
+                  </p>
+                  <span className="px-3 py-1 text-[10px] font-semibold rounded-full border bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30 whitespace-nowrap">
+                    Protected
+                  </span>
+                </div>
+                <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed mt-3">
+                  The poster funds the task before you start, and we hold it. Finish the work and
+                  the money is released to you — they can&apos;t disappear with it.
+                </p>
+                <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">
+                  A small platform fee is deducted from your payout only when you actually get paid.
+                </p>
               </div>
             </div>
 
@@ -492,9 +448,9 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
 
             <button 
               onClick={handleApply}
-              disabled={isApplying || !termsAccepted || (paymentPref === "DIRECT" && !riskAccepted)}
+              disabled={isApplying || !termsAccepted}
               className={`w-full py-4 text-[15px] font-semibold rounded-full transition-all flex items-center justify-center gap-3 ${
-                (isApplying || !termsAccepted || (paymentPref === "DIRECT" && !riskAccepted)) 
+                (isApplying || !termsAccepted) 
                 ? 'bg-white/5 text-zinc-500 cursor-not-allowed border border-white/5' 
                 : 'bg-white text-black hover:bg-zinc-200 active:scale-95 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]'
               }`}

@@ -437,7 +437,7 @@ export default function ProfilePage() {
   if (!profile.upi_id) missingFields.push("UPI ID");
 
   return (
-    <main className="min-h-[100dvh] bg-[#070B14] p-4 md:p-6 lg:p-12 pb-24 text-white selection:bg-[#8825F5]/30 selection:text-white overflow-x-hidden relative font-sans">
+    <main className="min-h-[100dvh] bg-[var(--background)] p-4 md:p-6 lg:p-12 pb-24 text-white selection:bg-[#8825F5]/30 selection:text-white overflow-x-hidden relative font-sans">
       <div className="max-w-5xl mx-auto space-y-6 md:space-y-8 relative z-10">
 
         {/* Back Button */}
@@ -477,11 +477,11 @@ export default function ProfilePage() {
           {/* ==================================================== */}
           {/* MAIN IDENTITY & EDIT CARD (LEFT BENTO) */}
           {/* ==================================================== */}
-          <div className="lg:col-span-7 rounded-[32px] border border-white/5 bg-[#0F141E] shadow-2xl overflow-hidden relative h-fit">
-            
+          <div className="lg:col-span-7 rounded-[32px] border border-white/[0.08] bg-[var(--card)] overflow-hidden relative h-fit">
+
             {/* Cover Photo Area */}
-            <div className="h-32 md:h-40 bg-gradient-to-br from-[#1E2536] to-[#0A0E17] relative flex items-start justify-end p-5 md:p-6">
-              <div className="absolute inset-0 bg-white/5 opacity-20 mix-blend-overlay pointer-events-none"></div>
+            <div className="h-32 md:h-40 bg-[var(--card-elevated)] relative flex items-start justify-end p-5 md:p-6">
+              <div aria-hidden className="absolute -top-16 -left-10 w-64 h-64 rounded-full bg-[var(--brand-purple)]/[0.14] blur-[90px] pointer-events-none"></div>
               
               {/* Edit Controls Top Right */}
               <div className="relative z-10 flex items-center gap-3">
@@ -526,7 +526,7 @@ export default function ProfilePage() {
               
               {/* Avatar overlapping cover */}
               <div className="relative -mt-16 mb-6 inline-flex">
-                <div className={`w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[#0F141E] relative z-10 group cursor-pointer ${stats.isLightningResponder ? "shadow-[0_0_20px_rgba(250,204,21,0.2)]" : ""}`} onClick={() => fileInputRef.current?.click()}>
+                <div className="w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[var(--card)] relative z-10 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                   <Avatar src={profile.avatar_url} fallback={avatarLetter} className="w-full h-full text-4xl group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-[6px] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
                     {uploadingAvatar ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-8 h-8 text-white" />}
@@ -537,15 +537,15 @@ export default function ProfilePage() {
                 {/* Badges */}
                 <div className="absolute bottom-2 right-2 z-20 flex gap-2">
                   {stats.isLightningResponder ? (
-                    <div className="bg-yellow-500 text-black p-2 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.5)]" title="Lightning Responder">
+                    <div className="bg-[var(--brand-purple)] text-white p-2 rounded-full ring-2 ring-[var(--card)]" title="Lightning Responder">
                       <Zap className="w-4 h-4 fill-current" />
                     </div>
                   ) : profile.kyc_verified ? (
-                    <div className="bg-emerald-500 text-black p-2 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
+                    <div className="bg-[var(--brand-purple)] text-white p-2 rounded-full ring-2 ring-[var(--card)]" title="Verified student">
                       <ShieldCheck className="w-4 h-4" />
                     </div>
                   ) : (
-                    <div className="bg-amber-500 text-black p-2 rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.5)]">
+                    <div className="bg-white/10 text-white/70 border border-white/15 p-2 rounded-full ring-2 ring-[var(--card)]" title="Not verified">
                       <ShieldAlert className="w-4 h-4" />
                     </div>
                   )}
@@ -604,10 +604,10 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1">
-                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight leading-none flex items-center gap-3">
+                    <h1 className="text-3xl md:text-4xl font-semibold text-white tracking-tight leading-none flex items-center gap-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {displayName}
                       {stats.isLightningResponder && (
-                        <span className="px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase tracking-widest rounded-md items-center gap-1 hidden md:flex">
+                        <span className="px-2 py-0.5 bg-[var(--brand-purple)]/10 border border-[var(--brand-purple)]/25 text-[var(--brand-purple-soft)] text-[10px] font-medium tracking-wide rounded-md items-center gap-1 hidden md:flex">
                           <Zap size={10} fill="currentColor" /> Lightning
                         </span>
                       )}
@@ -760,21 +760,21 @@ export default function ProfilePage() {
           <div className="lg:col-span-5 space-y-6">
 
             {/* Performance Stats */}
-            <div className="rounded-[32px] border border-white/5 bg-[#0F141E] p-6 md:p-8 flex items-center justify-between shadow-xl">
+            <div className="rounded-[32px] border border-white/[0.08] bg-[var(--card)] p-6 md:p-8 flex items-center justify-between">
               <div className="space-y-1 flex-1">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold flex items-center gap-1.5 mb-2"><Briefcase size={12} className="text-zinc-400"/> Total Earned</div>
-                <div className="text-3xl font-black text-white tracking-tight">₹{stats.earnings}</div>
-                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">✓ {stats.completed} GIGS</div>
+                <div className="text-[11px] uppercase tracking-[0.1em] text-white/45 font-medium flex items-center gap-1.5 mb-2"><Briefcase size={12} className="text-white/45"/> Total earned</div>
+                <div className="text-3xl font-semibold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{stats.earnings}</div>
+                <div className="text-[11px] text-white/45 mt-1">{stats.completed} {stats.completed === 1 ? "gig" : "gigs"} completed</div>
               </div>
-              
+
               <div className="w-px h-16 bg-white/10 mx-6"></div>
-              
+
               <div className="space-y-1 flex-1">
-                <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold flex items-center gap-1.5 mb-2"><Star size={12} className="text-yellow-500"/> Reputation</div>
+                <div className="text-[11px] uppercase tracking-[0.1em] text-white/45 font-medium flex items-center gap-1.5 mb-2"><Star size={12} className="text-[var(--brand-purple-soft)]"/> Reputation</div>
                 <div className="flex items-baseline gap-2">
-                  <div className="text-3xl font-black text-white tracking-tight">{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
+                  <div className="text-3xl font-semibold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
                 </div>
-                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">{profile.rating_count || 0} REVIEWS</div>
+                <div className="text-[11px] text-white/45 mt-1">{profile.rating_count || 0} {profile.rating_count === 1 ? "review" : "reviews"}</div>
               </div>
             </div>
 
@@ -811,7 +811,7 @@ export default function ProfilePage() {
             )}
 
             {/* Worker Setup CTA */}
-            <div className="rounded-[32px] border border-white/5 bg-[#0F141E] p-6 md:p-8 flex flex-col gap-6 shadow-xl relative overflow-hidden group">
+            <div className="rounded-[32px] border border-white/5 bg-[var(--card)] p-6 md:p-8 flex flex-col gap-6 shadow-xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-[50px] pointer-events-none transition-all"></div>
               
               <div className="flex items-start gap-4 relative z-10">
@@ -819,8 +819,8 @@ export default function ProfilePage() {
                   <Briefcase size={20} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-black text-white tracking-tight">Worker Profile</h3>
-                  <p className="text-zinc-400 text-[13px] mt-1.5 leading-relaxed">Add specialized skills, portfolio links, and your resume to stand out to employers.</p>
+                  <h3 className="text-lg font-semibold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Worker profile</h3>
+                  <p className="text-white/55 text-[13px] mt-1.5 leading-relaxed">Add specialized skills, portfolio links, and your resume to stand out to employers.</p>
                 </div>
               </div>
               
@@ -831,15 +831,15 @@ export default function ProfilePage() {
 
             {/* Refer & Earn */}
             {referralCode && (
-              <div className="rounded-[32px] border border-white/5 bg-[#0F141E] p-6 shadow-xl relative overflow-hidden group">
+              <div className="rounded-[32px] border border-white/5 bg-[var(--card)] p-6 shadow-xl relative overflow-hidden group">
                 <div className="flex items-center gap-3 mb-4 relative z-10">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 border border-emerald-500/20">
-                    <Gift size={14} className="text-emerald-400" />
+                  <div className="w-8 h-8 rounded-lg bg-[var(--brand-purple)]/10 flex items-center justify-center shrink-0 border border-[var(--brand-purple)]/20">
+                    <Gift size={14} className="text-[var(--brand-purple-soft)]" />
                   </div>
-                  <h3 className="text-sm font-bold text-white tracking-wide">Refer & Earn</h3>
+                  <h3 className="text-sm font-semibold text-white tracking-tight">Refer & earn</h3>
                 </div>
-                
-                <p className="text-xs text-zinc-400 mb-5 leading-relaxed relative z-10">Share your code with friends. You both get 25 Reward Points when they join!</p>
+
+                <p className="text-xs text-white/55 mb-5 leading-relaxed relative z-10">Share your code with friends. You both get 25 reward points when they join.</p>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3 relative z-10">
                   <div className="flex-1 w-full flex items-center justify-between bg-black/20 border border-white/5 rounded-xl px-4 py-3">
@@ -875,7 +875,7 @@ export default function ProfilePage() {
             )}
 
             {/* Telegram Notifications */}
-            <div className="rounded-[24px] border border-[#0088cc]/20 bg-[#0F141E] p-5 relative overflow-hidden shadow-xl">
+            <div className="rounded-[24px] border border-[#0088cc]/20 bg-[var(--card)] p-5 relative overflow-hidden shadow-xl">
               <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full">
                 <div className="flex-1 w-full text-center sm:text-left">
                   <h3 className="text-sm font-bold text-white flex items-center justify-center sm:justify-start gap-2">

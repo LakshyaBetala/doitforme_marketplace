@@ -17,6 +17,9 @@ type EmailKind =
   | "auto_release_warning"
   | "payment_released"
   | "dispute_opened"
+  | "changes_requested"
+  | "poster_nudge"
+  | "application_closed"
   | "company_approved"
   | "company_pro_activated"
   | "kyc_approved"
@@ -111,6 +114,46 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
         `,
       };
 
+    // Posters sitting on unanswered applications. Deliberately blunt about the
+    // deadline — a vague "you have applicants" nudge is what got ignored the
+    // first time (85% of applicants never got any reply).
+    case "poster_nudge": {
+      const n = Number(args.extra?.pendingCount ?? 0);
+      const applicants = n === 1 ? "1 person is" : `${n} people are`;
+      // daysLeft = 0 means this listing type is never auto-expired (company
+      // roles). Don't threaten a closure that will never happen.
+      const days = Number(args.extra?.daysLeft ?? 0);
+      const footer =
+        days > 0
+          ? `If there's no response, this listing closes automatically in ${days} day${days === 1 ? "" : "s"} and everyone is told it's no longer open.`
+          : `People who get no reply stop applying — to your next post too.`;
+      return {
+        subject: `${applicants} waiting on you — ${args.gigTitle || "your gig"}`,
+        preheader: days > 0 ? "Pick someone, or this listing closes automatically." : "Pick someone before they move on.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p><strong>${applicants}</strong> waiting to hear back about <strong>${title}</strong>. They applied over 24 hours ago and haven't had a reply.</p>
+          <p>Pick one, message them, or decline — any of those is better than silence.</p>
+          <p><a href="${url}" class="cta">Review applicants</a></p>
+          <p class="muted">${footer}</p>
+        `,
+      };
+    }
+
+    // Closure for applicants on an abandoned gig. The point is to end the wait
+    // honestly and hand them somewhere to go next.
+    case "application_closed":
+      return {
+        subject: `Closed — ${args.gigTitle || "a gig you applied to"}`,
+        preheader: "The poster never responded, so we closed it.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>You applied to <strong>${title}</strong> and the poster never responded, so we've closed the listing. You're not waiting on anything — that one's done.</p>
+          <p>Sorry it wasn't a better experience. We're now closing abandoned listings automatically so this stops happening.</p>
+          <p><a href="${SITE}/feed" class="cta">See gigs that are actually active</a></p>
+        `,
+      };
+
     case "application_rejected":
       return {
         subject: `Update on ${args.gigTitle || "your application"}`,
@@ -174,6 +217,17 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p>Hi ${name},</p>
           <p>A dispute was raised on <strong>${title}</strong>. Funds are frozen until our team reviews — usually within 48 hours.</p>
           <p><a href="${url}" class="cta">Open dispute thread</a></p>
+        `,
+      };
+
+    case "changes_requested":
+      return {
+        subject: `Changes requested — ${args.gigTitle || "your task"}`,
+        preheader: "Revise and resubmit your work.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>The poster asked for changes on <strong>${title}</strong>. Check their feedback in the chat, revise your work, and resubmit. The 24-hour review clock restarts once you do.</p>
+          <p><a href="${url}" class="cta">View & resubmit</a></p>
         `,
       };
 

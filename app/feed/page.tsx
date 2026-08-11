@@ -80,9 +80,13 @@ export default function FeedPage() {
         .range(from, to);
 
       // Filters
-      // Exclude gigs older than 30 days
+      // Age out student hustles after 30 days, but NEVER company tasks: those
+      // are internships/roles that stay open for months, and they are the only
+      // real demand on the platform. The flat 30-day rule was silently hiding
+      // every COMPANY_TASK ever posted while leaving it status='open' in the DB,
+      // so companies saw their listing quietly die. Deadline still applies below.
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      query = query.gt("created_at", thirtyDaysAgo);
+      query = query.or(`listing_type.eq.COMPANY_TASK,created_at.gt.${thirtyDaysAgo}`);
 
       // Filter only Hustles and Company Tasks
       query = query.in("listing_type", ["HUSTLE", "COMPANY_TASK"]).or(`deadline.is.null,deadline.gt.${nowIso}`);
@@ -193,8 +197,8 @@ export default function FeedPage() {
 
         {/* TOP BAR */}
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-black tracking-tighter italic">
-            <span className="text-brand-purple">DOIT</span>FORME
+          <h1 className="text-xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <span className="text-[var(--brand-purple-soft)]">DoIt</span>ForMe
           </h1>
           <button
             onClick={() => router.push('/messages')}
@@ -244,10 +248,10 @@ export default function FeedPage() {
               />
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black text-white italic tracking-tighter">
-                Ghost Town?
+              <h3 className="text-2xl font-semibold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                Quiet here for now
               </h3>
-              <p className="text-brand-purple font-medium">No hustles yet? Be the first to post!</p>
+              <p className="text-[var(--brand-purple-soft)] font-medium">No tasks yet. Be the first to post one.</p>
             </div>
             <button onClick={() => router.push('/post')} className="px-6 py-3 rounded-xl font-medium text-white tracking-tight bg-[#8825F5] hover:bg-[#7a1fe0] transition-colors">
               Create post

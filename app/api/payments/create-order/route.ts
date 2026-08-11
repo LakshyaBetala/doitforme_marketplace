@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
+import { platformFeeFor, gatewayFeeFor, audienceForGig } from "@/lib/fees";
 
 export async function POST(req: Request) {
   try {
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
     // 2. Fetch Gig Details
     const { data: gig, error: gigError } = await supabase
       .from("gigs")
-      .select("price, title, poster_id, listing_type, market_type, security_deposit, assigned_worker_id")
+      .select("price, title, poster_id, listing_type, market_type, security_deposit, assigned_worker_id, is_managed, company_id")
       .eq("id", gigId)
       .single();
 
@@ -73,7 +74,10 @@ export async function POST(req: Request) {
 
     let deposit = 0;
 
-    let platformFee = Math.ceil(price * 0.03);
+    // Take rate by audience (see lib/fees.ts): student economy 5%, business 10%.
+    // Managed is a business delivery mode — still 10%, not a separate rate.
+    const feeAudience = audienceForGig(gig);
+    let platformFee = platformFeeFor(price, feeAudience);
     let renterFee = 0;
     let netWorkerPay = price - platformFee;
     const discountApplied = false;
@@ -83,7 +87,7 @@ export async function POST(req: Request) {
     const subtotal = price + deposit + renterFee;
 
     // Gateway Fee (2% applied on everything)
-    const gatewayFee = Math.ceil(subtotal * 0.02);
+    const gatewayFee = gatewayFeeFor(subtotal);
 
     const totalAmount = subtotal + gatewayFee;
 
@@ -98,6 +102,7 @@ export async function POST(req: Request) {
       discount_applied: discountApplied,
       total: totalAmount,
       platform_fee: platformFee, // Stores the Deduction Amount
+      fee_audience: feeAudience,
       base_price: price,
       deposit: deposit,
       net_worker_pay: netWorkerPay
