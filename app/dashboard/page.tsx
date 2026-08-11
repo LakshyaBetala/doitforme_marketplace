@@ -337,7 +337,12 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="block font-semibold text-base md:text-lg text-white tracking-tight">Activity</span>
-                  <span className="block text-xs md:text-sm text-white/55 mt-1">Your posts, applications, and escrow.</span>
+                  {/* Names the destination in the poster's own words. "Your posts,
+                      applications, and escrow" describes a database; posters were
+                      looking for where their gig went and who applied to it. */}
+                  <span className="block text-xs md:text-sm text-white/55 mt-1">
+                    Your posted gigs, who applied, and the work you&apos;re doing.
+                  </span>
                 </div>
               </Link>
             </section>

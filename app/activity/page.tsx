@@ -68,7 +68,10 @@ export default function ActivityHubPage() {
       // Load Hiring (Gigs I posted)
       const { data: myPosts } = await supabase
         .from('gigs')
-        .select('*, worker:users!assigned_worker_id(name, phone)')
+        // applications(count) is what makes "3 applicants" possible. Without it
+        // a poster saw their own gig with no indication anyone had applied, and
+        // no route to review or hire — the single biggest hole on this page.
+        .select('*, worker:users!assigned_worker_id(name, phone), applications(count)')
         .eq('poster_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -86,17 +89,50 @@ export default function ActivityHubPage() {
     loadActivity();
   }, [router, supabase]);
 
+  /**
+   * Fund escrow for real.
+   *
+   * This previously said "Initiating payment…" and then simply wrote
+   * escrow_status = 'FUNDED' straight from the browser — no Cashfree call, no
+   * money, no transaction row. A poster could mark any gig fully funded for
+   * free, and the worker would deliver against an escrow that held nothing.
+   *
+   * It now goes through /api/payments/create-order (which re-reads the price
+   * server-side and records the recipient) and opens the real Cashfree
+   * checkout. Settlement happens in the webhook, never in the browser.
+   */
   const handleFundEscrow = async (gigId: string) => {
-      toast.loading("Initiating payment...");
-      const { error } = await supabase.from('gigs')
-         .update({ status: 'assigned', escrow_status: 'FUNDED' })
-         .eq('id', gigId);
-      
-      if(error) toast.error("Payment failed");
-      else {
-          toast.success("Escrow funded! Work can begin.");
-          setHiringGigs(prev => prev.map(g => g.id === gigId ? { ...g, status: 'assigned', escrow_status: 'FUNDED' } : g));
+    const t = toast.loading("Opening checkout…");
+    try {
+      const res = await fetch("/api/payments/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gigId }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.payment_session_id) {
+        toast.error(data.error || "Could not start checkout.", { id: t });
+        return;
       }
+      toast.dismiss(t);
+
+      const mode = process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox";
+      // @ts-expect-error - Cashfree global injected by their SDK
+      if (typeof window.Cashfree === "undefined") {
+        await new Promise<void>((resolve, reject) => {
+          const s = document.createElement("script");
+          s.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error("Couldn't load the payment window."));
+          document.body.appendChild(s);
+        });
+      }
+      // @ts-expect-error - Cashfree global injected by their SDK
+      const cashfree = window.Cashfree({ mode });
+      cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: "_self" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Payment could not be started.", { id: t });
+    }
   };
 
   // Escrow submit opens the delivery-note modal. Direct (legacy off-platform)
@@ -254,6 +290,46 @@ export default function ActivityHubPage() {
                   </div>
                 )}
 
+                {/* Applicants. A poster previously saw their own gig with no sign
+                    anyone had applied and no way to review or hire — the reason
+                    145 applications sat unanswered. The count is the prompt; the
+                    button is the route to acting on it. */}
+                {(() => {
+                  const applicantCount = Array.isArray(gig.applications)
+                    ? (gig.applications[0]?.count ?? 0)
+                    : 0;
+                  if (gig.assigned_worker_id) return null;
+                  return (
+                    <button
+                      onClick={() => router.push(`/chat/${gig.id}`)}
+                      className={`w-full mb-3 p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition ${
+                        applicantCount > 0
+                          ? "bg-[var(--brand-purple)]/[0.08] border-[var(--brand-purple)]/25 hover:bg-[var(--brand-purple)]/[0.14]"
+                          : "bg-white/[0.02] border-white/[0.08] cursor-default"
+                      }`}
+                      disabled={applicantCount === 0}
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold text-white">
+                          {applicantCount === 0
+                            ? "No applicants yet"
+                            : `${applicantCount} ${applicantCount === 1 ? "person has" : "people have"} applied`}
+                        </span>
+                        <span className="block text-xs text-white/55 mt-0.5">
+                          {applicantCount === 0
+                            ? "We'll notify you the moment someone applies."
+                            : "Review them, pick one, and pay to start the work."}
+                        </span>
+                      </span>
+                      {applicantCount > 0 && (
+                        <span className="shrink-0 text-xs font-semibold text-[var(--brand-purple-soft)] flex items-center gap-1">
+                          Review <ArrowRight size={13} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })()}
+
                 <div className="flex flex-col md:flex-row gap-2 mt-3 border-t border-white/5 pt-3">
                    <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
                      <MessageSquare size={14} /> Chat
@@ -261,7 +337,7 @@ export default function ActivityHubPage() {
 
                    {gig.status === 'AWAITING_FUNDS' && gig.payment_gateway !== 'DIRECT' && (
                      <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 py-2.5 rounded-xl bg-[#8825F5] hover:bg-[#7a1de0] text-white font-bold text-sm transition shadow-lg shadow-[#C9A9FF]/20 flex items-center gap-2 justify-center">
-                       <ShieldCheck size={14} /> Fund Escrow (3%)
+                       <ShieldCheck size={14} /> Pay &amp; start work
                      </button>
                    )}
 
