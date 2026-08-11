@@ -45,7 +45,15 @@ export async function proxy(request: NextRequest) {
     '/feed',
     '/gig',
     '/onboarding',
-    '/verify-id' // KYC page should be protected
+    '/verify-id', // KYC page should be protected
+    // These render private data and were reachable while signed out. RLS kept
+    // the rows safe, so nothing leaked, but an anonymous visitor landed on an
+    // empty inbox/activity/payout screen with no explanation instead of a login.
+    '/messages',
+    '/activity',
+    '/payouts',
+    '/settings',
+    '/admin',
   ]
 
   // Check if current path is protected

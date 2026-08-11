@@ -154,13 +154,32 @@ function MessagesContent() {
                     }, () => {
                         fetchInitialData(userId); // Refresh list when I send a message elsewhere
                     })
-                    .subscribe();
+                    .subscribe((status: string) => {
+                        // A stale inbox is worse than a stale thread — the unread
+                        // badge is how people decide whether to open the app.
+                        if (status === 'SUBSCRIBED') fetchInitialData(userId);
+                    });
             }
         });
         return () => {
             if (channel) supabase.removeChannel(channel);
         };
     }, [searchParams]);
+
+    // Backgrounding or losing connectivity suspends the websocket on mobile.
+    // Returning to the foreground must trigger a catch-up read: the socket can
+    // report itself healthy having missed everything while suspended.
+    useEffect(() => {
+        const onWake = () => {
+            if (document.visibilityState === 'visible') void resyncThreadRef.current();
+        };
+        document.addEventListener('visibilitychange', onWake);
+        window.addEventListener('online', onWake);
+        return () => {
+            document.removeEventListener('visibilitychange', onWake);
+            window.removeEventListener('online', onWake);
+        };
+    }, []);
 
     // 2. Fetch Conversations & Users
     const fetchInitialData = async (userId: string) => {
@@ -257,6 +276,18 @@ function MessagesContent() {
         }
     };
 
+    // Realtime connection state — mirrors the chat room so both surfaces behave
+    // identically. A silently dead socket is indistinguishable from a quiet chat.
+    const [liveStatus, setLiveStatus] = useState<'live' | 'reconnecting'>('live');
+
+    /**
+     * Catch-up read for the open thread. Realtime is a delivery optimisation,
+     * never the source of truth: anything published while the socket was down is
+     * unrecoverable from the socket itself. Merged by id so optimistic sends and
+     * realtime echoes cannot duplicate.
+     */
+    const resyncThreadRef = useRef<() => Promise<void>>(async () => {});
+
     // Limit State
     const [messageCount, setMessageCount] = useState(0);
     const [messageLimit, setMessageLimit] = useState<number | null>(null);
@@ -267,6 +298,26 @@ function MessagesContent() {
         if (!activeChat || !user) return;
 
         const [gigId, otherUserId] = activeChat.split('_');
+
+        // Wire the catch-up read for THIS thread. Rebuilt whenever the open
+        // conversation changes so a reconnect always refetches the right one.
+        resyncThreadRef.current = async () => {
+            const { data } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('gig_id', gigId)
+                .order('created_at', { ascending: true });
+            if (!data) return;
+            const relevant = data.filter((m: any) =>
+                (m.sender_id === user.id && m.receiver_id === otherUserId) ||
+                (m.sender_id === otherUserId && m.receiver_id === user.id)
+            );
+            setMessages((prev: any[]) => {
+                const seen = new Set(prev.map((m: any) => m.id));
+                const merged = [...prev, ...relevant.filter((m: any) => !seen.has(m.id))];
+                return merged.sort((a: any, b: any) => (a.created_at < b.created_at ? -1 : 1));
+            });
+        };
 
         // Find or Set Active Conversation Context
         const existingConv = conversations.find(c => c.conversationKey === activeChat);
@@ -315,29 +366,12 @@ function MessagesContent() {
                 const isPoster = user.id === gig.poster_id;
                 const isPreAgreement = gig.status === 'open';
 
-                if (!isPoster && isPreAgreement) {
-                    // Check if user is KYC verified — verified users get unlimited messages
-                    const { data: userProfile } = await supabase
-                        .from('users')
-                        .select('kyc_verified')
-                        .eq('id', user.id)
-                        .single();
-
-                    if (userProfile?.kyc_verified) {
-                        // Verified users: no message limit
-                        setMessageLimit(null);
-                        setIsLimitReached(false);
-                    } else {
-                        const limit = 5;
-                        setMessageLimit(limit);
-                        const myCount = data?.filter((m: any) =>
-                            m.sender_id === user.id &&
-                            m.message_type !== 'offer' &&
-                            !magicChips.includes(m.content)
-                        ).length || 0;
-                        setIsLimitReached(myCount >= limit);
-                    }
-                } else {
+                // The pre-agreement cap is enforced server-side in /api/chat/send
+                // and is deliberately not surfaced here. This block previously
+                // capped at 5, exempted KYC-verified users, and applied only to
+                // applicants — none of which matched the server, so people were
+                // shown one number and stopped by another.
+                {
                     setMessageLimit(null);
                     setIsLimitReached(false);
                 }
@@ -364,7 +398,9 @@ function MessagesContent() {
                     (newMsg.sender_id === user.id && newMsg.receiver_id === otherUserId) ||
                     (newMsg.sender_id === otherUserId && newMsg.receiver_id === user.id)
                 ) {
-                    setMessages(prev => [...prev, newMsg]);
+                    // Dedup by id: an optimistic send and the realtime echo are
+                    // the same message and were both being appended.
+                    setMessages(prev => prev.some((m: any) => m.id === newMsg.id) ? prev : [...prev, newMsg]);
                     
                     // Update limit counter if I sent the message
                     if (newMsg.sender_id === user.id && newMsg.message_type !== 'offer' && !magicChips.includes(newMsg.content)) {
@@ -397,7 +433,18 @@ function MessagesContent() {
             }, (payload: any) => {
                 setActiveGigStatus((payload.new as any).status);
             })
-            .subscribe();
+            .subscribe((status: string) => {
+                // Same failure mode as the chat room: without a status handler a
+                // dropped socket stops delivering messages silently while the
+                // thread still looks live. Every reconnect re-reads the thread,
+                // because events sent while we were down are gone for good.
+                if (status === 'SUBSCRIBED') {
+                    setLiveStatus('live');
+                    void resyncThreadRef.current();
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    setLiveStatus('reconnecting');
+                }
+            });
 
         channelRef.current = channel;
 
@@ -955,12 +1002,13 @@ function MessagesContent() {
                                 </div>
                             ) : (
                                 <div className="p-3">
-                                    {messageLimit && (
-                                        <div className="mb-2 flex justify-center">
-                                            <span className={`text-xs px-3 py-1 rounded-full border ${isLimitReached ? 'bg-white/[0.06] border-white/10 text-white/60' : 'bg-[var(--brand-purple)]/10 border-[var(--brand-purple)]/20 text-[var(--brand-purple-soft)]'
-                                                }`}>
-                                                {isLimitReached ? "Limit reached. Wait for the poster to accept your proposal." : `${messageLimit - messageCount} messages left before acceptance`}
-                                            </span>
+                                    {liveStatus === 'reconnecting' && (
+                                        <div
+                                            role="status"
+                                            aria-live="polite"
+                                            className="mb-2 px-3 py-2 flex items-center justify-center gap-2 text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-xl"
+                                        >
+                                            Reconnecting — new messages will appear once you&apos;re back online.
                                         </div>
                                     )}
 
