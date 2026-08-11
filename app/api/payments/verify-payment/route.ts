@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 // Initialize Supabase Admin (Bypasses RLS to write to Escrow/Transactions)
 const supabaseAdmin = createClient(
@@ -9,10 +11,31 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { orderId, gigId, workerId } = await req.json();
+    // SECURITY (OWASP A01, broken access control):
+    // This route previously took gigId and workerId straight from the request
+    // body with no authentication at all. Because the settlement below writes
+    // escrow and assigns the worker using those values, anyone who had made a
+    // single real payment could replay their own order_id against a DIFFERENT
+    // gig id and assign themselves as the funded worker on it.
+    //
+    // Now: the caller must be signed in, the order must belong to them, and the
+    // gig/worker are read from the server-side transaction record. Nothing that
+    // decides where money goes comes from the client any more.
+    const { orderId } = await req.json();
 
-    if (!orderId || !gigId || !workerId) {
-      return NextResponse.json({ error: "Missing verification data" }, { status: 400 });
+    if (!orderId) {
+      return NextResponse.json({ error: "Missing order id" }, { status: 400 });
+    }
+
+    const cookieStore = await cookies();
+    const supabaseAuth = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return cookieStore.getAll(); }, setAll() {} } }
+    );
+    const { data: { user } } = await supabaseAuth.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 1. Verify payment with Cashfree directly
@@ -59,16 +82,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order record not found" }, { status: 404 });
     }
 
+    // The order must belong to the caller. Without this, a signed-in user could
+    // still settle somebody else's order.
+    if (txn.user_id !== user.id) {
+      console.error(`[verify-payment] user ${user.id} tried to settle order ${orderId} owned by ${txn.user_id}`);
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
     if (txn.status === 'COMPLETED') {
       return NextResponse.json({ success: true, message: "Transaction already processed" });
     }
 
-    // 2.5 Defensive amount check — if Cashfree says a different number than we recorded, reject.
+    // Authoritative identifiers — from our own record, never the request body.
+    const gigId: string = txn.gig_id;
+    const workerId: string | undefined = txn.provider_data?.breakdown?.recipient_id;
+    if (!gigId || !workerId) {
+      console.error(`[verify-payment] order ${orderId} missing gig/recipient on the txn record`);
+      return NextResponse.json({ error: "Order record incomplete" }, { status: 409 });
+    }
+
+    // 2.5 Amount check — FAILS CLOSED.
+    // Previously guarded by `cfAmount > 0`, so a missing or zero payment_amount
+    // from Cashfree skipped verification entirely and funded escrow anyway.
+    // A partial or zero payment must never mark a gig funded.
     if (process.env.NODE_ENV !== 'development') {
-      const cfAmount = Number(validPayment?.payment_amount || 0);
+      const cfAmount = Number(validPayment?.payment_amount);
       const dbAmount = Number(txn.amount || 0);
-      if (cfAmount > 0 && Math.abs(cfAmount - dbAmount) > 1) {
-        console.error(`[verify-payment] amount mismatch order=${orderId} cf=${cfAmount} db=${dbAmount}`);
+      if (!Number.isFinite(cfAmount) || cfAmount <= 0 || Math.abs(cfAmount - dbAmount) > 1) {
+        console.error(`[verify-payment] amount mismatch order=${orderId} cf=${validPayment?.payment_amount} db=${dbAmount}`);
         return NextResponse.json({ error: "Payment amount mismatch" }, { status: 400 });
       }
     }
@@ -82,18 +123,27 @@ export async function POST(req: Request) {
     const gatewayFee   = breakdown.gateway_fee    || 0;
     const amountHeld   = basePrice + deposit;
 
-    // 4. Mark transaction as COMPLETED
-    const { error: updateTxnError } = await supabaseAdmin
+    // 4. Claim the transaction ATOMICALLY.
+    // The status check above is a read; the webhook can arrive between that read
+    // and this write and both would settle. Filtering on status <> 'COMPLETED'
+    // and requiring a returned row makes exactly one caller win the race.
+    const { data: claimed, error: updateTxnError } = await supabaseAdmin
       .from("transactions")
       .update({
         status: 'COMPLETED',
         gateway_payment_id: validPayment.cf_payment_id,
       })
-      .eq('id', txn.id);
+      .eq('id', txn.id)
+      .neq('status', 'COMPLETED')
+      .select('id');
 
     if (updateTxnError) {
       console.error("Transaction Update Error:", updateTxnError);
-      // Don't throw — still try to update the gig
+      return NextResponse.json({ error: "Could not record payment" }, { status: 500 });
+    }
+    if (!claimed || claimed.length === 0) {
+      // Someone else (almost certainly the webhook) already settled this order.
+      return NextResponse.json({ success: true, message: "Transaction already processed" });
     }
 
     // 5. Fetch gig title + poster_id for escrow and notifications

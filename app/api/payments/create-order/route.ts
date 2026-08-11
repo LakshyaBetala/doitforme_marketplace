@@ -103,6 +103,10 @@ export async function POST(req: Request) {
       total: totalAmount,
       platform_fee: platformFee, // Stores the Deduction Amount
       fee_audience: feeAudience,
+      // Server-recorded recipient. Settlement reads the worker from HERE rather
+      // than from the request body or a client-controlled redirect param, so a
+      // caller cannot redirect someone else's payment to themselves.
+      recipient_id: recipientId,
       base_price: price,
       deposit: deposit,
       net_worker_pay: netWorkerPay
@@ -122,7 +126,10 @@ export async function POST(req: Request) {
     if (txnError) throw txnError;
 
     // 6. Create Cashfree Order using native fetch
-    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL}/gig/${gigId}?payment=verify&order_id={order_id}&worker_id=${encodeURIComponent(user.id)}`;
+    // recipientId, NOT user.id. The payer is the poster; the worker is who gets
+    // paid. Passing the payer here made the settlement path treat the poster as
+    // their own worker and payout recipient.
+    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL}/gig/${gigId}?payment=verify&order_id={order_id}&worker_id=${encodeURIComponent(recipientId)}`;
 
     // Ensure phone is exactly 10 digits to prevent Cashfree validation errors
     const validPhone = String(payerProfile.phone || "").replace(/\D/g, '').slice(-10) || "9999999999";
@@ -143,7 +150,9 @@ export async function POST(req: Request) {
       },
       order_tags: {
         gig_id: gigId,
-        worker_id: user.id,
+        // The money recipient — the assigned worker. Was user.id (the payer),
+        // which would have funded escrow to the poster themselves.
+        worker_id: recipientId,
         type: "ESCROW_DEPOSIT"
       },
       order_note: `Gig Payment: ${(gig.title || '').substring(0, 30)}`

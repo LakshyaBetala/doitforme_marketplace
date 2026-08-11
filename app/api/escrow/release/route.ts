@@ -31,6 +31,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: rpcErr.message || 'Release RPC failed' }, { status: 500 });
     }
 
+    // The RPC reports failure IN ITS RETURN VALUE, not as a Postgres error, so
+    // only checking rpcErr reported success for every failed release — including
+    // the one where a wrong column name silently rolled the whole thing back.
+    // Authorization, missing-UPI and already-released all arrive here.
+    if (!rpcData?.success) {
+      const reason = rpcData?.error || "Release failed";
+      const status = rpcData?.code === "WORKER_UPI_MISSING" ? 409
+        : /only the poster/i.test(reason) ? 403
+        : 400;
+      console.error(`[escrow-release] gig=${gigId} refused: ${reason}`);
+      return NextResponse.json({ error: reason, code: rpcData?.code }, { status });
+    }
+
     // Notify worker via email
     try {
       const { data: gig } = await supabase

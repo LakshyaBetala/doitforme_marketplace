@@ -82,14 +82,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, skipped: "missing gig/worker tags" });
   }
 
-  return handleGigEscrow(orderId, gigId, workerId, cfPaymentId);
+  // Amount paid, straight from the signed payload. Escrow must never be funded
+  // for more than the payer actually paid — a partial/underpaid order would
+  // otherwise mark the gig fully funded.
+  const paidAmount = Number(payload?.data?.payment?.payment_amount);
+
+  return handleGigEscrow(orderId, gigId, workerId, cfPaymentId, paidAmount);
 }
 
 async function handleGigEscrow(
   orderId: string,
   gigId: string,
   workerId: string,
-  cfPaymentId?: string
+  cfPaymentId?: string,
+  paidAmount?: number
 ) {
   // Fetch the PENDING transaction created at order-creation time.
   const { data: txn } = await supabaseAdmin
@@ -106,6 +112,13 @@ async function handleGigEscrow(
     return NextResponse.json({ ok: true, skipped: "already completed" });
   }
 
+  // Underpayment guard. Fails closed: a missing or short amount is never settled.
+  const expected = Number(txn.amount || 0);
+  if (!Number.isFinite(paidAmount as number) || (paidAmount as number) <= 0 || expected - (paidAmount as number) > 1) {
+    console.error(`[cashfree-webhook] amount mismatch order=${orderId} paid=${paidAmount} expected=${expected}`);
+    return NextResponse.json({ ok: true, skipped: "amount mismatch" });
+  }
+
   const breakdown = txn.provider_data?.breakdown || {};
   const basePrice = Number(breakdown.base_price || 0);
   const deposit = Number(breakdown.deposit || 0);
@@ -113,10 +126,19 @@ async function handleGigEscrow(
   const gatewayFee = Number(breakdown.gateway_fee || 0);
   const amountHeld = basePrice + deposit;
 
-  await supabaseAdmin
+  // Claim atomically — Cashfree retries webhooks, and the browser redirect path
+  // (/api/payments/verify-payment) can be settling the same order concurrently.
+  // Only the caller whose UPDATE returns a row proceeds to fund escrow.
+  const { data: claimed } = await supabaseAdmin
     .from("transactions")
     .update({ status: "COMPLETED", gateway_payment_id: cfPaymentId || null })
-    .eq("id", txn.id);
+    .eq("id", txn.id)
+    .neq("status", "COMPLETED")
+    .select("id");
+
+  if (!claimed || claimed.length === 0) {
+    return NextResponse.json({ ok: true, skipped: "already settled by another path" });
+  }
 
   const { data: gig } = await supabaseAdmin
     .from("gigs")
