@@ -225,8 +225,13 @@ export default function PostGigWizard() {
       // -------------------------------------
 
       store.reset(); // clear drafts
-      toast.success("Hustle posted! Your gig is now live.");
-      router.push("/dashboard");
+      // Land on a confirmation that says where the post went and what happens
+      // next. Dropping straight to the dashboard left posters hunting for their
+      // own listing — and it isn't in the feed they're looking at, because the
+      // feed excludes your own posts. That confusion is why "where did my gig
+      // go?" was a recurring question.
+      store.reset();
+      router.push(`/post/success?id=${newGig.id}&kind=${postKind === "SERVICE" ? "service" : "task"}`);
 
     } catch (err: any) {
       setError(friendlyError(err));

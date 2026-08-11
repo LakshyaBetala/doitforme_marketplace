@@ -135,6 +135,34 @@ export default function ActivityHubPage() {
     }
   };
 
+  /**
+   * Take down a listing. Allowed only until someone is hired — the server
+   * enforces that too, and refuses with a reason rather than failing silently.
+   */
+  const handleDeleteGig = async (gigId: string, title: string) => {
+    if (!confirm(`Take down "${title}"? Anyone who applied will be told it closed.`)) return;
+    const t = toast.loading("Taking it down…");
+    try {
+      const res = await fetch("/api/gig/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gigId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Couldn't take it down.", { id: t });
+        return;
+      }
+      toast.success(
+        data.notified > 0 ? `Taken down. ${data.notified} applicant${data.notified === 1 ? "" : "s"} told.` : "Taken down.",
+        { id: t }
+      );
+      setHiringGigs((prev) => prev.filter((g) => g.id !== gigId));
+    } catch {
+      toast.error("Something went wrong.", { id: t });
+    }
+  };
+
   // Escrow submit opens the delivery-note modal. Direct (legacy off-platform)
   // just marks done with no escrow timer.
   const handleSubmitWork = async (gigId: string, applicationId: string, isDirect: boolean = false) => {
@@ -334,6 +362,15 @@ export default function ActivityHubPage() {
                    <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
                      <MessageSquare size={14} /> Chat
                    </button>
+
+                   {!gig.assigned_worker_id && gig.status === 'open' && (
+                     <button
+                       onClick={() => handleDeleteGig(gig.id, gig.title)}
+                       className="py-2.5 px-4 rounded-xl bg-white/[0.03] hover:bg-red-500/10 text-white/60 hover:text-red-400 font-bold text-sm transition border border-white/5 flex items-center justify-center gap-2"
+                     >
+                       <X size={14} /> Take down
+                     </button>
+                   )}
 
                    {gig.status === 'AWAITING_FUNDS' && gig.payment_gateway !== 'DIRECT' && (
                      <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 py-2.5 rounded-xl bg-[#8825F5] hover:bg-[#7a1de0] text-white font-bold text-sm transition shadow-lg shadow-[#C9A9FF]/20 flex items-center gap-2 justify-center">
