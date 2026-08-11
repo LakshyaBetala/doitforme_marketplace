@@ -452,35 +452,43 @@ export default function PostGigWizard() {
                 <p className="text-white/50 text-sm">Where, when, and how much.</p>
               </div>
 
-              {/* What happens next, stated before they commit. A poster who
-                  doesn't know the escrow rules abandons applicants (85% of them
-                  never got a reply) — mostly because nobody told them they were
-                  expected to respond, or that the money moves automatically. */}
-              <div className="p-5 rounded-2xl border border-white/[0.08] bg-white/[0.02]">
-                <p className="text-[13px] font-semibold text-white mb-3">
-                  {postKind === "SERVICE" ? "How you'll get paid" : "What happens after you post"}
+              {/* What happens after you post.
+                  Numbered because it IS a sequence — a bulleted list reads as
+                  four unrelated warnings, while steps read as a process the
+                  poster is about to go through. Stated before they commit,
+                  because 85% of applicants never got a reply and much of that
+                  is posters never being told they were expected to respond. */}
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 sm:p-5">
+                <p className="text-[13px] font-semibold text-white mb-4">
+                  {postKind === "SERVICE" ? "How you get paid" : "What happens next"}
                 </p>
-                <ul className="space-y-2.5 text-[12px] text-white/60 leading-relaxed">
+                <ol className="space-y-3.5">
                   {(postKind === "SERVICE"
                     ? [
-                        "People browse the Talent directory and message you directly.",
-                        "Agree the work in chat, then they fund it — you never start unpaid.",
-                        "Deliver, they approve, and the money is released to your UPI.",
-                        "A platform fee is deducted only when you actually get paid.",
+                        ["People find you", "Your listing sits in Talent, where posters browse and message you."],
+                        ["Agree the work", "Settle the details in chat. They pay before you start."],
+                        ["Deliver and get paid", "Once they approve, the money goes to your UPI."],
                       ]
                     : [
-                        "Students apply. Reply within 24 hours — unanswered posts close automatically after 7 days.",
-                        "Pick someone and pay into escrow. We hold the money; they don't get it until you approve.",
-                        "You have 24 hours after delivery to approve or request changes.",
-                        "Keep it on the platform — paying outside escrow means no protection if the work never arrives.",
+                        ["Students apply", "Reply within a day. Posts left unanswered close after a week."],
+                        ["Pick one and pay", "Your money is held safely — they don't get it until you're happy."],
+                        ["Approve the work", "You get 24 hours to approve or ask for changes."],
                       ]
-                  ).map((line) => (
-                    <li key={line} className="flex items-start gap-2">
-                      <CheckCircle2 size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
-                      <span>{line}</span>
+                  ).map(([title, body], i) => (
+                    <li key={title} className="flex items-start gap-3">
+                      <span className="w-5 h-5 shrink-0 rounded-full bg-white/[0.06] border border-white/[0.1] text-[10px] font-semibold text-white/70 flex items-center justify-center tabular-nums mt-0.5">
+                        {i + 1}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[13px] font-medium text-white leading-snug">{title}</span>
+                        <span className="block text-[12px] text-white/55 leading-relaxed mt-0.5">{body}</span>
+                      </span>
                     </li>
                   ))}
-                </ul>
+                </ol>
+                <p className="text-[11px] text-white/40 mt-4 pt-3 border-t border-white/[0.06] leading-relaxed">
+                  Keep payment on doitforme. Paying outside means no protection if the work never arrives.
+                </p>
               </div>
 
               <div className="space-y-6">

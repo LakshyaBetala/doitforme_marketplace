@@ -308,6 +308,8 @@ export default function WorkerSetupPage() {
                                     placeholder="Required for direct connect tasks"
                                     className={inputStyle}
                                     value={phone}
+                                    autoComplete="tel"
+                                    inputMode="tel"
                                     onChange={(e) => setPhone(e.target.value)}
                                 />
                             </div>
@@ -318,6 +320,9 @@ export default function WorkerSetupPage() {
                                     placeholder="name@bank (Required for payouts)"
                                     className={inputStyle}
                                     value={upiId}
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                    autoCapitalize="off"
                                     onChange={(e) => setUpiId(e.target.value)}
                                 />
                             </div>

@@ -242,6 +242,24 @@ export default function ProfilePage() {
         }
 
         setProfile(userData);
+
+        // Deep link: /profile?edit=username opens edit mode with the username
+        // field focused. The "Claim your link" prompt sends people here, and
+        // landing on a read-only page with no visible username field made the
+        // single highest-value profile action look impossible.
+        if (typeof window !== "undefined") {
+          const target = new URLSearchParams(window.location.search).get("edit");
+          if (target) {
+            setIsEditing(true);
+            if (target === "username" && !userData.username) {
+              setTimeout(() => {
+                const el = document.getElementById("username-input");
+                el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                (el as HTMLInputElement | null)?.focus();
+              }, 350);
+            }
+          }
+        }
         setStats({ completed: completedCount, earnings: totalEarned, isLightningResponder: isLightning, avgResponseTime: Math.round(avgTime) });
 
         // Initialize edit fields
@@ -595,6 +613,7 @@ export default function ProfilePage() {
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         placeholder="Your name"
+                        autoComplete="name"
                         className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
                       />
                     </div>
@@ -610,6 +629,8 @@ export default function ProfilePage() {
                             value={editUsername}
                             onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
                             placeholder="username"
+                            id="username-input"
+                            autoComplete="off"
                             maxLength={20}
                             className="w-full pl-9 pr-11 py-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
                           />
@@ -681,6 +702,8 @@ export default function ProfilePage() {
                       value={editPhone}
                       onChange={(e) => setEditPhone(e.target.value)}
                       placeholder="Phone number"
+                      autoComplete="tel"
+                      inputMode="tel"
                       className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
                     />
                   ) : (
@@ -700,6 +723,9 @@ export default function ProfilePage() {
                     <input
                       type="text"
                       value={editUpiId}
+                      autoComplete="off"
+                      spellCheck={false}
+                      autoCapitalize="off"
                       onChange={(e) => setEditUpiId(e.target.value)}
                       placeholder="name@oksbi"
                       className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"

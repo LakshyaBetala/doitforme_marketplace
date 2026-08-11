@@ -33,12 +33,12 @@ export default function ProfileCompletion({ user }: Props) {
   if (!user || dismissed) return null;
 
   const steps = [
-    { key: "username", label: "Claim your link", done: !!user.username, href: "/profile" },
-    { key: "avatar", label: "Add a photo", done: !!user.avatar_url, href: "/profile" },
+    { key: "username", label: "Claim your link", done: !!user.username, href: "/profile?edit=username" },
+    { key: "avatar", label: "Add a photo", done: !!user.avatar_url, href: "/profile?edit=avatar" },
     { key: "skills", label: "List your skills", done: !!(user.skills && user.skills.length > 0), href: "/profile/worker-setup" },
-    { key: "bio", label: "Write a short bio", done: !!user.bio, href: "/profile" },
+    { key: "bio", label: "Write a short bio", done: !!user.bio, href: "/profile?edit=bio" },
     { key: "resume", label: "Upload a resume", done: !!user.resume_url, href: "/profile/worker-setup" },
-    { key: "upi", label: "Add UPI to get paid", done: !!user.upi_id, href: "/profile" },
+    { key: "upi", label: "Add UPI to get paid", done: !!user.upi_id, href: "/profile?edit=upi" },
   ];
 
   const doneCount = steps.filter((s) => s.done).length;
