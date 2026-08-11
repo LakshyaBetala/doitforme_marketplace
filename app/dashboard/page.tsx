@@ -30,7 +30,9 @@ export default function Dashboard() {
   const [gigs, setGigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [feedType, setFeedType] = useState<'ALL' | 'HUSTLE' | 'COMPANY_TASK'>('ALL');
+  // 'TASKS' (demand) is the default view. There is deliberately no tab that mixes
+  // demand and self-promotion — that mix is what inverted the marketplace.
+  const [feedType, setFeedType] = useState<'TASKS' | 'COMPANY_TASK' | 'SERVICE'>('TASKS');
   const [campusFilter, setCampusFilter] = useState<'ALL' | 'MY_CAMPUS'>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -76,7 +78,7 @@ export default function Dashboard() {
           // Hustles age out at 30 days; company roles never do.
           .or(`listing_type.eq.COMPANY_TASK,created_at.gt.${thirtyDaysAgo}`)
           // Demand only. SERVICE listings are self-promotion and live at /talent.
-          .in("listing_type", ["HUSTLE", "COMPANY_TASK"])
+          .in("listing_type", ["HUSTLE", "COMPANY_TASK", "SERVICE"])
           .order("created_at", { ascending: false })
           .limit(20),
         supabase.from("referrals").select("id").eq("referrer_id", authUser.id),
@@ -120,7 +122,10 @@ export default function Dashboard() {
   const filteredGigs = gigs.filter(gig => {
     const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gig.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = feedType === 'ALL' || gig.listing_type === feedType;
+    const matchesType =
+      feedType === 'TASKS'
+        ? (gig.listing_type === 'HUSTLE' || gig.listing_type === 'COMPANY_TASK')
+        : gig.listing_type === feedType;
     const matchesCampus = campusFilter === 'ALL'
       ? true
       : (!gig.is_physical || gig.users?.college === user?.user_metadata?.college);
@@ -143,14 +148,15 @@ export default function Dashboard() {
   // Dynamic opportunity counts (computed from ALL gigs, ignoring search/type filters)
   const hustleCount = gigs.filter(g => g.listing_type === 'HUSTLE').length;
   const companyTaskCount = gigs.filter(g => g.listing_type === 'COMPANY_TASK').length;
+  const serviceCount = gigs.filter(g => g.listing_type === 'SERVICE').length;
 
-  const handleFeedTypeChange = (type: 'ALL' | 'HUSTLE' | 'COMPANY_TASK') => {
+  const handleFeedTypeChange = (type: 'TASKS' | 'COMPANY_TASK' | 'SERVICE') => {
     setFeedType(type);
     setCategoryFilter('ALL'); // Reset category filter when switching tabs
   };
 
   const activeCategories = Array.from(new Set([
-    ...(feedType === 'ALL' || feedType === 'HUSTLE' || feedType === 'COMPANY_TASK' ? ["Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Gigs", "Errands & Manual Labor", "Writing & Content", "Marketing & PR", "Data & Research", "Tutoring", "Other"] : [])
+    ...(feedType === 'TASKS' || feedType === 'COMPANY_TASK' || feedType === 'SERVICE' ? ["Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Gigs", "Errands & Manual Labor", "Writing & Content", "Marketing & PR", "Data & Research", "Tutoring", "Other"] : [])
   ]));
 
   const username = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Partner";
@@ -290,12 +296,12 @@ export default function Dashboard() {
                   </div>
                   <div className="flex gap-4">
                     <div>
-                      <span className="text-xl font-semibold text-white tracking-tight">{hustleCount}</span>
+                      <span className="text-xl font-semibold text-white tracking-tight tabular-nums">{hustleCount}</span>
                       <span className="text-[10px] font-medium text-white/45 ml-1.5">Hustles</span>
                     </div>
                     <div className="w-px h-6 bg-white/[0.1] self-center"></div>
                     <div>
-                      <span className="text-xl font-semibold text-white tracking-tight">{companyTaskCount}</span>
+                      <span className="text-xl font-semibold text-white tracking-tight tabular-nums">{companyTaskCount}</span>
                       <span className="text-[10px] font-medium text-white/45 ml-1.5">Company</span>
                     </div>
                   </div>
@@ -342,9 +348,9 @@ export default function Dashboard() {
                 <div className="flex items-center gap-3">
                   {/* Type Filters */}
                   <div className="flex items-center bg-[var(--card)] rounded-full p-1 border border-white/[0.08] overflow-x-auto scrollbar-hide shrink-0 max-w-[calc(100vw-120px)] md:max-w-none touch-pan-x">
-                    <FeedTab label="All" active={feedType === 'ALL'} onClick={() => handleFeedTypeChange('ALL')} />
-                    <FeedTab label="Hustles" active={feedType === 'HUSTLE'} onClick={() => handleFeedTypeChange('HUSTLE')} />
-                    <FeedTab label="Company Tasks" active={feedType === 'COMPANY_TASK'} onClick={() => handleFeedTypeChange('COMPANY_TASK')} />
+                    <FeedTab label="Work available" active={feedType === 'TASKS'} onClick={() => handleFeedTypeChange('TASKS')} />
+                    <FeedTab label="Company" active={feedType === 'COMPANY_TASK'} onClick={() => handleFeedTypeChange('COMPANY_TASK')} />
+                    <FeedTab label="Talent" active={feedType === 'SERVICE'} onClick={() => handleFeedTypeChange('SERVICE')} />
                   </div>
 
                   {/* Campus Filter */}
@@ -377,8 +383,9 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* Category Filter - only visible when a specific feed type is selected */}
-                  {feedType !== 'ALL' && (
+                  {/* Category filter applies to every tab now that the default
+                      tab is a real selection rather than an unfiltered "All". */}
+                  {(
                     <div className="relative">
                       <button
                         onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}

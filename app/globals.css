@@ -7,6 +7,12 @@
 --------------------------------------- */
 
 :root {
+  /* Tells the browser to paint native UI dark: scrollbars, <select> dropdowns,
+     date/time pickers, autofill backgrounds, spinners. Without this the date and
+     time inputs in the post flow render as bright white panels on a #0B0B11
+     page — the single most jarring theme break on the site. */
+  color-scheme: dark;
+
   /* Surface scale — keep three steps: bg < card < elevated */
   --background: #0B0B11;
   --card: #13131A;
@@ -261,4 +267,43 @@ select {
     height: 180px !important;
     display: block;
   }
+}
+/* ---------------------------------------
+    ACCESSIBILITY BASELINE
+    Added 2026-08-12 after a Web Interface Guidelines audit found:
+      - 44 elements using `outline-none` with no focus replacement
+      - 0 handling of prefers-reduced-motion despite blob/float animations
+--------------------------------------- */
+
+/* Keyboard focus. Many components clear the native outline for aesthetics and
+   never restore it, which leaves keyboard and screen-reader users with no idea
+   where they are. :focus-visible only shows for keyboard navigation, so this
+   costs mouse users nothing. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand-purple-soft, #C9A9FF);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect users who ask their OS for less motion — vestibular disorders and
+   motion sickness are real. Blobs, floats and slide-ins all stop; opacity
+   transitions are kept short rather than removed so state changes stay legible. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Tap targets: removes the 300ms delay and the grey flash on Android/iOS.
+   The site is mobile-first and this is felt on every single tap. */
+a,
+button,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
