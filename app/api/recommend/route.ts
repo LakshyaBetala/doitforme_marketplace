@@ -71,23 +71,25 @@ export async function POST(req: Request) {
 
   const db = service();
 
-  // Proof of a real interaction, in either direction.
-  const [theirAppsOnMyGigs, myAppsOnTheirGigs, sharedMessages] = await Promise.all([
-    db.from("applications").select("id, gig:gigs!inner(poster_id)").eq("worker_id", userId).eq("gig.poster_id", me.id).limit(1),
-    db.from("applications").select("id, gig:gigs!inner(poster_id)").eq("worker_id", me.id).eq("gig.poster_id", userId).limit(1),
-    db.from("messages").select("id").or(
-      `and(sender_id.eq.${me.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${me.id})`
-    ).limit(1),
-  ]);
+  // Proof of FINISHED work between these two, in either direction.
+  //
+  // Previously this accepted an application or even a chat message, which meant
+  // you could vouch for someone you had merely spoken to. A recommendation is
+  // only worth anything if it means "they did the job" — so it requires a gig
+  // that actually reached completion between the pair.
+  const { data: sharedWork } = await db
+    .from("gigs")
+    .select("id")
+    .eq("status", "completed")
+    .or(
+      `and(poster_id.eq.${me.id},assigned_worker_id.eq.${userId}),` +
+      `and(poster_id.eq.${userId},assigned_worker_id.eq.${me.id})`
+    )
+    .limit(1);
 
-  const worked =
-    (theirAppsOnMyGigs.data?.length || 0) > 0 ||
-    (myAppsOnTheirGigs.data?.length || 0) > 0 ||
-    (sharedMessages.data?.length || 0) > 0;
-
-  if (!worked) {
+  if (!sharedWork?.length) {
     return NextResponse.json(
-      { error: "You can only recommend someone you've actually worked with on doitforme." },
+      { error: "You can recommend someone once you've completed a job together." },
       { status: 403 }
     );
   }

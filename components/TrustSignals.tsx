@@ -22,6 +22,10 @@ type Props = {
   kycVerified?: boolean | null;
   /** Hide the action button on your own profile. */
   isSelf?: boolean;
+  /** Show the Recommend action. Off by default: vouching only means something
+   *  once you've actually worked together, so surfaces that show strangers
+   *  (like applicant review) must not offer it. */
+  canRecommend?: boolean;
   className?: string;
 };
 
@@ -30,6 +34,7 @@ export default function TrustSignals({
   jobsCompleted = 0,
   kycVerified = false,
   isSelf = false,
+  canRecommend = false,
   className = "",
 }: Props) {
   const [count, setCount] = useState(0);
@@ -111,7 +116,7 @@ export default function TrustSignals({
         )}
       </span>
 
-      {!isSelf && !loading && (
+      {canRecommend && !isSelf && !loading && (
         <button
           onClick={toggle}
           disabled={busy}

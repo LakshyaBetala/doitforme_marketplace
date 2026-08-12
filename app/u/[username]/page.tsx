@@ -179,6 +179,7 @@ export default async function PublicProfilePage({
                 userId={user.id}
                 jobsCompleted={user.jobs_completed}
                 kycVerified={user.kyc_verified}
+                canRecommend
                 className="mt-4"
               />
 

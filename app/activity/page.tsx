@@ -7,6 +7,7 @@ import { Loader2, Briefcase, IndianRupee, ArrowRight, ShieldCheck, CheckCircle, 
 import Image from "next/image";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import StayReachable from "@/components/StayReachable";
 import CanonicalStatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 
 // In-review states read better with a custom label; everything else flows through the canonical mapper.
@@ -88,6 +89,8 @@ export default function ActivityHubPage() {
   const [hiringGigs, setHiringGigs] = useState<any[]>([]);
   const [workingGigs, setWorkingGigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [telegramLinked, setTelegramLinked] = useState(true);
+  const [hasLiveWork, setHasLiveWork] = useState(false);
 
   // Submit-work modal (delivery note + optional link)
   const [submitGigId, setSubmitGigId] = useState<string | null>(null);
@@ -119,6 +122,20 @@ export default function ActivityHubPage() {
 
       setHiringGigs(myPosts || []);
       setWorkingGigs(myApps || []);
+
+      // Only ask someone to stay reachable once they actually have a live deal —
+      // asking at signup is why this sat at 7 connections out of 1,069.
+      const live = (myPosts || []).some((g: any) =>
+          ['HELD', 'ESCROW_FUNDED', 'PAYOUT_PENDING'].includes(g.payment_status))
+        || (myApps || []).some((a: any) => a.status === 'accepted');
+      setHasLiveWork(live);
+
+      if (live) {
+        const { data: me } = await supabase
+          .from('users').select('telegram_chat_id').eq('id', user.id).maybeSingle();
+        setTelegramLinked(Boolean(me?.telegram_chat_id));
+      }
+
       setLoading(false);
     }
     loadActivity();
@@ -297,6 +314,12 @@ export default function ActivityHubPage() {
              <Zap size={14} className="z-10" /> <span className="z-10">Hustling ({workingGigs.length})</span>
            </button>
         </div>
+
+        {/* Shown only once there's live, funded work — the one moment the ask is
+            obviously in the user's own interest rather than a settings chore. */}
+        {hasLiveWork && (
+          <StayReachable telegramLinked={telegramLinked} className="mb-4" />
+        )}
 
         {/* LIST */}
         <div className="space-y-4">
