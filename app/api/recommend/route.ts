@@ -10,10 +10,9 @@ import { createClient } from "@supabase/supabase-js";
 // farmable in minutes by a group of friends, and a trust signal nobody trusts is
 // worse than none at all.
 //
-// Qualifying interaction = they worked together on a gig (either direction), or
-// one applied to the other's gig. That is deliberately broader than "completed
-// and paid", because with zero completed gigs a stricter rule would mean nobody
-// can ever recommend anyone.
+// Qualifying interaction = a gig that actually reached 'completed' between the
+// two people, in either direction. Applications and chat messages deliberately
+// do NOT qualify: vouching for someone you merely spoke to means nothing.
 
 const service = () =>
   createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
