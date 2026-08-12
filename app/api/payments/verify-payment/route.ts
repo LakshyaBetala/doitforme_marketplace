@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cashfreeHost } from "@/lib/cashfreeEnv";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
       process.env.NODE_ENV === 'development' && process.env.ALLOW_FAKE_PAYMENTS === 'true';
 
     if (!allowFakePayments) {
-      const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
+      const CASHFREE_ENV = cashfreeHost();
       const response = await fetch(`https://${CASHFREE_ENV}.cashfree.com/pg/orders/${orderId}/payments`, {
         method: "GET",
         headers: {

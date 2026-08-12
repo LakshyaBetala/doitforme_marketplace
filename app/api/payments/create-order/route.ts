@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cashfreeHost } from "@/lib/cashfreeEnv";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
@@ -159,7 +160,7 @@ export async function POST(req: Request) {
       order_note: `Gig Payment: ${(gig.title || '').substring(0, 30)}`
     };
 
-    const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
+    const CASHFREE_ENV = cashfreeHost();
     const cashfreeUrl = `https://${CASHFREE_ENV}.cashfree.com/pg/orders`;
 
 

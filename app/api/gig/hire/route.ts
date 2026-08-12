@@ -1,4 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cashfreeHost } from "@/lib/cashfreeEnv";
+import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createClient } from "@supabase/supabase-js";
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
     // 2. SECURITY: Fetch Real Price from DB
     const { data: gig, error: gigError } = await supabase
       .from("gigs")
-      .select("price, title, security_deposit, poster_id")
+      .select("price, title, security_deposit, poster_id, company_id, listing_type, market_type")
       .eq("id", gigId)
       .single();
 
@@ -50,6 +52,7 @@ export async function POST(req: Request) {
     // Use negotiated price if available, otherwise base gig price
     const basePrice = application?.negotiated_price ? Number(application.negotiated_price) : Number(gig.price);
     const deposit = Number(gig.security_deposit) || 0;
+    const gigForFee = { company_id: gig.company_id, listing_type: gig.listing_type };
 
     // No price floor. This used to refuse escrow below Rs 500 and push people to
     // "Direct Connect" — but the median gig is Rs 499, so the majority of jobs
@@ -64,14 +67,20 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Hustle: Flat 3% escrow fee deducted from hustler payout
-    // Client pays exact listed price — hustler receives 97%
-    const platformFee = Math.ceil(basePrice * 0.03);
+    // Fees come from lib/fees.ts, the single source of truth verified by
+    // tests/unit/payout.test.mjs. This route previously hardcoded a flat 3%,
+    // a rate that no longer exists — so the same gig priced one way through
+    // create-order (5% student / 10% business) and another way through here.
+    // Since this is the route the applicant-review screen actually calls, every
+    // real hire was being charged the wrong fee and the worker paid the wrong
+    // amount out of escrow.
+    const feeAudience = audienceForGig(gigForFee);
+    const b = buildPaymentBreakdown({ price: basePrice, deposit, audience: feeAudience });
 
-    // Payer (Hiring Client) Subtotal is just Price + Deposit
-    const subtotal = basePrice + deposit;
-    const gatewayFee = Math.ceil(subtotal * 0.02); // 2% Gateway surcharge
-    const totalAmountToCharge = subtotal + gatewayFee;
+    const platformFee = b.platformFee;
+    const subtotal = b.subtotal;
+    const gatewayFee = b.gatewayFee;
+    const totalAmountToCharge = b.total;
 
     // 4. Prepare Cashfree Order Data
     // Shorten orderId to avoid 50 character limit in Cashfree
@@ -84,10 +93,13 @@ export async function POST(req: Request) {
       gateway_fee: gatewayFee,
       discount_applied: false,
       total: totalAmountToCharge,
-      platform_fee: platformFee, // 3% deducted from hustler payout
+      platform_fee: platformFee,
+      fee_audience: feeAudience,
+      // Settlement reads the recipient from HERE, never from the request body.
+      recipient_id: workerId,
       base_price: basePrice,
       deposit: deposit,
-      net_worker_pay: basePrice - platformFee
+      net_worker_pay: b.netWorkerPay
     };
 
     const { error: txnError } = await supabaseAdmin.from('transactions').insert({
@@ -134,7 +146,7 @@ export async function POST(req: Request) {
     console.log("Initiating Payment:", orderId, "| Amount:", totalAmountToCharge, "Payload:", JSON.stringify(payload));
 
     // 5. Dynamic URL (Sandbox vs Production)
-    const CASHFREE_ENV = process.env.NODE_ENV === 'production' ? 'api' : 'sandbox';
+    const CASHFREE_ENV = cashfreeHost();
     const cashfreeUrl = `https://${CASHFREE_ENV}.cashfree.com/pg/orders`;
 
     let paymentSessionId = "fake_session_123";
