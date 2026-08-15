@@ -152,6 +152,10 @@ export default function TermsContent() {
                   <br />
                   <strong>Phone:</strong> <a href="tel:+919344110272" className="text-white hover:text-[#C084FC] transition-colors">+91 93441 10272</a>
                 </p>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  DoItForMe is a service operated by Lakshya Betala (sole proprietor), Chennai, Tamil Nadu, India.
+                  Legal and billing correspondence: <a href="mailto:betala911@gmail.com" className="text-zinc-300 hover:text-white transition-colors">betala911@gmail.com</a>, <a href="tel:+918072116397" className="text-zinc-300 hover:text-white transition-colors">+91 80721 16397</a>.
+                </p>
               </div>
             </div>
           </section>

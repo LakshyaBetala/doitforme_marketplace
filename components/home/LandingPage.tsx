@@ -458,6 +458,7 @@ export default function LandingPage() {
         </div>
         <div className="max-w-6xl mx-auto px-5 md:px-8 py-6 border-t border-white/[0.06] text-[12px] text-white/35">
           © {new Date().getFullYear()} DoItForMe. Made for India&apos;s campuses.
+          <span className="block mt-1 text-white/25">Operated by Lakshya Betala (sole proprietor), Chennai, Tamil Nadu, India.</span>
         </div>
       </footer>
     </div>

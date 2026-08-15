@@ -127,6 +127,10 @@ export default function PrivacyContent() {
                 <p className="text-zinc-400 leading-relaxed">
                   For any privacy-related concerns, please contact our Data Protection Officer at <a href="mailto:doitforme.in@gmail.com" className="text-brand-purple hover:text-white transition-colors underline decoration-brand-purple/30 underline-offset-4">doitforme.in@gmail.com</a> or call us at <a href="tel:+919344110272" className="text-brand-purple hover:text-white transition-colors underline decoration-brand-purple/30 underline-offset-4">+91 93441 10272</a>.
                 </p>
+                <p className="text-zinc-500 text-sm leading-relaxed">
+                  Grievance Officer (as required under the IT Rules, 2021): Lakshya Betala, sole proprietor, DoItForMe, Chennai, Tamil Nadu, India —{" "}
+                  <a href="mailto:betala911@gmail.com" className="text-zinc-300 hover:text-white transition-colors">betala911@gmail.com</a>, <a href="tel:+918072116397" className="text-zinc-300 hover:text-white transition-colors">+91 80721 16397</a>.
+                </p>
               </div>
             </div>
           </section>

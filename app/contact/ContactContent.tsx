@@ -60,6 +60,14 @@ export default function ContactContent() {
           </div>
 
         </div>
+
+        <p className="text-white/35 text-xs leading-relaxed">
+          DoItForMe is operated by <span className="text-white/55">Lakshya Betala</span> (sole proprietor).
+          Billing and payment queries:{" "}
+          <a href="mailto:betala911@gmail.com" className="text-white/55 hover:text-white transition-colors">betala911@gmail.com</a>
+          {" · "}
+          <a href="tel:+918072116397" className="text-white/55 hover:text-white transition-colors">+91 80721 16397</a>.
+        </p>
       </div>
     </div>
   );
