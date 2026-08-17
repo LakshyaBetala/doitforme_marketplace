@@ -69,7 +69,7 @@ export default function Dashboard() {
         supabase.from("users").select("*").eq("id", authUser.id).single(),
         supabase.from("messages").select("id").eq("receiver_id", authUser.id).gt("created_at", oneDayAgo).limit(1),
         supabase.from("gigs")
-          .select("*, users:poster_id(college, name, rating, rating_count)")
+          .select("*, users:poster_id(college, name, rating, rating_count), companies:company_id(name)")
           .neq("poster_id", authUser.id)
           .eq("status", "open")
           .or(`deadline.is.null,deadline.gt.${nowIso}`)

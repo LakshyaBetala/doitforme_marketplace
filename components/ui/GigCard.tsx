@@ -29,7 +29,21 @@ type Gig = {
   applicant_count?: number | null;
   max_workers?: number | null;
   users?: { college?: string | null } | null;
+  company_id?: string | null;
+  companies?: { name?: string | null } | null;
 };
+
+/**
+ * Who is behind the listing. A COMPANY_TASK is posted by a business, so the
+ * poster's own campus is meaningless (and misleading) there — show the company
+ * instead. Student listings keep showing the campus.
+ */
+function posterLabel(gig: Gig): string | null {
+  if (gig.listing_type === "COMPANY_TASK" || gig.company_id) {
+    return gig.companies?.name || "Company";
+  }
+  return gig.users?.college || null;
+}
 
 type GigCardProps = {
   gig: Gig;
@@ -142,7 +156,7 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
             </h3>
             <div className="flex items-center justify-between text-[11px] text-white/50">
               <span className="flex items-center gap-1 truncate max-w-[60%]">
-                <MapPin size={10} /> {gig.location || gig.users?.college || "Campus"}
+                <MapPin size={10} /> {gig.location || posterLabel(gig) || "Campus"}
               </span>
               <span>{timeAgo(gig.created_at)}</span>
             </div>
@@ -194,7 +208,7 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
         <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-[11px] text-white/50">
             <MapPin size={11} /> {gig.is_physical ? (isCompany ? "On-site" : "Physical") : "Remote"}
-            {gig.users?.college && <span className="text-white/30">· {gig.users.college}</span>}
+            {posterLabel(gig) && <span className="text-white/30">· {posterLabel(gig)}</span>}
           </span>
           <div className="flex items-center gap-2">
             {hiringLabel && (

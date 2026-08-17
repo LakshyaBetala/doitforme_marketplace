@@ -73,7 +73,7 @@ export default function FeedPage() {
       // Base Query
       let query = supabase
         .from("gigs")
-        .select("*, users:poster_id!inner(college), applications(count)")
+        .select("*, users:poster_id!inner(college), companies:company_id(name), applications(count)")
         .eq("status", "open")
         // Hide anything already assigned/in progress — see dashboard note.
         .is("assigned_worker_id", null)

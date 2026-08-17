@@ -342,10 +342,17 @@ export default function CompanyTaskHubPage() {
              <div className="grid gap-px bg-[#222] border border-[#222]">
                {sortedApplications.map(app => {
                  const worker = app.users;
+                 // Direct Connect is retired — /api/gig/apply forces ESCROW. Only
+                 // rows created before that switch can still be DIRECT, so every
+                 // Direct branch below is legacy-only.
                  const isDirect = app.payment_preference === 'DIRECT';
                  const isAccepted = app.status === 'accepted';
                  const isPending = app.status === 'pending';
-                 const isApplied = app.status === 'applied';
+                 // New applications are inserted as `pending` (see apply route);
+                 // `applied` is an older value. Both mean "waiting on the poster",
+                 // and both must offer the escrow hire — gating the hire button on
+                 // `applied` alone left every new applicant with only a Reject.
+                 const isAwaitingDecision = !isDirect && (app.status === 'applied' || isPending);
                  return (
                     <div key={app.id} className="bg-[#0a0a0a] p-6 md:p-8 flex flex-col gap-6 group hover:bg-[#111] transition-colors relative">
                      {isAccepted && (
@@ -465,35 +472,15 @@ export default function CompanyTaskHubPage() {
                        </div>
 
                        <div className="shrink-0 flex flex-col sm:flex-row items-stretch gap-px bg-[#222] border border-[#222] w-full md:w-auto overflow-hidden">
-                          {isApplied && (
+                          {isAwaitingDecision && (
                             <>
-                              {isDirect ? (
-                                <button disabled={hiringId === app.id} onClick={async () => {
-                                  if (!worker?.phone) {
-                                    toast.error("Worker hasn't provided a phone number.");
-                                    return;
-                                  }
-                                  const finalPhone = toWhatsAppNumber(worker.phone);
-                                  if (!finalPhone) {
-                                    toast.error("Worker hasn't provided a valid phone number.");
-                                    return;
-                                  }
-                                  const message = encodeURIComponent(`Hi ${worker?.name}, I'm reaching out regarding my task "${gig.title}" on DoItForMe.`);
-                                  window.open(`https://wa.me/${finalPhone}?text=${message}`, '_blank');
-
-                                  await updateApplicationStatus(app.id, 'pending');
-                                }} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-[#25D366] hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2">
-                                  WhatsApp
-                                </button>
-                              ) : (
-                                <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] md:text-[9px] font-black uppercase tracking-widest transition">
-                                  {hiringId === app.id ? 'Processing...' : '🛡️ Hire via Escrow'}
-                                </button>
-                              )}
+                              <button disabled={hiringId === app.id} onClick={() => handleHire(app)} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-white hover:text-black text-[10px] md:text-[9px] font-black uppercase tracking-widest transition">
+                                {hiringId === app.id ? 'Processing...' : '🛡️ Hire via Escrow'}
+                              </button>
                               <button onClick={() => updateApplicationStatus(app.id, 'rejected')} className="flex-1 p-5 md:p-4 bg-[#0a0a0a] hover:bg-red-500 hover:text-white text-[10px] md:text-[9px] font-black uppercase tracking-widest transition border-l border-[#222]">Reject</button>
                             </>
                           )}
-                          {isPending && (
+                          {isPending && isDirect && (
                             <div className="flex flex-col w-full border-t border-yellow-500/30">
                               <div className="bg-yellow-500/10 p-4 text-center border-b border-yellow-500/20">
                                 <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest block mb-1">Direct Connect Pending</span>
