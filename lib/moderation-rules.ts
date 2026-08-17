@@ -11,8 +11,12 @@ export const containsSensitiveInfo = (text: string): { detected: boolean; reason
 
     // 2. Email & Social Handles
     // Catches: standard emails, "example at gmail", "@username", "insta: user"
+    // The platform names MUST stay \b-anchored: without boundaries the short
+    // aliases match inside ordinary words ("sc" in escrow/discuss, "tg" in
+    // lightgrey), which silently blocked legitimate posts and chat messages.
+    // Kept identical to the client-side regex in app/hooks/useModeration.ts.
     const emailRegex = /[a-zA-Z0-9._%+-]+(?:\s*@\s*|\s+at\s+)[a-zA-Z0-9.-]+\s*(?:\.|dot)\s*[a-zA-Z]{2,}/i;
-    const socialRegex = /(?:@[\w_.]+|insta|instagram|telegram|tg|snap|sc)\s*[:\-\s]?\s*[\w_.]+/i;
+    const socialRegex = /\b(?:insta|instagram|telegram|tg|snap|sc|snapchat)\b\s*[:\-\s]?\s*@?[\w_.]+|@[\w_.]+/i;
 
     if (emailRegex.test(text) || socialRegex.test(text)) {
         return { detected: true, reason: "Contact sharing (Email/Social) is restricted for safety." };
