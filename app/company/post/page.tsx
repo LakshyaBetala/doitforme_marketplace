@@ -9,6 +9,7 @@ import Image from "next/image";
 import {
   Loader2, X, Camera, FileText, Image as ImageIcon, MapPin, CheckCircle, ArrowLeft, Building2, User
 } from "lucide-react";
+import { ATTACHMENT_ACCEPT } from "@/lib/attachments";
 
 export default function CompanyPostTask() {
   const router = useRouter();
@@ -391,7 +392,7 @@ export default function CompanyPostTask() {
             <div className="pt-8 border-t border-[#222] space-y-6">
               <label className={labelClass}>Attachments (Images & PDFs)</label>
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                <input ref={fileInputRef} type="file" accept="image/*, .pdf" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+                <input ref={fileInputRef} type="file" accept={ATTACHMENT_ACCEPT} multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
                 
                 <button onClick={() => fileInputRef.current?.click()} className="w-32 h-32 bg-[#0a0a0a] border border-[#222] hover:border-white flex flex-col items-center justify-center shrink-0 transition group">
                   <FileText className="w-6 h-6 text-[#444] group-hover:text-white mb-3" />

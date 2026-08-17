@@ -6,9 +6,10 @@ import { containsSensitiveInfo } from "@/lib/moderation";
 
 // Limited edit for a company-posted task. Allowed ONLY while the gig is `open`
 // and nobody has been hired (no accepted applicant / escrow not funded). Title,
-// description and category are editable while open; price is locked the moment
-// anyone applies (no bait-and-switch). Ownership + state are enforced server-side
-// because client-supplied gig fields are not trustworthy.
+// description, category and attachments are editable while open; price is locked
+// the moment anyone applies (no bait-and-switch). Ownership + state are enforced
+// server-side because client-supplied gig fields are not trustworthy.
+const MAX_ATTACHMENTS = 5;
 const CATEGORIES = [
   "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
   "Commerce & Finance", "Academics & Gigs", "Data & Research", "Writing & Content",
@@ -35,6 +36,19 @@ export async function POST(req: Request) {
     const category = typeof body.category === "string" ? body.category : "";
     const priceRaw = body.price;
 
+    // Attachments: the client sends the full desired list (kept existing paths +
+    // paths it just uploaded). `undefined` means "don't touch attachments".
+    let images: string[] | undefined;
+    if (body.images !== undefined) {
+      if (!Array.isArray(body.images) || body.images.some((p: unknown) => typeof p !== "string")) {
+        return NextResponse.json({ error: "Invalid attachments." }, { status: 400 });
+      }
+      images = (body.images as string[]).map((p) => p.trim()).filter(Boolean);
+      if (images.length > MAX_ATTACHMENTS) {
+        return NextResponse.json({ error: `Max ${MAX_ATTACHMENTS} attachments.` }, { status: 400 });
+      }
+    }
+
     if (!title || title.length < 3) return NextResponse.json({ error: "Title is too short." }, { status: 400 });
     if (!description || description.length < 10) return NextResponse.json({ error: "Description is too short." }, { status: 400 });
     if (category && !CATEGORIES.includes(category)) return NextResponse.json({ error: "Invalid category." }, { status: 400 });
@@ -49,7 +63,7 @@ export async function POST(req: Request) {
 
     const { data: gig, error: gErr } = await service
       .from("gigs")
-      .select("id, poster_id, status, payment_status")
+      .select("id, poster_id, status, payment_status, images")
       .eq("id", gigId)
       .maybeSingle();
     if (gErr) return NextResponse.json({ error: gErr.message }, { status: 500 });
@@ -72,6 +86,17 @@ export async function POST(req: Request) {
     const update: Record<string, unknown> = { title, description };
     if (category) update.category = category;
 
+    if (images) {
+      // A path is acceptable only if the caller just uploaded it under their own
+      // storage prefix, or it was already attached to this task. Otherwise a
+      // poster could attach — and thereby expose — any object in the bucket.
+      const existing = new Set(((gig.images as string[] | null) || []).filter((p) => typeof p === "string"));
+      if (images.some((p) => !p.startsWith(`${user.id}/`) && !existing.has(p))) {
+        return NextResponse.json({ error: "Invalid attachment path." }, { status: 400 });
+      }
+      update.images = images;
+    }
+
     // Price: only editable while NO ONE has applied yet (people applied at the listed price).
     if (priceRaw !== undefined && priceRaw !== null && priceRaw !== "") {
       const price = Math.round(Number(priceRaw));
@@ -92,9 +117,22 @@ export async function POST(req: Request) {
       .from("gigs")
       .update(update)
       .eq("id", gigId)
-      .select("id, title, description, category, price, status, max_workers")
+      .select("id, title, description, category, price, status, max_workers, images")
       .single();
     if (uErr) return NextResponse.json({ error: uErr.message }, { status: 500 });
+
+    // Attachments the poster removed are now unreferenced — drop the objects so
+    // the bucket doesn't accumulate orphans. Non-fatal: the row is already saved.
+    if (images) {
+      const kept = new Set(images);
+      const orphans = ((gig.images as string[] | null) || []).filter(
+        (p) => typeof p === "string" && p.startsWith(`${user.id}/`) && !kept.has(p)
+      );
+      if (orphans.length > 0) {
+        const { error: rmErr } = await service.storage.from("gig-images").remove(orphans);
+        if (rmErr) console.warn("edit-task: orphan attachment cleanup failed:", rmErr.message);
+      }
+    }
 
     return NextResponse.json({ success: true, gig: updated });
   } catch (err: any) {

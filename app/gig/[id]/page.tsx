@@ -9,6 +9,7 @@ import Skeleton from "@/components/ui/Skeleton";
 import Image from "next/image";
 import { toast } from "sonner";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
+import { isDocAttachment, isImageAttachment, attachmentLabel } from "@/lib/attachments";
 
 export default function GigDetailsPage() {
   const params = useParams();
@@ -297,19 +298,20 @@ export default function GigDetailsPage() {
           <p className="text-zinc-200 text-[15px] leading-[1.8] font-medium whitespace-pre-wrap">{gig.description}</p>
 
           {/* PDF/Document Attachments */}
-          {gig.images && gig.images.filter((img: string) => img.toLowerCase().endsWith('.pdf') || img.toLowerCase().endsWith('.doc') || img.toLowerCase().endsWith('.docx')).length > 0 && (
+          {gig.images && gig.images.filter(isDocAttachment).length > 0 && (
             <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
               <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2"><FileText size={14} /> Attachments</h3>
               <div className="flex flex-wrap gap-3">
-                {gig.images.filter((img: string) => img.toLowerCase().endsWith('.pdf') || img.toLowerCase().endsWith('.doc') || img.toLowerCase().endsWith('.docx')).map((doc: string, i: number) => {
+                {gig.images.filter(isDocAttachment).map((doc: string, i: number) => {
                   const docUrl = supabase.storage.from('gig-images').getPublicUrl(doc).data.publicUrl;
-                  const fileName = doc.split('/').pop() || `Document ${i + 1}`;
+                  // Stored as `<uid>/<timestamp>_<name>` — strip the prefix for display.
+                  const fileName = (doc.split('/').pop() || `Document ${i + 1}`).replace(/^\d+_/, '');
                   return (
                     <a key={i} href={docUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-4 py-3 bg-white/[0.03] border border-white/10 rounded-xl hover:bg-white/[0.06] hover:border-[#8825F5]/30 transition group">
                       <div className="w-10 h-10 rounded-lg bg-[#8825F5]/10 flex items-center justify-center shrink-0"><FileText size={18} className="text-[#C9A9FF]" /></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{fileName}</p>
-                        <p className="text-[10px] text-zinc-500 uppercase">Click to view</p>
+                        <p className="text-[10px] text-zinc-500 uppercase">{attachmentLabel(doc)} · Click to view</p>
                       </div>
                       <Download size={14} className="text-zinc-500 group-hover:text-[#C9A9FF] transition-colors shrink-0" />
                     </a>
@@ -526,12 +528,8 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
 function GigImageGallery({ gig, supabase, isCompanyTask }: { gig: any; supabase: any; isCompanyTask: boolean }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  // Filter to only image files (not PDFs/docs)
-  const imageFiles = (gig.images || []).filter((img: string) => 
-    !img.toLowerCase().endsWith('.pdf') && 
-    !img.toLowerCase().endsWith('.doc') && 
-    !img.toLowerCase().endsWith('.docx')
-  );
+  // Gallery shows real images only; every other type renders as a download card.
+  const imageFiles = (gig.images || []).filter(isImageAttachment);
 
   if (imageFiles.length === 0) {
     // Default fallback — branded gradient with category

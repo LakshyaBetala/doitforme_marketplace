@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
@@ -8,6 +8,7 @@ import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import { toast } from "sonner";
 import { toWhatsAppNumber } from "@/lib/phone";
+import { ATTACHMENT_ACCEPT } from "@/lib/attachments";
 import {
   Loader2, ArrowLeft, Users, Download, ShieldCheck, FileText, CheckCircle2, Gift, MessageCircle, AlertTriangle, X, ArrowRight
 } from "lucide-react";
@@ -38,6 +39,12 @@ export default function CompanyTaskHubPage() {
   const [editCategory, setEditCategory] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  // Attachments: `editImages` holds storage paths already on the gig, `editNewFiles`
+  // holds files picked in this session that are only uploaded on save.
+  const [editImages, setEditImages] = useState<string[]>([]);
+  const [editNewFiles, setEditNewFiles] = useState<File[]>([]);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const MAX_ATTACHMENTS = 5;
   const EDIT_CATEGORIES = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
     "Commerce & Finance", "Academics & Gigs", "Data & Research", "Writing & Content",
@@ -164,12 +171,43 @@ export default function CompanyTaskHubPage() {
     setEditDescription(gig.description || "");
     setEditCategory(gig.category || "Other");
     setEditPrice(String(gig.price ?? ""));
+    setEditImages(Array.isArray(gig.images) ? gig.images : []);
+    setEditNewFiles([]);
     setShowEditModal(true);
+  };
+
+  const addEditFiles = (files: FileList | null) => {
+    if (!files) return;
+    const picked = Array.from(files);
+    if (editImages.length + editNewFiles.length + picked.length > MAX_ATTACHMENTS) {
+      toast.error(`Max ${MAX_ATTACHMENTS} attachments.`);
+      return;
+    }
+    const tooBig = picked.find((f) => f.size > 10 * 1024 * 1024);
+    if (tooBig) {
+      toast.error(`"${tooBig.name}" is over 10MB.`);
+      return;
+    }
+    setEditNewFiles((prev) => [...prev, ...picked]);
   };
 
   const handleSaveEdit = async () => {
     setSavingEdit(true);
     try {
+      // Upload anything newly picked first; only paths go to the API.
+      const uploadedPaths: string[] = [];
+      for (const file of editNewFiles) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "");
+        const path = `${user.id}/${Date.now()}_${safeName}`;
+        const { error: upErr } = await supabase.storage.from("gig-images").upload(path, file);
+        if (upErr) {
+          toast.error(`Upload failed for "${file.name}".`);
+          setSavingEdit(false);
+          return;
+        }
+        uploadedPaths.push(path);
+      }
+
       const res = await fetch("/api/company/edit-task", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -179,6 +217,7 @@ export default function CompanyTaskHubPage() {
           description: editDescription,
           category: editCategory,
           price: editPrice,
+          images: [...editImages, ...uploadedPaths],
         }),
       });
       const data = await res.json();
@@ -186,6 +225,7 @@ export default function CompanyTaskHubPage() {
         toast.error(data.error || "Couldn't save changes.");
       } else {
         setGig((g: any) => ({ ...g, ...data.gig }));
+        setEditNewFiles([]);
         setShowEditModal(false);
         toast.success("Task updated");
       }
@@ -240,7 +280,7 @@ export default function CompanyTaskHubPage() {
               <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
                 {gig.title}
               </h1>
-              <p className="text-sm text-[#888] leading-relaxed max-w-2xl">{gig.description}</p>
+              <p className="text-sm text-[#888] leading-relaxed max-w-2xl whitespace-pre-wrap">{gig.description}</p>
               
               <div className="flex flex-wrap items-center gap-4">
                  <div className="flex flex-col">
@@ -573,6 +613,65 @@ export default function CompanyTaskHubPage() {
                   <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} disabled={hasApplicants}
                     className="w-full bg-[#0B0B11] border border-[#222] p-4 text-white font-black text-sm focus:outline-none focus:border-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed" />
                   {hasApplicants && <p className="text-[9px] text-[#555] uppercase tracking-widest mt-2 leading-relaxed">Price locked — applicants applied at the listed rate.</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Attachments</label>
+                <div className="space-y-2">
+                  {editImages.map((path) => (
+                    <div key={path} className="flex items-center gap-3 bg-[#0B0B11] border border-[#222] p-3">
+                      <FileText size={14} className="text-[#555] shrink-0" />
+                      <span className="flex-1 min-w-0 truncate text-xs text-[#aaa]">
+                        {(path.split("/").pop() || path).replace(/^\d+_/, "")}
+                      </span>
+                      <button
+                        onClick={() => setEditImages((prev) => prev.filter((p) => p !== path))}
+                        className="text-[#555] hover:text-red-500 transition-colors shrink-0"
+                        aria-label="Remove attachment"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {editNewFiles.map((file, i) => (
+                    <div key={`${file.name}-${i}`} className="flex items-center gap-3 bg-[#0B0B11] border border-dashed border-[#333] p-3">
+                      <FileText size={14} className="text-[#555] shrink-0" />
+                      <span className="flex-1 min-w-0 truncate text-xs text-[#aaa]">{file.name}</span>
+                      <span className="text-[8px] font-bold uppercase tracking-widest text-[#555] shrink-0">New</span>
+                      <button
+                        onClick={() => setEditNewFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="text-[#555] hover:text-red-500 transition-colors shrink-0"
+                        aria-label="Remove file"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {editImages.length === 0 && editNewFiles.length === 0 && (
+                    <p className="text-[10px] text-[#444] uppercase tracking-widest py-2">No attachments</p>
+                  )}
+
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept={ATTACHMENT_ACCEPT}
+                    multiple
+                    className="hidden"
+                    onChange={(e) => { addEditFiles(e.target.files); e.target.value = ""; }}
+                  />
+                  <button
+                    onClick={() => editFileInputRef.current?.click()}
+                    disabled={editImages.length + editNewFiles.length >= MAX_ATTACHMENTS}
+                    className="w-full border border-dashed border-[#333] hover:border-white p-3 text-[10px] font-bold uppercase tracking-widest text-[#666] hover:text-white transition disabled:opacity-30 disabled:hover:border-[#333] disabled:hover:text-[#666]"
+                  >
+                    Add files
+                  </button>
+                  <p className="text-[9px] text-[#444] uppercase tracking-widest leading-relaxed">
+                    PDF, Word, PowerPoint, Markdown or images · max {MAX_ATTACHMENTS} files, 10MB each
+                  </p>
                 </div>
               </div>
             </div>
