@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { checkUpi } from "@/lib/upi";
+import { containsSensitiveInfo } from "@/lib/moderation-rules";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
@@ -71,6 +72,8 @@ export default function ProfilePage() {
   const [editUpiId, setEditUpiId] = useState("");
   const [editCollege, setEditCollege] = useState(COLLEGES[0]);
   const [editCustomCollege, setEditCustomCollege] = useState("");
+  const [editBio, setEditBio] = useState("");
+  const BIO_MAX = 200;
   
   const [editUsername, setEditUsername] = useState("");
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
@@ -187,15 +190,14 @@ export default function ProfilePage() {
           return;
         }
 
-        // 3. Fetch Stats
-        const { data: completedGigs } = await supabase
-          .from("gigs")
-          .select("price")
-          .eq("assigned_worker_id", user.id)
-          .eq("status", "COMPLETED");
-
-        const completedCount = completedGigs?.length || 0;
-        const totalEarned = completedGigs?.reduce((acc: any, gig: any) => acc + gig.price, 0) || 0;
+        // 3. Stats come from the users row, not a re-count of gigs.
+        // increment_worker_stats() maintains jobs_completed/total_earned on
+        // payout, and /u/[username] already reads them. Re-deriving them here
+        // queried gigs for status "COMPLETED" while gigs are written lowercase
+        // ("completed"), so this page showed every worker 0 gigs and Rs 0 —
+        // including workers whose public profile showed the real numbers.
+        const completedCount = Number(userData.jobs_completed) || 0;
+        const totalEarned = Number(userData.total_earned) || 0;
 
         // 4. Calculate Lightning Responder
         let isLightning = false;
@@ -251,11 +253,15 @@ export default function ProfilePage() {
           const target = new URLSearchParams(window.location.search).get("edit");
           if (target) {
             setIsEditing(true);
-            if (target === "username" && !userData.username) {
+            const focusId =
+              target === "username" && !userData.username ? "username-input" :
+              target === "bio" ? "bio-input" :
+              null;
+            if (focusId) {
               setTimeout(() => {
-                const el = document.getElementById("username-input");
+                const el = document.getElementById(focusId);
                 el?.scrollIntoView({ behavior: "smooth", block: "center" });
-                (el as HTMLInputElement | null)?.focus();
+                (el as HTMLInputElement | HTMLTextAreaElement | null)?.focus();
               }, 350);
             }
           }
@@ -269,6 +275,7 @@ export default function ProfilePage() {
         setEditUpiId(userData.upi_id ? String(userData.upi_id) : "");
         setEditCollege(userData.college ? String(userData.college) : COLLEGES[0]);
         setEditCustomCollege("");
+        setEditBio(userData.bio ? String(userData.bio) : "");
 
         // 5. Fetch Referral data
         if (userData.referral_code) {
@@ -350,6 +357,7 @@ export default function ProfilePage() {
     setEditUpiId(profile.upi_id ? String(profile.upi_id) : "");
     setEditCollege(profile.college ? String(profile.college) : COLLEGES[0]);
     setEditCustomCollege("");
+    setEditBio(profile.bio ? String(profile.bio) : "");
     setEditUsername("");
     setUsernameStatus("idle");
     setUsernameReason(null);
@@ -357,14 +365,44 @@ export default function ProfilePage() {
     setSaveMessage(null);
   };
 
+  // 7-day cooldown (keyed on profile_last_edited_at so new signups aren't locked).
+  //
+  // It exists to stop identity churn, so it covers only the two fields that can
+  // churn: name and phone. Everything else is either write-once-when-empty
+  // (username, UPI, college) or cosmetic (bio, preferences) — locking those just
+  // meant a user who saved once couldn't touch their bio for a week.
+  // Declared above saveProfile so the handler does not close over a binding
+  // initialised further down the render body.
+  const EDIT_COOLDOWN_DAYS = 7;
+  const lastEditedAt = profile?.profile_last_edited_at ? new Date(profile.profile_last_edited_at) : null;
+  const cooldownMs = EDIT_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+  const identityLocked = !!lastEditedAt && (Date.now() - lastEditedAt.getTime()) < cooldownMs;
+  const nextEditDate = lastEditedAt ? new Date(lastEditedAt.getTime() + cooldownMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+
   const saveProfile = async () => {
     setSaving(true);
     setSaveMessage(null);
 
-    if (!String(editName).trim()) {
+    if (!identityLocked && !String(editName).trim()) {
       setSaveMessage({ type: 'error', text: 'Name cannot be empty.' });
       setSaving(false);
       return;
+    }
+
+    // The bio renders publicly at /u/<username> and in that page's meta
+    // description, so it is a contact-leak surface like a listing or a message.
+    if (editBio.trim()) {
+      if (editBio.trim().length > BIO_MAX) {
+        setSaveMessage({ type: 'error', text: `Bio must be ${BIO_MAX} characters or fewer.` });
+        setSaving(false);
+        return;
+      }
+      const bioCheck = containsSensitiveInfo(editBio);
+      if (bioCheck.detected) {
+        setSaveMessage({ type: 'error', text: bioCheck.reason || 'Please remove contact details from your bio.' });
+        setSaving(false);
+        return;
+      }
     }
 
     let finalUpiId = profile.upi_id;
@@ -393,23 +431,45 @@ export default function ProfilePage() {
     }
 
     if (!profile.username && editUsername.trim()) {
-      const cleanUser = editUsername.trim().toLowerCase();
       if (usernameStatus === "taken" || usernameStatus === "invalid") {
         setSaveMessage({ type: 'error', text: usernameReason || "Pick a different username." });
+        setSaving(false);
+        return;
+      }
+      // The availability check is debounced, so saving quickly after typing
+      // leaves it "checking"/"idle". Only "available" reaches the update below,
+      // which meant the username was dropped silently — and the 7-day cooldown
+      // then started, locking the user out of claiming it for a week.
+      if (usernameStatus !== "available") {
+        setSaveMessage({ type: 'error', text: "Still checking that username — try again in a second." });
         setSaving(false);
         return;
       }
     }
 
     try {
-      // Update fields
+      // Cosmetic fields are always writable; name/phone only outside the
+      // cooldown. The cooldown clock restarts only when an identity field
+      // actually changed — previously any save (even a no-op) restarted it,
+      // so opening edit and clicking Save cost the user seven days.
+      const nextName = String(editName).trim();
+      const nextPhone = String(editPhone).trim();
+      const identityChanged = !identityLocked &&
+        (nextName !== String(profile.name || "").trim() || nextPhone !== String(profile.phone || "").trim());
+
       const updates: any = {
-        name: String(editName).trim(),
-        phone: String(editPhone).trim(),
         preferences: editPreferences,
-        profile_last_edited_at: new Date().toISOString(),
+        bio: editBio.trim() || null,
         updated_at: new Date().toISOString(),
       };
+
+      if (!identityLocked) {
+        updates.name = nextName;
+        updates.phone = nextPhone;
+      }
+      if (identityChanged) {
+        updates.profile_last_edited_at = new Date().toISOString();
+      }
 
       if (!profile.college && finalCollege) updates.college = finalCollege;
       if (!profile.upi_id && finalUpiId) updates.upi_id = finalUpiId;
@@ -425,19 +485,19 @@ export default function ProfilePage() {
       if (dbError) throw dbError;
 
       // Update auth metadata
-      const authData: any = {
-        full_name: String(editName).trim(),
-        name: String(editName).trim(),
-        phone: String(editPhone).trim(),
-      };
+      const authData: any = {};
+      if (!identityLocked) {
+        authData.full_name = nextName;
+        authData.name = nextName;
+        authData.phone = nextPhone;
+      }
       if (!profile.college && finalCollege) authData.college = finalCollege;
       if (!profile.upi_id && finalUpiId) authData.upi_id = finalUpiId;
 
-      const { error: authError } = await supabase.auth.updateUser({
-        data: authData,
-      });
-
-      if (authError) throw authError;
+      if (Object.keys(authData).length > 0) {
+        const { error: authError } = await supabase.auth.updateUser({ data: authData });
+        if (authError) throw authError;
+      }
 
       // Update local state
       setProfile({
@@ -446,7 +506,12 @@ export default function ProfilePage() {
       });
 
       setIsEditing(false);
-      setSaveMessage({ type: 'success', text: 'Profile updated! Next edit available in 7 days.' });
+      setSaveMessage({
+        type: 'success',
+        text: identityChanged
+          ? `Profile updated. Name and phone lock for ${EDIT_COOLDOWN_DAYS} days.`
+          : 'Profile updated.',
+      });
       setTimeout(() => setSaveMessage(null), 4000);
 
     } catch (err: any) {
@@ -469,15 +534,8 @@ export default function ProfilePage() {
 
   const joinDate = new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const avatarLetter = profile.email ? profile.email[0].toUpperCase() : "U";
-  const displayName = profile.name || profile.email.split("@")[0];
+  const displayName = profile.name || profile.email?.split("@")[0] || "Your profile";
 
-  // 7-day edit cooldown logic (using profile_last_edited_at so new signups aren't locked)
-  const EDIT_COOLDOWN_DAYS = 7;
-  const lastEditedAt = profile.profile_last_edited_at ? new Date(profile.profile_last_edited_at) : null;
-  const now = new Date();
-  const cooldownMs = EDIT_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
-  const canEdit = !lastEditedAt || (now.getTime() - lastEditedAt.getTime()) >= cooldownMs;
-  const nextEditDate = lastEditedAt ? new Date(lastEditedAt.getTime() + cooldownMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
 
   // Check missing fields for alert
   const missingFields: string[] = [];
@@ -537,17 +595,16 @@ export default function ProfilePage() {
               <div className="relative z-10 flex items-center gap-3">
                 {!isEditing ? (
                   <>
-                    {!canEdit && (
+                    {identityLocked && (
                       <span className="text-[10px] text-white/50 bg-black/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-sm border border-white/5 hidden md:flex">
-                        <Lock size={10} /> Next edit: {nextEditDate}
+                        <Lock size={10} /> Name &amp; phone unlock {nextEditDate}
                       </span>
                     )}
                     <button
                       onClick={startEditing}
-                      disabled={!canEdit}
-                      className="px-4 py-2 md:px-5 md:py-2.5 bg-black/20 hover:bg-[#8825F5] border border-white/10 hover:border-[#8825F5] text-white text-xs font-bold rounded-xl transition active:scale-95 disabled:opacity-40 disabled:hover:bg-black/20 disabled:cursor-not-allowed flex items-center gap-2 backdrop-blur-sm shadow-lg"
+                      className="px-4 py-2 md:px-5 md:py-2.5 bg-black/20 hover:bg-[#8825F5] border border-white/10 hover:border-[#8825F5] text-white text-xs font-bold rounded-xl transition active:scale-95 flex items-center gap-2 backdrop-blur-sm shadow-lg"
                     >
-                      <Edit2 size={12} /> {canEdit ? 'Edit Profile' : 'Locked'}
+                      <Edit2 size={12} /> Edit Profile
                     </button>
                   </>
                 ) : (
@@ -607,15 +664,21 @@ export default function ProfilePage() {
                 {isEditing ? (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1">Full Name</label>
+                      <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                        Full Name {identityLocked && <Lock size={10} className="text-zinc-600" />}
+                      </label>
                       <input
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
                         placeholder="Your name"
                         autoComplete="name"
-                        className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
+                        disabled={identityLocked}
+                        className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition disabled:opacity-50 disabled:cursor-not-allowed"
                       />
+                      {identityLocked && (
+                        <p className="text-[10px] px-1 mt-1.5 text-white/40">Editable again on {nextEditDate}. Bio and preferences can be changed any time.</p>
+                      )}
                     </div>
                     {!profile.username && (
                       <div>
@@ -681,7 +744,37 @@ export default function ProfilePage() {
 
               {/* Bento Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                
+
+                {/* Bio — the one field that shows on the public page as prose.
+                    Spans the full grid because it is the only long-form input. */}
+                <div className="md:col-span-2">
+                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1">Bio</label>
+                  {isEditing ? (
+                    <>
+                      <textarea
+                        id="bio-input"
+                        value={editBio}
+                        onChange={(e) => setEditBio(e.target.value.slice(0, BIO_MAX))}
+                        rows={3}
+                        maxLength={BIO_MAX}
+                        placeholder="One or two lines on what you do and what you're good at."
+                        className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm leading-relaxed placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition resize-none"
+                      />
+                      <p className="text-[10px] px-1 mt-1.5 text-white/40 flex items-center justify-between gap-2">
+                        <span>Shown on your public page. No phone numbers or social handles.</span>
+                        <span className={editBio.length >= BIO_MAX ? "text-amber-400" : ""}>{editBio.length}/{BIO_MAX}</span>
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
+                      <User size={16} className="text-zinc-500 shrink-0 mt-0.5" />
+                      <span className={profile.bio ? "text-zinc-300 leading-relaxed whitespace-pre-wrap" : "text-zinc-600 italic"}>
+                        {profile.bio || "No bio yet"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 {/* Email (Always Read-only) */}
                 <div>
                   <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
@@ -704,7 +797,8 @@ export default function ProfilePage() {
                       placeholder="Phone number"
                       autoComplete="tel"
                       inputMode="tel"
-                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
+                      disabled={identityLocked}
+                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   ) : (
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
