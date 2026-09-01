@@ -100,8 +100,43 @@ Students upload an ID at `/verify-id` → [app/api/kyc/upload/route.ts](app/api/
 - **Backfill / re-verify** existing uploads with [scripts/maintenance/reverify-kyc.mjs](scripts/maintenance/reverify-kyc.mjs) (`node scripts/maintenance/reverify-kyc.mjs`). It's resumable (skips already-scored rows) and stops cleanly on the Gemini free-tier daily quota — re-run after reset to finish.
 - Outcome emails (`kyc_approved` / `kyc_rejected` with reason) are sent via [lib/email.ts](lib/email.ts) — `RESEND_API_KEY` is set in Vercel (prod email works); it's just absent from local `.env.local`, so email no-ops in local dev only.
 
-### Payments
-Cashfree is the primary gateway ([app/api/payments/create-order/route.ts](app/api/payments/create-order/route.ts), `verify-payment`). Razorpay SDK is also installed but Cashfree is the active path. **The create-order handler re-fetches the real gig price from the DB and ignores any price sent in the request body** — client-supplied amounts are a security footgun.
+### Payments — Razorpay only
+**Cashfree is gone.** It never cleared marketplace onboarding, so the gateway, its
+webhook, its payouts helper and both npm packages were deleted. Do not reintroduce
+a provider flag "just in case" — one gateway is the point.
+
+Two entry points create orders, and they must stay in step:
+- [payments/create-order](app/api/payments/create-order/route.ts) — fund escrow on an
+  already-assigned gig.
+- [gig/hire](app/api/gig/hire/route.ts) — hire-and-pay in one step (applicants list,
+  company task desk). This is the busier path; it is easy to miss when changing payments.
+
+Plus [company/pro/create-order](app/api/company/pro/create-order/route.ts) for the
+₹299/mo subscription.
+
+**Both handlers re-fetch the real price from the DB and ignore any amount in the
+request body** — client-supplied amounts are a security footgun. Razorpay's own
+integration guide tells you to accept `{ amount }` from the client; don't.
+
+Settlement has exactly one implementation, [lib/paymentSettlement.ts](lib/paymentSettlement.ts),
+reached from two places that race by design:
+- [webhooks/razorpay](app/api/webhooks/razorpay/route.ts) — survives a closed tab. Refuses
+  to run at all without `RAZORPAY_WEBHOOK_SECRET` rather than trusting an unverified body.
+- [payments/verify-payment](app/api/payments/verify-payment/route.ts) — the browser callback.
+
+Both are idempotent: the transaction row is claimed with a conditional UPDATE and only
+the winner funds escrow. Verifying a payment needs **two** checks — the HMAC proves the
+callback is genuine, and re-reading the payment proves it was `captured`. A signature
+alone will happily validate a payment that failed.
+
+`scratchpad/e2e-payment.mjs` (regenerate if lost) exercises the whole chain against a
+running dev server using disposable rows, then deletes them. Run it after any change to
+the payment path; unit tests cannot catch settlement bugs.
+
+**Payouts to workers are manual.** Every Indian payouts product is withheld from
+proprietorships, so [cron/process-payouts](app/api/cron/process-payouts/route.ts) reports
+the queue and logs when the oldest row passes 24h — it does not move money. Pay from the
+admin Payouts desk. A future RazorpayX integration needs a registered entity first.
 
 ### Client-side state
 Zustand is used minimally; the only store is [store/useGigFormStore.ts](store/useGigFormStore.ts) for the multi-step post-a-gig form. Everything else uses local `useState` or Supabase realtime.
@@ -120,7 +155,33 @@ Supabase is configured for **email OTP only** — magic links are disabled. Keep
 
 ## Required environment variables
 From README + handler code:
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), `RESEND_API_KEY` (transactional email — unset = email no-ops), `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_WEBHOOK_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), `RESEND_API_KEY` (transactional email — unset = email no-ops), `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
+
+## Traps that have already bitten (do not re-learn these)
+
+- **Migrations in `supabase/migrations/` are not necessarily applied to the live DB.**
+  `20260322_1500_escrow_multi_worker.sql` declares `UNIQUE (gig_id, worker_id)` on
+  `escrow`; the live database never got it. Settlement used
+  `upsert(onConflict: "gig_id,worker_id")`, which therefore failed every time with
+  Postgres 42P10 — and nothing checked the error, so gigs were marked `ESCROW_FUNDED`
+  with no escrow row behind them. **Check `error` on every Supabase write that matters.**
+  Verify a constraint exists before relying on `onConflict`.
+
+- **`tsx --test tests/unit/` silently skips `.ts` files.** Node's default test-file
+  patterns match only `.js/.cjs/.mjs`, and Node 20 does not expand globs. Two suites sat
+  unexecuted while reporting green. `npm run test:unit` goes through
+  [scripts/run-unit-tests.mjs](scripts/run-unit-tests.mjs), which enumerates files explicitly.
+
+- **Short aliases in the moderation regex need `` anchors.** Without them `sc` matches
+  inside "escrow" and "discuss", so the platform blocked listings and chat messages for
+  containing the word for its own payment system. Covered by
+  [tests/unit/moderation-rules.test.ts](tests/unit/moderation-rules.test.ts).
+
+- **Uploads are compressed client-side** by [lib/imageCompress.ts](lib/imageCompress.ts)
+  before reaching Supabase; storage was growing ~40MB/day on a 1GB free tier. It fails
+  open — an undecodable file uploads unchanged rather than erroring. Vercel image
+  optimization is deliberately `unoptimized: true` to keep transformations off a Hobby
+  quota; flip it back on a paid plan.
 
 ## Stale-doc warning
 Four tables were dropped on 2026-06-19 ([supabase/migrations/20260619_drop_unused_tables.sql](supabase/migrations/20260619_drop_unused_tables.sql)) — `vasooli_bounties`, `deliveries`, `payout_methods`, `chat_blocked_logs`. Older migrations and schema dumps still reference them. Delivery artifacts live on `gigs.delivery_link` / `delivery_files` + `messages`; payout UPI lives on `users.upi_id` and payouts are manual.
