@@ -85,22 +85,52 @@ export async function settleGigEscrow(
 
   const handshakeCode = Math.floor(1000 + Math.random() * 9000).toString();
 
-  await supabaseAdmin.from("escrow").upsert(
-    {
-      gig_id: gigId,
-      poster_id: gig.poster_id,
-      worker_id: workerId,
-      original_amount: basePrice,
-      platform_fee: platformFee,
-      gateway_fee: gatewayFee,
-      amount_held: amountHeld,
-      status: "HELD",
-      release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-      handshake_code: handshakeCode,
-      escrow_category: deposit > 0 ? "RENTAL_DEPOSIT" : "GIG",
-    },
-    { onConflict: "gig_id,worker_id" }
-  );
+  const escrowRow = {
+    gig_id: gigId,
+    poster_id: gig.poster_id,
+    worker_id: workerId,
+    original_amount: basePrice,
+    platform_fee: platformFee,
+    gateway_fee: gatewayFee,
+    amount_held: amountHeld,
+    status: "HELD",
+    release_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+    handshake_code: handshakeCode,
+    escrow_category: deposit > 0 ? "RENTAL_DEPOSIT" : "GIG",
+  };
+
+  // Explicit read-then-write instead of upsert(onConflict: "gig_id,worker_id").
+  //
+  // That conflict target requires a UNIQUE (gig_id, worker_id) constraint which
+  // migration 20260322_1500_escrow_multi_worker.sql adds but the live database
+  // does not have — so every upsert failed with 42P10 and, because the error was
+  // never checked, the gig was still marked ESCROW_FUNDED with no escrow row
+  // behind it. Money would have been taken with nothing to release.
+  //
+  // Only one caller reaches this point per order (the transaction row is claimed
+  // with a conditional UPDATE above), so a read-then-write is safe and does not
+  // depend on the constraint existing.
+  const { data: existingEscrow } = await supabaseAdmin
+    .from("escrow")
+    .select("id")
+    .eq("gig_id", gigId)
+    .eq("worker_id", workerId)
+    .maybeSingle();
+
+  const { error: escrowError } = existingEscrow
+    ? await supabaseAdmin.from("escrow").update(escrowRow).eq("id", existingEscrow.id)
+    : await supabaseAdmin.from("escrow").insert(escrowRow);
+
+  // Fail loudly. Escrow is the record of what is owed; marking the gig funded
+  // without it is worse than reporting the payment as unsettled and retrying.
+  if (escrowError) {
+    console.error(`[settlement] escrow write FAILED gig=${gigId} worker=${workerId}: ${escrowError.message}`);
+    await supabaseAdmin
+      .from("transactions")
+      .update({ status: "PENDING" })
+      .eq("gateway_order_id", orderId);
+    return { ok: false, skipped: `escrow write failed: ${escrowError.message}` };
+  }
 
   await supabaseAdmin
     .from("applications")
