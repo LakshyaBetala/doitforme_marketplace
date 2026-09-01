@@ -24,6 +24,18 @@ const nextConfig: NextConfig = {
     ]
   },
   images: {
+    // Vercel's image optimizer is OFF.
+    //
+    // On Hobby it was burning Image Optimization transformations (4K/5K) and
+    // Fast Origin Transfer to re-encode images that Supabase already serves
+    // from its own CDN. Since uploads are now compressed client-side to
+    // <=1600px (lib/imageCompress.ts), there is little left to optimise — so
+    // this moves that bandwidth off Vercel's exhausted quota and onto Supabase
+    // egress, which is at ~1GB of 5GB.
+    //
+    // Cost: no automatic WebP conversion or responsive srcset. Flip back to
+    // false on a paid plan; remotePatterns below is kept for that day.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

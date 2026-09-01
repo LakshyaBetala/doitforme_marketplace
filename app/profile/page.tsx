@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { compressImage, COMPRESS_PRESETS } from "@/lib/imageCompress";
 import { checkUpi } from "@/lib/upi";
 import { containsSensitiveInfo } from "@/lib/moderation-rules";
 import { useRouter } from "next/navigation";
@@ -321,7 +322,7 @@ export default function ProfilePage() {
     setSaveMessage(null);
     
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", await compressImage(file, COMPRESS_PRESETS.avatar));
 
     try {
       const res = await fetch("/api/profile/update-avatar", {

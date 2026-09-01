@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { compressImage, compressImages, COMPRESS_PRESETS } from "@/lib/imageCompress";
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -357,12 +358,13 @@ function ChatRoomContent() {
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const upload = await compressImage(file, COMPRESS_PRESETS.attachment);
+      const fileExt = upload.name.split('.').pop();
       const fileName = `${roomId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('chat-attachments')
-        .upload(fileName, file);
+        .upload(fileName, upload);
 
       if (uploadError) throw uploadError;
 

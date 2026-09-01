@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { compressImage, compressImages, COMPRESS_PRESETS } from "@/lib/imageCompress";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, ArrowRight, ArrowLeft, Building2, CheckCircle, Image as ImageIcon, X, UploadCloud, Users, ShieldCheck, Zap, Clock, Eye, EyeOff } from "lucide-react";
@@ -121,13 +122,14 @@ export default function CompanyOnboardingPage() {
             // Upload Logo
             let uploadedLogoUrl = null;
             if (logoFile) {
-                const fileExt = logoFile.name.split('.').pop();
+                const logoUpload = await compressImage(logoFile, COMPRESS_PRESETS.avatar);
+                const fileExt = logoUpload.name.split('.').pop();
                 const fileName = `logo_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                 const filePath = `companies/${fileName}`;
                 
                 const { error: uploadError } = await supabase.storage
                     .from("gig-images")
-                    .upload(filePath, logoFile, { cacheControl: "3600", upsert: false });
+                    .upload(filePath, logoUpload, { cacheControl: "3600", upsert: false });
                 
                 if (uploadError) throw new Error("Image upload failed: " + uploadError.message);
 

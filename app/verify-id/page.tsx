@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { compressImage, COMPRESS_PRESETS } from "@/lib/imageCompress";
 import VerificationTips from "@/components/VerificationTips";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
@@ -93,9 +94,13 @@ export default function VerifyIDPage() {
     setError("");
 
     try {
+      // Resize before sending. KYC images were ~1MB each and 75% of all
+      // storage; the preset keeps the card legible for the Gemini OCR check.
+      const upload = await compressImage(file, COMPRESS_PRESETS.kyc);
+
       // Upload via server-side API (uses service role key → bypasses Storage RLS)
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", upload);
 
       const res = await fetch("/api/kyc/upload", {
         method: "POST",

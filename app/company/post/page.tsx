@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { compressImage, COMPRESS_PRESETS } from "@/lib/imageCompress";
 import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
@@ -166,7 +167,8 @@ export default function CompanyPostTask() {
       const uploadedPaths: string[] = [];
       if (images.length > 0) {
         await Promise.all(
-          images.map(async (file) => {
+          images.map(async (raw) => {
+            const file = await compressImage(raw, COMPRESS_PRESETS.attachment);
             const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
             const path = `${user.id}/${Date.now()}_${fileName}`;
             const { error: uploadError } = await supabase.storage.from("gig-images").upload(path, file);

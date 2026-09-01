@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { compressImage, COMPRESS_PRESETS } from "@/lib/imageCompress";
 import { useParams, useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
@@ -205,12 +206,13 @@ export default function CompanyTaskHubPage() {
     try {
       // Upload anything newly picked first; only paths go to the API.
       const uploadedPaths: string[] = [];
-      for (const file of editNewFiles) {
+      for (const raw of editNewFiles) {
+        const file = await compressImage(raw, COMPRESS_PRESETS.attachment);
         const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "");
         const path = `${user.id}/${Date.now()}_${safeName}`;
         const { error: upErr } = await supabase.storage.from("gig-images").upload(path, file);
         if (upErr) {
-          toast.error(`Upload failed for "${file.name}".`);
+          toast.error(`Upload failed for "${raw.name}".`);
           setSavingEdit(false);
           return;
         }

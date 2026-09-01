@@ -1,6 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
+import { compressImage, compressImages, COMPRESS_PRESETS } from "@/lib/imageCompress";
 
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -676,12 +677,13 @@ function MessagesContent() {
         setIsUploading(true);
         try {
             const gigId = activeChat ? activeChat.split('_')[0] : 'general';
-            const fileExt = file.name.split('.').pop();
+            const upload = await compressImage(file, COMPRESS_PRESETS.attachment);
+            const fileExt = upload.name.split('.').pop();
             const fileName = `${gigId}/${Date.now()}.${fileExt}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('chat-attachments')
-                .upload(fileName, file);
+                .upload(fileName, upload);
 
             if (uploadError) throw uploadError;
 
