@@ -54,3 +54,5 @@ supabase/.temp
 scripts/maintenance/
 test-results/
 playwright-report/
+
+scratch/
