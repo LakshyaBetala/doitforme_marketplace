@@ -2,8 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isAdminEmail } from "@/lib/admins";
 
-const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
 
 // Admin review queue for student IDs that the AI flagged as `manual_review`
 // (and a manual override for any decision). GET lists the queue with short-lived
@@ -93,7 +93,7 @@ async function requireAdmin(): Promise<{ service: any } | { error: NextResponse 
   );
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  if (!ADMINS.includes(user.email || "")) {
+  if (!isAdminEmail(user.email)) {
     return { error: NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 }) };
   }
   const service = createClient(

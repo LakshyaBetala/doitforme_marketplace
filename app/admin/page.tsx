@@ -6,6 +6,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, RefreshCcw, Building2, UserCheck, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { isAdminEmail } from "@/lib/admins";
 
 // Interest taxonomy used for "related field" targeting in the broadcast tab.
 const BROADCAST_CATEGORIES = [
@@ -63,8 +64,7 @@ export default function AdminDashboardPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return router.push("/login");
 
-        const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
-        if (ADMINS.includes(user.email || "")) {
+        if (isAdminEmail(user.email)) {
             setIsAdmin(true);
             fetchAllData();
         } else {

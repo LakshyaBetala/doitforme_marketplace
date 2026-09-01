@@ -56,7 +56,7 @@ export default function ContactContent() {
               <p className="text-white/60 text-sm leading-relaxed">
                 DoItForMe<br />
                 Zinda Sahib Street<br />
-                Chennai, Tamil Nadu, India.
+                Chennai, Tamil Nadu 600001, India.
               </p>
             </div>
           </div>

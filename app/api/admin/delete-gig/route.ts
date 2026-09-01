@@ -2,8 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isAdminEmail } from "@/lib/admins";
 
-const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
 
 // Admin-only hard delete for stale / irrelevant posts. Guarded so a gig with any
 // money or ratings attached can never be deleted (the DB would block it anyway —
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     );
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    if (!ADMINS.includes(user.email || "")) {
+    if (!isAdminEmail(user.email)) {
       return NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 });
     }
 

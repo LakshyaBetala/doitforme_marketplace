@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { platformFeeFor, audienceForGig } from "@/lib/fees";
+import { isAdminEmail } from "@/lib/admins";
 
 // Admin dispute desk.
 //
@@ -23,9 +24,7 @@ import { platformFeeFor, audienceForGig } from "@/lib/fees";
 //   REFUND  — the poster was right. Delegates to refund_escrow_transactional,
 //             the same RPC the self-serve refund path uses.
 //
-// ADMINS duplicates the is_admin() SQL whitelist by design (see CLAUDE.md) —
-// edit both together.
-const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
+// Admin whitelist lives in lib/admins.ts; the database's copy is is_admin().
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -36,7 +35,7 @@ async function requireAdmin() {
   );
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  if (!ADMINS.includes(user.email || "")) {
+  if (!isAdminEmail(user.email)) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
   return {

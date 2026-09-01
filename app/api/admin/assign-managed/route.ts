@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isAdminEmail } from "@/lib/admins";
 
 // Managed Mode admin desk.
 // GET  -> the queue of managed gigs awaiting assignment (+ the Elite pool to pick from).
@@ -9,7 +10,6 @@ import { createClient } from "@supabase/supabase-js";
 //         escrow tracking row. Mirrors the public accept-offer flow but the
 //         *admin* is the one choosing the worker (no public application needed).
 
-const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
 
 async function requireAdmin(): Promise<{ service: any } | { error: NextResponse }> {
   const cookieStore = await cookies();
@@ -20,7 +20,7 @@ async function requireAdmin(): Promise<{ service: any } | { error: NextResponse 
   );
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  if (!ADMINS.includes(user.email || "")) {
+  if (!isAdminEmail(user.email)) {
     return { error: NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 }) };
   }
   const service = createClient(

@@ -160,7 +160,7 @@ export default function TermsContent() {
                   <strong>Payments &amp; escalations:</strong> <a href="mailto:gandhimouriyan1234@gmail.com" className="text-white hover:text-[#C084FC] transition-colors">gandhimouriyan1234@gmail.com</a>
                 </p>
                 <p className="text-zinc-500 text-sm leading-relaxed">
-                  DoItForMe is a service operated by Lakshya Betala and Mouriyan Gandhi, Zinda Sahib Street, Chennai, Tamil Nadu, India. Payments are processed by Razorpay Software Private Limited and settled to the DoItForMe merchant account held by Mouriyan Gandhi.
+                  DoItForMe is a service operated by Lakshya Betala and Mouriyan Gandhi, Zinda Sahib Street, Chennai, Tamil Nadu 600001, India. Payments are processed by Razorpay Software Private Limited and settled to the DoItForMe merchant account held by Mouriyan Gandhi.
                   Legal and billing correspondence: <a href="mailto:betala911@gmail.com" className="text-zinc-300 hover:text-white transition-colors">betala911@gmail.com</a> and <a href="mailto:gandhimouriyan1234@gmail.com" className="text-zinc-300 hover:text-white transition-colors">gandhimouriyan1234@gmail.com</a>.
                 </p>
               </div>

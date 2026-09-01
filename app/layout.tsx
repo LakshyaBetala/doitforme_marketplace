@@ -86,6 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       "streetAddress": "Zinda Sahib Street",
       "addressLocality": "Chennai",
       "addressRegion": "Tamil Nadu",
+      "postalCode": "600001",
       "addressCountry": "IN"
     },
     // Support runs on email. The telephone line is declared here because a

@@ -128,7 +128,7 @@ export default function PrivacyContent() {
                   For any privacy-related concerns, please contact our Data Protection Officer at <a href="mailto:doitforme.in@gmail.com" className="text-brand-purple hover:text-white transition-colors underline decoration-brand-purple/30 underline-offset-4">doitforme.in@gmail.com</a>. We respond within one working day.
                 </p>
                 <p className="text-zinc-500 text-sm leading-relaxed">
-                  Grievance Officer (as required under the IT Rules, 2021): Lakshya Betala, for DoItForMe (operated by Lakshya Betala and Mouriyan Gandhi), Zinda Sahib Street, Chennai, Tamil Nadu, India —{" "}
+                  Grievance Officer (as required under the IT Rules, 2021): Lakshya Betala, for DoItForMe (operated by Lakshya Betala and Mouriyan Gandhi), Zinda Sahib Street, Chennai, Tamil Nadu 600001, India —{" "}
                   <a href="mailto:betala911@gmail.com" className="text-zinc-300 hover:text-white transition-colors">betala911@gmail.com</a> and <a href="mailto:gandhimouriyan1234@gmail.com" className="text-zinc-300 hover:text-white transition-colors">gandhimouriyan1234@gmail.com</a>.
                 </p>
               </div>

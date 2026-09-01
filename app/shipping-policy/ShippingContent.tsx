@@ -143,7 +143,7 @@ export default function ShippingContent() {
                   escalations, Monday to Saturday, 10:00 to 19:00 IST. We reply to delivery queries within one working day.
                 </p>
                 <p className="text-zinc-500 text-sm leading-relaxed">
-                  DoItForMe is operated by Lakshya Betala and Mouriyan Gandhi, Chennai, Tamil Nadu, India.
+                  DoItForMe is operated by Lakshya Betala and Mouriyan Gandhi, Zinda Sahib Street, Chennai, Tamil Nadu 600001, India.
                   Payments are processed by Razorpay Software Private Limited and settled to the DoItForMe merchant
                   account held by Mouriyan Gandhi.
                 </p>

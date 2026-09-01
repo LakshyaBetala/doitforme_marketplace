@@ -2,8 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isAdminEmail } from "@/lib/admins";
 
-const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
 
 // Admin broadcast: alert the engaged student audience about a new gig via the
 // in-app bell (free, no cap) and/or transactional email (batched to respect the
@@ -240,7 +240,7 @@ async function requireAdmin(): Promise<{ service: any; adminEmail: string } | { 
   );
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  if (!ADMINS.includes(user.email || "")) {
+  if (!isAdminEmail(user.email)) {
     return { error: NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 }) };
   }
   const service = createClient(

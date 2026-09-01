@@ -49,18 +49,20 @@ Escrow flow: payment creates `HELD` funds → delivery sets `status='DELIVERED'`
 
 Between "approve" and "dispute" sits a third, lighter path: [app/api/gig/request-changes/route.ts](app/api/gig/request-changes/route.ts). The poster sends written feedback → gig reverts to `status='assigned'` with `auto_release_at = null` and `delivered_at = null` (timer **cancelled**, not paused) → the worker resubmits, which restarts the 24h clock. No admin involvement; dispute remains the heavy path that freezes escrow for review.
 
+**Resolving a dispute** is the **Disputes** tab in [app/admin/page.tsx](app/admin/page.tsx), backed by [app/api/admin/resolve-dispute/route.ts](app/api/admin/resolve-dispute/route.ts). For a long time this did not exist: `/api/gig/dispute` froze escrow and mailed both parties a 48-hour promise, with no UI and no endpoint to act on it — the only exit was hand-written SQL. Two outcomes: `RELEASE` re-implements the [cron/auto-release](app/api/cron/auto-release/route.ts) arithmetic exactly (stored fee first, recompute only as fallback) so a disputed gig settles identically to a normal one; `REFUND` delegates to `refund_escrow_transactional`. Decision notes are **mandatory** and emailed to both sides — that text is the record if a payment is ever charged back. The tab badges anything past the 48h SLA.
+
 Key SQL RPCs (called from API routes, not written as raw SQL in handlers):
 - `manual_release_escrow(p_gig_id)` — called by [app/api/escrow/release/route.ts](app/api/escrow/release/route.ts).
 - `release_escrow_transactional(gig_uuid)`, `refund_escrow_transactional(gig_uuid, poster_uuid)`.
 - `freeze_wallet_amount` / `unfreeze_wallet_amount`.
 - `increment_worker_stats(worker_id, amount)` — updates `jobs_completed` / earnings on payout.
-- `is_admin()` — SQL function that whitelists admin emails (`betala911@gmail.com`, `doitforme.in@gmail.com`); used inside RLS policies.
+- `is_admin()` — SQL function that whitelists admin emails; used inside RLS policies. It is the **database half** of the whitelist in [lib/admins.ts](lib/admins.ts) — see below.
 
 ### Fee model — [lib/fees.ts](lib/fees.ts) is the single source of truth
 Do **not** hardcode a percentage anywhere; import the helpers. (The old "3% flat" rate is gone.)
 - `PLATFORM_FEES` — `STUDENT: 5%`, `BUSINESS: 10%`. Deducted from the **recipient's payout**.
 - `audienceForGig(gig)` — `BUSINESS` when `company_id` is set or `listing_type === 'COMPANY_TASK'`; `STUDENT` otherwise.
-- `GATEWAY_FEE_RATE` (2%) / `gatewayFeeFor(subtotal)` — Cashfree pass-through charged **on top**, paid by the payer.
+- `GATEWAY_FEE_RATE` (2%) / `gatewayFeeFor(subtotal)` — Razorpay pass-through charged **on top**, paid by the payer.
 - Managed delivery (`is_managed`) is deliberately **not** a separate rate — it is Business 10%, to keep pricing "DoItForMe = 10%".
 
 Both call sites ([create-order](app/api/payments/create-order/route.ts), [cron/auto-release](app/api/cron/auto-release/route.ts)) go through these. create-order persists the full breakdown (incl. `fee_audience`) into `transactions.provider_data.breakdown`; the cron prefers that **stored** fee and only recomputes as a fallback — so historical gigs keep the rate they were priced at when you change the dial.
@@ -70,7 +72,7 @@ Strategy pivot recorded in [supabase/migrations/20260619_managed_mode.sql](supab
 - `gigs.is_managed` (bool) + `gigs.managed_status` ∈ `UNASSIGNED | ASSIGNED | DELIVERED | CLOSED` — a queue lifecycle **parallel to** the public `gigs.status`; keep both in sync when you touch managed gigs. Set at post time in [app/post/page.tsx](app/post/page.tsx).
 - `users.is_elite` — manually curated top students the assignment UI sorts first.
 - Admin desk: **Managed Queue** tab in [app/admin/page.tsx](app/admin/page.tsx) → [app/api/admin/assign-managed/route.ts](app/api/admin/assign-managed/route.ts). Assignment upserts an `approved` row into `applications` on purpose, so delivery/escrow/payout reuse the identical self-serve code path.
-- That route re-implements the admin check as a **hardcoded `ADMINS` email array**, duplicating the `is_admin()` SQL whitelist. Both lists must be edited together.
+- Admin auth goes through `isAdminEmail()` from [lib/admins.ts](lib/admins.ts). It used to be a hardcoded `ADMINS` array copy-pasted into eight routes plus the admin page; adding a person meant editing ten places, and missing one produced an admin who could open a tab but got a 403 from the endpoint behind it. There are now exactly **two** copies — that file and the SQL `is_admin()` — because RLS cannot import TypeScript. Edit both together; [supabase/migrations/20260902_admin_whitelist.sql](supabase/migrations/20260902_admin_whitelist.sql) is the pattern.
 
 When touching gig/payment code, the canonical reference for state transitions and RLS is [supabase/migrations/20260421_standardize_naming_and_rls.sql](supabase/migrations/20260421_standardize_naming_and_rls.sql) (RLS baseline) and [supabase/migrations/v6_master.sql](supabase/migrations/v6_master.sql).
 

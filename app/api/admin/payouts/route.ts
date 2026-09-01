@@ -3,6 +3,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { checkUpi } from "@/lib/upi";
+import { isAdminEmail } from "@/lib/admins";
 
 // Admin payout console API.
 //
@@ -15,7 +16,6 @@ import { checkUpi } from "@/lib/upi";
 // When Payouts is approved, /api/cron/process-payouts takes over this exact
 // queue and this console becomes a read-only view. No data migration needed.
 
-const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -26,7 +26,7 @@ async function requireAdmin() {
   );
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  if (!ADMINS.includes(user.email || "")) {
+  if (!isAdminEmail(user.email)) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
   return {

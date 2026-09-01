@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { isAdminEmail } from "@/lib/admins";
 
 export async function POST(req: Request) {
     try {
@@ -29,8 +30,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const ADMINS = ["betala911@gmail.com", "doitforme.in@gmail.com"];
-        if (!ADMINS.includes(user.email || "")) {
+        if (!isAdminEmail(user.email)) {
             return NextResponse.json({ error: "Forbidden: Admins only" }, { status: 403 });
         }
 
