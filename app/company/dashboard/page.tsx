@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -118,6 +119,15 @@ function CompanyDashboard() {
                 return;
             }
             toast.dismiss(t);
+
+            if (data.provider === "RAZORPAY") {
+                await openRazorpayCheckout(data, {
+                    description: "Company Pro — 1 month",
+                    verifyUrl: "/api/company/pro/verify",
+                    onSuccess: () => router.refresh(),
+                });
+                return;
+            }
             const cashfreeMode = process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox";
             // @ts-expect-error - Cashfree global
             if (typeof window.Cashfree === "undefined") {

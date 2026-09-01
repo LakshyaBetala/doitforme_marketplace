@@ -1,8 +1,10 @@
-// Create a Cashfree order for the ₹299/month Company Pro plan.
+// Create a gateway order for the ₹299/month Company Pro plan.
 // On payment success (handled by /api/webhooks/cashfree or fallback /api/company/pro/verify),
 // companies.pro_until is set to now() + 30 days.
 
 import { NextResponse } from "next/server";
+import { activeProvider } from "@/lib/paymentProvider";
+import { createRazorpayOrder } from "@/lib/razorpay";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
@@ -38,6 +40,42 @@ export async function POST(_req: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
+
+    // RAZORPAY branch. PRO_PRICE is a server constant — the client never sends
+    // an amount here either.
+    if (activeProvider() === "RAZORPAY") {
+      const rzpOrder = await createRazorpayOrder({
+        amountRupees: PRO_PRICE,
+        receipt: orderId,
+        notes: { user_id: user.id, type: "COMPANY_PRO" },
+      });
+
+      const { error: rzpErr } = await supabaseAdmin.from("transactions").insert({
+        user_id: user.id,
+        amount: PRO_PRICE,
+        type: "COMPANY_PRO",
+        status: "PENDING",
+        gateway: "RAZORPAY",
+        gateway_order_id: rzpOrder.id,
+        provider_data: { plan: "PRO_MONTHLY", months: 1, receipt: orderId },
+      });
+      if (rzpErr) throw rzpErr;
+
+      return NextResponse.json({
+        success: true,
+        provider: "RAZORPAY",
+        order_id: rzpOrder.id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
+        gig_title: "DoItForMe Company Pro — 1 month",
+        prefill: {
+          name: userRow.name || "",
+          email: userRow.email || "",
+          contact: String(userRow.phone || "").replace(/\D/g, "").slice(-10),
+        },
+      });
+    }
 
     const { error: txnError } = await supabaseAdmin.from("transactions").insert({
       user_id: user.id,

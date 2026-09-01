@@ -3,6 +3,7 @@
 // from the dashboard when the user is bounced back with ?pro=verify&order_id=...
 
 import { NextResponse } from "next/server";
+import { verifyRazorpaySignature, fetchRazorpayPayment } from "@/lib/razorpay";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
@@ -12,8 +13,19 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
+    const body = await req.json();
+    const {
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: rzpPaymentId,
+      razorpay_signature: rzpSignature,
+    } = body || {};
+    const isRazorpay = Boolean(rzpPaymentId);
+    const orderId: string | undefined = isRazorpay ? rzpOrderId : body?.orderId;
+
     if (!orderId) return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
+    if (isRazorpay && (!rzpSignature || !rzpOrderId)) {
+      return NextResponse.json({ error: "Missing payment verification fields" }, { status: 400 });
+    }
 
     const { data: txn } = await supabaseAdmin
       .from("transactions")
@@ -30,9 +42,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Already activated" });
     }
 
-    // Verify with Cashfree
+    // Verify with the gateway
     let validPayment: any = null;
-    if (process.env.NODE_ENV !== "development") {
+    if (isRazorpay) {
+      if (!verifyRazorpaySignature({ orderId: rzpOrderId, paymentId: rzpPaymentId, signature: rzpSignature })) {
+        return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
+      }
+      const payment = await fetchRazorpayPayment(rzpPaymentId);
+      if (payment.order_id !== rzpOrderId || payment.status !== "captured") {
+        return NextResponse.json({ error: "Payment not completed" }, { status: 400 });
+      }
+      const paid = payment.amount / 100;
+      if (Math.abs(paid - Number(txn.amount || 0)) > 1) {
+        return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
+      }
+      validPayment = { cf_payment_id: payment.id, payment_amount: paid };
+    } else if (process.env.NODE_ENV !== "development") {
       const env = process.env.NODE_ENV === "production" ? "api" : "sandbox";
       const res = await fetch(`https://${env}.cashfree.com/pg/orders/${orderId}/payments`, {
         headers: {

@@ -1,12 +1,11 @@
 
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Analytics } from '@vercel/analytics/next';
 import { Toaster } from 'sonner';
 import RealtimeListener from "@/components/RealtimeListener";
 import AttributionCapture from "@/components/AttributionCapture";
 import NotificationManager from "@/components/NotificationManager";
-import { SpeedInsights } from "@vercel/speed-insights/next"// Request notification permission
+// Request notification permission
 
 export const metadata: Metadata = {
   title: {
@@ -109,10 +108,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </svg>
         </div>
 
-        {/* Vercel Speed Insights — the import existed since launch but the
-            component was never rendered, so no Core Web Vitals were ever
-            collected. Mounting it is what turns the dashboard on. */}
-        <SpeedInsights />
+        {/* Speed Insights and Web Analytics are OFF.
+            On Hobby they were the two worst overages — 63K/10K Speed Insights
+            events and 56K/50K Web Analytics events — and neither serves a user.
+            Re-mount both (and re-add the imports) after moving to a paid plan. */}
 
         {/* First-touch signup attribution (referrer / UTM -> localStorage) */}
         <AttributionCapture />
@@ -131,7 +130,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="relative z-10 flex-1 flex flex-col w-full">
           {children}
         </main>
-        <Analytics />
 
       </body>
     </html>

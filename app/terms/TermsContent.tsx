@@ -26,7 +26,7 @@ export default function TermsContent() {
             Terms &amp; Conditions
           </h1>
           <p className="text-zinc-500 text-lg">
-            Last updated: <span className="text-zinc-300">December 31, 2025</span>
+            Last updated: <span className="text-zinc-300">August 27, 2026</span>
           </p>
         </div>
 
@@ -71,32 +71,32 @@ export default function TermsContent() {
               </div>
               <div className="w-full space-y-4">
                 <h3 className="text-xl font-bold text-white">3. Payments &amp; Fees</h3>
-                <p className="text-zinc-400 leading-relaxed">We operate on a transparent, performance-based pricing model:</p>
+                <p className="text-zinc-400 leading-relaxed">Every payment is held in escrow and released to the recipient on completion. Our platform fee is deducted from the recipient’s payout:</p>
 
                 <div className="grid md:grid-cols-2 gap-4 mt-2">
-                  <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
-                    <strong className="block text-white mb-2 text-sm flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-pink-500"></span> Campus Market
-                    </strong>
-                    <ul className="space-y-2 text-xs text-zinc-400">
-                      <li className="flex justify-between"><span>Buy/Sell</span> <span className="text-white font-mono">0% Fee</span></li>
-                      <li className="flex justify-between"><span>Rentals</span> <span className="text-white font-mono">3% Escrow Fee</span></li>
-                    </ul>
-                  </div>
                   <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
                     <strong className="block text-white mb-2 text-sm flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-[#C084FC]"></span> Student Gigs
                     </strong>
                     <ul className="space-y-2 text-xs text-zinc-400">
-                      <li className="flex justify-between"><span>Direct Connect</span> <span className="text-green-400 font-mono">FREE</span></li>
-                      <li className="flex justify-between"><span>Escrow Protection (₹500+)</span> <span className="text-white font-mono">3% Fee</span></li>
+                      <li className="flex justify-between"><span>Platform fee</span> <span className="text-white font-mono">5%</span></li>
+                      <li className="flex justify-between"><span>Deducted from</span> <span className="text-white font-mono">Worker payout</span></li>
+                    </ul>
+                  </div>
+                  <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
+                    <strong className="block text-white mb-2 text-sm flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#0097FF]"></span> Company Tasks
+                    </strong>
+                    <ul className="space-y-2 text-xs text-zinc-400">
+                      <li className="flex justify-between"><span>Platform fee</span> <span className="text-white font-mono">10%</span></li>
+                      <li className="flex justify-between"><span>Deducted from</span> <span className="text-white font-mono">Recipient payout</span></li>
                     </ul>
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-white/5">
                   <p className="text-xs text-zinc-500">
-                    <strong>Payment Gateway:</strong> A standard processing fee (approx. 2%) is charged by Cashfree on deposits. This is non-refundable.
+                    <strong>Payment Gateway:</strong> A standard processing fee (approx. 2%) is charged by our payment gateway, Razorpay, on deposits. This is non-refundable.
                   </p>
                 </div>
               </div>

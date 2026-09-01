@@ -27,7 +27,7 @@ export default function PrivacyContent() {
           </h1>
           <p className="text-sm font-bold text-brand-purple mb-4">DoItForMe – India's Campus Freelance Network.</p>
           <p className="text-zinc-500 text-lg">
-            Last updated: <span className="text-zinc-300">December 31, 2025</span>
+            Last updated: <span className="text-zinc-300">August 27, 2026</span>
           </p>
         </div>
 
@@ -102,13 +102,13 @@ export default function PrivacyContent() {
                   <div>
                     <h4 className="text-white font-medium mb-1">Payment Security</h4>
                     <p className="text-zinc-400 text-sm leading-relaxed">
-                      We do not store your credit card or banking password details. All payment processing is handled securely by <strong className="text-white">Cashfree</strong>, which is compliant with PCI-DSS standards.
+                      We do not store your credit card or banking password details. All payment processing is handled securely by <strong className="text-white">Razorpay</strong>, a PCI-DSS compliant payment gateway authorised by the Reserve Bank of India.
                     </p>
                   </div>
                   <div>
                     <h4 className="text-white font-medium mb-1">Data Sharing</h4>
                     <p className="text-zinc-400 text-sm leading-relaxed">
-                      We do not sell your personal data. We only share necessary data with third-party providers (like Cashfree) to facilitate transactions.
+                      We do not sell your personal data. We only share necessary data with third-party providers (such as our payment gateway, Razorpay) to facilitate transactions.
                     </p>
                   </div>
                 </div>

@@ -35,9 +35,15 @@ async function loadCheckoutScript(): Promise<void> {
 
 export async function openRazorpayCheckout(
   data: RazorpayOrderResponse,
-  opts: { onSuccess?: () => void; description?: string } = {}
+  opts: {
+    onSuccess?: () => void;
+    description?: string;
+    /** Escrow funding settles at /api/payments/verify-payment; Company Pro has its own. */
+    verifyUrl?: string;
+  } = {}
 ): Promise<void> {
   await loadCheckoutScript();
+  const verifyUrl = opts.verifyUrl || "/api/payments/verify-payment";
 
   const orderId = data.order_id || data.orderId;
 
@@ -53,7 +59,7 @@ export async function openRazorpayCheckout(
     handler: async (resp: any) => {
       const v = toast.loading("Confirming payment…");
       try {
-        const res = await fetch("/api/payments/verify-payment", {
+        const res = await fetch(verifyUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { toast } from "sonner";
@@ -78,11 +79,20 @@ export default function CompanyPostTask() {
     try {
       const res = await fetch("/api/company/pro/create-order", { method: "POST" });
       const data = await res.json();
-      if (!res.ok || !data.paymentSessionId) {
+      if (!res.ok || (!data.paymentSessionId && data.provider !== "RAZORPAY")) {
         toast.error(data.error || "Could not start payment.", { id: toastId });
         return;
       }
       toast.dismiss(toastId);
+
+      if (data.provider === "RAZORPAY") {
+        await openRazorpayCheckout(data, {
+          description: "Company Pro — 1 month",
+          verifyUrl: "/api/company/pro/verify",
+          onSuccess: () => router.refresh(),
+        });
+        return;
+      }
       // Cashfree drop-in: load checkout if not already on page
       const cashfreeMode = process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox";
       // @ts-expect-error - Cashfree global injected by checkout script

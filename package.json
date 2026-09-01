@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
-    "test:unit": "tsx --test tests/unit/",
+    "test:unit": "node scripts/run-unit-tests.mjs",
     "test": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {

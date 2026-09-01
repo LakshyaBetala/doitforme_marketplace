@@ -6,7 +6,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
 export const metadata: Metadata = {
   title: "Privacy Policy – DoItForMe Student Platform",
   description:
-    "DoItForMe Privacy Policy. Learn how we collect, use, and protect your personal data including student ID verification, payment information, and communication data. PCI-DSS compliant via Cashfree.",
+    "DoItForMe Privacy Policy. Learn how we collect, use, and protect your personal data including student ID verification, payment information, and communication data. PCI-DSS compliant via Razorpay.",
   alternates: { canonical: `${BASE_URL}/privacy-policy` },
   openGraph: {
     title: "Privacy Policy – DoItForMe",
