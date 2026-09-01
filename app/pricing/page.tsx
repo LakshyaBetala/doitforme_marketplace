@@ -6,12 +6,12 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in';
 export const metadata: Metadata = {
   title: "Pricing – Student Gig Platform Fees",
   description:
-    "DoItForMe pricing is simple: Direct Connect is completely FREE. Optional Escrow Protection for tasks ₹500+ costs just 3%. No hidden charges. Instant UPI payouts.",
+    "DoItForMe pricing is simple: free to post and free to apply. One platform fee — 5% on student listings, 10% on company tasks — taken from the payout, plus a 2% payment gateway fee. No hidden charges.",
   alternates: { canonical: `${BASE_URL}/pricing` },
   openGraph: {
-    title: "DoItForMe Pricing – Free Direct Connect, 3% Escrow",
+    title: "DoItForMe Pricing – 5% Student, 10% Company",
     description:
-      "Free to post and complete tasks. Optional 3% escrow protection for larger gigs. See our simple, student-friendly pricing.",
+      "Free to post and free to apply. 5% on student listings, 10% on company tasks, taken from the payout. See our simple, student-friendly pricing.",
     url: `${BASE_URL}/pricing`,
     siteName: "DoItForMe",
     type: "website",

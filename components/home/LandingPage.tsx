@@ -93,13 +93,13 @@ const CATEGORIES = [
 const STEPS = [
   ["Post a task", "Describe what you need and set a budget. Posting is free."],
   ["Match a student", "Pick a verified student yourself, or let us assign one."],
-  ["Approve and pay", "Funds wait in escrow. You release them only when the work is right."],
+  ["Approve and pay", "We hold the payment. You release it only when the work is right."],
 ];
 
 const FAQS = [
-  ["How does it work?", "Post a task for free. Pick a verified student yourself, or let DoItForMe assign one for you. Your payment is held in escrow and released only once you approve the delivered work."],
+  ["How does it work?", "Post a task for free. Pick a verified student yourself, or let DoItForMe assign one for you. We hold your payment and release it only once you approve the delivered work."],
   ["What are the fees?", "Posting is always free. A flat fee comes out of the worker's payout only when work is delivered: 5% for student-to-student tasks, 10% for business tasks, whether self-serve or fully managed."],
-  ["Is my money safe?", "Yes. Funds sit in escrow from the moment you pay, and the student is paid only after you approve. If something is wrong you can request changes or open a dispute, and the money stays held until it is resolved."],
+  ["Is my money safe?", "Yes. We hold your payment from the moment you pay, and the student is paid only after you approve. If something is wrong you can request changes or open a dispute, and the money stays held until it is resolved."],
   ["Who are the students?", "Every student is identity-verified before they can work, across school, college and university. You can see ratings, completion rate and skills before you hire."],
   ["What is Managed?", "If you would rather not run it yourself, DoItForMe assigns a vetted student, oversees the timeline, and reviews the work before it reaches you. The fee stays a flat 10%."],
 ];
@@ -220,7 +220,7 @@ export default function LandingPage() {
 
         {/* Trust strip */}
         <div className="mt-14 pt-7 border-t border-white/[0.06] flex flex-wrap items-center gap-x-10 gap-y-3">
-          {["Identity-verified students", "Escrow on every task", "24-hour review window", "Flat 5 to 10% fee"].map((t) => (
+          {["Identity-verified students", "Payment held on every task", "24-hour review window", "Flat 5 to 10% fee"].map((t) => (
             <span key={t} className="text-[13px] text-white/45">{t}</span>
           ))}
         </div>
@@ -338,7 +338,7 @@ export default function LandingPage() {
               <span className="text-4xl font-bold tracking-tight" style={display}>5%</span>
               <h3 className="text-[15px] font-medium text-white/70">Student economy</h3>
             </div>
-            <p className="text-white/45 mt-4 leading-relaxed text-[14px]">Students helping students. Tutoring, decks, design, coding help. The lowest fee, escrow-protected end to end.</p>
+            <p className="text-white/45 mt-4 leading-relaxed text-[14px]">Students helping students. Tutoring, decks, design, coding help. The lowest fee, payment protected end to end.</p>
           </div>
           <div className="rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--card)] p-8">
             <div className="flex items-baseline gap-3">
@@ -361,7 +361,7 @@ export default function LandingPage() {
             <div className="relative pl-2">
               <div className="absolute left-[15px] top-3 bottom-3 w-px bg-white/[0.08]" />
               {[
-                ["You pay", "Funds go into escrow, not to the student."],
+                ["You pay", "We hold the payment until you approve the work."],
                 ["Work is delivered", "The student submits and explains exactly what was done."],
                 ["You review for 24 hours", "Approve it, request changes, or open a dispute."],
                 ["Money is released", "Only on your approval does the payout go out."],
@@ -404,7 +404,7 @@ export default function LandingPage() {
             <h2 className="font-bold tracking-tight leading-[1.04] text-[clamp(2rem,4vw,3.1rem)]" style={display}>
               Ready to<br />get it done?
             </h2>
-            <p className="text-white/55 mt-4 max-w-sm text-[15px] leading-relaxed">Post your first task in minutes, or start earning from your skills today. Every payment protected by escrow.</p>
+            <p className="text-white/55 mt-4 max-w-sm text-[15px] leading-relaxed">Post your first task in minutes, or start earning from your skills today. Every payment protected until you approve.</p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md">
               <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition flex items-center justify-center gap-2">
                 I need work done <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
@@ -453,12 +453,14 @@ export default function LandingPage() {
               <li><Link href="/terms" className="text-white/50 hover:text-white transition-colors">Terms</Link></li>
               <li><Link href="/privacy-policy" className="text-white/50 hover:text-white transition-colors">Privacy</Link></li>
               <li><Link href="/refund-policy" className="text-white/50 hover:text-white transition-colors">Refunds</Link></li>
+              <li><Link href="/shipping-policy" className="text-white/50 hover:text-white transition-colors">Delivery</Link></li>
+              <li><Link href="/pricing" className="text-white/50 hover:text-white transition-colors">Pricing</Link></li>
             </ul>
           </div>
         </div>
         <div className="max-w-6xl mx-auto px-5 md:px-8 py-6 border-t border-white/[0.06] text-[12px] text-white/35">
           © {new Date().getFullYear()} DoItForMe. Made for India&apos;s campuses.
-          <span className="block mt-1 text-white/25">Operated by Lakshya Betala (sole proprietor), Chennai, Tamil Nadu, India.</span>
+          <span className="block mt-1 text-white/25">Operated by Lakshya Betala and Mouriyan Gandhi, Chennai, Tamil Nadu, India.</span>
         </div>
       </footer>
     </div>

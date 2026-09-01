@@ -20,7 +20,13 @@ export default function AdminDashboardPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     
     // Tabs state
-    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "MANAGED" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "BROADCAST">("PAYOUTS");
+    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "DISPUTES" | "MANAGED" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "BROADCAST">("PAYOUTS");
+
+    // Disputes desk. A disputed gig has frozen escrow and a 48-hour promise
+    // attached to it, so this queue is the most time-sensitive one here.
+    const [disputes, setDisputes] = useState<any[]>([]);
+    const [disputeMeta, setDisputeMeta] = useState<{ open_count: number; breaching_sla: number; oldest_open_hours: number }>({ open_count: 0, breaching_sla: 0, oldest_open_hours: 0 });
+    const [disputeNotes, setDisputeNotes] = useState<Record<string, string>>({});
 
     // Managed Mode queue state
     const [managedQueue, setManagedQueue] = useState<any[]>([]);
@@ -74,9 +80,58 @@ export default function AdminDashboardPage() {
             fetchPendingUsers(),
             fetchPendingKyc(),
             fetchBroadcastGigs(),
-            fetchManaged()
+            fetchManaged(),
+            fetchDisputes()
         ]);
         setLoading(false);
+    };
+
+    // --- DISPUTES ---
+    const fetchDisputes = async () => {
+        try {
+            const res = await fetch("/api/admin/resolve-dispute");
+            const data = await res.json();
+            if (res.ok) {
+                setDisputes(data.disputes || []);
+                setDisputeMeta({
+                    open_count: data.open_count || 0,
+                    breaching_sla: data.breaching_sla || 0,
+                    oldest_open_hours: data.oldest_open_hours || 0,
+                });
+            }
+        } catch {
+            // non-fatal
+        }
+    };
+
+    const resolveDispute = async (disputeId: string, outcome: "RELEASE" | "REFUND") => {
+        const notes = (disputeNotes[disputeId] || "").trim();
+        if (notes.length < 10) {
+            return toast.error("Write a sentence explaining the decision first — it is the record if this is ever contested.");
+        }
+        const who = outcome === "RELEASE" ? "release the payment to the worker" : "refund the poster";
+        if (!confirm(`This will ${who}. Money moves immediately and cannot be undone here. Continue?`)) return;
+
+        setProcessingId(disputeId);
+        try {
+            const res = await fetch("/api/admin/resolve-dispute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ disputeId, outcome, notes }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error || "Failed to resolve.");
+            } else {
+                toast.success(data.message || "Dispute resolved.");
+                setDisputeNotes((n) => ({ ...n, [disputeId]: "" }));
+                fetchDisputes();
+                fetchPayouts();
+            }
+        } catch (err: any) {
+            toast.error(err.message || "Network error.");
+        }
+        setProcessingId(null);
     };
 
     // --- MANAGED MODE ---
@@ -410,6 +465,12 @@ export default function AdminDashboardPage() {
                 <button onClick={() => setActiveTab("PAYOUTS")} className={getTabClass("PAYOUTS")}>
                     Pipeline: Payouts ({payouts.length})
                 </button>
+                <button onClick={() => setActiveTab("DISPUTES")} className={getTabClass("DISPUTES")}>
+                    Disputes ({disputeMeta.open_count})
+                    {disputeMeta.breaching_sla > 0 && (
+                        <span className="ml-2 px-2 py-0.5 bg-red-500 text-white">{disputeMeta.breaching_sla} OVER 48H</span>
+                    )}
+                </button>
                 <button onClick={() => setActiveTab("MANAGED")} className={getTabClass("MANAGED")}>
                     Managed Queue ({managedQueue.filter((g) => g.managed_status === "UNASSIGNED").length})
                 </button>
@@ -436,6 +497,131 @@ export default function AdminDashboardPage() {
                 </div>
             ) : (
                 <div className="min-h-[600px] animate-in fade-in duration-500">
+
+                    {/* DISPUTES: frozen escrow with a 48-hour promise attached */}
+                    {activeTab === "DISPUTES" && (
+                        <div className="space-y-px bg-[#222] border border-[#222]">
+                            {disputeMeta.open_count > 0 && (
+                                <div className="p-6 bg-[#0a0a0a] flex flex-wrap gap-8">
+                                    <div>
+                                        <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444]">Open</div>
+                                        <div className="text-2xl font-black text-white">{disputeMeta.open_count}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444]">Past 48h SLA</div>
+                                        <div className={`text-2xl font-black ${disputeMeta.breaching_sla > 0 ? "text-red-500" : "text-white"}`}>{disputeMeta.breaching_sla}</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444]">Oldest</div>
+                                        <div className="text-2xl font-black text-white">{disputeMeta.oldest_open_hours}h</div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {disputes.map((d) => {
+                                const gig = d.gig || {};
+                                const ageHours = Math.round((Date.now() - new Date(d.created_at).getTime()) / 3_600_000);
+                                const isOpen = d.status === "OPEN";
+                                const files: string[] = Array.isArray(gig.delivery_files) ? gig.delivery_files : [];
+                                return (
+                                    <div key={d.id} className="p-8 bg-[#0a0a0a] space-y-6">
+                                        <div className="flex flex-wrap items-start justify-between gap-4">
+                                            <div className="space-y-1">
+                                                <div className="font-black text-xl text-white italic uppercase tracking-tighter">{gig.title || "UNTITLED GIG"}</div>
+                                                <div className="text-[10px] font-black text-[#444] uppercase tracking-[0.3em]">
+                                                    ₹{gig.price ?? "—"} · {gig.listing_type || "HUSTLE"} · escrow {gig.escrow_status || "—"}
+                                                </div>
+                                            </div>
+                                            <div className={`px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] ${
+                                                !isOpen ? "bg-[#222] text-[#666]"
+                                                : ageHours > 48 ? "bg-red-500 text-white"
+                                                : "bg-white text-black"
+                                            }`}>
+                                                {isOpen ? `OPEN · ${ageHours}h` : d.status}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid md:grid-cols-2 gap-px bg-[#222] border border-[#222]">
+                                            <div className="p-5 bg-[#0a0a0a]">
+                                                <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444] mb-2">Poster (raised it)</div>
+                                                <div className="text-white text-sm font-bold">{gig.poster?.name || "—"}</div>
+                                                <div className="text-[#666] text-[11px]">{gig.poster?.email || "—"}</div>
+                                            </div>
+                                            <div className="p-5 bg-[#0a0a0a]">
+                                                <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444] mb-2">Worker</div>
+                                                <div className="text-white text-sm font-bold">{gig.worker?.name || "—"}</div>
+                                                <div className="text-[#666] text-[11px]">{gig.worker?.email || "—"}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border border-[#222] p-5">
+                                            <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444] mb-2">Complaint</div>
+                                            <p className="text-[#ccc] text-sm leading-relaxed whitespace-pre-wrap">{d.reason}</p>
+                                        </div>
+
+                                        {/* The worker's side of the story: what was actually delivered. */}
+                                        {(gig.delivery_link || files.length > 0) && (
+                                            <div className="border border-[#222] p-5 space-y-2">
+                                                <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444]">Delivered work</div>
+                                                {gig.delivery_link && (
+                                                    <a href={gig.delivery_link} target="_blank" rel="noopener noreferrer" className="block text-[#C9A9FF] text-xs hover:underline break-all">{gig.delivery_link}</a>
+                                                )}
+                                                {files.map((f, i) => (
+                                                    <a key={i} href={f} target="_blank" rel="noopener noreferrer" className="block text-[#C9A9FF] text-xs hover:underline break-all">File {i + 1}</a>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <Link href={`/gig/${d.gig_id}`} className="inline-block text-[10px] font-black uppercase tracking-[0.2em] text-[#666] hover:text-white">
+                                            Open full gig →
+                                        </Link>
+
+                                        {isOpen ? (
+                                            <div className="space-y-px bg-[#222] border border-[#222]">
+                                                <textarea
+                                                    value={disputeNotes[d.id] || ""}
+                                                    onChange={(e) => setDisputeNotes((n) => ({ ...n, [d.id]: e.target.value }))}
+                                                    placeholder="Why are you deciding this way? Both parties are emailed this, and it is the record if a bank ever asks."
+                                                    rows={3}
+                                                    className="w-full p-5 bg-[#0a0a0a] text-white text-sm placeholder:text-[#444] outline-none resize-y"
+                                                />
+                                                <div className="flex gap-px bg-[#222]">
+                                                    <button
+                                                        onClick={() => resolveDispute(d.id, "RELEASE")}
+                                                        disabled={!!processingId}
+                                                        className="flex-1 px-6 py-4 bg-white text-black text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-20"
+                                                    >
+                                                        {processingId === d.id ? "..." : "Work stands — pay worker"}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => resolveDispute(d.id, "REFUND")}
+                                                        disabled={!!processingId}
+                                                        className="flex-1 px-6 py-4 bg-[#0a0a0a] text-red-500 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white disabled:opacity-20"
+                                                    >
+                                                        Poster was right — refund
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="border border-[#222] p-5">
+                                                <div className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444] mb-2">
+                                                    Decision {d.resolved_at ? `· ${new Date(d.resolved_at).toLocaleDateString()}` : ""}
+                                                </div>
+                                                <p className="text-[#ccc] text-sm leading-relaxed whitespace-pre-wrap">{d.admin_notes || "—"}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+
+                            {disputes.length === 0 && (
+                                <div className="bg-[#0a0a0a] py-40 text-center">
+                                    <CheckCircle2 size={32} className="mx-auto text-[#222] mb-6" />
+                                    <p className="text-[#444] text-[10px] font-bold uppercase tracking-[0.3em]">No disputes raised.</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* MANAGED QUEUE */}
                     {activeTab === "MANAGED" && (

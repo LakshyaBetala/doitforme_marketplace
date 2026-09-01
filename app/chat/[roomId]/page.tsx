@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useModeration } from "@/app/hooks/useModeration";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
 import { displayIndianPhone } from "@/lib/phone";
+import { platformFeeFor, audienceForGig, PLATFORM_FEES } from "@/lib/fees";
 
 interface Message {
   id: string;
@@ -50,6 +51,9 @@ interface GigDetails {
   listing_type: "HUSTLE" | "MARKET";
   market_type?: "SELL" | "RENT";
   images?: string[];
+  // Loaded by the `select("*")` above; needed to tell a student gig (5%) from
+  // company work (10%) when previewing the worker's take-home.
+  company_id?: string | null;
 }
 
 function ChatRoomContent() {
@@ -611,22 +615,32 @@ function ChatRoomContent() {
                     placeholder="Enter amount (₹)"
                     className="w-full bg-black/20 text-white p-4 rounded-xl border border-white/10 focus:border-[#C9A9FF] outline-none text-lg font-bold"
                   />
-                  {!isPoster && gig.listing_type === 'HUSTLE' && (
-                    <div className="bg-white/10 rounded-lg p-3 text-xs space-y-1 my-4">
-                      <div className="flex justify-between text-white/50">
-                        <span>Gig Budget:</span>
-                        <span>₹{offerAmount || 0}</span>
+                  {!isPoster && gig.listing_type === 'HUSTLE' && (() => {
+                    // The rate quoted here has to be the rate actually charged.
+                    // This block used to hardcode 3% and show 97% take-home,
+                    // overstating the worker's payout on every offer they made —
+                    // so it now derives everything from lib/fees.ts.
+                    const offer = Math.max(0, Math.round(Number(offerAmount || 0)));
+                    const audience = audienceForGig(gig);
+                    const fee = platformFeeFor(offer, audience);
+                    const ratePct = Math.round(PLATFORM_FEES[audience] * 100);
+                    return (
+                      <div className="bg-white/10 rounded-lg p-3 text-xs space-y-1 my-4">
+                        <div className="flex justify-between text-white/50">
+                          <span>Gig Budget:</span>
+                          <span>₹{offer}</span>
+                        </div>
+                        <div className="flex justify-between text-white/50">
+                          <span>Platform fee ({ratePct}%):</span>
+                          <span className="text-red-400">- ₹{fee}</span>
+                        </div>
+                        <div className="border-t border-white/10 pt-2 flex justify-between font-bold text-green-400">
+                          <span>Your Take-home:</span>
+                          <span>₹{Math.max(0, offer - fee)}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-white/50">
-                        <span>Escrow Fee (3%):</span>
-                        <span className="text-red-400">- ₹{Math.ceil(Number(offerAmount || 0) * 0.03)}</span>
-                      </div>
-                      <div className="border-t border-white/10 pt-2 flex justify-between font-bold text-green-400">
-                        <span>Your Take-home:</span>
-                        <span>₹{Math.floor(Number(offerAmount || 0) * 0.97)}</span>
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <button
                     onClick={sendOffer}

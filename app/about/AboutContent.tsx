@@ -45,7 +45,7 @@ export default function AboutContent() {
                  <ShieldCheck className="w-6 h-6" />
               </div>
               <h3 className="text-xl font-bold mb-2">Trust First</h3>
-              <p className="text-white/60 text-sm">With Verified Student IDs and Escrow payments, safety is our #1 priority.</p>
+              <p className="text-white/60 text-sm">With verified student IDs and payment held until you approve, safety is our #1 priority.</p>
            </div>
         </div>
 
@@ -61,6 +61,9 @@ export default function AboutContent() {
               </p>
               <p>
                 We built DoItForMe to bridge this gap. A secure, anonymous platform where you can get things done or get paid to do them. No complex hiring, no resumes—just simple tasks for students.
+              </p>
+              <p className="text-white/35 text-sm pt-6 mt-2 border-t border-white/[0.08]">
+                Founded by <span className="text-white/60">Lakshya Betala</span>, with Mouriyan Gandhi.
               </p>
            </div>
         </div>

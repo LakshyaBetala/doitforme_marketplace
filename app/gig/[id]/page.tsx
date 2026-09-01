@@ -416,7 +416,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
               <div className="p-4 md:p-6 rounded-2xl border border-[#8825F5]/30 bg-[#8825F5]/[0.08]">
                 <div className="flex items-center justify-between w-full gap-3">
                   <p className="font-bold text-base md:text-lg tracking-tight text-white flex items-center gap-2">
-                    <ShieldCheck size={18} className="text-[#C9A9FF]" /> Secure Escrow
+                    <ShieldCheck size={18} className="text-[#C9A9FF]" /> Protected Payment
                   </p>
                   <span className="px-3 py-1 text-[10px] font-semibold rounded-full border bg-[#8825F5]/20 text-[#C9A9FF] border-[#8825F5]/30 whitespace-nowrap">
                     Protected
@@ -466,7 +466,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                     "Only apply if you can genuinely deliver this — companies rate you, and it sticks to your profile.",
                     "Reply within 24 hours once they message you. Going quiet loses the task and hurts your score.",
                     "Hit the deadline you agree to. Ask for more time before it passes, never after.",
-                    "Keep everything on the platform. Payment is held in escrow and released when the work is approved.",
+                    "Keep everything on the platform. We hold the payment and release it when the work is approved.",
                   ].map((rule) => (
                     <li key={rule} className="flex items-start gap-2">
                       <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />

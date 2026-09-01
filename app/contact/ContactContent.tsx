@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
+import { ArrowLeft, Mail, MapPin } from "lucide-react";
 
 export default function ContactContent() {
   return (
@@ -29,18 +29,20 @@ export default function ContactContent() {
               <h3 className="font-bold text-white text-lg">Email Support</h3>
               <p className="text-white/60 text-sm mb-1">For general queries, bug reports, and disputes:</p>
               <a href="mailto:doitforme.in@gmail.com" className="text-[#8825F5] font-medium hover:underline">doitforme.in@gmail.com</a>
+              <p className="text-white/40 text-xs mt-1">We reply within one working day.</p>
             </div>
           </div>
 
-          {/* Phone Support */}
+          {/* Payments & escalations */}
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-green-500/20 rounded-xl text-green-500">
-              <Phone className="w-6 h-6" />
+            <div className="p-3 bg-[#0097FF]/20 rounded-xl text-[#0097FF]">
+              <Mail className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-lg">Phone Support</h3>
-              <p className="text-white/60 text-sm mb-1">For urgent queries and assistance:</p>
-              <a href="tel:+919344110272" className="text-green-500 font-medium hover:underline">+91 93441 10272</a>
+              <h3 className="font-bold text-white text-lg">Payments &amp; Escalations</h3>
+              <p className="text-white/60 text-sm mb-1">Billing, refunds, and anything left unresolved:</p>
+              <a href="mailto:gandhimouriyan1234@gmail.com" className="text-[#0097FF] font-medium hover:underline">gandhimouriyan1234@gmail.com</a>
+              <p className="text-white/40 text-xs mt-1">Support hours: Monday to Saturday, 10:00 – 19:00 IST.</p>
             </div>
           </div>
 
@@ -50,23 +52,39 @@ export default function ContactContent() {
               <MapPin className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="font-bold text-white text-lg">Registered Office</h3>
+              <h3 className="font-bold text-white text-lg">Operating Address</h3>
               <p className="text-white/60 text-sm leading-relaxed">
-                DoItForMe HQ<br />
-                Chennai, Tamil Nadu, India.<br />
-                <span className="opacity-50 text-xs">(Full address provided upon request or invoice generation)</span>
+                DoItForMe<br />
+                Zinda Sahib Street<br />
+                Chennai, Tamil Nadu, India.
               </p>
             </div>
           </div>
 
         </div>
 
+        {/* Business & compliance.
+            Deliberately the quietest block on the page. Razorpay's merchant
+            checklist requires a working telephone line with stated hours, so it
+            has to be here and has to be real — but support runs on email, and
+            merchandising a phone number to students turns it into a helpline.
+            Present and truthful, not advertised. */}
+        <div className="border-t border-white/10 pt-6">
+          <h4 className="text-white/40 text-[11px] font-semibold uppercase tracking-[0.2em] mb-2">Business &amp; compliance</h4>
+          <p className="text-white/35 text-xs leading-relaxed">
+            Registered business line for payment, billing and compliance matters:{" "}
+            <span className="text-white/50">+91 93441 10272</span>, Monday to Friday, 11:00 – 17:00 IST.
+            For anything else — including task, delivery and refund queries — please email us; we answer
+            email far faster than the phone.
+          </p>
+        </div>
+
         <p className="text-white/35 text-xs leading-relaxed">
-          DoItForMe is operated by <span className="text-white/55">Lakshya Betala</span> (sole proprietor).
-          Billing and payment queries:{" "}
+          DoItForMe is operated by <span className="text-white/55">Lakshya Betala</span> and <span className="text-white/55">Mouriyan Gandhi</span>. Payments are processed by Razorpay and settled to the DoItForMe merchant account held by Mouriyan Gandhi.
+          Legal and billing correspondence:{" "}
           <a href="mailto:betala911@gmail.com" className="text-white/55 hover:text-white transition-colors">betala911@gmail.com</a>
           {" · "}
-          <a href="tel:+918072116397" className="text-white/55 hover:text-white transition-colors">+91 80721 16397</a>.
+          <a href="mailto:gandhimouriyan1234@gmail.com" className="text-white/55 hover:text-white transition-colors">gandhimouriyan1234@gmail.com</a>.
         </p>
       </div>
     </div>

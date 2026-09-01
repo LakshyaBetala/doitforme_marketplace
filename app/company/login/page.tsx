@@ -67,7 +67,7 @@ export default function CompanyLoginPage() {
   const labelClass = "block text-[11px] font-medium text-white/55 uppercase tracking-[0.1em] mb-2";
 
   const FEATURES = [
-    [ShieldCheck, "Protected payments", "Every task is escrow-backed. Students are paid only when you approve the work."],
+    [ShieldCheck, "Protected payments", "Payment on every task is held until you approve. Students are paid only then."],
     [ListChecks, "One to fifty workers", "Post a single task or scale it across many students, with delivery tracked per worker."],
     [Network, "Campus reach", "Your task reaches verified students across campuses the moment you post."],
   ] as const;

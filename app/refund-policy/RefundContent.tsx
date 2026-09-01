@@ -41,31 +41,31 @@ export default function RefundContent() {
               </div>
               <div className="w-full space-y-4">
                 <h3 className="text-xl font-bold text-white">1. Platform Fees</h3>
-                <p className="text-zinc-400 leading-relaxed">DoItForMe ensures fair pricing for students with a tiered structure:</p>
+                <p className="text-zinc-400 leading-relaxed">One platform fee, always deducted from the recipient’s payout — never added to what you pay:</p>
 
                 <div className="grid md:grid-cols-2 gap-4 mt-2">
                   <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
                     <strong className="block text-white mb-2 text-sm flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-pink-500"></span> Campus Market
+                      <span className="w-2 h-2 rounded-full bg-[#C084FC]"></span> Student Listings
                     </strong>
                     <ul className="space-y-2 text-xs text-zinc-400">
-                      <li className="flex justify-between"><span>Buy/Sell Items</span> <span className="text-white font-mono">0% (Free)</span></li>
-                      <li className="flex justify-between"><span>Rentals</span> <span className="text-white font-mono">3% Fee</span></li>
+                      <li className="flex justify-between"><span>Platform fee</span> <span className="text-white font-mono">5%</span></li>
+                      <li className="flex justify-between"><span>Deducted from</span> <span className="text-white font-mono">Recipient payout</span></li>
                     </ul>
                   </div>
                   <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
                     <strong className="block text-white mb-2 text-sm flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-[#C084FC]"></span> Student Gigs
+                      <span className="w-2 h-2 rounded-full bg-[#0097FF]"></span> Company Tasks
                     </strong>
                     <ul className="space-y-2 text-xs text-zinc-400">
-                      <li className="justify-between flex"><span>Direct Connect</span> <span className="text-green-400 font-mono">FREE</span></li>
-                      <li className="justify-between flex"><span>Escrow Protection (₹500+)</span> <span className="text-white font-mono">3% Fee</span></li>
+                      <li className="flex justify-between"><span>Platform fee</span> <span className="text-white font-mono">10%</span></li>
+                      <li className="flex justify-between"><span>Deducted from</span> <span className="text-white font-mono">Recipient payout</span></li>
                     </ul>
                   </div>
                 </div>
                 <div className="pt-4 border-t border-white/5 mt-4">
                   <p className="text-xs text-zinc-500 leading-relaxed">
-                    <strong>Gateway Charges:</strong> Razorpay processes all payments. A fee of ~2% applies on deposits, paid to the gateway provider.
+                    <strong>Gateway Charges:</strong> Razorpay processes all payments. A gateway fee of 2% is added on top of the listed price at checkout and is shown to you before you pay.
                   </p>
                 </div>
               </div>
@@ -81,7 +81,7 @@ export default function RefundContent() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">2. Refunds for Clients</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  Funds are held in secure Escrow. You are eligible for a 100% refund to your wallet if:
+                  We hold your payment until the work is approved. You are eligible for a 100% refund to your wallet if:
                 </p>
                 <div className="grid gap-2">
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-white/10 border border-white/5">
@@ -110,7 +110,7 @@ export default function RefundContent() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">3. Dispute Resolution</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  If a disagreement arises, DoItForMe acts as the arbitrator. Email evidence (chat logs) to <span className="text-white hover:underline cursor-pointer">doitforme.in@gmail.com</span> or contact support at <span className="text-white hover:underline cursor-pointer">+91 93441 10272</span>. We resolve disputes within 48 hours.
+                  If a disagreement arises, DoItForMe acts as the arbitrator. Email evidence (chat logs) to <a href="mailto:doitforme.in@gmail.com" className="text-white hover:underline">doitforme.in@gmail.com</a>, or escalate to <a href="mailto:gandhimouriyan1234@gmail.com" className="text-white hover:underline">gandhimouriyan1234@gmail.com</a>. We resolve disputes within 48 hours.
                 </p>
               </div>
             </div>

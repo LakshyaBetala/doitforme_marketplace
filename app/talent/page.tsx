@@ -56,7 +56,7 @@ export default function TalentPage() {
           </h1>
           <p className="text-sm text-white/60 max-w-xl leading-relaxed">
             Students offering their skills. Browse, then message someone to hire them —
-            payment is held in escrow once you agree on the work.
+            we hold the payment once you agree on the work.
           </p>
         </div>
 

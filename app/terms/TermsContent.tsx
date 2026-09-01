@@ -71,7 +71,7 @@ export default function TermsContent() {
               </div>
               <div className="w-full space-y-4">
                 <h3 className="text-xl font-bold text-white">3. Payments &amp; Fees</h3>
-                <p className="text-zinc-400 leading-relaxed">Every payment is held in escrow and released to the recipient on completion. Our platform fee is deducted from the recipient’s payout:</p>
+                <p className="text-zinc-400 leading-relaxed">We hold every payment until the work is delivered and approved, then release it to the recipient. Our platform fee is deducted from the recipient’s payout:</p>
 
                 <div className="grid md:grid-cols-2 gap-4 mt-2">
                   <div className="p-5 rounded-2xl bg-black/20 border border-white/5">
@@ -131,7 +131,14 @@ export default function TermsContent() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">5. Limitation of Liability</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  DoItForMe is an intermediary platform. We are not responsible for the quality of work provided by other students. We do, however, offer a dispute resolution mechanism to protect your funds.
+                  When you order a task, you are contracting with DoItForMe. We engage verified students as
+                  independent contractors to carry that work out, and we pay them ourselves — the amount you pay is
+                  payable to DoItForMe, not to the student directly. We hold it until you approve the delivered work,
+                  and we review disputes ourselves rather than leaving you to settle them.
+                  <br /><br />
+                  We select and vet the students we engage, but we do not warrant that any task will meet a
+                  particular standard beyond what was agreed when it was posted. To the maximum extent permitted by
+                  law, our total liability in connection with any task is limited to the amount you paid for that task.
                 </p>
               </div>
             </div>
@@ -150,11 +157,11 @@ export default function TermsContent() {
                   <br /><br />
                   <strong>Email:</strong> <a href="mailto:doitforme.in@gmail.com" className="text-white hover:text-[#C084FC] transition-colors">doitforme.in@gmail.com</a>
                   <br />
-                  <strong>Phone:</strong> <a href="tel:+919344110272" className="text-white hover:text-[#C084FC] transition-colors">+91 93441 10272</a>
+                  <strong>Payments &amp; escalations:</strong> <a href="mailto:gandhimouriyan1234@gmail.com" className="text-white hover:text-[#C084FC] transition-colors">gandhimouriyan1234@gmail.com</a>
                 </p>
                 <p className="text-zinc-500 text-sm leading-relaxed">
-                  DoItForMe is a service operated by Lakshya Betala (sole proprietor), Chennai, Tamil Nadu, India.
-                  Legal and billing correspondence: <a href="mailto:betala911@gmail.com" className="text-zinc-300 hover:text-white transition-colors">betala911@gmail.com</a>, <a href="tel:+918072116397" className="text-zinc-300 hover:text-white transition-colors">+91 80721 16397</a>.
+                  DoItForMe is a service operated by Lakshya Betala and Mouriyan Gandhi, Zinda Sahib Street, Chennai, Tamil Nadu, India. Payments are processed by Razorpay Software Private Limited and settled to the DoItForMe merchant account held by Mouriyan Gandhi.
+                  Legal and billing correspondence: <a href="mailto:betala911@gmail.com" className="text-zinc-300 hover:text-white transition-colors">betala911@gmail.com</a> and <a href="mailto:gandhimouriyan1234@gmail.com" className="text-zinc-300 hover:text-white transition-colors">gandhimouriyan1234@gmail.com</a>.
                 </p>
               </div>
             </div>

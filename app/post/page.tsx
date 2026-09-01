@@ -324,7 +324,7 @@ export default function PostGigWizard() {
                 {
                   kind: "TASK" as const,
                   title: "I need something done",
-                  blurb: "You're paying someone. Goes to the task feed, students apply, payment is held in escrow until you approve the work.",
+                  blurb: "You're paying someone. Goes to the task feed, students apply, and we hold the payment until you approve the work.",
                   example: "“Need a 700-word blog post by Friday — ₹500”",
                 },
                 {

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: "%s | DoItForMe",
   },
   description:
-    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Escrow-protected, instant UPI payouts.",
+    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Payment held until you approve, instant UPI payouts.",
   keywords: [
     "DoItForMe", "doitforme.in", "student gig network India",
     "campus freelance India", "student freelance network India", "hire student hustlers",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "700+ verified students earning by completing real tasks. Escrow-protected. Instant UPI payouts.",
+      "700+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts.",
     images: ["/logo.png"],
     creator: "@doitformein",
   },
@@ -77,12 +77,50 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "description": "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies.",
     "foundingDate": "2024",
     "areaServed": "IN",
+    "founder": [
+      { "@type": "Person", "name": "Lakshya Betala" },
+      { "@type": "Person", "name": "Mouriyan Gandhi" }
+    ],
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Zinda Sahib Street",
+      "addressLocality": "Chennai",
+      "addressRegion": "Tamil Nadu",
+      "addressCountry": "IN"
+    },
+    // Support runs on email. The telephone line is declared here because a
+    // payment aggregator's website check looks for a reachable business number
+    // with stated hours — machine-readable, rather than merchandised to
+    // students as a helpline. It is the same number shown on /contact.
+    "contactPoint": [
+      {
+        "@type": "ContactPoint",
+        "contactType": "customer support",
+        "email": "doitforme.in@gmail.com",
+        "availableLanguage": ["en", "ta", "hi"],
+        "areaServed": "IN"
+      },
+      {
+        "@type": "ContactPoint",
+        "contactType": "billing support",
+        "email": "gandhimouriyan1234@gmail.com",
+        "telephone": "+91-93441-10272",
+        "availableLanguage": ["en", "ta", "hi"],
+        "areaServed": "IN",
+        "hoursAvailable": {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+          "opens": "11:00",
+          "closes": "17:00"
+        }
+      }
+    ],
     "sameAs": ["https://www.instagram.com/doitforme.in/", "https://www.linkedin.com/company/doitforme1/"],
     "hasOfferCatalog": {
       "@type": "OfferCatalog",
       "name": "DoItForMe Solutions",
       "itemListElement": [
-        { "@type": "OfferCatalog", "name": "Student Gigs", "description": "Technical and creative tasks including coding, design, and research. Secured by 3% Escrow protection." }
+        { "@type": "OfferCatalog", "name": "Student Gigs", "description": "Technical and creative tasks including coding, design, and research. Payment is held until the work is delivered and approved." }
       ]
     }
   };

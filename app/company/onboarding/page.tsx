@@ -197,7 +197,7 @@ export default function CompanyOnboardingPage() {
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-[#C084FC] font-bold">verified student network.</span>
                         </h2>
                         <p className="text-zinc-400 text-[15px] leading-relaxed max-w-md font-medium">
-                            Hire 1 to 50 vetted student workers instantly. Pay seamlessly via 3% Escrow protection only when the task is delivered.
+                            Hire 1 to 50 vetted student workers instantly. Pay only when the task is delivered and you approve it.
                         </p>
                     </div>
 
@@ -226,7 +226,7 @@ export default function CompanyOnboardingPage() {
                                 <ShieldCheck size={18} className="text-green-400" />
                             </div>
                             <div>
-                                <h4 className="text-sm font-black text-white mb-1">3% Escrow Protection</h4>
+                                <h4 className="text-sm font-black text-white mb-1">Protected Payments</h4>
                                 <p className="text-[11px] text-[#666] leading-relaxed">Funds are held securely and released only when the work is delivered and accepted. Risk-free hiring with verified students.</p>
                             </div>
                         </div>
@@ -298,7 +298,7 @@ export default function CompanyOnboardingPage() {
                             </div>
                             <div className="flex items-center gap-2 text-[11px] text-[#888]">
                                 <ShieldCheck size={12} className="text-green-400 shrink-0" />
-                                <span>3% escrow protection — pay only for completed work</span>
+                                <span>Protected payments — pay only for completed work</span>
                             </div>
                         </div>
                     </div>

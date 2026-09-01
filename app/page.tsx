@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   // appending a second "DoItForMe" to the home tab title.
   title: { absolute: "DoItForMe – India's Campus Freelance Network" },
   description:
-    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Escrow-protected, instant UPI payouts.",
+    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Payment held until you approve, instant UPI payouts.",
   keywords: [
     "DoItForMe", "doitforme.in", "campus freelance India",
     "student freelance network", "hire student talent India",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     creator: "@doitformein",
     title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "700+ verified students earning by completing real tasks. Escrow-protected. Instant UPI payouts. doitforme.in",
+      "700+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts. doitforme.in",
     images: [`${BASE_URL}/logo.png`],
   },
   robots: {
@@ -116,7 +116,7 @@ export default function Home() {
       name: "DoItForMe Hustle",
       serviceType: "Campus Freelance Platform",
       description:
-        "DoItForMe is a secure ecosystem where Clients (Students and Companies) outsource gigs to verified student hustlers. Payments are held in a 3% protected escrow and released upon completion.",
+        "DoItForMe is a secure ecosystem where Clients (Students and Companies) outsource gigs to verified student hustlers. Payment is held until the work is delivered and approved, then released.",
       provider: { "@type": "Organization", name: "DoItForMe", url: BASE_URL },
       areaServed: "IN",
       audience: { "@type": "Audience", audienceType: "Students & Organizations" },
@@ -124,7 +124,7 @@ export default function Home() {
       offers: {
         "@type": "Offer",
         priceCurrency: "INR",
-        description: "Free Direct Connect. Standard 3% escrow protection for secure gigs ₹500 and above.",
+        description: "Free to post and free to apply. A 5% platform fee on student listings and 10% on company tasks, deducted from the payout.",
       },
     },
     // 4. FAQPage — helps LLMs and Google directly answer queries about DoItForMe
@@ -145,7 +145,7 @@ export default function Home() {
           name: "What is a Hustle on DoItForMe?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "A Hustle is a short-term task or gig posted by a student on DoItForMe. Examples include graphic design, coding, tutoring, writing, delivery errands, and lab help. Student hustlers apply, negotiate price, and complete the task. Payments are held in escrow and released on delivery.",
+            text: "A Hustle is a short-term task or gig posted by a student on DoItForMe. Examples include graphic design, coding, tutoring, writing, delivery errands, and lab help. Student hustlers apply, negotiate price, and complete the task. We hold payment and release it on delivery.",
           },
         },
         {
@@ -153,7 +153,7 @@ export default function Home() {
           name: "How do students earn money on DoItForMe?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Students earn by completing technical tasks and gigs posted by other students or companies. Earnings are paid directly to their UPI ID. The platform is free to use with Direct Connect, while a 3% escrow fee applies for protected gigs ₹500 and above.",
+            text: "Students earn by completing technical tasks and gigs posted by other students or companies. Earnings are paid to their UPI ID. Posting and applying are free; a 5% platform fee applies on student listings and 10% on company tasks, deducted from the payout.",
           },
         },
         {
@@ -161,7 +161,7 @@ export default function Home() {
           name: "Is DoItForMe safe for gigs?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Yes. DoItForMe uses a 3% protected escrow system — funds are held securely and only released to the hustler after the gig is delivered and accepted by the Client. All hustlers are student ID verified.",
+            text: "Yes. Payment is held securely by DoItForMe and released to the hustler only after the gig is delivered and accepted by the client. All hustlers are student ID verified.",
           },
         },
         {

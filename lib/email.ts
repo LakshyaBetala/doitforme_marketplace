@@ -17,6 +17,7 @@ type EmailKind =
   | "auto_release_warning"
   | "payment_released"
   | "dispute_opened"
+  | "dispute_resolved"
   | "changes_requested"
   | "poster_nudge"
   | "hire_followup"
@@ -237,6 +238,27 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p><a href="${url}" class="cta">Open dispute thread</a></p>
         `,
       };
+
+    // Both sides get the same mail: the outcome and the reasoning. A dispute
+    // that ends in silence is the one that becomes a chargeback.
+    case "dispute_resolved": {
+      const released = String(args.extra?.outcome || "") === "released";
+      const notes = args.extra?.notes ? escapeHtml(String(args.extra.notes)) : null;
+      return {
+        subject: `Dispute resolved — ${args.gigTitle || "your gig"}`,
+        preheader: released ? "Payment released to the worker." : "Payment refunded to the poster.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>We have finished reviewing the dispute on <strong>${title}</strong>.</p>
+          <p><strong>Outcome:</strong> ${released
+            ? "the work was accepted and the payment has been released to the worker."
+            : "the payment has been refunded to the poster."}</p>
+          ${notes ? `<p><strong>Why:</strong> ${notes}</p>` : ""}
+          <p>If you believe this is wrong, reply to this email within 7 days and we will take another look.</p>
+          <p><a href="${url}" class="cta">View the task</a></p>
+        `,
+      };
+    }
 
     case "changes_requested":
       return {
