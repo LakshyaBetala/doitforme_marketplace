@@ -15,6 +15,12 @@
 import { NextResponse } from "next/server";
 import { verifyRazorpayWebhook } from "@/lib/razorpay";
 import { settleGigEscrow, settleCompanyPro } from "@/lib/paymentSettlement";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 // GET → liveness, so the URL doesn't 405 when opened in a browser.
 export async function GET() {
@@ -57,14 +63,46 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, skipped: `no payment entity (event=${event})` });
   }
 
+  const orderId: string | undefined = payment.order_id;
+  if (!orderId) return NextResponse.json({ ok: true, skipped: "no order_id" });
+
+  // A failed payment leaves a PENDING transaction that would otherwise sit
+  // there forever, making the queue unreadable and hiding real stuck orders.
+  // Mark it FAILED — never touch a row that already settled.
+  if (event === "payment.failed" || payment.status === "failed") {
+    // `transactions` has no failure column, so the reason rides along in
+    // provider_data — read first so the existing breakdown is not clobbered.
+    const { data: existing } = await supabaseAdmin
+      .from("transactions")
+      .select("id, provider_data")
+      .eq("gateway_order_id", orderId)
+      .eq("status", "PENDING")
+      .maybeSingle();
+
+    if (!existing) return NextResponse.json({ ok: true, skipped: "no pending txn" });
+
+    await supabaseAdmin
+      .from("transactions")
+      .update({
+        status: "FAILED",
+        gateway_payment_id: payment.id || null,
+        provider_data: {
+          ...(existing.provider_data || {}),
+          failure_reason: payment.error_description || payment.error_reason || "Payment failed",
+          failed_at: new Date().toISOString(),
+        },
+      })
+      .eq("id", existing.id)
+      .eq("status", "PENDING");
+
+    return NextResponse.json({ ok: true, failed: orderId });
+  }
+
   // Only a captured payment means money actually moved. `authorized` is a hold
   // that can still fail, and settling on it would fund escrow for nothing.
   if (event !== "payment.captured" || payment.status !== "captured") {
     return NextResponse.json({ ok: true, skipped: `event=${event} status=${payment.status}` });
   }
-
-  const orderId: string | undefined = payment.order_id;
-  if (!orderId) return NextResponse.json({ ok: true, skipped: "no order_id" });
 
   // Notes are set server-side at order creation, so they are as trustworthy as
   // the signed payload carrying them.

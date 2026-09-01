@@ -94,24 +94,7 @@ export default function CompanyPostTask() {
         });
         return;
       }
-      // Cashfree drop-in: load checkout if not already on page
-      const cashfreeMode = process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox";
-      // @ts-expect-error - Cashfree global injected by checkout script
-      if (typeof window.Cashfree === "undefined") {
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
-          s.onload = () => resolve();
-          s.onerror = () => reject(new Error("Failed to load Cashfree SDK"));
-          document.body.appendChild(s);
-        });
-      }
-      // @ts-expect-error - Cashfree global
-      const cashfree = window.Cashfree({ mode: cashfreeMode });
-      cashfree.checkout({
-        paymentSessionId: data.paymentSessionId,
-        redirectTarget: "_self",
-      });
+      toast.error("Could not start payment.", { id: toastId });
     } catch (e: any) {
       toast.error(e.message || "Upgrade failed.", { id: toastId });
     }

@@ -1,7 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cashfreeHost } from "@/lib/cashfreeEnv";
-import { activeProvider } from "@/lib/paymentProvider";
-import { createRazorpayOrder } from "@/lib/razorpay";
+import { createRazorpayOrder, razorpayConfigured } from "@/lib/razorpay";
 import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
@@ -84,8 +82,8 @@ export async function POST(req: Request) {
     const gatewayFee = b.gatewayFee;
     const totalAmountToCharge = b.total;
 
-    // 4. Prepare Cashfree Order Data
-    // Shorten orderId to avoid 50 character limit in Cashfree
+    // 4. Prepare the order. This receipt is our own reference; Razorpay caps
+    //    `receipt` at 40 characters.
     const orderId = `ORD_${Date.now()}_${gigId.split('-')[0]}`;
 
     // Create Transaction Record (PENDING) so verify-payment succeeds
@@ -107,134 +105,51 @@ export async function POST(req: Request) {
     // RAZORPAY branch. The breakdown above is unchanged — only the gateway
     // differs. Order is created first so a gateway failure leaves no orphan
     // PENDING transaction.
-    if (activeProvider() === "RAZORPAY") {
-      const rzpOrder = await createRazorpayOrder({
-        amountRupees: totalAmountToCharge,
-        receipt: orderId,
-        notes: { gig_id: gigId, worker_id: workerId, type: "GIG_PAYMENT" },
-      });
-
-      const { error: rzpTxnError } = await supabaseAdmin.from('transactions').insert({
-        gig_id: gigId,
-        user_id: user.id,
-        amount: totalAmountToCharge,
-        type: 'ESCROW_DEPOSIT',
-        status: 'PENDING',
-        gateway: 'RAZORPAY',
-        gateway_order_id: rzpOrder.id,
-        provider_data: { breakdown, receipt: orderId }
-      });
-      if (rzpTxnError) throw rzpTxnError;
-
-      await supabase.from("gigs").update({
-        payment_gateway: 'RAZORPAY',
-        gateway_order_id: rzpOrder.id
-      }).eq("id", gigId);
-
-      const { data: payer } = await supabase
-        .from('users').select('name, email, phone').eq('id', user.id).maybeSingle();
-
-      return NextResponse.json({
-        success: true,
-        provider: "RAZORPAY",
-        orderId: rzpOrder.id,
-        amount: rzpOrder.amount,
-        currency: rzpOrder.currency,
-        key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
-        gig_title: gig.title,
-        prefill: {
-          name: payer?.name || "",
-          email: payer?.email || "",
-          contact: String(payer?.phone || "").replace(/\D/g, "").slice(-10),
-        },
-      });
+    if (!razorpayConfigured()) {
+      console.error("[hire] Razorpay credentials missing");
+      return NextResponse.json({ error: "Payments are temporarily unavailable." }, { status: 503 });
     }
 
-    const { error: txnError } = await supabaseAdmin.from('transactions').insert({
+    const rzpOrder = await createRazorpayOrder({
+      amountRupees: totalAmountToCharge,
+      receipt: orderId,
+      notes: { gig_id: gigId, worker_id: workerId, type: "GIG_PAYMENT" },
+    });
+
+    const { error: rzpTxnError } = await supabaseAdmin.from('transactions').insert({
       gig_id: gigId,
-      user_id: user.id, // Payer (Poster)
+      user_id: user.id,
       amount: totalAmountToCharge,
       type: 'ESCROW_DEPOSIT',
       status: 'PENDING',
-      gateway: 'CASHFREE',
-      gateway_order_id: orderId,
-      provider_data: { breakdown }
+      gateway: 'RAZORPAY',
+      gateway_order_id: rzpOrder.id,
+      provider_data: { breakdown, receipt: orderId }
     });
+    if (rzpTxnError) throw rzpTxnError;
 
-    if (txnError) throw txnError;
-
-    // FIX: Return URL must point to the FRONTEND page, not the API
-    const returnUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/gig/${gigId}?payment=verify&order_id={order_id}&worker_id=${encodeURIComponent(workerId)}`;
-
-    // Ensure phone is exactly 10 digits to prevent Cashfree validation errors
-    const validPhone = (user.phone || "").replace(/\D/g, '').slice(-10) || "9999999999";
-
-    const payload = {
-      order_amount: totalAmountToCharge,
-      order_currency: "INR",
-      order_id: orderId,
-      customer_details: {
-        customer_id: user.id || "CUST_123",
-        customer_name: (user.user_metadata?.name || "Client").substring(0, 30),
-        customer_phone: validPhone.length === 10 ? validPhone : "9999999999",
-        customer_email: user.email || "no-email@example.com"
-      },
-      order_meta: {
-        return_url: returnUrl,
-        notify_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/cashfree`
-      },
-      order_tags: {
-        gig_id: gigId,
-        worker_id: workerId,
-        type: "GIG_PAYMENT"
-      },
-      order_note: `Gig: ${(gig.title || '').substring(0, 30)}`
-    };
-
-    console.log("Initiating Payment:", orderId, "| Amount:", totalAmountToCharge, "Payload:", JSON.stringify(payload));
-
-    // 5. Dynamic URL (Sandbox vs Production)
-    const CASHFREE_ENV = cashfreeHost();
-    const cashfreeUrl = `https://${CASHFREE_ENV}.cashfree.com/pg/orders`;
-
-    let paymentSessionId = "fake_session_123";
-
-    if (process.env.NODE_ENV !== 'development') {
-      const response = await fetch(cashfreeUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-version": "2023-08-01",
-          "x-client-id": process.env.CASHFREE_APP_ID!,
-          "x-client-secret": process.env.CASHFREE_SECRET_KEY!
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error("Cashfree API Error:", data);
-        throw new Error(data.message || "Payment initiation failed at gateway");
-      }
-      paymentSessionId = data.payment_session_id;
-    } else {
-      console.log("DEV MODE BYPASS: Skipping Cashfree network call, mocking session ID.");
-    }
-
-    // 6. Mark Gig as Payment Pending in DB
     await supabase.from("gigs").update({
-      payment_gateway: 'CASHFREE',
-      gateway_order_id: orderId
+      payment_gateway: 'RAZORPAY',
+      gateway_order_id: rzpOrder.id
     }).eq("id", gigId);
+
+    const { data: payer } = await supabase
+      .from('users').select('name, email, phone').eq('id', user.id).maybeSingle();
 
     return NextResponse.json({
       success: true,
-      provider: "CASHFREE",
-      paymentSessionId: paymentSessionId,
-      orderId: orderId
+      provider: "RAZORPAY",
+      orderId: rzpOrder.id,
+      amount: rzpOrder.amount,
+      currency: rzpOrder.currency,
+      key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
+      gig_title: gig.title,
+      prefill: {
+        name: payer?.name || "",
+        email: payer?.email || "",
+        contact: String(payer?.phone || "").replace(/\D/g, "").slice(-10),
+      },
     });
-
   } catch (error: any) {
     console.error("Hire Route Error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });

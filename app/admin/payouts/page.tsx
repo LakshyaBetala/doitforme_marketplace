@@ -8,7 +8,7 @@ import { Loader2, ChevronLeft, Copy, Check, AlertTriangle, RefreshCw, Smartphone
 /**
  * Payout console.
  *
- * Cashfree withholds its Payouts product from unregistered/proprietorship
+ * Every payouts provider withholds the product from unregistered/proprietorship
  * businesses, so transfers cannot be fully automated until doitforme is a
  * registered entity. Everything except the final tap IS automated: the queue
  * decides who is owed what, to which validated UPI, and this screen turns each
@@ -134,7 +134,7 @@ export default function AdminPayoutsPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] mb-8">
           <Smartphone size={18} className="text-[#C9A9FF] shrink-0 mt-0.5" />
           <p className="text-xs text-white/60 leading-relaxed">
-            Fully automated transfers need Cashfree Payouts, which requires a registered
+            Fully automated transfers need a payouts product, which requires a registered
             business. Once that&apos;s approved and the payout credentials are set, the cron
             drains this queue on its own and this page becomes read-only.
           </p>

@@ -16,7 +16,7 @@ export const PLATFORM_FEES = {
 
 export type FeeAudience = keyof typeof PLATFORM_FEES;
 
-/** Cashfree gateway pass-through, charged on top of the subtotal to the payer. */
+/** Gateway pass-through, charged on top of the subtotal to the payer. */
 export const GATEWAY_FEE_RATE = 0.02;
 
 /**
@@ -49,7 +49,7 @@ export interface PaymentBreakdown {
   deposit: number;
   /** Platform commission, deducted from the worker's payout. */
   platformFee: number;
-  /** Cashfree pass-through, added on top and paid by the payer. */
+  /** Gateway pass-through, added on top and paid by the payer. */
   gatewayFee: number;
   /** basePrice + deposit, before the gateway fee. */
   subtotal: number;
@@ -67,7 +67,7 @@ export interface PaymentBreakdown {
  * escrow row stores, and the payout queue pays out comes from here.
  *
  * Kept as one pure function because these values have to agree across four
- * places (Cashfree order, transactions.provider_data, the escrow row, and
+ * places (the gateway order, transactions.provider_data, the escrow row, and
  * manual_release_escrow). When they were computed inline they could drift, and
  * a drift here means either the worker is underpaid or we are.
  *

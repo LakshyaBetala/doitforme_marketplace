@@ -146,12 +146,12 @@ export default function ActivityHubPage() {
    * Fund escrow for real.
    *
    * This previously said "Initiating payment…" and then simply wrote
-   * escrow_status = 'FUNDED' straight from the browser — no Cashfree call, no
+   * escrow_status = 'FUNDED' straight from the browser — no gateway call, no
    * money, no transaction row. A poster could mark any gig fully funded for
    * free, and the worker would deliver against an escrow that held nothing.
    *
    * It now goes through /api/payments/create-order (which re-reads the price
-   * server-side and records the recipient) and opens the real Cashfree
+   * server-side and records the recipient) and opens the real Razorpay
    * checkout. Settlement happens in the webhook, never in the browser.
    */
   const handleFundEscrow = async (gigId: string) => {
@@ -174,20 +174,7 @@ export default function ActivityHubPage() {
         return;
       }
 
-      const mode = process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox";
-      // @ts-expect-error - Cashfree global injected by their SDK
-      if (typeof window.Cashfree === "undefined") {
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
-          s.onload = () => resolve();
-          s.onerror = () => reject(new Error("Couldn't load the payment window."));
-          document.body.appendChild(s);
-        });
-      }
-      // @ts-expect-error - Cashfree global injected by their SDK
-      const cashfree = window.Cashfree({ mode });
-      cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: "_self" });
+      toast.error("Could not start checkout.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Payment could not be started.", { id: t });
     }

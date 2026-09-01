@@ -132,15 +132,7 @@ export default function CompanyTaskHubPage() {
           return;
         }
 
-        const { load } = await import('@cashfreepayments/cashfree-js');
-        const cashfree = await load({
-          mode: process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') ? 'sandbox' : 'production',
-        });
-        
-        cashfree.checkout({
-          paymentSessionId: data.paymentSessionId,
-          redirectTarget: "_self",
-        });
+        throw new Error("Could not start payment.");
       }
     } catch (err: any) {
       toast.error(err.message);

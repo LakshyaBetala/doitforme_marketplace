@@ -1,5 +1,5 @@
 // Fallback verifier for Company Pro purchase (return-URL path).
-// Webhooks at /api/webhooks/cashfree are the primary trigger; this is invoked
+// Webhooks at /api/webhooks/razorpay are the primary trigger; this is invoked
 // from the dashboard when the user is bounced back with ?pro=verify&order_id=...
 
 import { NextResponse } from "next/server";
@@ -42,43 +42,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, message: "Already activated" });
     }
 
-    // Verify with the gateway
+    // Verify with Razorpay: signature proves the callback is genuine, the
+    // re-read proves the money was captured.
     let validPayment: any = null;
-    if (isRazorpay) {
-      if (!verifyRazorpaySignature({ orderId: rzpOrderId, paymentId: rzpPaymentId, signature: rzpSignature })) {
-        return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
-      }
-      const payment = await fetchRazorpayPayment(rzpPaymentId);
-      if (payment.order_id !== rzpOrderId || payment.status !== "captured") {
-        return NextResponse.json({ error: "Payment not completed" }, { status: 400 });
-      }
-      const paid = payment.amount / 100;
-      if (Math.abs(paid - Number(txn.amount || 0)) > 1) {
-        return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
-      }
-      validPayment = { cf_payment_id: payment.id, payment_amount: paid };
-    } else if (process.env.NODE_ENV !== "development") {
-      const env = process.env.NODE_ENV === "production" ? "api" : "sandbox";
-      const res = await fetch(`https://${env}.cashfree.com/pg/orders/${orderId}/payments`, {
-        headers: {
-          "x-client-id": process.env.CASHFREE_APP_ID!,
-          "x-client-secret": process.env.CASHFREE_SECRET_KEY!,
-          "x-api-version": "2023-08-01",
-        },
-      });
-      const data = await res.json();
-      validPayment = Array.isArray(data) ? data.find((p: any) => p.payment_status === "SUCCESS") : null;
-      if (!validPayment) {
-        return NextResponse.json({ error: "Payment not completed" }, { status: 400 });
-      }
-      const cf = Number(validPayment.payment_amount || 0);
-      const db = Number(txn.amount || 0);
-      if (cf > 0 && Math.abs(cf - db) > 1) {
-        return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
-      }
-    } else {
-      validPayment = { cf_payment_id: "dev_fake", payment_amount: txn.amount };
+    if (!verifyRazorpaySignature({ orderId: rzpOrderId, paymentId: rzpPaymentId, signature: rzpSignature })) {
+      return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
     }
+    const payment = await fetchRazorpayPayment(rzpPaymentId);
+    if (payment.order_id !== rzpOrderId || payment.status !== "captured") {
+      return NextResponse.json({ error: "Payment not completed" }, { status: 400 });
+    }
+    const paid = payment.amount / 100;
+    if (Math.abs(paid - Number(txn.amount || 0)) > 1) {
+      return NextResponse.json({ error: "Amount mismatch" }, { status: 400 });
+    }
+    validPayment = { cf_payment_id: payment.id, payment_amount: paid };
 
     // Activate Pro: extend pro_until by 30 days from max(now, current pro_until)
     const { data: company } = await supabaseAdmin

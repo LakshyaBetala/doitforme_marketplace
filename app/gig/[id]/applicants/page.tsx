@@ -114,11 +114,7 @@ export default function ApplicantsPage() {
         await openRazorpayCheckout(data, { onSuccess: () => router.refresh() });
         return;
       }
-      const { load: loadCashfree } = await import("@cashfreepayments/cashfree-js");
-      const cashfree = await loadCashfree({
-        mode: process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox",
-      });
-      cashfree.checkout({ paymentSessionId: data.paymentSessionId, redirectTarget: "_self" });
+      toast.error("Could not start checkout.", { id: t });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong.", { id: t });
     } finally {

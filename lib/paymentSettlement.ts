@@ -1,9 +1,8 @@
 // Shared payment settlement.
 //
 // Funding escrow must behave identically no matter which path observes the
-// payment: the Cashfree webhook, the Razorpay webhook, or the browser callback.
-// Keeping one implementation is what makes that true — the two webhooks used to
-// be the only copy, and a second gateway would have meant a second copy.
+// payment: the Razorpay webhook, or the browser callback after checkout.
+// Keeping one implementation is what makes that true.
 //
 // Every entry point is safe to call repeatedly: the transaction row is claimed
 // with a conditional UPDATE, and only the caller that wins the claim funds
@@ -59,7 +58,7 @@ export async function settleGigEscrow(
   const gatewayFee = Number(breakdown.gateway_fee || 0);
   const amountHeld = basePrice + deposit;
 
-  // Claim atomically — Cashfree retries webhooks, and the browser redirect path
+  // Claim atomically — Razorpay retries webhooks, and the browser callback path
   // (/api/payments/verify-payment) can be settling the same order concurrently.
   // Only the caller whose UPDATE returns a row proceeds to fund escrow.
   const { data: claimed } = await supabaseAdmin
