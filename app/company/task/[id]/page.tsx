@@ -9,6 +9,7 @@ import Avatar from "@/components/ui/Avatar";
 import { toast } from "sonner";
 import { toWhatsAppNumber } from "@/lib/phone";
 import { ATTACHMENT_ACCEPT } from "@/lib/attachments";
+import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import {
   Loader2, ArrowLeft, Users, Download, ShieldCheck, FileText, CheckCircle2, Gift, MessageCircle, AlertTriangle, X, ArrowRight
 } from "lucide-react";
@@ -121,6 +122,14 @@ export default function CompanyTaskHubPage() {
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to initiate payment");
+
+        if (data.provider === "RAZORPAY") {
+          await openRazorpayCheckout(data, {
+            description: gig.title,
+            onSuccess: () => router.refresh(),
+          });
+          return;
+        }
 
         const { load } = await import('@cashfreepayments/cashfree-js');
         const cashfree = await load({

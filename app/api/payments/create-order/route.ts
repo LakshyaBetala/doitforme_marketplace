@@ -3,6 +3,8 @@ import { cashfreeHost } from "@/lib/cashfreeEnv";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
+import { activeProvider } from "@/lib/paymentProvider";
+import { createRazorpayOrder } from "@/lib/razorpay";
 
 export async function POST(req: Request) {
   try {
@@ -114,6 +116,57 @@ export async function POST(req: Request) {
       net_worker_pay: netWorkerPay
     };
 
+    const provider = activeProvider();
+
+    // RAZORPAY branch. Everything above this line — price re-read from the DB,
+    // recipient resolved server-side, fee breakdown — is shared and unchanged;
+    // only the gateway call differs. The client never supplies an amount.
+    if (provider === "RAZORPAY") {
+      // Create the gateway order FIRST so a gateway failure cannot leave an
+      // orphan PENDING transaction behind.
+      const rzpOrder = await createRazorpayOrder({
+        amountRupees: totalAmount,
+        receipt: orderId,
+        notes: { gig_id: gigId, worker_id: recipientId, type: "ESCROW_DEPOSIT" },
+      });
+
+      const { error: rzpTxnError } = await supabaseAdmin.from('transactions').insert({
+        gig_id: gigId,
+        user_id: user.id, // Payer
+        amount: totalAmount,
+        type: 'ESCROW_DEPOSIT',
+        status: 'PENDING',
+        gateway: 'RAZORPAY',
+        // The Razorpay order id is the lookup key on the way back, exactly as
+        // the Cashfree order id is on that path.
+        gateway_order_id: rzpOrder.id,
+        provider_data: { breakdown, receipt: orderId }
+      });
+      if (rzpTxnError) throw rzpTxnError;
+
+      await supabase.from('gigs').update({
+        gateway_order_id: rzpOrder.id,
+        payment_gateway: 'RAZORPAY',
+        escrow_amount: totalAmount,
+      }).eq('id', gigId);
+
+      return NextResponse.json({
+        success: true,
+        provider: "RAZORPAY",
+        order_id: rzpOrder.id,
+        amount: rzpOrder.amount,          // paise, straight from the gateway
+        currency: rzpOrder.currency,
+        key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
+        gig_title: gig.title,
+        prefill: {
+          name: payerProfile.name || "",
+          email: payerProfile.email || "",
+          contact: String(payerProfile.phone || "").replace(/\D/g, "").slice(-10),
+        },
+        breakdown
+      });
+    }
+
     const { error: txnError } = await supabaseAdmin.from('transactions').insert({
       gig_id: gigId,
       user_id: user.id, // Payer
@@ -202,6 +255,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      provider: "CASHFREE",
       payment_session_id: paymentSessionId,
       order_id: orderId,
       breakdown

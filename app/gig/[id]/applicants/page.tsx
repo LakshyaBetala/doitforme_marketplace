@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
@@ -104,11 +105,15 @@ export default function ApplicantsPage() {
         body: JSON.stringify({ gigId, workerId }),
       });
       const data = await res.json();
-      if (!res.ok || !data.paymentSessionId) {
+      if (!res.ok || (!data.paymentSessionId && data.provider !== "RAZORPAY")) {
         toast.error(data.error || "Couldn't start checkout.", { id: t });
         return;
       }
       toast.dismiss(t);
+      if (data.provider === "RAZORPAY") {
+        await openRazorpayCheckout(data, { onSuccess: () => router.refresh() });
+        return;
+      }
       const { load: loadCashfree } = await import("@cashfreepayments/cashfree-js");
       const cashfree = await loadCashfree({
         mode: process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox",

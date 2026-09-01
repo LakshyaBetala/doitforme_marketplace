@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cashfreeHost } from "@/lib/cashfreeEnv";
+import { verifyRazorpaySignature, fetchRazorpayPayment } from "@/lib/razorpay";
 import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -22,10 +23,24 @@ export async function POST(req: Request) {
     // Now: the caller must be signed in, the order must belong to them, and the
     // gig/worker are read from the server-side transaction record. Nothing that
     // decides where money goes comes from the client any more.
-    const { orderId } = await req.json();
+    const body = await req.json();
+    const {
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: rzpPaymentId,
+      razorpay_signature: rzpSignature,
+    } = body || {};
+    const isRazorpay = Boolean(rzpPaymentId);
+
+    // Razorpay returns its own order id in the callback; Cashfree redirects with
+    // ours. Either way  below is the gateway id stored on the txn row,
+    // so every check after this point is shared.
+    const orderId: string | undefined = isRazorpay ? rzpOrderId : body?.orderId;
 
     if (!orderId) {
       return NextResponse.json({ error: "Missing order id" }, { status: 400 });
+    }
+    if (isRazorpay && (!rzpSignature || !rzpOrderId)) {
+      return NextResponse.json({ error: "Missing payment verification fields" }, { status: 400 });
     }
 
     const cookieStore = await cookies();
@@ -49,7 +64,31 @@ export async function POST(req: Request) {
     const allowFakePayments =
       process.env.NODE_ENV === 'development' && process.env.ALLOW_FAKE_PAYMENTS === 'true';
 
-    if (!allowFakePayments) {
+    if (isRazorpay) {
+      // Signature proves the callback is genuinely from Razorpay and was not
+      // assembled by the browser. It does NOT prove the money moved, so the
+      // payment is then re-read from the gateway and must be captured.
+      if (!verifyRazorpaySignature({ orderId: rzpOrderId, paymentId: rzpPaymentId, signature: rzpSignature })) {
+        console.error(`[verify-payment] razorpay signature mismatch order=${rzpOrderId}`);
+        return NextResponse.json({ error: "Payment verification failed" }, { status: 400 });
+      }
+
+      const payment = await fetchRazorpayPayment(rzpPaymentId);
+      if (payment.order_id !== rzpOrderId) {
+        return NextResponse.json({ error: "Payment does not belong to this order" }, { status: 400 });
+      }
+      if (payment.status !== "captured") {
+        return NextResponse.json({ error: "Payment pending or failed" }, { status: 400 });
+      }
+
+      // Normalised to the Cashfree shape (rupees) so the amount check and the
+      // settlement below stay provider-agnostic.
+      validPayment = {
+        payment_status: "SUCCESS",
+        payment_amount: payment.amount / 100,
+        cf_payment_id: payment.id,
+      };
+    } else if (!allowFakePayments) {
       const CASHFREE_ENV = cashfreeHost();
       const response = await fetch(`https://${CASHFREE_ENV}.cashfree.com/pg/orders/${orderId}/payments`, {
         method: "GET",
@@ -113,7 +152,7 @@ export async function POST(req: Request) {
     // Previously guarded by `cfAmount > 0`, so a missing or zero payment_amount
     // from Cashfree skipped verification entirely and funded escrow anyway.
     // A partial or zero payment must never mark a gig funded.
-    if (!allowFakePayments) {
+    if (!allowFakePayments || isRazorpay) {
       const cfAmount = Number(validPayment?.payment_amount);
       const dbAmount = Number(txn.amount || 0);
       if (!Number.isFinite(cfAmount) || cfAmount <= 0 || Math.abs(cfAmount - dbAmount) > 1) {

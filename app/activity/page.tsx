@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { Loader2, Briefcase, IndianRupee, ArrowRight, ShieldCheck, CheckCircle, Clock, Phone, MessageSquare, Zap, AlertTriangle, X } from "lucide-react";
 import Image from "next/image";
@@ -162,11 +163,16 @@ export default function ActivityHubPage() {
         body: JSON.stringify({ gigId }),
       });
       const data = await res.json();
-      if (!res.ok || !data.payment_session_id) {
+      if (!res.ok || (!data.payment_session_id && data.provider !== "RAZORPAY")) {
         toast.error(data.error || "Could not start checkout.", { id: t });
         return;
       }
       toast.dismiss(t);
+
+      if (data.provider === "RAZORPAY") {
+        await openRazorpayCheckout(data, { onSuccess: () => router.refresh() });
+        return;
+      }
 
       const mode = process.env.NEXT_PUBLIC_CASHFREE_MODE === "production" ? "production" : "sandbox";
       // @ts-expect-error - Cashfree global injected by their SDK

@@ -1,5 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cashfreeHost } from "@/lib/cashfreeEnv";
+import { activeProvider } from "@/lib/paymentProvider";
+import { createRazorpayOrder } from "@/lib/razorpay";
 import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
@@ -102,6 +104,52 @@ export async function POST(req: Request) {
       net_worker_pay: b.netWorkerPay
     };
 
+    // RAZORPAY branch. The breakdown above is unchanged — only the gateway
+    // differs. Order is created first so a gateway failure leaves no orphan
+    // PENDING transaction.
+    if (activeProvider() === "RAZORPAY") {
+      const rzpOrder = await createRazorpayOrder({
+        amountRupees: totalAmountToCharge,
+        receipt: orderId,
+        notes: { gig_id: gigId, worker_id: workerId, type: "GIG_PAYMENT" },
+      });
+
+      const { error: rzpTxnError } = await supabaseAdmin.from('transactions').insert({
+        gig_id: gigId,
+        user_id: user.id,
+        amount: totalAmountToCharge,
+        type: 'ESCROW_DEPOSIT',
+        status: 'PENDING',
+        gateway: 'RAZORPAY',
+        gateway_order_id: rzpOrder.id,
+        provider_data: { breakdown, receipt: orderId }
+      });
+      if (rzpTxnError) throw rzpTxnError;
+
+      await supabase.from("gigs").update({
+        payment_gateway: 'RAZORPAY',
+        gateway_order_id: rzpOrder.id
+      }).eq("id", gigId);
+
+      const { data: payer } = await supabase
+        .from('users').select('name, email, phone').eq('id', user.id).maybeSingle();
+
+      return NextResponse.json({
+        success: true,
+        provider: "RAZORPAY",
+        orderId: rzpOrder.id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID,
+        gig_title: gig.title,
+        prefill: {
+          name: payer?.name || "",
+          email: payer?.email || "",
+          contact: String(payer?.phone || "").replace(/\D/g, "").slice(-10),
+        },
+      });
+    }
+
     const { error: txnError } = await supabaseAdmin.from('transactions').insert({
       gig_id: gigId,
       user_id: user.id, // Payer (Poster)
@@ -182,6 +230,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      provider: "CASHFREE",
       paymentSessionId: paymentSessionId,
       orderId: orderId
     });
