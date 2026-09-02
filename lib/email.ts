@@ -1,9 +1,25 @@
-// Single source of truth for transactional email via Resend.
-// Free tier ceiling: 3000/month — every send is fire-and-forget and never
-// fails the parent request. If RESEND_API_KEY is unset we log and no-op.
-
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
-const FROM = "doitforme <noreply@doitforme.in>";
+// Single source of truth for transactional email.
+//
+// Every send is fire-and-forget and never fails the parent request: a failed
+// notification must not roll back a payment or a delivery.
+//
+// PROVIDER CHOICE. Resend's free tier is 3000/month but also **100/day**, and
+// the daily wall is the one that actually hurts — a single busy evening (a
+// broadcast, a batch of applicants, a cron nudge) silently drops the rest of
+// the day's mail, including payment and dispute notices. So the transport is
+// pluggable and the daily headroom is the reason to move:
+//
+//   brevo     300/day,  9000/month   <- recommended; highest free daily cap
+//   zeptomail 10000 one-time credits, then paid; best deliverability in India
+//   resend    100/day,  3000/month   <- current default, the cap you hit
+//
+// Set EMAIL_PROVIDER to pick one explicitly. With it unset we auto-detect from
+// whichever key is present, preferring the roomier provider, so adding
+// BREVO_API_KEY in Vercel is the entire migration — no code change, no
+// redeploy of call sites, and the 68 templates below are untouched.
+const FROM_EMAIL = "noreply@doitforme.in";
+const FROM_NAME = "doitforme";
+const FROM = `${FROM_NAME} <${FROM_EMAIL}>`;
 const REPLY_TO = "doitforme.in@gmail.com";
 const SITE = "https://doitforme.in";
 
@@ -441,46 +457,117 @@ function wrap({ subject, preheader, bodyHtml }: RenderResult): string {
 </body></html>`;
 }
 
+type ProviderName = "brevo" | "zeptomail" | "resend";
+
+type ProviderRequest = {
+  url: string;
+  headers: Record<string, string>;
+  body: unknown;
+};
+
+/** Each provider's wire format for one transactional send. */
+const PROVIDERS: Record<
+  ProviderName,
+  { envKey: string; build: (k: string, to: string, subject: string, html: string, kind: string) => ProviderRequest }
+> = {
+  brevo: {
+    envKey: "BREVO_API_KEY",
+    build: (key, to, subject, html, kind) => ({
+      url: "https://api.brevo.com/v3/smtp/email",
+      headers: { "api-key": key, "content-type": "application/json", accept: "application/json" },
+      body: {
+        sender: { email: FROM_EMAIL, name: FROM_NAME },
+        to: [{ email: to }],
+        replyTo: { email: REPLY_TO },
+        subject,
+        htmlContent: html,
+        tags: [kind],
+      },
+    }),
+  },
+  zeptomail: {
+    envKey: "ZEPTOMAIL_TOKEN",
+    build: (key, to, subject, html, kind) => ({
+      // .in datacentre: the account is Indian, and sending through the matching
+      // region is what keeps Indian inbox placement good.
+      url: "https://api.zeptomail.in/v1.1/email",
+      headers: { Authorization: `Zoho-enczapikey ${key}`, "content-type": "application/json" },
+      body: {
+        from: { address: FROM_EMAIL, name: FROM_NAME },
+        to: [{ email_address: { address: to } }],
+        reply_to: [{ address: REPLY_TO }],
+        subject,
+        htmlbody: html,
+        client_reference: kind,
+      },
+    }),
+  },
+  resend: {
+    envKey: "RESEND_API_KEY",
+    build: (key, to, subject, html, kind) => ({
+      url: "https://api.resend.com/emails",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: {
+        from: FROM,
+        to: [to],
+        subject,
+        html,
+        reply_to: REPLY_TO,
+        tags: [{ name: "kind", value: kind }],
+      },
+    }),
+  },
+};
+
+// Roomiest daily cap first, so simply adding a key upgrades the transport.
+const AUTO_ORDER: ProviderName[] = ["brevo", "zeptomail", "resend"];
+
+/** Resolves the active provider, or null when no key is configured at all. */
+export function activeEmailProvider(): { name: ProviderName; key: string } | null {
+  const forced = process.env.EMAIL_PROVIDER?.toLowerCase() as ProviderName | undefined;
+  if (forced && forced in PROVIDERS) {
+    const key = process.env[PROVIDERS[forced].envKey];
+    if (key) return { name: forced, key };
+    console.warn(`[email] EMAIL_PROVIDER=${forced} but ${PROVIDERS[forced].envKey} is unset — falling back.`);
+  }
+  for (const name of AUTO_ORDER) {
+    const key = process.env[PROVIDERS[name].envKey];
+    if (key) return { name, key };
+  }
+  return null;
+}
+
 export async function sendEmail(kind: EmailKind, args: BaseArgs): Promise<{ ok: boolean; skipped?: string }> {
   if (!args.to) return { ok: false, skipped: "no recipient" };
 
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn(`[email] RESEND_API_KEY missing — would send ${kind} to ${args.to}`);
-    return { ok: false, skipped: "RESEND_API_KEY missing" };
+  const provider = activeEmailProvider();
+  if (!provider) {
+    console.warn(`[email] no provider key set — would send ${kind} to ${args.to}`);
+    return { ok: false, skipped: "no provider configured" };
   }
 
   const rendered = render(kind, args);
   const html = wrap(rendered);
+  const req = PROVIDERS[provider.name].build(provider.key, args.to, rendered.subject, html, kind);
 
   try {
-    const res = await fetch(RESEND_ENDPOINT, {
+    const res = await fetch(req.url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: FROM,
-        to: [args.to],
-        subject: rendered.subject,
-        html,
-        reply_to: REPLY_TO,
-        headers: {
-          "X-Entity-Ref-ID": `${kind}:${args.gigId || "none"}`,
-        },
-        tags: [{ name: "kind", value: kind }],
-      }),
+      headers: req.headers,
+      body: JSON.stringify(req.body),
     });
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      console.error(`[email] ${kind} -> ${args.to} failed: ${res.status} ${text}`);
-      return { ok: false, skipped: `resend ${res.status}` };
+      // 429 here is the daily cap, not a transient error — it is the single
+      // most useful thing to see in the logs, so name it.
+      const hint = res.status === 429 ? " (DAILY SEND CAP REACHED)" : "";
+      console.error(`[email] ${kind} -> ${args.to} failed via ${provider.name}: ${res.status}${hint} ${text}`);
+      return { ok: false, skipped: `${provider.name} ${res.status}` };
     }
     return { ok: true };
   } catch (e) {
-    console.error(`[email] ${kind} -> ${args.to} threw:`, e);
+    console.error(`[email] ${kind} -> ${args.to} threw via ${provider.name}:`, e);
     return { ok: false, skipped: "exception" };
   }
 }

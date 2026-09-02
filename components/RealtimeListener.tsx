@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { toast } from "sonner";
 import { useRouter, usePathname } from "next/navigation";
+import { humanizeStatus } from "@/components/ui/StatusBadge";
 
 export default function RealtimeListener() {
     const supabase = supabaseBrowser();
@@ -64,8 +65,7 @@ export default function RealtimeListener() {
                         const oldGig = payload.old as any;
 
                         if (newGig.status !== oldGig.status) {
-                            let msg = `Gig '${newGig.title}' status: ${newGig.status}`;
-                            if (newGig.status === 'cancellation_requested') msg = `Cancellation REQUESTED for '${newGig.title}'`;
+                            let msg = `'${newGig.title}' is now ${humanizeStatus(newGig.status)}`;
                             if (newGig.status === 'completed') msg = `Gig '${newGig.title}' Completed! Funds Released.`;
 
                             toast.success("Gig Update", {

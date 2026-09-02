@@ -95,7 +95,13 @@ export async function POST(req: Request) {
             bio = body.bio;
             phone = body.phone;
             upi_id = body.upi_id;
+            // The client uploads to storage itself and posts back the object
+            // path. Pin it to the caller's own folder: without this check a user
+            // could point their resume_url at somebody else's file.
             if (typeof body.resume_url === "string" && body.resume_url) {
+                if (!body.resume_url.startsWith(`${user.id}/`)) {
+                    return NextResponse.json({ error: "Invalid resume path." }, { status: 400 });
+                }
                 resume_url = body.resume_url;
             }
         }
@@ -116,14 +122,18 @@ export async function POST(req: Request) {
             }
 
             const fileExt = resumeFile.name.split('.').pop() || 'pdf';
-            const fileName = `resume_${user.id}_${Date.now()}.${fileExt}`;
-            const filePath = `resumes/${fileName}`;
+            // Namespaced by user id, matching the client upload path, so the
+            // storage policy can key on the folder name.
+            const filePath = `${user.id}/resume_${Date.now()}.${fileExt}`;
 
             const arrayBuffer = await resumeFile.arrayBuffer();
             const fileBuffer = new Uint8Array(arrayBuffer);
 
+            // The `resumes` bucket — this used to write into `gig-images`,
+            // which put 13 students' CVs in the bucket that serves public gig
+            // photos and has to stay public.
             const { error: uploadError } = await supabaseAdmin.storage
-                .from("gig-images")
+                .from("resumes")
                 .upload(filePath, fileBuffer, {
                     cacheControl: "3600",
                     upsert: true,
@@ -135,11 +145,9 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: `Resume upload failed: ${uploadError.message}` }, { status: 500 });
             }
 
-            const { data: publicUrlData } = supabaseAdmin.storage
-                .from("gig-images")
-                .getPublicUrl(filePath);
-
-            updateData.resume_url = publicUrlData.publicUrl;
+            // Store the PATH, not a URL. The bucket is private; reads go through
+            // /api/profile/resume, which authorizes and signs.
+            updateData.resume_url = filePath;
         }
 
         if (Object.keys(updateData).length === 0) {

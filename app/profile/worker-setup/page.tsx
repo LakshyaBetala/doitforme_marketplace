@@ -146,7 +146,10 @@ export default function WorkerSetupPage() {
                     setLoading(false);
                     return setError(friendlyError(uploadError));
                 }
-                resumeUrl = supabase.storage.from("resumes").getPublicUrl(path).data.publicUrl;
+                // Store the object path, not a public URL: the bucket is
+                // private and reads are signed on demand by
+                // /api/profile/resume after an access check.
+                resumeUrl = path;
             }
 
             const res = await fetch("/api/profile/worker-setup", {
@@ -454,7 +457,7 @@ export default function WorkerSetupPage() {
                                     </div>
                                 </div>
                                 <a
-                                    href={existingResumeUrl}
+                                    href="/api/profile/resume"
                                     target="_blank"
                                     rel="noreferrer"
                                     className="px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold rounded-lg hover:bg-green-500/20 transition-colors shrink-0 ml-3"

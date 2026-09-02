@@ -26,7 +26,16 @@ export default function TalentPage() {
     (async () => {
       const { data } = await supabase
         .from("gigs")
-        .select("*, users:poster_id(name, college, rating, rating_count, username)")
+        // Named columns, not "*": this page is browsable without a session, and
+        // gigs also carries delivery artifacts, dispute text and the payment
+        // breakdown, which anon has no grant for (20260903_gigs_column_privileges).
+        .select(
+          `id, poster_id, company_id, assigned_worker_id, title, description, category, images,
+           price, currency, security_deposit, listing_type, market_type, item_condition,
+           is_physical, location, github_link, status, deadline, max_workers, trust_based,
+           is_featured, is_highlighted, highlight_expires_at, is_managed, created_at,
+           users:poster_id(name, college, rating, rating_count, username)`
+        )
         .eq("listing_type", "SERVICE")
         .eq("status", "open")
         .order("created_at", { ascending: false })

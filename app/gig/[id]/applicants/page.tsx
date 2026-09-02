@@ -239,7 +239,7 @@ export default function ApplicantsPage() {
                       )}
                       {w?.resume_url && (
                         <a
-                          href={w.resume_url}
+                          href={`/api/profile/resume?userId=${w.id}`}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/70 hover:text-white bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 transition"

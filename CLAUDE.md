@@ -11,7 +11,16 @@ npm run start   # Run production build
 npm run lint    # ESLint (next/core-web-vitals + next/typescript)
 npm run test:e2e        # Playwright (auto-starts `npm run dev` on :3000 via webServer)
 npx playwright test tests/golden-path.spec.ts   # run a single spec
+npm run test:unit       # explicit file list — see the tsx --test trap below
+npm run test:escrow     # end-to-end escrow money movement, disposable rows
+npm run db:audit        # live DB: are the constraints we rely on actually there?
+npm run db:anon-audit   # live DB: what can a stranger read with the anon key?
+npm run db:migrate <file.sql ...>   # direct-Postgres migration runner
 ```
+
+`db:anon-audit` inverts the usual assertion — it **fails when something is
+readable**. Run it after any RLS, grant, policy or storage change; the leak it was
+written for looked fine in the dashboard.
 
 The only automated tests are Playwright E2E in [tests/](tests/) ([playwright.config.ts](playwright.config.ts) — chromium only, `baseURL` http://localhost:3000). `test_onboard.ts` and `test_onboard_rls.ts` (now under [scripts/maintenance/](scripts/maintenance/)) are ad-hoc scripts, not part of the suite.
 
@@ -118,7 +127,7 @@ Students upload an ID at `/verify-id` → [app/api/kyc/upload/route.ts](app/api/
 - **Thresholds** live in [lib/kycVerification.ts](lib/kycVerification.ts): approve ≥ `0.85`, treat < `0.5` as unsure. **Fails open** like moderation — any Gemini/network/parse error returns `manual_review` (never hard-blocks a real student).
 - **Admin review** of the `manual_review` minority is in the **Student IDs** tab of [app/admin/page.tsx](app/admin/page.tsx), backed by [app/api/admin/review-kyc/route.ts](app/api/admin/review-kyc/route.ts) (GET lists with 30-min signed image URLs; POST approve/reject emails the student).
 - **Backfill / re-verify** existing uploads with [scripts/maintenance/reverify-kyc.mjs](scripts/maintenance/reverify-kyc.mjs) (`node scripts/maintenance/reverify-kyc.mjs`). It's resumable (skips already-scored rows) and stops cleanly on the Gemini free-tier daily quota — re-run after reset to finish.
-- Outcome emails (`kyc_approved` / `kyc_rejected` with reason) are sent via [lib/email.ts](lib/email.ts) — `RESEND_API_KEY` is set in Vercel (prod email works); it's just absent from local `.env.local`, so email no-ops in local dev only.
+- Outcome emails (`kyc_approved` / `kyc_rejected` with reason) are sent via [lib/email.ts](lib/email.ts) — see **Transactional email** below. The key is set in Vercel (prod email works); it's absent from local `.env.local`, so email no-ops in local dev only.
 
 ### Payments — Razorpay only
 **Cashfree is gone.** It never cleared marketplace onboarding, so the gateway, its
@@ -173,9 +182,32 @@ Separate from the in-app realtime toasts. The browser subscribes via [app/api/pu
 ## Auth modes
 Supabase is configured for **email OTP only** — magic links are disabled. Keep this in mind when touching auth UI; no magic-link code paths should exist.
 
+### Transactional email — the daily cap is what bites
+[lib/email.ts](lib/email.ts) is the single source of truth: 19 templates, one
+`sendEmail(kind, args)`, fire-and-forget so a failed notification can never roll
+back a payment or a delivery.
+
+The transport is pluggable because **Resend's free tier is 100/day**, not just
+3000/month, and the daily wall is the one that hurts — one busy evening (a
+broadcast, a batch of applicants, the nudge cron) silently eats the rest of the
+day's mail, payment and dispute notices included.
+
+| provider | env key | free ceiling |
+|---|---|---|
+| `brevo` | `BREVO_API_KEY` | **300/day**, 9000/mo — recommended |
+| `zeptomail` | `ZEPTOMAIL_TOKEN` | 10 000 one-time credits, then paid; best India deliverability |
+| `resend` | `RESEND_API_KEY` | 100/day, 3000/mo — the cap that was being hit |
+
+With `EMAIL_PROVIDER` unset the provider is auto-detected from whichever key is
+present, roomiest first — so **adding `BREVO_API_KEY` in Vercel is the entire
+migration**: no code change, no call-site edits, templates untouched. Set
+`EMAIL_PROVIDER` to pin one explicitly. A 429 is logged as `DAILY SEND CAP
+REACHED` rather than a generic failure, because that is the one error worth
+recognising at a glance.
+
 ## Required environment variables
 From README + handler code:
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_WEBHOOK_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), `RESEND_API_KEY` (transactional email — unset = email no-ops), `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_WEBHOOK_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), **one** of `BREVO_API_KEY` / `ZEPTOMAIL_TOKEN` / `RESEND_API_KEY` (transactional email — none set = email no-ops; optional `EMAIL_PROVIDER` pins the choice), `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
 
 ## Traps that have already bitten (do not re-learn these)
 
@@ -264,6 +296,63 @@ From README + handler code:
   open — an undecodable file uploads unchanged rather than erroring. Vercel image
   optimization is deliberately `unoptimized: true` to keep transformations off a Hobby
   quota; flip it back on a paid plan.
+
+- **RLS enabled + `USING (true)` + a table-wide grant is not security.** `public.users`
+  had *two* duplicate `FOR SELECT USING (true)` policies granted to `PUBLIC` and no
+  column privileges. The dashboard showed RLS as on, so it looked handled. It was not:
+  with nothing but the anon key that ships inside every page load,
+  `GET /rest/v1/users?select=email,phone,upi_id` returned `200` with
+  `Content-Range: 0-0/3152` — **every student's email, phone, `upi_id`, `id_card_url`
+  (the KYC document), `telegram_chat_id` and `kyc_rejection_reason`, dumpable by
+  anyone**. `gigs` was the same story: `handshake_code` (the in-person handover PIN),
+  `delivery_link` / `delivery_files` (the delivered work, readable before the poster
+  had even reviewed it), `dispute_reason`, and the whole fee breakdown.
+  RLS is **row**-level and cannot express "this row is public but these columns are
+  not" — that is what **column privileges** are for, so the fix is
+  `REVOKE SELECT ... FROM anon` then `GRANT SELECT (safe, columns, ...)`
+  ([users](supabase/migrations/20260903_users_column_privileges.sql),
+  [gigs](supabase/migrations/20260903_gigs_column_privileges.sql)). A column added
+  later is then private by default, which is the right way round.
+  Two consequences worth knowing: `select("*")` fails with `42501` the moment any
+  column is ungranted (this is why [app/talent/page.tsx](app/talent/page.tsx) names
+  its columns — it is the one anonymous page reading `gigs`; `/feed` and `/gig` are
+  auth-gated in [proxy.ts](proxy.ts)), and **the line is drawn at `anon` only**.
+  `authenticated` deliberately keeps both tables so the dozen `select("*")` call
+  sites keep working; `public.my_profile` (a `security_invoker = off` view filtered
+  to `auth.uid()`) exists for own-row reads so that tightening is a find-and-replace
+  later rather than a redesign.
+
+- **An uncalled `route.ts` is still a public endpoint.** Four handlers with zero
+  callers anywhere in the UI were live and wrong: `/api/escrow/refund` was a
+  **self-serve refund** (one authenticated POST clawed funded escrow back after
+  delivery, no dispute, no record — the exact thing the product forbids);
+  `/api/escrow/cancel` moved funded gigs to `cancellation_requested`, a status no
+  admin screen can act on, freezing escrow with no exit; `/api/gig/update-price`
+  rewrote `gigs.price` with **no status or `payment_status` check**, so the amount
+  could move after escrow was funded and the dispute split would compute against a
+  number nobody agreed to; `/cron/auto-release` (no `/api`) was a near-copy of the
+  scheduled cron that called `release_escrow_transactional`, which does **not**
+  insert the `payout_queue` row — the very bug that emptied the queue
+  database-wide. All four are deleted. Nothing failed to surface them; they were
+  found by auditing the route list, so [tests/unit/route-surface.test.mjs](tests/unit/route-surface.test.mjs)
+  now pins the surface: no refund/cancel/update-price route, exactly one
+  auto-release, no caller of `release_escrow_transactional`, and every handler
+  takes some caller identity.
+
+- **Resumes were public files with permanent URLs.** Closing bucket *enumeration*
+  (20260902) was not the same as making them private: `resumes` stayed a public
+  bucket, `users.resume_url` held a permanent public URL, and it was rendered
+  straight into an `<a href>` — so any leaked link read that CV forever, for 671
+  students. Worse, the API upload path named the **wrong bucket** and put 13 CVs in
+  `gig-images`, which has to stay public for gig photos. Now: the bucket is private
+  ([20260903_private_resume_bucket.sql](supabase/migrations/20260903_private_resume_bucket.sql)),
+  `resume_url` stores a bare **object path**, and reads go through
+  [app/api/profile/resume/route.ts](app/api/profile/resume/route.ts), which
+  authorizes (self / admin / a poster the student actually applied to) and mints a
+  5-minute signed URL. A resume is visible because of an application, not because
+  someone knows a user id. Data was migrated by
+  [scripts/migrate-resumes-private.mjs](scripts/migrate-resumes-private.mjs) — run
+  it **before** flipping a bucket like this, or every link breaks in between.
 
 ## Stale-doc warning
 Four tables were dropped on 2026-06-19 ([supabase/migrations/20260619_drop_unused_tables.sql](supabase/migrations/20260619_drop_unused_tables.sql)) — `vasooli_bounties`, `deliveries`, `payout_methods`, `chat_blocked_logs`. Older migrations and schema dumps still reference them. Delivery artifacts live on `gigs.delivery_link` / `delivery_files` + `messages`; payout UPI lives on `users.upi_id` and payouts are manual.

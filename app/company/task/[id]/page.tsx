@@ -456,7 +456,7 @@ export default function CompanyTaskHubPage() {
                                View Profile
                              </Link>
                              {worker?.resume_url && (
-                               <a href={worker.resume_url} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111] flex items-center gap-1.5 transition-colors">
+                               <a href={`/api/profile/resume?userId=${app.worker_id}`} target="_blank" rel="noreferrer" className="text-[9px] font-black uppercase tracking-widest text-[#666] hover:text-white border border-[#222] px-3 py-1.5 bg-[#111] flex items-center gap-1.5 transition-colors">
                                  <FileText size={10} /> Resume
                                </a>
                              )}

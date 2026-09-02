@@ -56,3 +56,6 @@ test-results/
 playwright-report/
 
 scratch/
+
+# Local probe/verification scripts written during audits
+scratchpad/
