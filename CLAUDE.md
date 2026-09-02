@@ -221,6 +221,26 @@ From README + handler code:
   random value". Every number input must carry `onWheel={blurOnWheel}` from
   [lib/inputs.ts](lib/inputs.ts); there are 7 of them.
 
+- **`REVOKE ... FROM anon` does nothing; the grant comes from `PUBLIC`.** Postgres
+  grants `EXECUTE` on every new function to `PUBLIC`, and `anon`/`authenticated`
+  inherit it from there — so revoking from those roles removes a grant they never
+  separately held. Every `SECURITY DEFINER` function in `public` is exposed at
+  `/rest/v1/rpc/<name>`, so **anonymous callers could run `manual_release_escrow`,
+  `refund_escrow_transactional` and `increment_worker_stats` over HTTP**. The first
+  fix attempt revoked from `anon, authenticated`, reported success, and changed
+  nothing. Take it `FROM PUBLIC` and `GRANT` back to `service_role` explicitly —
+  see [20260902_revoke_rpc_from_public.sql](supabase/migrations/20260902_revoke_rpc_from_public.sql).
+  Verify with a real anonymous call: a `400` carrying the function's own `P0001`
+  message means it **executed**, not that it was blocked. Only `42501 permission
+  denied` is a denial.
+
+- **A `SECURITY DEFINER` guard on `auth.uid()` is not a guard for anonymous callers.**
+  `manual_release_escrow` reads `if auth.uid() is distinct from poster_id and not
+  is_admin()`. With no JWT, `auth.uid()` is NULL and `is_admin()` returns NULL, so
+  the condition is `TRUE and NULL` = NULL and `if NULL then` never fires — the
+  branch is skipped and execution continues. Authorize in the route, and revoke
+  EXECUTE so the function is unreachable without the service role.
+
 - **Migrations in `supabase/migrations/` are not necessarily applied to the live DB.**
   `20260322_1500_escrow_multi_worker.sql` declares `UNIQUE (gig_id, worker_id)` on
   `escrow`; the live database never got it. Settlement used
