@@ -8,9 +8,19 @@
 -- specification". The error was never checked, so gigs were marked
 -- ESCROW_FUNDED with no escrow row behind them.
 --
--- lib/paymentSettlement.ts no longer depends on ON CONFLICT, so this migration
--- is defence in depth: it stops a second escrow row ever existing for the same
--- (gig, worker) pair, which is what multi-worker gigs need.
+-- This is NOT merely defence in depth, which is how it was first described.
+-- Verified against the live database on 2026-09-02: a second escrow insert for
+-- the same gig fails with
+--   23505  Key (gig_id)=(...) already exists
+-- i.e. the surviving constraint is the single-worker-era escrow_gig_id_key on
+-- gig_id ALONE. So a gig can only ever hold ONE escrow row, and every gig with
+-- max_workers > 1 is unfundable past its first worker: settlement writes the
+-- second escrow row, gets 23505, reverts the transaction to PENDING, and the
+-- webhook retries forever against a constraint that can never be satisfied.
+--
+-- Four such gigs already exist (max_workers 2-5), including a 6-week contract.
+-- Dropping escrow_gig_id_key for the (gig_id, worker_id) pair is what makes
+-- multi-worker gigs possible at all.
 --
 -- Safe to run more than once.
 
