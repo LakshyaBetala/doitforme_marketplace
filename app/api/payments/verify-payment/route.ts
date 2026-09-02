@@ -22,17 +22,10 @@ export async function POST(req: Request) {
     // Now: the caller must be signed in, the order must belong to them, and the
     // gig/worker are read from the server-side transaction record. Nothing that
     // decides where money goes comes from the client any more.
-    const {
-      razorpay_order_id: rzpOrderId,
-      razorpay_payment_id: rzpPaymentId,
-      razorpay_signature: rzpSignature,
-    } = (await req.json()) || {};
-
-    if (!rzpOrderId || !rzpPaymentId || !rzpSignature) {
-      return NextResponse.json({ error: "Missing payment verification fields" }, { status: 400 });
-    }
-    const orderId: string = rzpOrderId;
-
+    // Authenticate BEFORE looking at the body. Validating input first meant an
+    // anonymous caller got 400 "Missing payment verification fields" instead of
+    // 401 — which reads as "this endpoint is open, just send better arguments"
+    // and told an unauthenticated prober exactly what shape to send next.
     const cookieStore = await cookies();
     const supabaseAuth = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,6 +36,17 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const {
+      razorpay_order_id: rzpOrderId,
+      razorpay_payment_id: rzpPaymentId,
+      razorpay_signature: rzpSignature,
+    } = (await req.json().catch(() => ({}))) || {};
+
+    if (!rzpOrderId || !rzpPaymentId || !rzpSignature) {
+      return NextResponse.json({ error: "Missing payment verification fields" }, { status: 400 });
+    }
+    const orderId: string = rzpOrderId;
 
     // 1. Verify the payment with Razorpay.
     //

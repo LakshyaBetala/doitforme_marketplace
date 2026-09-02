@@ -69,7 +69,7 @@ Both call sites ([create-order](app/api/payments/create-order/route.ts), [cron/a
 
 ### Managed Mode + Elite pool
 Strategy pivot recorded in [supabase/migrations/20260619_managed_mode.sql](supabase/migrations/20260619_managed_mode.sql): instead of a zero-commission connection hub (which leaked matches off-platform), DoItForMe can *itself* assign a vetted student and QA the work.
-- `gigs.is_managed` (bool) + `gigs.managed_status` ∈ `UNASSIGNED | ASSIGNED | DELIVERED | CLOSED` — a queue lifecycle **parallel to** the public `gigs.status`; keep both in sync when you touch managed gigs. Set at post time in [app/post/page.tsx](app/post/page.tsx).
+- `gigs.is_managed` (bool) + `gigs.managed_status` ∈ `UNASSIGNED | ASSIGNED | DELIVERED | CLOSED` — a queue lifecycle **parallel to** the public `gigs.status`; keep both in sync when you touch managed gigs. Set at post time in [app/company/post/page.tsx](app/company/post/page.tsx) — **companies only**, see the trap below.
 - `users.is_elite` — manually curated top students the assignment UI sorts first.
 - Admin desk: **Managed Queue** tab in [app/admin/page.tsx](app/admin/page.tsx) → [app/api/admin/assign-managed/route.ts](app/api/admin/assign-managed/route.ts). Assignment upserts an `approved` row into `applications` on purpose, so delivery/escrow/payout reuse the identical self-serve code path.
 - Admin auth goes through `isAdminEmail()` from [lib/admins.ts](lib/admins.ts). It used to be a hardcoded `ADMINS` array copy-pasted into eight routes plus the admin page; adding a person meant editing ten places, and missing one produced an admin who could open a tab but got a 403 from the endpoint behind it. There are now exactly **two** copies — that file and the SQL `is_admin()` — because RLS cannot import TypeScript. Edit both together; [supabase/migrations/20260902_admin_whitelist.sql](supabase/migrations/20260902_admin_whitelist.sql) is the pattern.
@@ -160,6 +160,41 @@ From README + handler code:
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_WEBHOOK_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), `RESEND_API_KEY` (transactional email — unset = email no-ops), `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
 
 ## Traps that have already bitten (do not re-learn these)
+
+- **Releasing escrow is `manual_release_escrow`, and nothing else.** It is the only
+  implementation that locks the HELD escrow row against a double payout, refuses when
+  the worker has no UPI, and — critically — inserts the `payout_queue` row. Three other
+  paths used to release without it (the Activity approve button did a raw client-side
+  two-column update; `/api/gig/complete` and `/api/cron/auto-release` wrote ledger rows
+  but queued nothing), so `payout_queue` was **empty database-wide** and no worker was
+  ever queued to be paid while every UI reported "funds released". Covered by
+  `npm run test:escrow` ([scripts/escrow-flow-test.mjs](scripts/escrow-flow-test.mjs)),
+  which asserts across three tables at once using disposable rows. Unit tests cannot
+  catch this class of bug.
+
+- **A service-role client neutralises `auth.uid()` guards inside SQL functions.**
+  `manual_release_escrow` guards with `if auth.uid() is distinct from poster_id and not
+  is_admin()`. Called with the service role, `auth.uid()` is NULL and `is_admin()`
+  returns NULL, so the condition is `TRUE and NULL` = NULL and the branch never fires.
+  `/api/escrow/release` relied on that guard and therefore let **any logged-in user
+  release any gig's escrow**. Authorize in the route whenever you call a
+  `security definer` function with the service key.
+
+- **Authenticate before validating input.** `/api/payments/verify-payment` checked its
+  body first, so an anonymous caller got `400 Missing fields` rather than `401` — which
+  tells a prober the endpoint is open and what to send next. Guarded by
+  [tests/uat-readiness.spec.ts](tests/uat-readiness.spec.ts).
+
+- **UPI is captured at work submission, not at signup or apply.** Asking a student for
+  payment details before they have earned anything kills the funnel, but the release RPC
+  refuses without one — so `/api/gig/deliver` returns `409 UPI_REQUIRED` and the client
+  prompts. Do not move this check earlier.
+
+- **Managed mode is a company offering.** It was previously a toggle on the *student*
+  post page and absent from the company one, so all 176 managed gigs were student-posted
+  and `audienceForGig()` (which ignores `is_managed`) billed them at 5% rather than the
+  documented Business 10%. It lives in [app/company/post/page.tsx](app/company/post/page.tsx),
+  where `company_id` is set and the 10% follows automatically.
 
 - **Migrations in `supabase/migrations/` are not necessarily applied to the live DB.**
   `20260322_1500_escrow_multi_worker.sql` declares `UNIQUE (gig_id, worker_id)` on

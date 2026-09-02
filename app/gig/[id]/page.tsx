@@ -10,6 +10,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
 import { isDocAttachment, isImageAttachment, attachmentLabel } from "@/lib/attachments";
+import { platformFeeFor, audienceForGig, PLATFORM_FEES } from "@/lib/fees";
 
 export default function GigDetailsPage() {
   const params = useParams();
@@ -225,8 +226,19 @@ export default function GigDetailsPage() {
           </div>
           
           <div className="flex items-center gap-6 mt-4 flex-wrap">
-            <div className={`text-4xl md:text-5xl font-black tracking-tighter flex items-center gap-1 ${isCompanyTask ? 'text-white' : 'text-transparent bg-clip-text bg-gradient-to-br from-purple-400 to-[#C084FC]'}`}>
-              <span className="text-2xl font-light opacity-50 mr-1">₹</span>{gig.price}
+            <div>
+              <div className={`text-4xl md:text-5xl font-black tracking-tighter flex items-center gap-1 ${isCompanyTask ? 'text-white' : 'text-transparent bg-clip-text bg-gradient-to-br from-purple-400 to-[#C084FC]'}`}>
+                <span className="text-2xl font-light opacity-50 mr-1">₹</span>{gig.price}
+              </div>
+              {/* What the worker actually banks. The listed price is not the
+                  take-home, and finding that out only at payout is how you get
+                  an angry student and a dispute. */}
+              {(gig.listing_type === 'HUSTLE' || gig.listing_type === 'COMPANY_TASK') && Number(gig.price) > 0 && (
+                <p className="text-xs text-white/45 mt-1.5">
+                  You receive <span className="text-white/80 font-semibold">₹{Number(gig.price) - platformFeeFor(Number(gig.price), audienceForGig(gig))}</span>
+                  {" "}after the {Math.round(PLATFORM_FEES[audienceForGig(gig)] * 100)}% platform fee
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-5 border-l border-white/10 pl-6 h-10">
                {gig.location && (
@@ -506,7 +518,20 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
               </label>
             </div>
 
-            <button 
+            {/* Restate the take-home at the moment of commitment. */}
+            {Number(gig?.price) > 0 && (
+              <div className="mb-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-4 flex items-center justify-between gap-4">
+                <span className="text-xs text-white/50">If you are hired, you receive</span>
+                <span className="text-lg font-bold text-white">
+                  ₹{Number(gig.price) - platformFeeFor(Number(gig.price), audienceForGig(gig))}
+                  <span className="text-[11px] font-normal text-white/40 ml-1.5">
+                    after {Math.round(PLATFORM_FEES[audienceForGig(gig)] * 100)}% fee
+                  </span>
+                </span>
+              </div>
+            )}
+
+            <button
               onClick={handleApply}
               disabled={isApplying || !termsAccepted}
               className={`w-full py-4 text-[15px] font-semibold rounded-full transition flex items-center justify-center gap-3 ${

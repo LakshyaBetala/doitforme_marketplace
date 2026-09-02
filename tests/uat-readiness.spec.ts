@@ -124,14 +124,31 @@ test.describe("cron endpoints require the shared secret", () => {
 });
 
 test.describe("webhook rejects forged calls", () => {
-  test("cashfree webhook refuses an unsigned payload", async ({ request }) => {
-    const res = await request.post("/api/webhooks/cashfree", {
+  // Cashfree is gone; this used to POST /api/webhooks/cashfree, which 404s now,
+  // so the suite was asserting nothing about the gateway actually in use.
+  test("razorpay webhook refuses an unsigned payload", async ({ request }) => {
+    const res = await request.post("/api/webhooks/razorpay", {
       data: {
-        type: "PAYMENT_SUCCESS_WEBHOOK",
-        data: { order: { order_id: "ord_forged" }, payment: { payment_status: "SUCCESS" } },
+        event: "payment.captured",
+        payload: {
+          payment: {
+            entity: {
+              id: "pay_forged",
+              order_id: "order_forged",
+              status: "captured",
+              amount: 100000,
+              notes: { gig_id: "forged", worker_id: "forged" },
+            },
+          },
+        },
       },
       failOnStatusCode: false,
     });
-    expect(res.status(), "unsigned webhook was accepted — escrow could be funded for free").toBe(401);
+    // 401 = signature rejected. 503 = the secret is not configured, in which
+    // case the handler refuses to settle at all rather than trusting the body.
+    expect(
+      [401, 503].includes(res.status()),
+      `unsigned webhook returned ${res.status()} — escrow could be funded for free`
+    ).toBe(true);
   });
 });

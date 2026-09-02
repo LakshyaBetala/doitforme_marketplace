@@ -572,7 +572,23 @@ function MessagesContent() {
     };
 
     const approveWork = async (gigId: string) => {
-        if (!confirm("Approve the work and release funds? This will complete the deal.")) return;
+        if (!confirm("Approve the work and release the payment?\n\nThe money leaves escrow and cannot be pulled back. If something is wrong, request changes or raise a dispute instead.")) return;
+
+        // This used to send `rating: 5, review: "Work approved via messages."`
+        // on every approval, so every worker was handed five stars and an
+        // identical canned review — the ratings on profiles carried no
+        // information whatsoever. Ask for a real one.
+        const scoreRaw = window.prompt(
+            "How was the work? Rate 1-5.\n\nThis shows on their public profile and is how the next poster judges them.",
+            "5"
+        );
+        if (scoreRaw === null) return;
+        const score = Number(String(scoreRaw).trim());
+        if (!Number.isInteger(score) || score < 1 || score > 5) {
+            toast.error("Enter a whole number from 1 to 5.");
+            return;
+        }
+        const review = window.prompt("Add a short review (optional). This is public on their profile.") || "";
 
         try {
             const res = await fetch("/api/gig/complete", {
@@ -580,13 +596,13 @@ function MessagesContent() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     gigId: gigId,
-                    rating: 5,
-                    review: "Work approved via messages."
+                    rating: score,
+                    review: review.trim()
                 })
             });
 
             if (res.ok) {
-                toast.success("Work approved! Payout initiated.");
+                toast.success("Approved. The payment reaches the student within 24-48 hours.", { duration: 9000 });
                 setActiveGigStatus('completed');
                 setMessages(prev => [...prev, {
                     id: Date.now().toString(),

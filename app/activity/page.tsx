@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import { platformFeeFor, audienceForGig, PLATFORM_FEES } from "@/lib/fees";
 import { Loader2, Briefcase, IndianRupee, ArrowRight, ShieldCheck, CheckCircle, Clock, Phone, MessageSquare, Zap, AlertTriangle, X } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -237,12 +238,32 @@ export default function ActivityHubPage() {
       if (!submitNote.trim()) return toast.error("Describe what you delivered and how.");
       setIsSubmitting(true);
       try {
-          const res = await fetch("/api/gig/deliver", {
+          const send = (upi?: string) => fetch("/api/gig/deliver", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ gigId: submitGigId, note: submitNote, deliveryLink: submitLink.trim() || undefined })
+              body: JSON.stringify({
+                  gigId: submitGigId,
+                  note: submitNote,
+                  deliveryLink: submitLink.trim() || undefined,
+                  upiId: upi,
+              })
           });
-          const data = await res.json().catch(() => ({}));
+
+          let res = await send();
+          let data = await res.json().catch(() => ({}));
+
+          // UPI is not required to apply, so this is the first moment we need it.
+          // Ask here rather than letting the poster hit "worker has no UPI" when
+          // they try to release the money.
+          if (res.status === 409 && data?.code === "UPI_REQUIRED") {
+              const upi = window.prompt(
+                  "Where should we pay you?\n\nEnter your UPI ID (like yourname@okicici). You only need to do this once."
+              );
+              if (upi === null) { setIsSubmitting(false); return; }
+              res = await send(upi.trim());
+              data = await res.json().catch(() => ({}));
+          }
+
           if (!res.ok) {
               toast.error(data?.error || "Failed to submit work");
           } else {
@@ -646,6 +667,26 @@ export default function ActivityHubPage() {
               placeholder="Delivery link (optional): Drive, Figma, GitHub…"
               className="w-full bg-black/20 text-white text-sm p-3 rounded-xl border border-white/10 focus:border-[var(--brand-purple)]/50 outline-none mb-4"
             />
+            {/* What lands in their account, stated before they hand the work
+                over — not discovered at payout. */}
+            {(() => {
+              const g = workingGigs.find((a) => a.gig?.id === submitGigId)?.gig;
+              const price = Number(g?.price) || 0;
+              if (!g || price <= 0) return null;
+              const fee = platformFeeFor(price, audienceForGig(g));
+              return (
+                <div className="mb-4 rounded-xl bg-white/[0.03] border border-white/[0.08] p-3.5 flex items-center justify-between gap-3">
+                  <span className="text-xs text-white/50">You will be paid</span>
+                  <span className="text-base font-bold text-white">
+                    ₹{price - fee}
+                    <span className="text-[11px] font-normal text-white/40 ml-1.5">
+                      after {Math.round(PLATFORM_FEES[audienceForGig(g)] * 100)}% fee
+                    </span>
+                  </span>
+                </div>
+              );
+            })()}
+
             <button
               onClick={submitWork}
               disabled={isSubmitting || !submitNote.trim()}

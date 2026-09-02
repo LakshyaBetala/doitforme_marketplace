@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:e2e": "playwright test",
     "test:unit": "node scripts/run-unit-tests.mjs",
+    "test:escrow": "node scripts/escrow-flow-test.mjs",
     "test": "npm run test:unit && npm run test:e2e"
   },
   "dependencies": {

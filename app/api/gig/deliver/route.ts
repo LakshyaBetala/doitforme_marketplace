@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { checkUpi } from '@/lib/upi';
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
   );
 
   try {
-    const { gigId, deliveryLink, note } = await req.json();
+    const { gigId, deliveryLink, note, upiId } = await req.json();
 
     // 3. Verify Authentication
     const { data: { user } } = await supabase.auth.getUser();
@@ -52,6 +53,55 @@ export async function POST(req: Request) {
     const currentStatus = gig.status.toLowerCase();
     if (currentStatus !== 'assigned' && currentStatus !== 'delivered') {
          return NextResponse.json({ error: `Gig is not in progress (Status: ${gig.status})` }, { status: 400 });
+    }
+
+    // 4b. A payout destination, captured at the last useful moment.
+    //
+    // UPI is deliberately not required to APPLY for work — asking a student for
+    // bank details before they have earned anything kills the funnel. But
+    // manual_release_escrow refuses to release without one, so if it is still
+    // missing when the poster approves, the money stalls and the poster sees an
+    // error about someone else's profile.
+    //
+    // Submission is the right moment: the work is done, the money is real, and
+    // the worker has every reason to provide it.
+    const { data: workerRow } = await supabaseAdmin
+      .from("users")
+      .select("upi_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const existingUpi = String(workerRow?.upi_id || "").trim();
+
+    if (!existingUpi) {
+      const supplied = String(upiId || "").trim();
+      if (!supplied) {
+        return NextResponse.json(
+          {
+            error: "Add the UPI ID you want to be paid on before submitting your work.",
+            code: "UPI_REQUIRED",
+          },
+          { status: 409 }
+        );
+      }
+
+      const check = checkUpi(supplied);
+      if (!check.valid) {
+        return NextResponse.json(
+          { error: check.error || "That does not look like a valid UPI ID.", code: "UPI_INVALID" },
+          { status: 400 }
+        );
+      }
+
+      const { error: upiErr } = await supabaseAdmin
+        .from("users")
+        .update({ upi_id: check.normalized })
+        .eq("id", user.id);
+
+      if (upiErr) {
+        console.error(`[deliver] failed to save UPI for ${user.id}: ${upiErr.message}`);
+        return NextResponse.json({ error: "Could not save your UPI ID. Try again." }, { status: 500 });
+      }
     }
 
     // 5. Calculate 24-hour auto-release time (poster gets 24h to review)
