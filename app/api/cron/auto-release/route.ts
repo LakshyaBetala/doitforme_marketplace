@@ -54,6 +54,22 @@ export async function GET(req: Request) {
 
       const payoutAmount = Math.max(0, gig.price - platformFee);
 
+      // Refuse to release into a void.
+      //
+      // A released gig with no payout_queue row is invisible: it leaves the
+      // DELIVERED scan, shows "completed" to both parties, and appears in no
+      // payout queue — so the worker is simply never paid and nothing records
+      // that they are owed. Skipping instead leaves the gig eligible, so it
+      // releases on a later run once the recipient adds a UPI ID.
+      const recipientUpi = String(recipient?.upi_id || "").trim();
+      if (!recipientUpi) {
+        console.error(
+          `[AUTO-RELEASE] gig=${gig.id} skipped: recipient ${recipientId} has no UPI ID`
+        );
+        details.push({ gigId: gig.id, skipped: "recipient has no UPI ID" });
+        continue;
+      }
+
       // Handle Rental Deposit Refund (if applicable)
       if (gig.listing_type === 'MARKET' && gig.market_type === 'RENT' && gig.security_deposit > 0) {
         await supabase.from("transactions").insert({
@@ -100,10 +116,35 @@ export async function GET(req: Request) {
 
       if (!updateErr) {
         releasedCount++;
-        // Update stats too (optional for auto-release)
+
+        // Close the escrow ledger row. Leaving it HELD makes the escrow table
+        // disagree with the gig about whether the money still exists.
+        const { error: escrowErr } = await supabase
+          .from("escrow")
+          .update({ status: "RELEASED", released_at: new Date().toISOString() })
+          .eq("gig_id", gig.id);
+        if (escrowErr) {
+          console.error(`[AUTO-RELEASE] escrow update failed gig=${gig.id}: ${escrowErr.message}`);
+        }
+
+        // Queue the payout. This is the row the admin Payouts desk pays from and
+        // the worker sees at /payouts; without it the release is invisible.
+        const { error: payoutErr } = await supabase.from("payout_queue").insert({
+          worker_id: recipientId,
+          gig_id: gig.id,
+          amount: payoutAmount,
+          upi_id: recipientUpi,
+          status: "PENDING",
+        });
+        if (payoutErr) {
+          console.error(`[AUTO-RELEASE] payout_queue insert FAILED gig=${gig.id}: ${payoutErr.message}`);
+          details.push({ gigId: gig.id, error: `payout not queued: ${payoutErr.message}` });
+        } else {
+          details.push({ gigId: gig.id, status: "Queued for Manual Payout" });
+        }
+
         // Update stats too (recipient gets the stats)
         await supabase.rpc('increment_worker_stats', { worker_id: recipientId, amount: payoutAmount });
-        details.push({ gigId: gig.id, status: "Queued for Manual Payout" });
       } else {
         details.push({ gigId: gig.id, error: updateErr.message });
       }

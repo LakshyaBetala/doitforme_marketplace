@@ -46,7 +46,6 @@ export default function PostGigWizard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
-  const [managed, setManaged] = useState(false);
 
   useEffect(() => {
     setMinDate(new Date().toISOString().split("T")[0]);
@@ -206,8 +205,8 @@ export default function PostGigWizard() {
         deadline: deadlineISO,
         github_link: (category === "Tech & Engineering" || category === "Academics & Gigs") && githubLink.trim() ? githubLink.trim() : null,
         status: "open",
-        is_managed: managed,
-        managed_status: managed ? "UNASSIGNED" : null,
+        is_managed: false,
+        managed_status: null,
         created_at: new Date().toISOString()
       };
 
@@ -648,29 +647,13 @@ export default function PostGigWizard() {
           )
         }
 
-        {/* MANAGED MODE — let DoItForMe assign + QA (higher take, less hassle) */}
-        {step === 3 && listingType === "HUSTLE" && (
-          <button
-            type="button"
-            onClick={() => setManaged((m) => !m)}
-            className={`mt-6 w-full text-left p-5 rounded-2xl border transition ${managed ? "bg-brand-purple/10 border-brand-purple/50" : "bg-white/[0.02] border-white/10 hover:bg-white/5"}`}
-          >
-            <div className="flex items-start gap-4">
-              <div className={`mt-0.5 h-5 w-5 shrink-0 rounded-md border flex items-center justify-center transition ${managed ? "bg-brand-purple border-brand-purple" : "border-white/30"}`}>
-                {managed && <CheckCircle size={14} className="text-white" />}
-              </div>
-              <div>
-                <p className="font-semibold text-white flex items-center gap-2">
-                  Let DoItForMe assign the best talent
-                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-brand-purple/20 text-[#C9A9FF] border border-brand-purple/30">MANAGED</span>
-                </p>
-                <p className="text-[13px] text-white/50 leading-relaxed mt-1">
-                  We hand-pick a vetted student, manage the timeline, and review the work before you pay. No sifting through applicants. Same flat fee.
-                </p>
-              </div>
-            </div>
-          </button>
-        )}
+        {/* Managed mode is a COMPANY offering — see app/company/post.
+            It used to be a toggle here, on the student post page, and nowhere on
+            the company one. The result was exactly backwards: 176 student gigs
+            (over half the platform) sat in a queue promising that DoItForMe
+            would hand-assign and QA them, while no company could ask for it.
+            It also mispriced: audienceForGig() ignores is_managed, so managed
+            student work billed at 5% instead of the documented Business 10%. */}
 
         {/* BOTTOM ACTION BAR */}
         <div className="pt-8 flex justify-end">

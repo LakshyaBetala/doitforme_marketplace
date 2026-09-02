@@ -260,21 +260,98 @@ export default function ActivityHubPage() {
       }
   };
 
+  // Approving is a money move, so it goes through /api/escrow/release →
+  // manual_release_escrow.
+  //
+  // This used to be a raw client-side
+  //   supabase.from('gigs').update({ status:'completed', escrow_status:'RELEASED' })
+  // which flipped two columns and nothing else: the escrow row stayed HELD, no
+  // ledger rows were written, and no payout_queue row was created. The poster
+  // saw "funds released" while the worker was owed money that nothing in the
+  // system recorded — invisible to the admin Payouts desk and to /payouts.
+  //
+  // The toast was also never dismissed (toast.loading returns an id that has to
+  // be passed back), so the "Releasing funds..." spinner hung around forever.
   const handleApproveWork = async (gigId: string, isDirect: boolean = false) => {
-      toast.loading(isDirect ? "Closing task..." : "Releasing funds...");
-      
-      const updateData = isDirect
-          ? { status: 'completed' }
-          : { status: 'completed', escrow_status: 'RELEASED' };
-          
-      const { error } = await supabase.from('gigs')
-         .update(updateData)
-         .eq('id', gigId);
-      
-      if(error) toast.error(isDirect ? "Failed to close task" : "Failed to release funds");
-      else {
-          toast.success(isDirect ? "Task closed successfully!" : "Work approved, funds released!");
-          setHiringGigs(prev => prev.map(g => g.id === gigId ? { ...g, ...updateData } : g));
+      const confirmed = window.confirm(
+        isDirect
+          ? "Close this task? It will be marked complete."
+          : "Approve the work and release the payment?\n\nThe money leaves escrow and cannot be pulled back. If something is wrong, request changes or raise a dispute instead."
+      );
+      if (!confirmed) return;
+
+      const toastId = toast.loading(isDirect ? "Closing task..." : "Releasing funds...");
+
+      try {
+        if (isDirect) {
+          const { error } = await supabase.from('gigs').update({ status: 'completed' }).eq('id', gigId);
+          if (error) throw new Error(error.message);
+          toast.success("Task closed.", { id: toastId });
+          setHiringGigs(prev => prev.map(g => g.id === gigId ? { ...g, status: 'completed' } : g));
+          return;
+        }
+
+        const res = await fetch("/api/escrow/release", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gigId }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          // WORKER_UPI_MISSING is the common one and is actionable by the
+          // student, so show the server's wording rather than a generic failure.
+          toast.error(data?.error || "Could not release the payment.", { id: toastId, duration: 9000 });
+          return;
+        }
+
+        toast.success(
+          "Approved. The payment is on its way to the student and settles within 24–48 hours.",
+          { id: toastId, duration: 9000 }
+        );
+        setHiringGigs(prev => prev.map(g => g.id === gigId
+          ? { ...g, status: 'completed', escrow_status: 'RELEASED', payment_status: 'PAYOUT_PENDING' }
+          : g));
+      } catch (err: any) {
+        toast.error(err?.message || "Could not release the payment.", { id: toastId });
+      }
+  };
+
+  // The third exit from a delivered gig. Freezes escrow for admin review rather
+  // than moving money either way.
+  const handleRaiseDispute = async (gigId: string) => {
+      const reason = window.prompt(
+        "What went wrong?\n\nThis goes to our team and to the student. The payment stays held until we resolve it — we reply within 48 hours."
+      );
+      if (reason === null) return;
+      if (reason.trim().length < 10) {
+        toast.error("Please describe the problem in a sentence or two.");
+        return;
+      }
+
+      const toastId = toast.loading("Opening dispute...");
+      try {
+        const res = await fetch("/api/gig/dispute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gigId, reason: reason.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          toast.error(data?.error || "Could not open the dispute.", { id: toastId });
+          return;
+        }
+
+        toast.success(
+          "Dispute opened. The payment stays held while we review — we reply within 48 hours.",
+          { id: toastId, duration: 9000 }
+        );
+        setHiringGigs(prev => prev.map(g => g.id === gigId
+          ? { ...g, status: 'disputed', escrow_status: 'DISPUTED' }
+          : g));
+      } catch (err: any) {
+        toast.error(err?.message || "Could not open the dispute.", { id: toastId });
       }
   };
 
@@ -413,6 +490,24 @@ export default function ActivityHubPage() {
                   );
                 })()}
 
+                {/* What was actually delivered. Approving releases real money,
+                    so the evidence belongs next to the button, not one page away. */}
+                {(gig.status === 'SUBMITTED' || gig.status === 'delivered') && (gig.delivery_link || (Array.isArray(gig.delivery_files) && gig.delivery_files.length > 0)) && (
+                  <div className="mt-3 rounded-xl bg-white/[0.03] border border-white/[0.08] p-3 space-y-1.5">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-white/40">Delivered work</p>
+                    {gig.delivery_link && (
+                      <a href={gig.delivery_link} target="_blank" rel="noopener noreferrer" className="block text-xs text-[var(--brand-purple-soft)] hover:underline break-all">
+                        {gig.delivery_link}
+                      </a>
+                    )}
+                    {Array.isArray(gig.delivery_files) && gig.delivery_files.map((f: string, i: number) => (
+                      <a key={i} href={f} target="_blank" rel="noopener noreferrer" className="block text-xs text-[var(--brand-purple-soft)] hover:underline break-all">
+                        Attachment {i + 1}
+                      </a>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex flex-col md:flex-row gap-2 mt-3 border-t border-white/5 pt-3">
                    <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-white/5">
                      <Briefcase size={14} /> View gig
@@ -439,6 +534,17 @@ export default function ActivityHubPage() {
                    {(gig.status === 'SUBMITTED' || gig.status === 'delivered' || (gig.status === 'assigned' && gig.payment_gateway === 'DIRECT')) && (
                      <button onClick={() => handleApproveWork(gig.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm transition shadow-lg shadow-green-500/20 flex items-center gap-2 justify-center">
                        <CheckCircle size={14} /> {gig.payment_gateway === 'DIRECT' ? 'Close Task' : 'Approve & Release'}
+                     </button>
+                   )}
+
+                   {/* Escrow was frozen on dispute but there was no way to raise
+                       one from here — approve was the only exit from a delivered gig. */}
+                   {(gig.status === 'SUBMITTED' || gig.status === 'delivered') && gig.payment_gateway !== 'DIRECT' && (
+                     <button
+                       onClick={() => handleRaiseDispute(gig.id)}
+                       className="py-2.5 px-4 rounded-xl bg-white/[0.03] hover:bg-red-500/10 text-white/60 hover:text-red-400 font-bold text-sm transition border border-white/5 flex items-center justify-center gap-2"
+                     >
+                       <AlertTriangle size={14} /> Raise dispute
                      </button>
                    )}
                 </div>

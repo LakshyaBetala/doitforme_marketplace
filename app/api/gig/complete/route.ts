@@ -38,37 +38,48 @@ export async function POST(request: Request) {
 
     if (gig.poster_id !== user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-    // 2. Determine Payout Logic
+    // 2. Move the money through manual_release_escrow.
+    //
+    // This route used to perform the release by hand — update escrow, update the
+    // gig, write the ledger rows — and never inserted a payout_queue row. Neither
+    // did the Activity approve button or the auto-release cron, so payout_queue
+    // sat empty database-wide and no worker was ever queued to be paid while the
+    // UI cheerfully reported "funds released".
+    //
+    // The RPC is the only implementation that locks the HELD escrow row against a
+    // double payout, refuses when the worker has no UPI to pay into, and queues
+    // the payout. Every release path goes through it now.
 
-
-    // Payout to Worker
-    let payoutDestination = gig.assigned_worker_id;
-    let payoutAmount = 0; // Will fetch from Escrow
-
-    // Fetch Escrow Record to get the held amount + the fee charged at funding.
-    const { data: escrowRecord, error: escrowFetchError } = await supabaseAdmin
+    // Read the fee actually charged at funding, for the ledger rows below.
+    const { data: escrowRecord } = await supabaseAdmin
       .from("escrow")
-      .select("amount_held, original_amount, platform_fee")
+      .select("platform_fee")
       .eq("gig_id", gigId)
       .maybeSingle();
+    const platformFee = Math.max(0, Number(escrowRecord?.platform_fee) || 0);
 
-    if (escrowFetchError) {
-      console.error("Escrow Fetch Error:", escrowFetchError);
+    const { data: rpcData, error: rpcErr } = await supabaseAdmin.rpc("manual_release_escrow", {
+      p_gig_id: gigId,
+    });
+
+    if (rpcErr) {
+      console.error(`[gig/complete] release RPC failed gig=${gigId}:`, rpcErr);
+      return NextResponse.json({ error: rpcErr.message || "Release failed" }, { status: 500 });
+    }
+    // The RPC reports refusal in its RETURN VALUE, not as a Postgres error, so
+    // checking only rpcErr reports success for every refused release.
+    if (!rpcData?.success) {
+      const reason = rpcData?.error || "Release failed";
+      const status = rpcData?.code === "WORKER_UPI_MISSING" ? 409 : 400;
+      console.error(`[gig/complete] release refused gig=${gigId}: ${reason}`);
+      return NextResponse.json({ error: reason, code: rpcData?.code }, { status });
     }
 
-    if (!escrowRecord) {
-      return NextResponse.json({ error: "Escrow record not found" }, { status: 500 });
-    }
+    const payoutAmount = Number(rpcData.amount) || 0;
+    const payoutDestination = gig.assigned_worker_id;
 
-    // Payout base is the task price (original_amount), not amount_held — amount_held
-    // can include a refundable rental deposit. Fee is the one actually charged at
-    // funding (5% student / 10% business). Never recompute the old flat 3%.
-    const payoutBase = Number(escrowRecord.original_amount) || Number(escrowRecord.amount_held) || 0;
-    const platformFee = Math.max(0, Number(escrowRecord.platform_fee) || 0);
-
-    payoutAmount = Math.max(0, payoutBase - platformFee);
-
-
+    // The RPC owns escrow / gigs / payout_queue. These rows are the
+    // human-readable history behind that move.
     if (platformFee > 0) {
       await supabaseAdmin.from("transactions").insert({
         gig_id: gigId,
@@ -76,45 +87,24 @@ export async function POST(request: Request) {
         amount: platformFee,
         type: "PLATFORM_FEE",
         status: "COMPLETED",
-        provider_data: { description: `Escrow Fee (3%) for ${gig.title}` }
+        provider_data: { description: `Platform fee for ${gig.title}` }
       });
     }
 
-    // 3. Update Gig Status -> COMPLETED
-    const { error: updateError } = await supabaseAdmin
-      .from("gigs")
-      .update({
-        status: "completed",
-        escrow_status: 'RELEASED',
-        payment_status: 'PAYOUT_PENDING',
-        auto_release_at: null
-      })
-      .eq("id", gigId);
-
-    if (updateError) return NextResponse.json({ error: "Failed to update gig" }, { status: 500 });
-
-    // 4. Update Escrow Ledger & Log Transactions
-    await supabaseAdmin
-      .from("escrow")
-      .update({
-        status: 'RELEASED',
-        released_at: new Date().toISOString()
-      })
-      .eq("gig_id", gigId);
-
-    // Log Payout Transaction
     if (payoutAmount > 0 && payoutDestination) {
       await supabaseAdmin.from("transactions").insert({
         gig_id: gigId,
         user_id: payoutDestination,
         amount: payoutAmount,
         type: "PAYOUT_CREDIT",
-        status: "COMPLETED", // Internal credit
+        status: "COMPLETED", // internal credit; the actual UPI transfer is manual
         provider_data: { description: `Payout for ${gig.title}` }
       });
     }
 
-    // Refund Logic Removed
+    // The RPC does not clear the auto-release timer; without this the cron would
+    // still consider the gig eligible.
+    await supabaseAdmin.from("gigs").update({ auto_release_at: null }).eq("id", gigId);
 
     // 3. Add Rating
     if (rating && gig.assigned_worker_id) {

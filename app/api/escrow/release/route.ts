@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseServer } from "@/lib/supabaseServer";
+import { isAdminEmail } from "@/lib/admins";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,6 +21,30 @@ export async function POST(req: Request) {
     const { data: userData } = await authSupabase.auth.getUser();
     const user = userData?.user ?? null;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Authorize HERE, not in the RPC.
+    //
+    // manual_release_escrow guards with
+    //   `if auth.uid() is distinct from poster_id and not is_admin()`
+    // but we call it with the SERVICE ROLE client below, where auth.uid() is
+    // NULL and is_admin() returns NULL. `TRUE and NULL` is NULL, so the IF never
+    // fires and the poster check is silently skipped — which meant any logged-in
+    // user could release any gig's escrow just by posting its id.
+    const { data: gigRow, error: gigErr } = await supabase
+      .from("gigs")
+      .select("poster_id")
+      .eq("id", gigId)
+      .single();
+
+    if (gigErr || !gigRow) {
+      return NextResponse.json({ error: "Gig not found" }, { status: 404 });
+    }
+    if (gigRow.poster_id !== user.id && !isAdminEmail(user.email)) {
+      return NextResponse.json(
+        { error: "Only the poster can release this payment." },
+        { status: 403 }
+      );
+    }
 
     // Call transactional RPC to perform manual release (Queued)
     const { data: rpcData, error: rpcErr } = await supabase.rpc("manual_release_escrow", {

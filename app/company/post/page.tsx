@@ -28,6 +28,10 @@ export default function CompanyPostTask() {
   const [category, setCategory] = useState("Other");
   const [description, setDescription] = useState("");
   const [maxWorkers, setMaxWorkers] = useState<number>(1);
+  // Managed delivery is a company offering: we assign a vetted student and QA
+  // the work. It was previously exposed on the student post page instead, which
+  // is backwards — see the note in app/post/page.tsx.
+  const [managed, setManaged] = useState(false);
   const [price, setPrice] = useState("");
   const [mode, setMode] = useState("Online");
   const [location, setLocation] = useState("");
@@ -172,6 +176,8 @@ export default function CompanyPostTask() {
         description: description.trim(),
         price: Number(price),
         max_workers: maxWorkers,
+        is_managed: managed,
+        managed_status: managed ? "UNASSIGNED" : null,
         is_physical: mode !== "Online",
         location: mode !== "Online" ? location.trim() : null,
         images: uploadedPaths,
@@ -412,6 +418,29 @@ export default function CompanyPostTask() {
                 })}
               </div>
             </div>
+
+            {/* MANAGED DELIVERY — company-only. company_id is set on this
+                payload, so audienceForGig() already prices these at Business 10%. */}
+            <button
+              type="button"
+              onClick={() => setManaged((m) => !m)}
+              className={`mt-10 w-full text-left p-5 border transition ${managed ? "bg-[#8825F5]/10 border-[#8825F5]/50" : "bg-white/[0.02] border-[#222] hover:bg-white/5"}`}
+            >
+              <div className="flex items-start gap-4">
+                <div className={`mt-0.5 h-5 w-5 shrink-0 border flex items-center justify-center transition ${managed ? "bg-[#8825F5] border-[#8825F5]" : "border-white/30"}`}>
+                  {managed && <CheckCircle size={14} className="text-white" />}
+                </div>
+                <div>
+                  <p className="font-black text-white text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+                    Let DoItForMe run it
+                    <span className="px-2 py-0.5 text-[9px] rounded-full bg-[#8825F5]/20 text-[#C9A9FF] border border-[#8825F5]/30">MANAGED</span>
+                  </p>
+                  <p className="text-[13px] text-white/50 leading-relaxed mt-2 normal-case tracking-normal font-medium">
+                    We hand-pick vetted students, manage the timeline, and review the work before you approve it. No sifting through applicants. Same 10% fee.
+                  </p>
+                </div>
+              </div>
+            </button>
 
             <div className="pt-12">
                <button onClick={handleSubmit} disabled={loading} className={`w-full p-6 font-black text-xs uppercase tracking-[0.4em] transition flex justify-center items-center gap-3 ${loading ? 'bg-[#111] text-[#333]' : 'bg-white text-black hover:bg-gray-200'}`}>
