@@ -111,15 +111,35 @@ export default async function PublicProfilePage({
       .eq("status", "completed")
       .order("created_at", { ascending: false })
       .limit(6),
-    // Reviews this user has received — schema-safe nested join via rated_id
+    // Every rating this user has received, carrying enough of the gig to tell
+    // which hat they were wearing.
+    //
+    // Almost everyone here is both a poster and a hustler, and those are two
+    // different reputations: someone can deliver beautifully and still be a
+    // flaky client. Averaging both into one number describes neither, so the
+    // role is derived per rating — if the rated person owns the gig, they were
+    // being judged as a poster; otherwise as a hustler.
     supabase
       .from("ratings")
-      .select("id, score, review, created_at, gig_id, rater:users!ratings_rater_id_fkey(name, username, avatar_url)")
+      .select("id, score, review, created_at, gig_id, gig:gigs(poster_id), rater:users!ratings_rater_id_fkey(name, username, avatar_url)")
       .eq("rated_id", user.id)
-      .not("review", "is", null)
       .order("created_at", { ascending: false })
-      .limit(5),
+      .limit(50),
   ]);
+
+  const allRatings = (reviews || []) as any[];
+  const roleOf = (r: any) => {
+    const g = Array.isArray(r.gig) ? r.gig[0] : r.gig;
+    return g?.poster_id === user.id ? "POSTER" : "WORKER";
+  };
+  const asWorker = allRatings.filter((r) => roleOf(r) === "WORKER");
+  const asPoster = allRatings.filter((r) => roleOf(r) === "POSTER");
+  const mean = (rows: any[]) =>
+    rows.length ? rows.reduce((a, r) => a + Number(r.score || 0), 0) / rows.length : 0;
+  const workerScore = mean(asWorker);
+  const posterScore = mean(asPoster);
+  // Only reviews with words written are worth rendering.
+  const writtenReviews = allRatings.filter((r) => r.review && String(r.review).trim()).slice(0, 5);
 
   const displayName = user.display_name || user.name || `@${user.username}`;
   const subtitle = [user.branch, user.year_of_study ? `Year ${user.year_of_study}` : null]
@@ -200,10 +220,29 @@ export default async function PublicProfilePage({
             />
             <StatBlock
               icon={<Star size={14} className="text-[#C9A9FF]" />}
-              label="Rating"
-              value={showRating ? ratingNum.toFixed(1) : "—"}
-              sub={showRating ? `${user.rating_count} reviews` : "no reviews yet"}
+              label="As a hustler"
+              value={asWorker.length ? workerScore.toFixed(1) : showRating ? ratingNum.toFixed(1) : "—"}
+              sub={
+                asWorker.length
+                  ? `${asWorker.length} ${asWorker.length === 1 ? "rating" : "ratings"}`
+                  : showRating
+                    ? `${user.rating_count} reviews`
+                    : "no ratings yet"
+              }
             />
+            {/* Kept separate on purpose — see the query comment above. */}
+            <StatBlock
+              icon={<Star size={14} className="text-white/50" />}
+              label="As a poster"
+              value={asPoster.length ? posterScore.toFixed(1) : "—"}
+              sub={
+                asPoster.length
+                  ? `${asPoster.length} ${asPoster.length === 1 ? "rating" : "ratings"}`
+                  : "no ratings yet"
+              }
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-3 mt-3">
             <StatBlock
               icon={<Calendar size={14} />}
               label="Member since"
@@ -329,12 +368,13 @@ export default async function PublicProfilePage({
         )}
 
         {/* REVIEWS — written feedback received */}
-        {reviews && reviews.length > 0 && (
-          <Section title={`Reviews · ${user.rating_count ?? reviews.length}`}>
+        {writtenReviews.length > 0 && (
+          <Section title={`Reviews · ${allRatings.length}`}>
             <div className="space-y-3">
-              {reviews.map((r: any) => {
+              {writtenReviews.map((r: any) => {
                 const rater = Array.isArray(r.rater) ? r.rater[0] : r.rater;
                 const raterName = rater?.name || "Anonymous";
+                const asRole = roleOf(r) === "POSTER" ? "as a poster" : "as a hustler";
                 return (
                   <div
                     key={r.id}
@@ -370,7 +410,9 @@ export default async function PublicProfilePage({
                             ))}
                           </span>
                         </div>
-                        <span className="text-[11px] text-white/40">{memberSince(r.created_at)}</span>
+                        <span className="text-[11px] text-white/40">
+                          {memberSince(r.created_at)} · {asRole}
+                        </span>
                       </div>
                     </div>
                     <p className="text-sm text-white/70 leading-relaxed pl-11">{r.review}</p>

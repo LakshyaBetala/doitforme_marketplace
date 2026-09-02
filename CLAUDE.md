@@ -49,7 +49,7 @@ Escrow flow: payment creates `HELD` funds → delivery sets `status='DELIVERED'`
 
 Between "approve" and "dispute" sits a third, lighter path: [app/api/gig/request-changes/route.ts](app/api/gig/request-changes/route.ts). The poster sends written feedback → gig reverts to `status='assigned'` with `auto_release_at = null` and `delivered_at = null` (timer **cancelled**, not paused) → the worker resubmits, which restarts the 24h clock. No admin involvement; dispute remains the heavy path that freezes escrow for review.
 
-**Resolving a dispute** is the **Disputes** tab in [app/admin/page.tsx](app/admin/page.tsx), backed by [app/api/admin/resolve-dispute/route.ts](app/api/admin/resolve-dispute/route.ts). For a long time this did not exist: `/api/gig/dispute` froze escrow and mailed both parties a 48-hour promise, with no UI and no endpoint to act on it — the only exit was hand-written SQL. Two outcomes: `RELEASE` re-implements the [cron/auto-release](app/api/cron/auto-release/route.ts) arithmetic exactly (stored fee first, recompute only as fallback) so a disputed gig settles identically to a normal one; `REFUND` delegates to `refund_escrow_transactional`. Decision notes are **mandatory** and emailed to both sides — that text is the record if a payment is ever charged back. The tab badges anything past the 48h SLA.
+**Resolving a dispute** is the **Disputes** tab in [app/admin/page.tsx](app/admin/page.tsx), backed by [app/api/admin/resolve-dispute/route.ts](app/api/admin/resolve-dispute/route.ts). For a long time this did not exist: `/api/gig/dispute` froze escrow and mailed both parties a 48-hour promise, with no UI and no endpoint to act on it — the only exit was hand-written SQL. **There is deliberately no self-serve refund anywhere in the product.** Once escrow is funded, money only comes back through a dispute an admin has reviewed. Three outcomes: `RELEASE` re-implements the [cron/auto-release](app/api/cron/auto-release/route.ts) arithmetic exactly (stored fee first, recompute only as fallback) so a disputed gig settles identically to a normal one; `REFUND` delegates to `refund_escrow_transactional`; `SPLIT` is a partial settlement — part back to the poster, the rest queued to the worker, with the platform fee charged **only on the portion the worker keeps** (we do not take a full cut of work we just judged partly unsatisfactory). Most real disputes are not all-or-nothing, and without `SPLIT` the admin has to pick a side they do not believe. Decision notes are **mandatory** and emailed to both sides — that text is the record if a payment is ever charged back. The tab badges anything past the 48h SLA.
 
 Key SQL RPCs (called from API routes, not written as raw SQL in handlers):
 - `manual_release_escrow(p_gig_id)` — called by [app/api/escrow/release/route.ts](app/api/escrow/release/route.ts).
@@ -57,6 +57,24 @@ Key SQL RPCs (called from API routes, not written as raw SQL in handlers):
 - `freeze_wallet_amount` / `unfreeze_wallet_amount`.
 - `increment_worker_stats(worker_id, amount)` — updates `jobs_completed` / earnings on payout.
 - `is_admin()` — SQL function that whitelists admin emails; used inside RLS policies. It is the **database half** of the whitelist in [lib/admins.ts](lib/admins.ts) — see below.
+
+### Ratings are two-sided, and the two sides are kept apart
+Almost every account is both a poster and a hustler, and those are different
+reputations — someone can deliver beautifully and still be a flaky client.
+Averaging them into one number describes neither.
+
+- The **role is derived at read time**, not stored: in [app/u/[username]/page.tsx](app/u/[username]/page.tsx),
+  a rating whose gig the rated person owns counts as a *poster* rating, everything
+  else as a *hustler* rating. This needs no schema change, and the `ratings` table
+  was empty when the split was introduced so there was nothing to migrate.
+- `users.rating` / `rating_count` remain the **hustler** score — that is what they
+  already meant and what the feed, applicant lists and cards read.
+  [rate-poster](app/api/gig/rate-poster/route.ts) deliberately does **not** touch
+  them; it only writes the `ratings` row.
+- Posters rate workers through [gig/complete](app/api/gig/complete/route.ts) when
+  approving; workers rate posters from the Activity page once the gig is
+  `completed` (rating a live gig would be leverage over someone who still has to
+  approve your work).
 
 ### Fee model — [lib/fees.ts](lib/fees.ts) is the single source of truth
 Do **not** hardcode a percentage anywhere; import the helpers. (The old "3% flat" rate is gone.)

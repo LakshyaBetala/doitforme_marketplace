@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, RefreshCcw, Building2, UserCheck, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { isAdminEmail } from "@/lib/admins";
+import { blurOnWheel } from "@/lib/inputs";
 
 // Interest taxonomy used for "related field" targeting in the broadcast tab.
 const BROADCAST_CATEGORIES = [
@@ -28,6 +29,8 @@ export default function AdminDashboardPage() {
     const [disputes, setDisputes] = useState<any[]>([]);
     const [disputeMeta, setDisputeMeta] = useState<{ open_count: number; breaching_sla: number; oldest_open_hours: number }>({ open_count: 0, breaching_sla: 0, oldest_open_hours: 0 });
     const [disputeNotes, setDisputeNotes] = useState<Record<string, string>>({});
+    // Amount (rupees) going back to the poster on a partial settlement.
+    const [disputeSplit, setDisputeSplit] = useState<Record<string, string>>({});
 
     // Managed Mode queue state
     const [managedQueue, setManagedQueue] = useState<any[]>([]);
@@ -104,12 +107,25 @@ export default function AdminDashboardPage() {
         }
     };
 
-    const resolveDispute = async (disputeId: string, outcome: "RELEASE" | "REFUND") => {
+    const resolveDispute = async (disputeId: string, outcome: "RELEASE" | "REFUND" | "SPLIT") => {
         const notes = (disputeNotes[disputeId] || "").trim();
         if (notes.length < 10) {
             return toast.error("Write a sentence explaining the decision first — it is the record if this is ever contested.");
         }
-        const who = outcome === "RELEASE" ? "release the payment to the worker" : "refund the poster";
+
+        // A settlement needs an amount before we can describe what will happen.
+        let refundAmount: number | undefined;
+        if (outcome === "SPLIT") {
+            refundAmount = Math.round(Number(disputeSplit[disputeId]));
+            if (!Number.isFinite(refundAmount) || refundAmount <= 0) {
+                return toast.error("Enter how much of the payment goes back to the poster.");
+            }
+        }
+
+        const who =
+            outcome === "RELEASE" ? "release the whole payment to the worker"
+            : outcome === "REFUND" ? "refund the whole payment to the poster"
+            : `refund ₹${refundAmount} to the poster and pay the worker the rest`;
         if (!confirm(`This will ${who}. Money moves immediately and cannot be undone here. Continue?`)) return;
 
         setProcessingId(disputeId);
@@ -117,7 +133,7 @@ export default function AdminDashboardPage() {
             const res = await fetch("/api/admin/resolve-dispute", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ disputeId, outcome, notes }),
+                body: JSON.stringify({ disputeId, outcome, notes, refundAmount }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -585,6 +601,36 @@ export default function AdminDashboardPage() {
                                                     rows={3}
                                                     className="w-full p-5 bg-[#0a0a0a] text-white text-sm placeholder:text-[#444] outline-none resize-y"
                                                 />
+                                                {/* Most disputes are not all-or-nothing. */}
+                                                <div className="p-5 bg-[#0a0a0a] flex flex-wrap items-center gap-3">
+                                                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-[#444]">Settle in the middle</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[#666] text-sm">₹</span>
+                                                        <input
+                                                            type="number"
+                                                            onWheel={blurOnWheel}
+                                                            min={1}
+                                                            max={Math.max(1, (Number(gig.price) || 1) - 1)}
+                                                            value={disputeSplit[d.id] || ""}
+                                                            onChange={(e) => setDisputeSplit((n) => ({ ...n, [d.id]: e.target.value }))}
+                                                            placeholder="back to poster"
+                                                            className="w-40 px-3 py-2 bg-[#111] border border-[#222] text-white text-sm outline-none focus:border-[#444]"
+                                                        />
+                                                    </div>
+                                                    {Number(disputeSplit[d.id]) > 0 && Number(disputeSplit[d.id]) < Number(gig.price) && (
+                                                        <span className="text-[11px] text-[#666]">
+                                                            worker keeps ₹{Number(gig.price) - Number(disputeSplit[d.id])} before fee
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        onClick={() => resolveDispute(d.id, "SPLIT")}
+                                                        disabled={!!processingId}
+                                                        className="ml-auto px-6 py-2.5 bg-[#8825F5] text-white text-[9px] font-black uppercase tracking-[0.2em] hover:brightness-110 disabled:opacity-20"
+                                                    >
+                                                        {processingId === d.id ? "..." : "Settle"}
+                                                    </button>
+                                                </div>
+
                                                 <div className="flex gap-px bg-[#222]">
                                                     <button
                                                         onClick={() => resolveDispute(d.id, "RELEASE")}

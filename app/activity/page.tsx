@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { platformFeeFor, audienceForGig, PLATFORM_FEES } from "@/lib/fees";
-import { Loader2, Briefcase, IndianRupee, ArrowRight, ShieldCheck, CheckCircle, Clock, Phone, MessageSquare, Zap, AlertTriangle, X } from "lucide-react";
+import { Loader2, Briefcase, IndianRupee, ArrowRight, ShieldCheck, CheckCircle, Clock, Phone, MessageSquare, Zap, AlertTriangle, X, Star } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -97,6 +97,9 @@ export default function ActivityHubPage() {
   // Submit-work modal (delivery note + optional link)
   const [submitGigId, setSubmitGigId] = useState<string | null>(null);
   const [submitNote, setSubmitNote] = useState("");
+  // Gigs whose poster this worker has already rated, so the button disappears
+  // after use without needing a refetch.
+  const [ratedPosters, setRatedPosters] = useState<string[]>([]);
   const [submitLink, setSubmitLink] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -335,6 +338,42 @@ export default function ActivityHubPage() {
           : g));
       } catch (err: any) {
         toast.error(err?.message || "Could not release the payment.", { id: toastId });
+      }
+  };
+
+  // Worker → poster rating. Kept out of users.rating on purpose: a person is
+  // both a poster and a hustler here, and merging the two scores describes
+  // neither. The role is derived per rating on the profile page.
+  const ratePoster = async (gigId: string, posterName?: string) => {
+      const scoreRaw = window.prompt(
+        `How was ${posterName || "this poster"} to work with? Rate 1-5.\n\nClear brief, replied to messages, approved on time — that sort of thing. It shows on their profile.`,
+        "5"
+      );
+      if (scoreRaw === null) return;
+      const score = Number(String(scoreRaw).trim());
+      if (!Number.isInteger(score) || score < 1 || score > 5) {
+        return toast.error("Enter a whole number from 1 to 5.");
+      }
+      const review = window.prompt("Add a short review (optional). This is public on their profile.") || "";
+
+      const toastId = toast.loading("Saving your rating...");
+      try {
+        const res = await fetch("/api/gig/rate-poster", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ gigId, rating: score, review: review.trim() }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(data?.error || "Could not save your rating.", { id: toastId });
+          // Already rated is not worth offering the button again.
+          if (res.status === 409) setRatedPosters((p) => [...p, gigId]);
+          return;
+        }
+        toast.success("Thanks — that helps the next student.", { id: toastId });
+        setRatedPosters((p) => [...p, gigId]);
+      } catch (err: any) {
+        toast.error(err?.message || "Could not save your rating.", { id: toastId });
       }
   };
 
@@ -634,6 +673,19 @@ export default function ActivityHubPage() {
                      {app.status === 'accepted' && (gig.status === 'assigned') && (
                        <button onClick={() => handleSubmitWork(gig.id, app.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-[#8825F5] hover:bg-[#7a1de0] text-white font-bold text-sm transition shadow-lg shadow-[#C9A9FF]/20 flex items-center gap-2 justify-center">
                          <ArrowRight size={14} /> {gig.payment_gateway === 'DIRECT' ? 'Mark as Done' : 'Submit Work'}
+                       </button>
+                     )}
+
+                     {/* The other half of the reputation. Posters rated workers
+                         from day one; workers had no way to say anything back,
+                         so a poster who pays late or never replies carried no
+                         signal at all. */}
+                     {gig.status === 'completed' && !ratedPosters.includes(gig.id) && (
+                       <button
+                         onClick={() => ratePoster(gig.id, gig.poster?.name)}
+                         className="flex-1 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold text-sm transition border border-white/5 flex items-center justify-center gap-2"
+                       >
+                         <Star size={14} /> Rate the poster
                        </button>
                      )}
                   </div>

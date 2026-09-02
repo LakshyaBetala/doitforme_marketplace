@@ -143,6 +143,41 @@ export default function GigDetailsPage() {
     router.push(`/chat/${gigId}`);
   };
 
+  const handleReport = async () => {
+    if (!currentUser) return router.push(`/login?next=/gig/${gigId}`);
+
+    const reason = window.prompt(
+      "What is wrong with this listing?\n\nFor example: asks to pay outside the platform, misleading, offensive, or a scam."
+    );
+    if (reason === null) return;
+    if (reason.trim().length < 5) {
+      toast.error("Tell us briefly what is wrong so we can act on it.");
+      return;
+    }
+
+    const toastId = toast.loading("Sending report...");
+    try {
+      const res = await fetch("/api/gig/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          targetId: gigId,
+          targetType: "gig",
+          reason: reason.trim(),
+          details: "",
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        toast.error(data?.error || "Could not send the report.", { id: toastId });
+        return;
+      }
+      toast.success("Reported. Our team will review this listing.", { id: toastId, duration: 7000 });
+    } catch (err: any) {
+      toast.error(friendlyError(err), { id: toastId });
+    }
+  };
+
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(`${window.location.origin}/gig/${gigId}`);
@@ -205,6 +240,12 @@ export default function GigDetailsPage() {
           <div className="flex items-center gap-3">
             <button onClick={handleShare} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
               <Share2 size={14} /> Share
+            </button>
+            {/* /api/gig/report existed with rate limiting and moderation behind
+                it, but nothing anywhere in the product called it — there was no
+                way for a student to flag a scam listing. */}
+            <button onClick={handleReport} title="Report this listing" className="flex items-center gap-2 text-zinc-500 hover:text-red-400 transition-colors text-sm font-medium bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+              <AlertTriangle size={14} />
             </button>
             <StatusBadge tone={gig.status === 'open' ? 'success' : statusToTone(gig.status)}>
               {humanizeStatus(gig.status)}

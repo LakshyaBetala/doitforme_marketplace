@@ -17,12 +17,18 @@ import { isAdminEmail } from "@/lib/admins";
 // get a merchant account restricted, so this desk is payment infrastructure,
 // not an admin nicety.
 //
-// Two outcomes, mirroring the two ways money can legitimately move:
+// Three outcomes. Note there is deliberately NO self-serve refund anywhere in
+// the product: once escrow is funded, money only comes back through a dispute
+// that an admin has reviewed.
+//
 //   RELEASE — the work stands. Pays the recipient exactly the way
 //             /api/cron/auto-release does, so a disputed gig and a normal one
 //             settle through identical arithmetic.
 //   REFUND  — the poster was right. Delegates to refund_escrow_transactional,
 //             the same RPC the self-serve refund path uses.
+//   SPLIT   — the honest outcome for most real disputes. Part back to the
+//             poster, the rest to the worker, with the platform fee charged
+//             only on the portion the worker actually keeps.
 //
 // Admin whitelist lives in lib/admins.ts; the database's copy is is_admin().
 
@@ -134,13 +140,19 @@ export async function POST(req: Request) {
   if ("error" in admin) return admin.error;
   const supabase = admin.service;
 
-  const { disputeId, outcome, notes } = (await req
+  const { disputeId, outcome, notes, refundAmount } = (await req
     .json()
-    .catch(() => ({}))) as { disputeId?: string; outcome?: string; notes?: string };
+    .catch(() => ({}))) as {
+      disputeId?: string;
+      outcome?: string;
+      notes?: string;
+      refundAmount?: number | string;
+    };
 
-  if (!disputeId || (outcome !== "RELEASE" && outcome !== "REFUND")) {
+  const OUTCOMES = ["RELEASE", "REFUND", "SPLIT"];
+  if (!disputeId || !outcome || !OUTCOMES.includes(outcome)) {
     return NextResponse.json(
-      { error: "disputeId and outcome ('RELEASE' | 'REFUND') are required" },
+      { error: "disputeId and outcome ('RELEASE' | 'REFUND' | 'SPLIT') are required" },
       { status: 400 }
     );
   }
@@ -176,7 +188,122 @@ export async function POST(req: Request) {
   const isMarket = gig.listing_type === "MARKET";
   const recipientId = isMarket ? gig.poster_id : gig.assigned_worker_id;
 
-  if (outcome === "RELEASE") {
+  // Filled by the SPLIT branch so both parties are told the exact division.
+  let settlementSummary = "";
+
+  // Most real disputes are not all-or-nothing. "Half the slides were usable"
+  // ends as a settlement: part back to the poster, the rest to the worker.
+  // Without this the admin has to pick a side they do not actually believe.
+  if (outcome === "SPLIT") {
+    if (!recipientId) {
+      return NextResponse.json({ error: "Gig has no payout recipient." }, { status: 400 });
+    }
+
+    const price = Number(gig.price) || 0;
+    const refund = Math.round(Number(refundAmount));
+
+    if (!Number.isFinite(refund) || refund <= 0 || refund >= price) {
+      return NextResponse.json(
+        { error: `Refund must be between 1 and ${price - 1}. Use RELEASE or REFUND for the whole amount.` },
+        { status: 400 }
+      );
+    }
+
+    // The worker is paid for the portion they kept, and the platform fee is
+    // charged on THAT, not on the original price — we do not take a full cut of
+    // work we just judged to be partly unsatisfactory.
+    const workerGross = price - refund;
+    const platformFee = platformFeeFor(workerGross, audienceForGig(gig));
+    const workerNet = Math.max(0, workerGross - platformFee);
+
+    const recipient = isMarket ? gig.poster : gig.worker;
+    const recipientUpi = String(recipient?.upi_id || "").trim();
+    if (!recipientUpi) {
+      return NextResponse.json(
+        {
+          error: "The worker has no UPI ID on file, so their share cannot be queued. Ask them to add one, then settle.",
+          code: "WORKER_UPI_MISSING",
+        },
+        { status: 409 }
+      );
+    }
+
+    const { error: escrowErr } = await supabase
+      .from("escrow")
+      .update({ status: "RELEASED", released_at: new Date().toISOString() })
+      .eq("gig_id", gig.id);
+    if (escrowErr) {
+      console.error(`[resolve-dispute] SPLIT escrow update failed gig=${gig.id}: ${escrowErr.message}`);
+      return NextResponse.json({ error: `Escrow update failed: ${escrowErr.message}` }, { status: 500 });
+    }
+
+    const ledger = [
+      {
+        gig_id: gig.id,
+        user_id: gig.poster_id,
+        amount: refund,
+        type: "REFUND_CREDIT",
+        status: "COMPLETED",
+        description: `Dispute settled: partial refund for ${gig.title}`,
+      },
+      {
+        gig_id: gig.id,
+        amount: platformFee,
+        type: "PLATFORM_FEE",
+        status: "COMPLETED",
+        description: `Dispute settled: platform fee on ₹${workerGross}`,
+      },
+      {
+        gig_id: gig.id,
+        user_id: recipientId,
+        amount: workerNet,
+        type: "PAYOUT_CREDIT",
+        status: "COMPLETED",
+        description: `Dispute settled: partial payout for ${gig.title}`,
+      },
+    ];
+    const { error: ledgerErr } = await supabase.from("transactions").insert(ledger);
+    if (ledgerErr) {
+      console.error(`[resolve-dispute] SPLIT ledger failed gig=${gig.id}: ${ledgerErr.message}`);
+      return NextResponse.json({ error: `Ledger write failed: ${ledgerErr.message}` }, { status: 500 });
+    }
+
+    // The worker's share still has to be paid by hand like any other payout.
+    if (workerNet > 0) {
+      const { error: pqErr } = await supabase.from("payout_queue").insert({
+        worker_id: recipientId,
+        gig_id: gig.id,
+        amount: workerNet,
+        upi_id: recipientUpi,
+        status: "PENDING",
+      });
+      if (pqErr) {
+        console.error(`[resolve-dispute] SPLIT payout_queue insert FAILED gig=${gig.id}: ${pqErr.message}`);
+        return NextResponse.json(
+          { error: `Settled, but the payout was not queued: ${pqErr.message}` },
+          { status: 500 }
+        );
+      }
+    }
+
+    const { error: gigErr } = await supabase
+      .from("gigs")
+      .update({
+        status: "completed",
+        escrow_status: "RELEASED",
+        payment_status: "PAYOUT_PENDING",
+        auto_release_at: null,
+        dispute_reason: null,
+      })
+      .eq("id", gig.id);
+    if (gigErr) {
+      console.error(`[resolve-dispute] SPLIT gig update failed gig=${gig.id}: ${gigErr.message}`);
+    }
+
+    await supabase.rpc("increment_worker_stats", { worker_id: recipientId, amount: workerNet });
+
+    settlementSummary = `₹${refund} refunded to the poster; ₹${workerNet} paid to the worker (after ₹${platformFee} fee).`;
+  } else if (outcome === "RELEASE") {
     if (!recipientId) {
       return NextResponse.json({ error: "Gig has no payout recipient." }, { status: 400 });
     }
@@ -285,7 +412,7 @@ export async function POST(req: Request) {
   const { error: closeErr } = await supabase
     .from("disputes")
     .update({
-      status: outcome === "REFUND" ? "RESOLVED" : "REJECTED",
+      status: outcome === "RELEASE" ? "REJECTED" : "RESOLVED",
       admin_notes: `[${admin.adminEmail}] ${String(notes).trim()}`,
       resolved_at: new Date().toISOString(),
     })
@@ -311,7 +438,11 @@ export async function POST(req: Request) {
           recipientName: u.name,
           gigTitle: gig.title,
           gigId: gig.id,
-          extra: { outcome: outcome === "RELEASE" ? "released" : "refunded", notes: String(notes).trim() },
+          extra: {
+            outcome: outcome === "RELEASE" ? "released" : outcome === "SPLIT" ? "settled" : "refunded",
+            notes: String(notes).trim(),
+            settlement: settlementSummary,
+          },
         })
       )
     );
@@ -326,6 +457,8 @@ export async function POST(req: Request) {
     message:
       outcome === "RELEASE"
         ? "Payment released to the recipient and queued for manual payout."
-        : "Payment refunded to the poster.",
+        : outcome === "SPLIT"
+          ? settlementSummary
+          : "Payment refunded to the poster.",
   });
 }

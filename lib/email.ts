@@ -206,16 +206,25 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
         `,
       };
 
-    case "auto_release_warning":
+    // Vercel Hobby only allows daily crons, and the schedule is hour-accurate
+    // at best — so this cannot promise "in 1 hour". The sender passes the real
+    // remaining time instead of the template inventing one.
+    case "auto_release_warning": {
+      const hours = Number(args.extra?.hoursLeft);
+      const window = Number.isFinite(hours) && hours > 0
+        ? (hours <= 1 ? "within the hour" : `in about ${Math.round(hours)} hours`)
+        : "shortly";
       return {
-        subject: `Auto-release in 1 hour — ${args.gigTitle || "your gig"}`,
-        preheader: "Last chance to dispute.",
+        subject: `Your payment releases ${window} — ${args.gigTitle || "your gig"}`,
+        preheader: "Approve it, ask for changes, or dispute — before it releases on its own.",
         bodyHtml: `
           <p>Hi ${name},</p>
-          <p>Escrow on <strong>${title}</strong> auto-releases to the worker in <strong>1 hour</strong>. If something is wrong, raise a dispute now.</p>
-          <p><a href="${url}" class="cta">Review now</a></p>
+          <p>The work on <strong>${title}</strong> was delivered and you have not responded yet. The payment releases to the student automatically <strong>${window}</strong>.</p>
+          <p>If the work is good, approve it now and they get paid sooner. If it is not, request changes or raise a dispute — either one stops the clock.</p>
+          <p><a href="${url}" class="cta">Review the work</a></p>
         `,
       };
+    }
 
     case "payment_released":
       return {
@@ -242,17 +251,26 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
     // Both sides get the same mail: the outcome and the reasoning. A dispute
     // that ends in silence is the one that becomes a chargeback.
     case "dispute_resolved": {
-      const released = String(args.extra?.outcome || "") === "released";
+      const kind = String(args.extra?.outcome || "");
       const notes = args.extra?.notes ? escapeHtml(String(args.extra.notes)) : null;
+      const settlement = args.extra?.settlement ? escapeHtml(String(args.extra.settlement)) : null;
+      const verdict =
+        kind === "released"
+          ? "the work was accepted and the payment has been released to the worker."
+          : kind === "settled"
+            ? "we settled this one in the middle — the payment has been split."
+            : "the payment has been refunded to the poster.";
       return {
         subject: `Dispute resolved — ${args.gigTitle || "your gig"}`,
-        preheader: released ? "Payment released to the worker." : "Payment refunded to the poster.",
+        preheader:
+          kind === "released" ? "Payment released to the worker."
+          : kind === "settled" ? "The payment was split between both sides."
+          : "Payment refunded to the poster.",
         bodyHtml: `
           <p>Hi ${name},</p>
           <p>We have finished reviewing the dispute on <strong>${title}</strong>.</p>
-          <p><strong>Outcome:</strong> ${released
-            ? "the work was accepted and the payment has been released to the worker."
-            : "the payment has been refunded to the poster."}</p>
+          <p><strong>Outcome:</strong> ${verdict}</p>
+          ${settlement ? `<p><strong>The split:</strong> ${settlement}</p>` : ""}
           ${notes ? `<p><strong>Why:</strong> ${notes}</p>` : ""}
           <p>If you believe this is wrong, reply to this email within 7 days and we will take another look.</p>
           <p><a href="${url}" class="cta">View the task</a></p>

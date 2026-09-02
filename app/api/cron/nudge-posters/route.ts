@@ -264,7 +264,63 @@ export async function GET(req: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, ...result, pokedPairs });
+    // ---- STAGE 3: the money is about to move on a timer ----
+    //
+    // Delivery emails the poster exactly once. After that the 24h clock runs in
+    // silence and auto-release pays the worker — the poster's money moves on a
+    // deadline they may never have been reminded of, and the first they hear of
+    // it is the completion notice. That is how a "why was I charged" support
+    // ticket becomes a chargeback.
+    //
+    // This cron is daily, and the review window is 24h, so every delivered gig
+    // gets caught inside it. The notification row is the debounce.
+    let releaseWarnings = 0;
+    const { data: awaitingReview } = await supabase
+      .from("gigs")
+      .select("id, title, poster_id, auto_release_at")
+      .in("status", ["delivered", "DELIVERED", "SUBMITTED"])
+      .in("payment_status", ["HELD", "ESCROW_FUNDED"])
+      .is("dispute_reason", null)
+      .gt("auto_release_at", new Date().toISOString())
+      .limit(BATCH);
+
+    for (const gig of awaitingReview || []) {
+      const { data: alreadyWarned } = await supabase
+        .from("notifications")
+        .select("id")
+        .eq("user_id", gig.poster_id)
+        .eq("type", "auto_release_warning")
+        .eq("link", `/gig/${gig.id}`)
+        .maybeSingle();
+
+      if (alreadyWarned) continue;
+
+      const hoursLeft = Math.max(
+        0,
+        (new Date(gig.auto_release_at).getTime() - Date.now()) / 3_600_000
+      );
+      const window =
+        hoursLeft <= 1 ? "within the hour" : `in about ${Math.round(hoursLeft)} hours`;
+
+      await notify(
+        gig.poster_id,
+        {
+          telegram: `<b>Your payment releases ${window}</b>\n<i>${gig.title}</i> was delivered and is waiting on you. Approve it, request changes, or raise a dispute.\n<a href="${SITE}/gig/${gig.id}">Review the work</a>`,
+          email: {
+            kind: "auto_release_warning",
+            args: { gigTitle: gig.title, gigId: gig.id, extra: { hoursLeft } },
+          },
+        },
+        {
+          type: "auto_release_warning",
+          content: `"${gig.title}" was delivered. The payment releases ${window} unless you respond.`,
+          link: `/gig/${gig.id}`,
+        }
+      );
+      releaseWarnings++;
+    }
+
+    return NextResponse.json({ success: true, ...result, pokedPairs, releaseWarnings });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("nudge-posters error:", message);
