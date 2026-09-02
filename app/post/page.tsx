@@ -16,6 +16,7 @@ import Image from "next/image";
 import {
   Loader2, Send, X, Camera, FileText, Image as ImageIcon, MapPin, BriefcaseIcon, ShoppingBagIcon, ChevronLeft, ChevronRight, CheckCircle, CheckCircle2
 } from "lucide-react";
+import { blurOnWheel } from "@/lib/inputs";
 
 export default function PostGigWizard() {
   const router = useRouter();
@@ -508,7 +509,7 @@ export default function PostGigWizard() {
                   </label>
                   <div className="relative">
                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl text-white/60 font-mono">₹</span>
-                    <input type="number" inputMode="decimal" value={price} onChange={(e) => store.setField('price', e.target.value)} placeholder="500" style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="w-full bg-[var(--card-elevated)] border border-white/10 rounded-2xl py-5 pl-12 pr-5 text-4xl font-semibold text-white outline-none focus:border-[var(--brand-purple)]/50 transition tracking-tight" />
+                    <input type="number" onWheel={blurOnWheel} inputMode="decimal" value={price} onChange={(e) => store.setField('price', e.target.value)} placeholder="500" style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="w-full bg-[var(--card-elevated)] border border-white/10 rounded-2xl py-5 pl-12 pr-5 text-4xl font-semibold text-white outline-none focus:border-[var(--brand-purple)]/50 transition tracking-tight" />
                   </div>
                 </div>
 

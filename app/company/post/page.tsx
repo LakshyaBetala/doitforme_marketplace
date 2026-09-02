@@ -12,6 +12,7 @@ import {
   Loader2, X, Camera, FileText, Image as ImageIcon, MapPin, CheckCircle, ArrowLeft, Building2, User
 } from "lucide-react";
 import { ATTACHMENT_ACCEPT } from "@/lib/attachments";
+import { blurOnWheel } from "@/lib/inputs";
 
 export default function CompanyPostTask() {
   const router = useRouter();
@@ -340,7 +341,7 @@ export default function CompanyPostTask() {
                   <label className={labelClass}>Workers Needed</label>
                   <div className="relative">
                     <User size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-[#444]" />
-                    <input type="number" min="1" max="50" value={maxWorkers} onChange={(e) => setMaxWorkers(parseInt(e.target.value) || 1)} className={`${inputClass} pl-12 font-mono text-lg`} />
+                    <input type="number" onWheel={blurOnWheel} min="1" max="50" value={maxWorkers} onChange={(e) => setMaxWorkers(parseInt(e.target.value) || 1)} className={`${inputClass} pl-12 font-mono text-lg`} />
                   </div>
                </div>
 
@@ -348,7 +349,7 @@ export default function CompanyPostTask() {
                   <label className={labelClass}>Budget / Unit (INR) <span className="lowercase text-[8px] text-[#888] ml-2 tracking-normal">(Recommended to attract workers)</span></label>
                   <div className="relative">
                     <span className="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-bold text-[#444]">₹</span>
-                    <input type="number" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="500" className={`${inputClass} pl-10 font-mono text-lg font-black`} />
+                    <input type="number" onWheel={blurOnWheel} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="500" className={`${inputClass} pl-10 font-mono text-lg font-black`} />
                   </div>
                </div>
 

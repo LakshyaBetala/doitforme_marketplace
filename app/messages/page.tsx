@@ -14,6 +14,7 @@ import StatusBadge, { statusToTone } from "@/components/ui/StatusBadge";
 import EmptyState from "@/components/ui/EmptyState";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
 import { MessageSquare } from "lucide-react";
+import { blurOnWheel } from "@/lib/inputs";
 
 export default function ChatPage() {
     return (
@@ -905,7 +906,7 @@ function MessagesContent() {
 
                                     <div className="space-y-4">
                                         <input
-                                            type="number"
+                                            type="number" onWheel={blurOnWheel}
                                             value={offerAmount}
                                             onChange={(e) => setOfferAmount(e.target.value)}
                                             placeholder="Enter amount (₹)"

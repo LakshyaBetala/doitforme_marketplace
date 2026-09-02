@@ -196,6 +196,13 @@ From README + handler code:
   documented Business 10%. It lives in [app/company/post/page.tsx](app/company/post/page.tsx),
   where `company_id` is set and the 10% follows automatically.
 
+- **`<input type="number">` eats the scroll wheel.** A focused number input treats wheel
+  events as increment/decrement, so a user types 100 into the price field, scrolls down
+  to the next field, and the value silently counts down under the cursor — reaching
+  negative numbers if they scroll far enough. It presents as "the amount changes to a
+  random value". Every number input must carry `onWheel={blurOnWheel}` from
+  [lib/inputs.ts](lib/inputs.ts); there are 7 of them.
+
 - **Migrations in `supabase/migrations/` are not necessarily applied to the live DB.**
   `20260322_1500_escrow_multi_worker.sql` declares `UNIQUE (gig_id, worker_id)` on
   `escrow`; the live database never got it. Settlement used

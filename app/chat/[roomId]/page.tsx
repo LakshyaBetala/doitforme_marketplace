@@ -15,6 +15,7 @@ import { useModeration } from "@/app/hooks/useModeration";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
 import { displayIndianPhone } from "@/lib/phone";
 import { platformFeeFor, audienceForGig, PLATFORM_FEES } from "@/lib/fees";
+import { blurOnWheel } from "@/lib/inputs";
 
 interface Message {
   id: string;
@@ -609,7 +610,7 @@ function ChatRoomContent() {
 
                 <div className="space-y-4">
                   <input
-                    type="number"
+                    type="number" onWheel={blurOnWheel}
                     value={offerAmount}
                     onChange={(e) => setOfferAmount(e.target.value)}
                     placeholder="Enter amount (₹)"

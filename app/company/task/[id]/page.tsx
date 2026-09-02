@@ -14,6 +14,7 @@ import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import {
   Loader2, ArrowLeft, Users, Download, ShieldCheck, FileText, CheckCircle2, Gift, MessageCircle, AlertTriangle, X, ArrowRight
 } from "lucide-react";
+import { blurOnWheel } from "@/lib/inputs";
 
 export default function CompanyTaskHubPage() {
   const params = useParams();
@@ -600,7 +601,7 @@ export default function CompanyTaskHubPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Budget / Worker (₹)</label>
-                  <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} disabled={hasApplicants}
+                  <input type="number" onWheel={blurOnWheel} value={editPrice} onChange={(e) => setEditPrice(e.target.value)} disabled={hasApplicants}
                     className="w-full bg-[#0B0B11] border border-[#222] p-4 text-white font-black text-sm focus:outline-none focus:border-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed" />
                   {hasApplicants && <p className="text-[9px] text-[#555] uppercase tracking-widest mt-2 leading-relaxed">Price locked — applicants applied at the listed rate.</p>}
                 </div>
@@ -693,7 +694,7 @@ export default function CompanyTaskHubPage() {
                   <div className="relative">
                     <span className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-[#444]">₹</span>
                     <input 
-                      type="number" 
+                      type="number" onWheel={blurOnWheel} 
                       value={incentiveAmount} 
                       onChange={e => setIncentiveAmount(e.target.value)} 
                       placeholder="e.g. 500"
