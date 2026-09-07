@@ -8,9 +8,17 @@ name: Deploy to Cloudflare
 # money movement is covered by tests that talk to the real database
 # (npm run test:escrow), and shipping a release that has not passed them is the
 # failure mode worth spending a minute of CI on.
+# MANUAL ONLY, deliberately.
+#
+# Cloudflare's own Workers Builds is connected to this repo and deploys on push
+# to main. If this workflow also fired on push, every merge would deploy twice
+# and the two could race onto the same Worker.
+#
+# Keep this as the fallback: it is the only path that runs the test suite before
+# deploying, so use it for releases that touch escrow, payments or migrations.
+# To make it primary instead, restore the `push:` trigger here and turn off the
+# Git integration in the Cloudflare dashboard — one or the other, never both.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
     inputs:
       skip_tests:
