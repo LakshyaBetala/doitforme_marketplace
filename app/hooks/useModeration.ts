@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { loadTransformers } from '@/lib/transformersLoader';
 
 // Define types locally since we can't import them from module efficiently during SSR
 type Pipeline = any;
@@ -22,8 +23,11 @@ export function useModeration() {
         try {
             setIsModelLoading(true);
 
-            // Dynamic Import to avoid SSR issues
-            const XenovaModule = await import('@xenova/transformers');
+            // Goes through lib/transformersLoader so the bare specifier never
+            // reaches the server bundle — see that file. On the server this
+            // resolves to a stub that throws, which is unreachable: loadModel()
+            // only runs from browser event handlers.
+            const XenovaModule = await loadTransformers();
 
             // Handle both ESM and CJS/Default export scenarios
             const env = XenovaModule.env || (XenovaModule as any).default?.env;

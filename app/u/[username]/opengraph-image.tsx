@@ -9,18 +9,28 @@ import { createClient } from "@supabase/supabase-js";
  * branded preview instead of a default screenshot.
  *
  * Constraints:
- *  - Edge runtime: cannot use the SSR cookie client; uses anon-key client only.
+ *  - No cookies here: this is fetched by a crawler with no session, so it uses
+ *    the anon-key client only.
  *  - Selects ONLY public-safe fields. Never touch phone/email/upi.
+ *
+ * `export const runtime = "edge"` used to sit here. @opennextjs/cloudflare does
+ * not support the edge runtime — the whole Worker already runs at Cloudflare's
+ * edge, so the directive had nothing left to mean. Removing it is what the
+ * adapter's own migrate step asks for.
  */
-export const runtime = "edge";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OgImage({
   params,
 }: {
-  params: { username: string };
+  // Next 15+ hands route params in as a Promise. This was typed and read as a
+  // plain object, so `params.username` was `undefined` on every request and the
+  // lookup below filtered on nothing.
+  params: Promise<{ username: string }>;
 }) {
+  const { username } = await params;
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -29,10 +39,10 @@ export default async function OgImage({
   const { data: user } = await supabase
     .from("users")
     .select("display_name, name, college, rating, rating_count, jobs_completed, kyc_verified")
-    .eq("username", params.username)
+    .eq("username", username)
     .maybeSingle();
 
-  const displayName = user?.display_name || user?.name || `@${params.username}`;
+  const displayName = user?.display_name || user?.name || `@${username}`;
   const stat = (label: string, value: string) => ({ label, value });
   const stats = [
     stat("Gigs done", String(user?.jobs_completed ?? 0)),
@@ -114,7 +124,7 @@ export default async function OgImage({
             {displayName}
           </div>
           <div style={{ display: "flex", gap: 20, alignItems: "center", color: "rgba(255,255,255,0.55)", fontSize: 28 }}>
-            <span>@{params.username}</span>
+            <span>@{username}</span>
             {user?.college && (
               <>
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
@@ -157,8 +167,13 @@ export default async function OgImage({
               </span>
             </div>
           ))}
-          <div style={{ marginLeft: "auto", alignSelf: "flex-end", color: "rgba(255,255,255,0.4)", fontSize: 22 }}>
-            doitforme.in/u/{params.username}
+          {/* display:flex is required, not cosmetic. Satori (which renders
+              ImageResponse) throws on any div with more than one child and no
+              explicit display, and `doitforme.in/u/{username}` is two children:
+              a text node and an expression. Without it the whole route throws
+              and the socket closes with no response at all. */}
+          <div style={{ display: "flex", marginLeft: "auto", alignSelf: "flex-end", color: "rgba(255,255,255,0.4)", fontSize: 22 }}>
+            doitforme.in/u/{username}
           </div>
         </div>
       </div>

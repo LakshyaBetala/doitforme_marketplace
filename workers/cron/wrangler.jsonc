@@ -1,0 +1,37 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	"name": "doitforme-cron",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-09-07",
+	"compatibility_flags": ["nodejs_compat"],
+
+	// Cloudflare Cron Triggers are UTC, same as Vercel's were.
+	//
+	// auto-release moves from daily to every 15 minutes. Vercel Hobby forbade
+	// anything sub-daily, which meant the 24h auto-release the product promises
+	// could take up to ~48h to actually fire. This is the main reason the app is
+	// on Cloudflare at all — it costs nothing extra here.
+	//
+	// The other two keep the exact UTC times they had in vercel.json so their
+	// behaviour is unchanged: 07:30 UTC (13:00 IST) and 09:00 UTC (14:30 IST).
+	"triggers": {
+		"crons": [
+			"*/15 * * * *",
+			"30 7 * * *",
+			"0 9 * * *"
+		]
+	},
+
+	"vars": {
+		// Overridden per-environment at deploy time if needed.
+		"APP_ORIGIN": "https://doitforme.in"
+	},
+
+	// CRON_SECRET is a secret, not a var:
+	//   npx wrangler secret put CRON_SECRET --config workers/cron/wrangler.jsonc
+	// It must match the CRON_SECRET set on the main Worker.
+
+	"observability": {
+		"enabled": true
+	}
+}

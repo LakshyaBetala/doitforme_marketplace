@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
     "build": "next build --webpack",
+    "dev": "next dev --webpack",
     "start": "next start",
     "lint": "eslint",
     "test:e2e": "playwright test",
@@ -13,7 +13,14 @@
     "test": "npm run test:unit && npm run test:e2e",
     "db:migrate": "node scripts/apply-migrations.mjs",
     "db:audit": "node scripts/constraint-audit.mjs",
-    "db:anon-audit": "node scripts/anon-exposure-audit.mjs"
+    "db:anon-audit": "node scripts/anon-exposure-audit.mjs",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && wrangler dev",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:deploy:cron": "wrangler deploy --config workers/cron/wrangler.jsonc",
+    "cf:size": "wrangler deploy --dry-run --outdir=.wrangler-dryrun",
+    "cf:tail": "wrangler tail"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
@@ -25,7 +32,7 @@
     "dotenv": "^17.4.2",
     "framer-motion": "^12.34.0",
     "lucide-react": "^0.562.0",
-    "next": "16.1.0",
+    "next": "^16.3.4",
     "onnxruntime-web": "^1.24.1",
     "postcss": "^8.5.6",
     "react": "19.2.3",
@@ -37,6 +44,8 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260907.1",
+    "@opennextjs/cloudflare": "^1.20.6",
     "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -45,9 +54,10 @@
     "@types/web-push": "^3.6.4",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.0",
+    "eslint-config-next": "^16.3.4",
     "pg": "^8.23.0",
     "tsx": "^4.23.12",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.129.0"
   }
 }

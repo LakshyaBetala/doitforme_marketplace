@@ -59,3 +59,17 @@ scratch/
 
 # Local probe/verification scripts written during audits
 scratchpad/
+
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+
+# Cloudflare / OpenNext build output
+.open-next/
+.wrangler/
+.wrangler-dryrun*/
+.dev.vars

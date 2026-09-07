@@ -30,7 +30,8 @@ Path alias: `@/*` → repo root (see [tsconfig.json](tsconfig.json)).
 
 - **Next.js 16 + React 19.2 + React Compiler** (`babel-plugin-react-compiler` is enabled).
 - **`proxy.ts` at repo root is the middleware.** Next.js 16 renamed middleware → proxy. It handles auth-gating for `/dashboard`, `/profile`, `/post`, `/feed`, `/gig`, `/onboarding`, `/verify-id` and bounces logged-in users away from `/login`. Do not confuse it with an HTTP proxy.
-- **Webpack is forced** via `--webpack` flags. This is deliberate because `@xenova/transformers` (used for client-side moderation) requires the webpack aliases in [next.config.ts](next.config.ts) (`onnxruntime-node: false`, `sharptools: false`) and `serverExternalPackages`.
+- **Webpack is forced** via `--webpack` flags. This is deliberate because `@xenova/transformers` (used for client-side moderation) requires the aliases and the server-side `externals` interception in [next.config.ts](next.config.ts) — see the trap below. `serverExternalPackages` was removed: it is what broke the Cloudflare build.
+- **Hosted on Cloudflare Workers** via [@opennextjs/cloudflare](https://opennext.js.org/cloudflare). [CLOUDFLARE.md](CLOUDFLARE.md) is the deploy runbook; [wrangler.jsonc](wrangler.jsonc) configures the app Worker and [workers/cron/](workers/cron/) is a second Worker holding the scheduled jobs. Wrangler needs **Node 22+** (developed on 24.20.0) — it hard-refuses on Node 20.
 - **Cross-domain redirects:** `/marketplace/*` and `/store/*` are permanently redirected to `marketforme.in` in [next.config.ts](next.config.ts). The marketplace lives on a sister domain; this repo only hosts the hustle/gig side.
 
 ## Architecture
@@ -297,6 +298,36 @@ From README + handler code:
   optimization is deliberately `unoptimized: true` to keep transformations off a Hobby
   quota; flip it back on a paid plan.
 
+- **`resolve.alias` cannot stop a package reaching the server bundle; `externals` can.**
+  `@xenova/transformers` is browser-only — its sole consumer,
+  [app/hooks/useModeration.ts](app/hooks/useModeration.ts), is imported by `"use
+  client"` pages and loads it through a dynamic import. But Next compiles client
+  components for SSR too, so the specifier still entered the **server** graph, and
+  from there dragged in `onnxruntime-node` (20MB of per-platform `.node` native
+  binaries) and @xenova's bundled `sharp`. esbuild has no loader for `.node`, so
+  the Cloudflare Worker build failed outright.
+  Everything obvious fails: `serverExternalPackages` makes it a runtime `require`,
+  fine on a Node server with node_modules on disk and impossible in a Worker (it
+  is what caused the breakage, and is now removed). Aliasing the package name, the
+  local wrapper, and the resolved absolute path **all silently did nothing** —
+  Next puts ~75 entries in `config.externals` and webpack settles externals during
+  `factorize`, which runs *before* alias resolution, so the alias is never
+  consulted. The fix is an externals **function placed first in the array**
+  returning `var {}`: webpack takes the first entry that returns a result, so
+  Next's handlers never see the request and the package leaves the graph. Paired
+  with `outputFileTracingExcludes`, this is what took the Worker from "fails to
+  build" to **2.84 MB gzipped** against a 3 MB free ceiling.
+
+- **`next/og` throws if any `<div>` with two children lacks an explicit `display`.**
+  Satori — which renders `ImageResponse` — requires it, and
+  `doitforme.in/{username}` counts as two children (a text node and an
+  expression). The route threw for every request and the socket closed with **no
+  response at all**: no status, no error page, just a dead connection, which reads
+  like a platform incompatibility rather than a bug in the JSX. It was broken on
+  Vercel too and nobody noticed, because a broken OG image only shows up as a
+  missing preview when someone shares a profile link. Covered by the smoke test in
+  [CLOUDFLARE.md](CLOUDFLARE.md); if you touch that file, re-render it once.
+
 - **RLS enabled + `USING (true)` + a table-wide grant is not security.** `public.users`
   had *two* duplicate `FOR SELECT USING (true)` policies granted to `PUBLIC` and no
   column privileges. The dashboard showed RLS as on, so it looked handled. It was not:
@@ -386,3 +417,13 @@ These live in [components/ui/](components/ui/). If you find yourself open-coding
 
 ## Local maintenance scripts
 [scripts/maintenance/](scripts/maintenance/) holds ad-hoc PowerShell color-migration scripts and one-off test runners (`test_onboard*.ts`). Gitignored. **Never move `proxy.ts` here** — it is the Next.js 16 middleware and must live at repo root or auth-gating silently breaks (Next does not error when middleware is missing).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
