@@ -23,16 +23,16 @@
 	},
 
 	"vars": {
-		// Points at the Worker's own workers.dev hostname, NOT doitforme.in.
+		// Deliberately the workers.dev hostname, not doitforme.in.
 		//
-		// During the cutover doitforme.in still resolves to the paused Vercel
-		// project, so every scheduled call there would 404 and escrow would stop
-		// auto-releasing — the exact failure this migration exists to fix. The
-		// workers.dev hostname is served by the same Worker and keeps working
-		// after the domain moves, so this is safe to leave as-is.
+		// Both are served by the same Worker, so the jobs reach identical code
+		// either way — but this one has no dependency on the custom domain, the
+		// zone staying active, or a certificate renewing. A DNS problem should
+		// take the website down, not silently stop escrow from auto-releasing.
+		// That decoupling is worth more than the tidiness of a matching URL.
 		//
-		// Switch to "https://doitforme.in" once the zone is live if you would
-		// rather the jobs go through the custom domain.
+		// It was also the only option during the cutover: doitforme.in pointed at
+		// a paused Vercel project, so scheduled calls there 404'd.
 		"APP_ORIGIN": "https://doitforme1.doitforme.workers.dev"
 	},
 
