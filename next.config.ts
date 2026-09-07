@@ -20,6 +20,43 @@ const nextConfig: NextConfig = {
       './node_modules/babel-plugin-react-compiler/**',
     ],
   },
+  // Security headers. None of these were being sent — not on Cloudflare and not
+  // on Vercel before it; nothing in this config ever set them.
+  //
+  // The one that matters most here is frame-ancestors. Without it any site can
+  // put /activity or /gig/<id> in an invisible iframe over their own UI and
+  // harvest the click that releases escrow. On a product whose core action is
+  // "approve and release the money", clickjacking is not theoretical.
+  //
+  // Referrer-Policy is the second: resume links are 5-minute signed URLs and gig
+  // pages carry ids. A full Referer header hands those to every third-party
+  // asset the next page loads.
+  //
+  // A full Content-Security-Policy is deliberately NOT set. This app loads
+  // Razorpay checkout, Supabase, Google Fonts and the Xenova model files from
+  // several origins, and a wrong script-src silently breaks payments — which is
+  // worse than the header being absent. frame-ancestors is the one CSP
+  // directive that carries no such risk, so it ships alone until a full policy
+  // can be worked out against the real origin list.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // 2 years, preload-eligible. Cloudflare terminates TLS for every
+          // route now, so there is no plain-HTTP path left to break.
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // Nothing in the product uses these. Camera stays allowed on self
+          // because ID and gig-image upload can come straight from a phone.
+          { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=(), interest-cohort=()' },
+        ],
+      },
+    ]
+  },
   async redirects() {
     return [
       {
