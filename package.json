@@ -20,7 +20,9 @@
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf:deploy:cron": "wrangler deploy --config workers/cron/wrangler.jsonc",
     "cf:size": "wrangler deploy --dry-run --outdir=.wrangler-dryrun",
-    "cf:tail": "wrangler tail"
+    "cf:tail": "wrangler tail",
+    "cf:secrets": "node scripts/cf-set-secrets.mjs",
+    "cf:secrets:cron": "node scripts/cf-set-secrets.mjs --config workers/cron/wrangler.jsonc"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",
