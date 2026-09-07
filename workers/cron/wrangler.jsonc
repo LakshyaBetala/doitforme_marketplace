@@ -23,8 +23,17 @@
 	},
 
 	"vars": {
-		// Overridden per-environment at deploy time if needed.
-		"APP_ORIGIN": "https://doitforme.in"
+		// Points at the Worker's own workers.dev hostname, NOT doitforme.in.
+		//
+		// During the cutover doitforme.in still resolves to the paused Vercel
+		// project, so every scheduled call there would 404 and escrow would stop
+		// auto-releasing — the exact failure this migration exists to fix. The
+		// workers.dev hostname is served by the same Worker and keeps working
+		// after the domain moves, so this is safe to leave as-is.
+		//
+		// Switch to "https://doitforme.in" once the zone is live if you would
+		// rather the jobs go through the custom domain.
+		"APP_ORIGIN": "https://doitforme1.doitforme.workers.dev"
 	},
 
 	// CRON_SECRET is a secret, not a var:
