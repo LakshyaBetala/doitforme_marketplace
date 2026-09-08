@@ -116,14 +116,65 @@ export default function PrivacyContent() {
             </div>
           </section>
 
-          {/* Section 4: Contact */}
+          {/* Section 4: Cookies & local storage */}
+          <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 shrink-0">
+                <FileText size={20} />
+              </div>
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white">4. Cookies &amp; Local Storage</h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-white font-medium mb-1">No advertising or analytics trackers</h4>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      DoItForMe runs <strong className="text-white">no third-party analytics, advertising or
+                      social tracking</strong> of any kind. There is no Google Analytics, no advertising pixel,
+                      and no session-recording tool on this site. Because we set no tracking cookies, there is
+                      nothing here that requires a cookie consent banner.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium mb-1">Cookies we do set</h4>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      Only the ones needed to keep you signed in. These are set by our authentication provider,
+                      Supabase, and hold your session so you are not asked to log in on every page. They are
+                      strictly necessary — blocking them will stop you being able to log in at all. Clearing
+                      your browser data removes them and signs you out.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium mb-1">What we keep in your browser</h4>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      We store a small amount of data in your browser&apos;s local storage: which
+                      dismissible prompts you have already closed, and — on your first visit — the referring
+                      site and any campaign parameters in the link you arrived through.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-medium mb-1">How we use that first-visit information</h4>
+                    <p className="text-zinc-400 text-sm leading-relaxed">
+                      If you go on to create an account, that referring site and campaign information is saved
+                      against your account so we can tell which channels bring students to the platform. It is
+                      used for that purpose only: it is never sold, never shared with advertisers, and is not
+                      used to build a profile of you or to target you with anything. If you never sign up, it
+                      stays in your browser and never reaches us. You can ask us to delete it along with the
+                      rest of your account data at any time — see the contact details below.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Section 5: Contact */}
           <section className="p-8 rounded-3xl bg-white/10 border border-white/5 hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500 shrink-0">
                 <Mail size={20} />
               </div>
               <div className="space-y-3">
-                <h3 className="text-xl font-bold text-white">4. Contact</h3>
+                <h3 className="text-xl font-bold text-white">5. Contact</h3>
                 <p className="text-zinc-400 leading-relaxed">
                   For any privacy-related concerns, please contact our Data Protection Officer at <a href="mailto:doitforme.in@gmail.com" className="text-brand-purple hover:text-white transition-colors underline decoration-brand-purple/30 underline-offset-4">doitforme.in@gmail.com</a>. We respond within one working day.
                 </p>

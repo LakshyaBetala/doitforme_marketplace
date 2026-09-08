@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: "%s | DoItForMe",
   },
   description:
-    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Payment held until you approve, instant UPI payouts.",
+    "DoItForMe is India's campus freelance network. 650+ verified students earning by completing real tasks for peers and companies. Payment held until you approve, instant UPI payouts.",
   keywords: [
     "DoItForMe", "doitforme.in", "student gig network India",
     "campus freelance India", "student freelance network India", "hire student hustlers",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "700+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
+      "650+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
     url: "https://www.doitforme.in",
     siteName: "DoItForMe",
     images: [{ url: "/logo.png", width: 1200, height: 630, alt: "DoItForMe – India's Campus Freelance Network" }],
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "700+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts.",
+      "650+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts.",
     images: ["/logo.png"],
     creator: "@doitformein",
   },
@@ -74,7 +74,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
     "logo": "https://www.doitforme.in/logo.png",
-    "description": "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies.",
+    "description": "DoItForMe is India's campus freelance network. 650+ verified students earning by completing real tasks for peers and companies.",
     "foundingDate": "2024",
     "areaServed": "IN",
     "founder": [
