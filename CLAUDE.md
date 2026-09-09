@@ -104,7 +104,11 @@ Strategy pivot recorded in [supabase/migrations/20260619_managed_mode.sql](supab
 
 When touching gig/payment code, the canonical reference for state transitions and RLS is [supabase/migrations/20260421_standardize_naming_and_rls.sql](supabase/migrations/20260421_standardize_naming_and_rls.sql) (RLS baseline) and [supabase/migrations/v6_master.sql](supabase/migrations/v6_master.sql).
 
-### Vercel deploy constraints (read before touching [vercel.json](vercel.json))
+### Vercel deploy constraints — HISTORICAL, kept for the rollback path only
+The app is on Cloudflare Workers. `vercel.json` still exists so that rolling back
+is repointing DNS rather than a rebuild, and the notes below are why the crons
+looked the way they did. **Nothing here governs the live deployment** — see the
+Cron section above for what actually runs.
 Two rules that fail the **deploy**, not the build, so `npm run build` passing locally proves nothing:
 - **`vercel.json` is schema-validated and has no comment syntax.** Any unrecognised top-level key (e.g. `"comment"`) fails deployment on both production and preview. Document constraints here instead.
 - **Hobby allows once-per-day crons only.** `0 * * * *` or `*/30 * * * *` fail with *"Hobby accounts are limited to daily cron jobs"*. Hobby timing is also hour-accurate only — a `30 7 * * *` job fires anywhere in 07:00–07:59, so nothing may depend on precise minutes. Pro is required for anything more frequent.
@@ -112,7 +116,23 @@ Two rules that fail the **deploy**, not the build, so `npm run build` passing lo
 Both are guarded by [tests/unit/vercel-config.test.mjs](tests/unit/vercel-config.test.mjs), which also asserts every scheduled path has a matching route file. Run `npm run test:unit` before pushing config changes.
 
 ### Cron (auto-release)
-[vercel.json](vercel.json) schedules a daily GET to `/api/cron/auto-release`. The handler requires an `x-cron-secret` header matching `CRON_SECRET` env var, then scans `gigs` where `status='DELIVERED' AND auto_release_at < now() AND payment_status='HELD' AND dispute_reason IS NULL` in batches of 50 and transitions them to `completed` / `PAYOUT_PENDING`. A near-duplicate handler exists at [app/cron/auto-release/route.ts](app/cron/auto-release/route.ts) (note: **no `/api`** prefix) — it is *not* the one wired into [vercel.json](vercel.json); the scheduled path is the one under `app/api/`. Don't edit the wrong one.
+Scheduling lives in a **second Cloudflare Worker**, [workers/cron/](workers/cron/), not in `vercel.json`. It holds three Cron Triggers and calls the app's own HTTP routes with the `x-cron-secret` header:
+
+| schedule (UTC) | route |
+|---|---|
+| `*/15 * * * *` | `/api/cron/auto-release` |
+| `30 7 * * *` | `/api/cron/nudge-posters` |
+| `0 9 * * *` | `/api/cron/process-payouts` |
+
+`/api/cron/auto-release` scans `gigs` where `status='DELIVERED' AND auto_release_at < now() AND payment_status='HELD' AND dispute_reason IS NULL` in batches of 50 and transitions them to `completed` / `PAYOUT_PENDING`.
+
+**Auto-release runs every 15 minutes, not daily.** That is the main reason the app is on Cloudflare: Vercel Hobby capped crons at once per day and was only hour-accurate, so the 24h auto-release the product promises could take up to ~48h to fire.
+
+`APP_ORIGIN` in [workers/cron/wrangler.jsonc](workers/cron/wrangler.jsonc) deliberately points at the **workers.dev hostname**, not `doitforme.in`. Both route to the same Worker, but the workers.dev one has no dependency on the custom domain, the zone staying active, or a certificate renewing — a DNS problem should take the website down, not silently stop escrow releasing.
+
+The cron Worker is separate on purpose: `.open-next/worker.js` is regenerated on every build, so putting a `scheduled` handler there would mean editing generated output. [tests/unit/cloudflare-config.test.mjs](tests/unit/cloudflare-config.test.mjs) pins the schedules to the routes so the two cannot drift.
+
+`vercel.json` is still in the repo as a rollback artifact and is no longer the scheduler. A near-duplicate handler that used to sit at `app/cron/auto-release/route.ts` (no `/api` prefix) was **deleted** — it called `release_escrow_transactional`, which never inserts the `payout_queue` row.
 
 ### Two-tier content moderation
 Posts and chat messages are filtered for phone/UPI/social-handle leakage and illegal content:
@@ -252,7 +272,7 @@ From README + handler code:
   to the next field, and the value silently counts down under the cursor — reaching
   negative numbers if they scroll far enough. It presents as "the amount changes to a
   random value". Every number input must carry `onWheel={blurOnWheel}` from
-  [lib/inputs.ts](lib/inputs.ts); there are 7 of them.
+  [lib/inputs.ts](lib/inputs.ts); there are 8 of them.
 
 - **`REVOKE ... FROM anon` does nothing; the grant comes from `PUBLIC`.** Postgres
   grants `EXECUTE` on every new function to `PUBLIC`, and `anon`/`authenticated`

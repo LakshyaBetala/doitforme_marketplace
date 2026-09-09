@@ -634,13 +634,24 @@ export default function ProfilePage() {
               
               {/* Avatar overlapping cover */}
               <div className="relative -mt-16 mb-6 inline-flex">
-                <div className="w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[var(--card)] relative z-10 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                {/* A button, not a div: this opens the file picker, so it has to be
+                    reachable and operable from the keyboard. As a div it was
+                    invisible to tab order and did nothing on Enter or Space. */}
+                <button
+                  type="button"
+                  aria-label="Change profile photo"
+                  className="w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[var(--card)] relative z-10 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A9FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <Avatar src={profile.avatar_url} fallback={avatarLetter} className="w-full h-full text-4xl group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-[6px] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
                     {uploadingAvatar ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-8 h-8 text-white" />}
                   </div>
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
-                </div>
+                </button>
+                {/* Outside the button on purpose — an <input> nested inside a
+                    <button> is invalid HTML and browsers recover from it
+                    inconsistently. */}
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAvatarUpload} />
                 
                 {/* Badges */}
                 <div className="absolute bottom-2 right-2 z-20 flex gap-2">
