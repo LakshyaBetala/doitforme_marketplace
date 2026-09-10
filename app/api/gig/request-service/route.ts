@@ -93,14 +93,21 @@ export async function POST(req: Request) {
     // Don't let one customer pile up duplicate open engagements against the same
     // advert by double-tapping the button or coming back a day later. Hand the
     // existing one back instead — the flow then resumes exactly where it was.
-    const { data: existing } = await supabaseAdmin
+    // .limit(1) rather than .maybeSingle(): maybeSingle returns an ERROR when it
+    // finds more than one row, so two requests that raced past this check once
+    // would make every later request fail permanently. Take the newest and move
+    // on — the point is to avoid piling up duplicates, not to assert there are
+    // none.
+    const { data: existingRows } = await supabaseAdmin
       .from("gigs")
       .select("id")
       .eq("source_service_id", advert.id)
       .eq("poster_id", user.id)
       .eq("status", "open")
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(1);
 
+    const existing = existingRows?.[0];
     if (existing) {
       return NextResponse.json({ success: true, gigId: existing.id, existing: true });
     }

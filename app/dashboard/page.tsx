@@ -83,6 +83,13 @@ export default function Dashboard() {
           // while partially staffed (multi-worker) or already handed to someone,
           // and showing it wastes an applicant's time on something they cannot get.
           .is("assigned_worker_id", null)
+          // Hiring someone from their service advert creates a private gig
+          // addressed to that one person. It is a HUSTLE with status='open' and
+          // no assigned worker, so it matches this query exactly — and because
+          // this list excludes your OWN posts, the customer would be the only
+          // person who could not see their own private request. /api/gig/apply
+          // refuses it anyway, so surfacing it here only wastes people's time.
+          .is("source_service_id", null)
           .order("created_at", { ascending: false })
           .limit(20),
         supabase.from("referrals").select("id").eq("referrer_id", authUser.id),

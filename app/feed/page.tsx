@@ -77,6 +77,12 @@ export default function FeedPage() {
         .eq("status", "open")
         // Hide anything already assigned/in progress — see dashboard note.
         .is("assigned_worker_id", null)
+        // A gig created by hiring someone from their service advert is a private
+        // request to ONE named person, not an open call. It is a HUSTLE with
+        // status='open' and no assigned worker yet, which is precisely this
+        // query's filter — so without this line every direct hire request would
+        // be published to the whole task board for strangers to apply to.
+        .is("source_service_id", null)
         .order("is_featured", { ascending: false })
         .order("created_at", { ascending: false })
         .range(from, to);

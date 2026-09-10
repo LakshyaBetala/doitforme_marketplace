@@ -518,6 +518,9 @@ export default function ActivityHubPage() {
                   const applicantCount = Array.isArray(gig.applications)
                     ? (gig.applications[0]?.count ?? 0)
                     : 0;
+                  // Hiring someone from their service advert creates this gig
+                  // with that one provider already attached — see lib/gigRoles.
+                  const isDirectRequest = Boolean(gig.source_service_id) && applicantCount > 0;
                   if (gig.assigned_worker_id) return null;
                   return (
                     <button
@@ -530,15 +533,23 @@ export default function ActivityHubPage() {
                       disabled={applicantCount === 0}
                     >
                       <span className="min-w-0">
+                        {/* A gig created by hiring someone from their advert has
+                            exactly one candidate, and the poster picked them on
+                            purpose. Telling that person "1 person has applied"
+                            describes a shortlist they never made. */}
                         <span className="block text-sm font-semibold text-white">
-                          {applicantCount === 0
-                            ? "No applicants yet"
-                            : `${applicantCount} ${applicantCount === 1 ? "person has" : "people have"} applied`}
+                          {isDirectRequest
+                            ? "Ready when you are"
+                            : applicantCount === 0
+                              ? "No applicants yet"
+                              : `${applicantCount} ${applicantCount === 1 ? "person has" : "people have"} applied`}
                         </span>
                         <span className="block text-xs text-white/55 mt-0.5">
-                          {applicantCount === 0
-                            ? "We'll notify you the moment someone applies."
-                            : "Review them, pick one, and pay to start the work."}
+                          {isDirectRequest
+                            ? "Agree the details, then pay to start. Your money is held until you approve the work."
+                            : applicantCount === 0
+                              ? "We'll notify you the moment someone applies."
+                              : "Review them, pick one, and pay to start the work."}
                         </span>
                       </span>
                       {applicantCount > 0 && (

@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         // 2. Fetch Gig to validate
         const { data: gig, error: gigError } = await supabase
             .from("gigs")
-            .select("poster_id, status, title, price, listing_type")
+            .select("poster_id, status, title, price, listing_type, source_service_id")
             .eq("id", gigId)
             .single();
 
@@ -63,6 +63,17 @@ export async function POST(req: Request) {
                 error: "This is a service someone is offering, not a task. Send them a request to hire them instead.",
                 code: "USE_SERVICE_REQUEST",
             }, { status: 400 });
+        }
+
+        // A gig created by hiring someone from their advert is addressed to that
+        // one person. It is hidden from the feed and from the new-gig alerts, but
+        // it is still a HUSTLE with status='open', so anyone holding the URL could
+        // otherwise apply to work that already has its provider.
+        if (gig.source_service_id) {
+            return NextResponse.json(
+                { error: "This is a direct request to a specific person, not an open task." },
+                { status: 403 }
+            );
         }
 
         // Company tasks are verified-students-only.

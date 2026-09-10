@@ -268,6 +268,9 @@ export default function GigDetailsPage() {
   const isCompanyTask = gig.listing_type === 'COMPANY_TASK';
   // A shopfront advert: the reader is a customer, not an applicant.
   const isAdvert = isServiceAdvert(gig);
+  // A private engagement created by hiring someone from their advert. Nobody can
+  // apply to it — it already has the person it was meant for.
+  const isDirectRequest = Boolean(gig.source_service_id);
   // Both flavours render the same brand purple accent; no off-brand indigo.
   const accentColor = '#8825F5';
   const isMyGig = currentUser?.id === gig.poster_id;
@@ -453,7 +456,34 @@ export default function GigDetailsPage() {
       </div>
 
       {/* STICKY BOTTOM ACTION BAR */}
-      {!isMyGig && gig.status === 'open' && (
+      {/* A gig created by hiring someone from their advert is addressed to one
+          person, who is already attached to it. /api/gig/apply refuses it with a
+          403, so offering an Apply button here would be a button whose only
+          outcome is an error toast. The person it was sent to gets the reason
+          and a way to reply instead. */}
+      {!isMyGig && gig.status === 'open' && isDirectRequest && (
+        <div className="fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#0B0B11] via-[#0B0B11]/95 to-transparent z-40 safe-area-bottom backdrop-blur-sm pointer-events-none">
+          <div className="max-w-2xl mx-auto pointer-events-auto">
+            <div className="rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--brand-purple)]/[0.08] backdrop-blur-xl p-4 flex items-center gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-white">This was sent to you directly</p>
+                <p className="text-xs text-white/60 mt-0.5 leading-relaxed">
+                  Reply to agree the details. They pay into escrow before you start.
+                </p>
+              </div>
+              <button
+                onClick={handleMessagePoster}
+                className="shrink-0 px-5 py-3 rounded-full bg-white text-black hover:bg-zinc-200 font-semibold text-sm transition active:scale-95 inline-flex items-center gap-2"
+              >
+                <MessageCircle size={16} />
+                Reply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isMyGig && gig.status === 'open' && !isDirectRequest && (
         <div className={`fixed bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-[#0B0B11] via-[#0B0B11]/95 to-transparent z-40 safe-area-bottom backdrop-blur-sm pointer-events-none`}>
           <div className="max-w-2xl mx-auto flex gap-4 pointer-events-auto">
             <button 

@@ -65,6 +65,10 @@ export default function ApplicantsPage() {
 
   // A service listing is an advert, not a job — nobody can be hired FROM it.
   const isAdvert = isServiceAdvert(gig || {});
+  // The mirror image: a gig created BY hiring someone from their advert. It has
+  // exactly one candidate and the poster chose them deliberately, so this is a
+  // confirmation screen, not a shortlist.
+  const isDirectRequest = Boolean(gig?.source_service_id);
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -72,7 +76,7 @@ export default function ApplicantsPage() {
 
     const { data: gigData } = await supabase
       .from("gigs")
-      .select("id, title, price, poster_id, status, assigned_worker_id, listing_type")
+      .select("id, title, price, poster_id, status, assigned_worker_id, listing_type, source_service_id")
       .eq("id", gigId)
       .single();
 
@@ -149,7 +153,9 @@ export default function ApplicantsPage() {
           className="text-2xl md:text-3xl font-semibold tracking-tight mb-1"
           style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.02em" }}
         >
-          {applicants.length} {responderNoun(gig || {}, applicants.length)}
+          {isDirectRequest
+            ? "Your request"
+            : `${applicants.length} ${responderNoun(gig || {}, applicants.length)}`}
         </h1>
         <p className="text-sm text-white/55 mb-8 truncate">
           {gig?.title} · <span className="tabular-nums">₹{gig?.price}</span>
@@ -160,6 +166,15 @@ export default function ApplicantsPage() {
             "Hire & pay ₹500" against the very person who was meant to pay you.
             Anyone still listed here enquired before hiring worked; reply and
             they can send a proper request. See lib/gigRoles.ts. */}
+        {isDirectRequest && applicants.length > 0 && (
+          <div className="mb-6 rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--brand-purple)]/[0.06] p-4">
+            <p className="text-[13px] text-white/80 leading-relaxed">
+              You asked this person to do this work. Agree the details with them first — then pay,
+              and we hold the money in escrow until you approve what they deliver.
+            </p>
+          </div>
+        )}
+
         {isAdvert && applicants.length > 0 && (
           <div className="mb-6 rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--brand-purple)]/[0.06] p-4">
             <p className="text-[13px] text-white/80 leading-relaxed">
@@ -173,7 +188,7 @@ export default function ApplicantsPage() {
         {applicants.length === 0 ? (
           <EmptyState
             icon={Users}
-            title={isAdvert ? "No enquiries yet" : "Nobody has applied yet"}
+            title={isAdvert ? "No enquiries yet" : isDirectRequest ? "This request has no candidate" : "Nobody has applied yet"}
             description={
               isAdvert
                 ? "We'll notify you the moment a client gets in touch. Sharing your listing link speeds it up."

@@ -80,6 +80,65 @@ try {
   check("it inherits the advertised price",
     Number(engagement.price) === Number(advert.price));
 
+  // --- a direct request must not become a public listing ---
+  //
+  // The engagement is a HUSTLE with status='open' and no assigned worker, which
+  // is EXACTLY what the task feed selects and exactly what
+  // notify_interested_on_new_gig fires on. Without the guards, asking one person
+  // to do one job would publish it to the whole board and alert every student in
+  // the category.
+  const { rows: alerts } = await c.query(
+    `select count(*)::int as n from notifications where link = $1`, [`/gig/${engagement.id}`]
+  );
+  check("no category-wide alert was sent for a private request", alerts[0].n === 0,
+    `${alerts[0].n} notifications`);
+
+  const { rows: sent } = await c.query(
+    `select count(*)::int as n from gig_alerts_sent where gig_id = $1`, [engagement.id]
+  );
+  check("no gig_alerts_sent rows either", sent[0].n === 0, `${sent[0].n} rows`);
+
+  // The feed's own filters, applied verbatim.
+  const { rows: feed } = await c.query(
+    `select count(*)::int as n from gigs
+      where id = $1
+        and status = 'open'
+        and assigned_worker_id is null
+        and source_service_id is null
+        and listing_type in ('HUSTLE','COMPANY_TASK')`,
+    [engagement.id]
+  );
+  check("the request does not appear in the public task feed", feed[0].n === 0);
+
+  // A control: the same row WOULD have matched without the source_service_id
+  // filter, which is what proves the filter is the thing doing the work.
+  const { rows: wouldHave } = await c.query(
+    `select count(*)::int as n from gigs
+      where id = $1
+        and status = 'open'
+        and assigned_worker_id is null
+        and listing_type in ('HUSTLE','COMPANY_TASK')`,
+    [engagement.id]
+  );
+  check("...and it would have without the filter (so the filter is load-bearing)",
+    wouldHave[0].n === 1);
+
+  // The dashboard's suggestion list has a DIFFERENT filter set from the feed —
+  // it also carries SERVICE and it excludes your own posts, which means the
+  // customer would have been the only person unable to see their own private
+  // request. Pin it separately.
+  const { rows: dash } = await c.query(
+    `select count(*)::int as n from gigs
+      where id = $1
+        and poster_id <> $2
+        and status = 'open'
+        and assigned_worker_id is null
+        and source_service_id is null
+        and listing_type in ('HUSTLE','COMPANY_TASK','SERVICE')`,
+    [engagement.id, advert.poster_id]
+  );
+  check("the request does not appear in the dashboard suggestions", dash[0].n === 0);
+
   // The engagement must be fundable — the advert must not be.
   const { rows: fundable } = await c.query(
     `select (upper(coalesce(listing_type,'')) <> 'SERVICE') as can_fund from gigs where id = any($1)`,
