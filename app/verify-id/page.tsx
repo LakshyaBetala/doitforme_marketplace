@@ -118,7 +118,7 @@ export default function VerifyIDPage() {
         setTimeout(() => router.push("/profile"), 2500);
       } else if (data.decision === "rejected") {
         // Stay on the uploader so they can immediately re-shoot a clearer photo.
-        setReason(data.reason || "We couldn't confirm this is a valid student ID.");
+        setReason(data.reason || "We couldn't confirm this proves you're a student.");
         setFile(null);
         setPreview(null);
       } else {
@@ -211,14 +211,28 @@ export default function VerifyIDPage() {
             <div className="w-16 h-16 bg-brand-purple/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-purple/20">
               <ScanLine className="w-8 h-8 text-brand-purple" />
             </div>
-            <h1 className="text-3xl font-black mb-2">Verify your student ID</h1>
+            <h1 className="text-3xl font-black mb-2">Verify you&apos;re a student</h1>
             <p className="text-white/50">School, college or university — any student ID works.<br/>Most uploads are approved instantly. JPG or PNG.</p>
+
+            {/* Not everyone has a card. Schools that never issue one, first-years
+                whose cards have not been printed, distance learners — students
+                wrote in asking what else they could send, and until the
+                verifier was broadened the answer was nothing. Saying so here is
+                the difference between that fix being usable and invisible. */}
+            <div className="mt-5 text-left rounded-2xl border border-white/[0.08] bg-[var(--card)] p-4">
+              <p className="text-[13px] font-semibold text-white mb-1.5">No student ID card?</p>
+              <p className="text-[12px] text-white/55 leading-relaxed">
+                Any official document naming you and your institution works just as well — a
+                bonafide or study certificate, admission letter, fee receipt, recent marksheet,
+                or an exam hall ticket.
+              </p>
+            </div>
           </div>
 
           {reason && (
             <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-300 text-sm flex items-start gap-3">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <span><strong>Couldn&apos;t verify your last upload.</strong> {reason} Please re-upload a clear photo of the front of your ID.</span>
+              <span><strong>Couldn&apos;t verify your last upload.</strong> {reason} Re-upload a clear, well-lit photo — the front of your ID, or one of the documents listed above.</span>
             </div>
           )}
 

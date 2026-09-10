@@ -43,7 +43,7 @@ export async function verifyStudentIdImage(
     return manualReview("Verification service not configured — a human will review your ID shortly.");
   }
 
-  const prompt = buildPrompt(opts);
+  const prompt = buildKycPrompt(opts);
 
   try {
     const res = await fetch(
@@ -110,17 +110,31 @@ export async function verifyStudentIdImage(
   }
 }
 
-function buildPrompt(opts: VerifyOpts): string {
+/**
+ * The one description of what counts as proof of study.
+ *
+ * Exported because scripts/maintenance/reverify-kyc.mjs used to carry its own
+ * copy, so a backfill scored students against different rules than the live
+ * upload path — and broadening one left the other unchanged.
+ */
+export function buildKycPrompt(opts: VerifyOpts): string {
   return [
-    "You verify student identity cards for an Indian student gig platform.",
-    "Decide if the image is a GENUINE student identity card from ANY recognised educational institution.",
+    "You verify proof of student status for an Indian student gig platform.",
+    "Decide if the image is GENUINE official evidence that this person is currently studying at ANY recognised educational institution.",
     "A school ID, junior-college ID, college ID, university ID, or a graduate/alumni card ALL count as valid — do not require it to be a university.",
     "School IDs — including Class 11, Class 12, Plus Two / +2, higher-secondary, and junior-college cards — are FULLY VALID student IDs. Approve them with high confidence; never down-rank a card just because it is from a school rather than a university.",
-    "Be lenient about the institution type, but STRICT about authenticity: reject blank or unreadable images, random photos/selfies, memes, screenshots of plain text, obvious digital fakes, or documents that are clearly not a student ID (Aadhaar, PAN, driving licence, etc. are NOT student IDs).",
+    // An ID CARD is not the only proof, and insisting on one excludes real
+    // students: schools that never issue cards, first-years whose cards have not
+    // been printed yet, distance and open-university learners. Two students
+    // wrote in asking what else they could send and the honest answer was
+    // "nothing", which is a verification gate failing at its own purpose.
+    "An ID CARD IS NOT REQUIRED. Any official document naming the student and the institution and showing current enrolment is EQUALLY VALID — accept it with the same confidence as a card. This explicitly includes: a bonafide / study certificate, an admission or allotment letter, a fee receipt or challan, a recent marksheet or report card, an exam hall ticket or admit card, a library or hostel card, or a transfer certificate.",
+    "Judge the DOCUMENT, not its format: if it is on institutional letterhead, or bears an institutional seal, stamp or signature, and names the student, treat it as genuine proof.",
+    "Be lenient about the document type and the institution, but STRICT about authenticity: reject blank or unreadable images, random photos/selfies, memes, screenshots of plain text, obvious digital fakes, or government identity documents that say nothing about studying (Aadhaar, PAN, driving licence and passport are NOT proof of student status on their own).",
     opts.declaredName ? `The user says their name is "${opts.declaredName}".` : "",
     opts.declaredCollege ? `The user says their institution is "${opts.declaredCollege}".` : "",
     "Respond with ONLY a compact JSON object (no markdown) using exactly these keys:",
-    '{"is_student_id": boolean, "institution": string|null, "student_name": string|null, "id_type": "school"|"college"|"university"|"graduate"|"other"|null, "confidence": number 0..1, "reason": "one short sentence a student would understand"}',
+    '{"is_student_id": boolean, "institution": string|null, "student_name": string|null, "id_type": "school"|"college"|"university"|"graduate"|"certificate"|"admission_letter"|"fee_receipt"|"marksheet"|"other"|null, "confidence": number 0..1, "reason": "one short sentence a student would understand"}',
   ]
     .filter(Boolean)
     .join("\n");
@@ -141,9 +155,9 @@ function manualReview(reason: string): KycResult {
 function defaultReason(decision: KycDecision): string {
   switch (decision) {
     case "approved":
-      return "Your student ID looks valid.";
+      return "Your student proof looks valid.";
     case "rejected":
-      return "This doesn't look like a valid student ID. Please upload a clear photo of your school/college ID card.";
+      return "We couldn't read this as proof of study. Send a clear photo of your student ID — or, if you don't have one, a bonafide certificate, admission letter, fee receipt or recent marksheet.";
     default:
       return "Your ID is queued for a quick manual review.";
   }

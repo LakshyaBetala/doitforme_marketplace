@@ -274,7 +274,7 @@ export default function ProfilePage() {
         setEditPhone(userData.phone ? String(userData.phone) : "");
         setEditPreferences(userData.preferences || []);
         setEditUpiId(userData.upi_id ? String(userData.upi_id) : "");
-        setEditCollege(userData.college ? String(userData.college) : COLLEGES[0]);
+        setEditCollege(userData.college ? String(userData.college) : "");
         setEditCustomCollege("");
         setEditBio(userData.bio ? String(userData.bio) : "");
 
@@ -356,7 +356,7 @@ export default function ProfilePage() {
     setEditPhone(profile.phone ? String(profile.phone) : "");
     setEditPreferences(profile.preferences || []);
     setEditUpiId(profile.upi_id ? String(profile.upi_id) : "");
-    setEditCollege(profile.college ? String(profile.college) : COLLEGES[0]);
+    setEditCollege(profile.college ? String(profile.college) : "");
     setEditCustomCollege("");
     setEditBio(profile.bio ? String(profile.bio) : "");
     setEditUsername("");
@@ -368,10 +368,18 @@ export default function ProfilePage() {
 
   // 7-day cooldown (keyed on profile_last_edited_at so new signups aren't locked).
   //
-  // It exists to stop identity churn, so it covers only the two fields that can
-  // churn: name and phone. Everything else is either write-once-when-empty
-  // (username, UPI, college) or cosmetic (bio, preferences) — locking those just
-  // meant a user who saved once couldn't touch their bio for a week.
+  // It exists to stop identity churn, so it covers the fields that can churn:
+  // name, phone and college. Everything else is either write-once-when-empty
+  // (username, UPI) or cosmetic (bio, preferences) — locking those just meant a
+  // user who saved once couldn't touch their bio for a week.
+  //
+  // College used to be write-once and then locked FOREVER, which sounded
+  // harmless and was not: the signup dropdown pre-selected the first entry
+  // alphabetically, so 767 accounts recorded "Amity University" without anyone
+  // choosing it, and none of them could correct it. A wrong college also blocks
+  // student verification, because the ID names a different institution. It is an
+  // identity field, so it belongs under the cooldown with name and phone — a
+  // week between changes, not never.
   // Declared above saveProfile so the handler does not close over a binding
   // initialised further down the render body.
   const EDIT_COOLDOWN_DAYS = 7;
@@ -417,8 +425,10 @@ export default function ProfilePage() {
       finalUpiId = editUpiId.trim();
     }
 
+    // Resolve whenever editing is allowed. This used to run only when the stored
+    // college was empty, which is what made a wrong college permanent.
     let finalCollege = profile.college;
-    if (!profile.college) {
+    if (!identityLocked) {
       if (editCollege === "Other") {
         finalCollege = editCustomCollege.trim();
         if (!finalCollege) {
@@ -455,8 +465,12 @@ export default function ProfilePage() {
       // so opening edit and clicking Save cost the user seven days.
       const nextName = String(editName).trim();
       const nextPhone = String(editPhone).trim();
+      const collegeChanged =
+        !identityLocked && !!finalCollege && finalCollege !== profile.college;
       const identityChanged = !identityLocked &&
-        (nextName !== String(profile.name || "").trim() || nextPhone !== String(profile.phone || "").trim());
+        (nextName !== String(profile.name || "").trim()
+          || nextPhone !== String(profile.phone || "").trim()
+          || collegeChanged);
 
       const updates: any = {
         preferences: editPreferences,
@@ -472,7 +486,7 @@ export default function ProfilePage() {
         updates.profile_last_edited_at = new Date().toISOString();
       }
 
-      if (!profile.college && finalCollege) updates.college = finalCollege;
+      if (!identityLocked && finalCollege) updates.college = finalCollege;
       if (!profile.upi_id && finalUpiId) updates.upi_id = finalUpiId;
       if (!profile.username && editUsername.trim() && usernameStatus === "available") {
         updates.username = editUsername.trim().toLowerCase();
@@ -492,7 +506,7 @@ export default function ProfilePage() {
         authData.name = nextName;
         authData.phone = nextPhone;
       }
-      if (!profile.college && finalCollege) authData.college = finalCollege;
+      if (!identityLocked && finalCollege) authData.college = finalCollege;
       if (!profile.upi_id && finalUpiId) authData.upi_id = finalUpiId;
 
       if (Object.keys(authData).length > 0) {
@@ -847,9 +861,9 @@ export default function ProfilePage() {
                 {/* College */}
                 <div>
                   <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
-                    University / College {profile.college && <Lock size={10} className="text-zinc-600" />}
+                    University / College {identityLocked && <Lock size={10} className="text-zinc-600" />}
                   </label>
-                  {isEditing && !profile.college ? (
+                  {isEditing && !identityLocked ? (
                     <div className="relative z-[60]">
                       <UniversitySelect value={editCollege} onChange={setEditCollege} />
                       {editCollege === "Other" && (

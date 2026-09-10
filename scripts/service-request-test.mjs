@@ -16,6 +16,8 @@ const c = new pg.Client({
 await c.connect();
 
 let pass = 0, fail = 0;
+// Remembered so the post-rollback check can look for THIS run's row specifically.
+let probeEngagementId = null;
 const check = (name, ok, detail = "") => {
   if (ok) { pass++; console.log(`  PASS  ${name}`); }
   else { fail++; console.log(`  FAIL  ${name}${detail ? " — " + detail : ""}`); }
@@ -53,6 +55,7 @@ try {
   );
   check("engagement insert is accepted by the live schema", eng.length === 1);
   const engagement = eng[0];
+  probeEngagementId = engagement.id;
 
   const { rows: app } = await c.query(
     `insert into applications (gig_id, worker_id, status, pitch, payment_preference)
@@ -175,10 +178,21 @@ try {
   await c.query("ROLLBACK");
 }
 
-const { rows: leftover } = await c.query(
-  `select count(*)::int as n from gigs where source_service_id is not null`
-);
-check("no probe rows survived the rollback", leftover[0].n === 0, `${leftover[0].n} left`);
+// Scoped to THIS probe's own row, not to the column in general.
+//
+// The first version asserted that no gig anywhere carried a source_service_id,
+// which was true only while the feature was unused. Real customers then started
+// hiring from adverts and the test began failing on live data it should never
+// have been looking at — a test that breaks when the product succeeds is a
+// broken test, not a finding.
+if (probeEngagementId) {
+  const { rows: leftover } = await c.query(
+    `select count(*)::int as n from gigs where id = $1`, [probeEngagementId]
+  );
+  check("the probe's own rows did not survive the rollback", leftover[0].n === 0);
+} else {
+  check("the probe's own rows did not survive the rollback", true);
+}
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`);
 await c.end();

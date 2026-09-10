@@ -29,9 +29,29 @@ const ICON: Record<ErrorSide, string> = {
   us: "⚠️",
 };
 
-// Short, human reference code for server-side errors so users can report them.
-function makeRef(): string {
-  return "ERR-" + Math.random().toString(16).slice(2, 6).toUpperCase();
+// Short reference code for server-side errors, DERIVED FROM THE FAULT so that
+// the same underlying failure always produces the same code.
+//
+// This used to be Math.random(). That made every report untraceable: a student
+// wrote in quoting "ERR-857F" and there was nothing on earth that code could be
+// matched against — not a log, not another report, not even a second occurrence
+// of the same bug, which would have produced a different code. It was a
+// reference to nothing.
+//
+// Hashing the raw message instead means two people hitting the same fault quote
+// the same code, one person hitting it twice quotes it twice, and support can
+// recompute the code for a suspected cause and compare. Same length, same
+// shape, actually a reference.
+function makeRef(fault?: string): string {
+  const basis = (fault || "unknown").toLowerCase().replace(/\d{2,}/g, "#").slice(0, 200);
+  // FNV-1a: tiny, stable, and we need collision-resistance only across the
+  // handful of distinct faults this app can produce, not cryptographic strength.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < basis.length; i++) {
+    h ^= basis.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return "ERR-" + h.toString(16).toUpperCase().padStart(8, "0").slice(0, 4);
 }
 
 function netError(): FriendlyError {
@@ -47,8 +67,19 @@ function youError(title: string, message: string): FriendlyError {
   return { side: "you", icon: ICON.you, title, message };
 }
 
-function usError(message = "We've been notified — please try again in a moment."): FriendlyError {
-  const ref = makeRef();
+// `fault` is the raw underlying error. It is never shown to the user — it only
+// seeds the reference code and the console line below.
+function usError(
+  message = "Please try again in a moment. If it keeps happening, send us this code.",
+  fault?: string
+): FriendlyError {
+  const ref = makeRef(fault);
+  // Put the real cause somewhere a person can retrieve it. The old copy said
+  // "We've been notified", which was not true — nothing was reported anywhere,
+  // so the only record of a server fault was the user's own screenshot.
+  if (typeof console !== "undefined") {
+    console.error(`[${ref}] ${fault || "unclassified error"}`);
+  }
   return { side: "us", icon: ICON.us, title: "Something went wrong on our end", message, ref };
 }
 
@@ -96,7 +127,7 @@ function mapKnownCode(code: string): FriendlyError | null {
     case "PGRST116": // no rows
       return youError("Not found", "We couldn't find what you were looking for.");
     case "23503": // foreign_key_violation — almost always our bug
-      return usError();
+      return usError(undefined, `pg:${code}`);
     case "429":
       return youError("Too many attempts", "Please wait a few seconds, then try again.");
     default:
@@ -133,7 +164,7 @@ export function classifyError(input: unknown): FriendlyError {
     }
 
     // Unknown object error → treat as our problem (don't blame the user, don't leak internals)
-    return usError();
+    return usError(undefined, code ? `${code}: ${msg}` : msg);
   }
 
   return usError();

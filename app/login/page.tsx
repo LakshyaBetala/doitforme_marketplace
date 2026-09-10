@@ -41,7 +41,13 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [college, setCollege] = useState(COLLEGES[0]);
+  // Deliberately empty, NOT COLLEGES[0]. Pre-selecting the first entry meant
+  // anyone who never opened the dropdown was silently recorded as attending
+  // whichever college sorts first alphabetically — and 767 accounts now say
+  // "Amity University", 5.6x the next-largest college on the platform. The
+  // field was also write-once, so those people could never correct it, and a
+  // wrong college blocks student verification.
+  const [college, setCollege] = useState("");
   const [customCollege, setCustomCollege] = useState("");
 
   // NEW: UPI ID State
@@ -155,6 +161,14 @@ function AuthPage() {
     if (!email || !password || !name || !phone) {
       setLoading(false);
       return setMessage("Please fill in all required fields. UPI is optional and can be added later in your profile.");
+    }
+
+    // College is no longer pre-filled, so it has to be checked. It was never
+    // validated before because the dropdown always held a value — the first one
+    // in the list, whether or not the user had ever looked at it.
+    if (!finalCollege) {
+      setLoading(false);
+      return setMessage("Please choose your school, college or university.");
     }
 
     if (college === "Other" && !finalCollege) {
