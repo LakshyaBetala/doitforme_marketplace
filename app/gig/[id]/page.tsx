@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
 import { isDocAttachment, isImageAttachment, attachmentLabel } from "@/lib/attachments";
 import { platformFeeFor, audienceForGig, PLATFORM_FEES } from "@/lib/fees";
+import { posterIsRecipient, browserActionLabel, listingTypeLabel } from "@/lib/gigRoles";
 
 export default function GigDetailsPage() {
   const params = useParams();
@@ -274,11 +275,21 @@ export default function GigDetailsPage() {
               {/* What the worker actually banks. The listed price is not the
                   take-home, and finding that out only at payout is how you get
                   an angry student and a dispute. */}
-              {(gig.listing_type === 'HUSTLE' || gig.listing_type === 'COMPANY_TASK') && Number(gig.price) > 0 && (
-                <p className="text-xs text-white/45 mt-1.5">
-                  You receive <span className="text-white/80 font-semibold">₹{Number(gig.price) - platformFeeFor(Number(gig.price), audienceForGig(gig))}</span>
-                  {" "}after the {Math.round(PLATFORM_FEES[audienceForGig(gig)] * 100)}% platform fee
-                </p>
+              {Number(gig.price) > 0 && (
+                posterIsRecipient(gig) ? (
+                  // Supply listing: the reader is the customer. Quote what they
+                  // pay, not a payout they will never receive — this block used
+                  // to be hidden entirely for SERVICE, so a service listing
+                  // showed a bare number with no explanation of it at all.
+                  <p className="text-xs text-white/45 mt-1.5">
+                    Starting price. Held in escrow and released only once you approve the work.
+                  </p>
+                ) : (
+                  <p className="text-xs text-white/45 mt-1.5">
+                    You receive <span className="text-white/80 font-semibold">₹{Number(gig.price) - platformFeeFor(Number(gig.price), audienceForGig(gig))}</span>
+                    {" "}after the {Math.round(PLATFORM_FEES[audienceForGig(gig)] * 100)}% platform fee
+                  </p>
+                )
               )}
             </div>
             <div className="flex items-center gap-5 border-l border-white/10 pl-6 h-10">
@@ -295,7 +306,9 @@ export default function GigDetailsPage() {
             <span className={`px-4 py-1.5 text-xs font-semibold rounded-full border ${
               isCompanyTask ? 'bg-white/10 text-white border-white/20' : 'bg-[#8825F5]/10 text-[#C9A9FF] border-[#8825F5]/20'
             }`}>
-              {gig.listing_type === 'COMPANY_TASK' ? 'Company Task' : gig.listing_type === 'HUSTLE' ? 'Hustle' : gig.listing_type}
+              {/* Never the raw column — a service listing was rendering a badge
+                  that literally read "SERVICE" in caps. */}
+              {listingTypeLabel(gig)}
             </span>
             {gig.category && (
               <span className={`px-4 py-1.5 text-xs font-medium rounded-full border border-white/10 text-zinc-400 bg-white/5`}>
@@ -405,7 +418,12 @@ export default function GigDetailsPage() {
               onClick={() => setIsApplyModalOpen(true)} 
               className={`flex-1 py-4 bg-white text-black hover:bg-zinc-200 transition font-semibold text-[15px] rounded-full active:scale-95 flex items-center justify-center gap-3 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]`}
             >
-              <Send size={18} /> Apply for Task
+              {/* The verb has to match the direction of the listing. On a
+                  SERVICE the poster is the one being paid, so the reader is a
+                  customer about to hire — telling them to "apply for a task"
+                  described the opposite transaction, and 787 people followed it
+                  into a flow that never completed once. */}
+              <Send size={18} /> {browserActionLabel(gig)}
             </button>
           </div>
         </div>

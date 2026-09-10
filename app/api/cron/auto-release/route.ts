@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { platformFeeFor, audienceForGig } from "@/lib/fees";
+import { payoutRecipientId, posterIsRecipient } from "@/lib/gigRoles";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,10 +42,20 @@ export async function GET(req: Request) {
 
     // 2. Process Auto-Release
     for (const gig of gigs) {
-      // MARKET: Pay Poster (Seller)
-      // HUSTLE: Pay Assigned Worker
-      const recipient = (gig.listing_type === 'MARKET') ? gig.poster : gig.worker;
-      const recipientId = (gig.listing_type === 'MARKET') ? gig.poster_id : gig.assigned_worker_id;
+      // Who gets paid comes from lib/gigRoles, not from an inline check here.
+      // This previously tested only for 'MARKET' — of which there are zero rows
+      // — so SERVICE listings (407 of 444) fell through to the assigned worker,
+      // who on a service listing is the CLIENT, not the provider. It never fired
+      // because no SERVICE listing had ever been funded, but it would have paid
+      // the buyer the moment one did.
+      const recipientId = payoutRecipientId(gig);
+      const recipient = posterIsRecipient(gig) ? gig.poster : gig.worker;
+
+      if (!recipientId) {
+        console.error(`[AUTO-RELEASE] gig=${gig.id} skipped: no payout recipient resolvable`);
+        details.push({ gigId: gig.id, skipped: "no payout recipient" });
+        continue;
+      }
 
       // Use the fee that was actually charged at funding time (stored on the
       // gig). Fall back to recomputing from the audience rate (student 5% /

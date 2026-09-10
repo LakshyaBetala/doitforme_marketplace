@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
+import { payoutRecipientId } from "@/lib/gigRoles";
 import { createRazorpayOrder, razorpayConfigured } from "@/lib/razorpay";
 
 
@@ -26,12 +27,29 @@ export async function POST(req: Request) {
 
     if (gigError || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    // 3. Determine Recipient (Who gets the money/whose stats determine fee?)
-    // Market: Poster (Seller)
-    // Hustle: Assigned Worker (Worker)
-    let recipientId = gig.poster_id;
-    if (!gig.assigned_worker_id) return NextResponse.json({ error: "No worker assigned to pay" }, { status: 400 });
-    recipientId = gig.assigned_worker_id;
+    // 3. Determine Recipient (who gets the money, and whose stats set the fee).
+    //
+    // This used to assign gig.poster_id and then overwrite it unconditionally
+    // with assigned_worker_id — no listing_type check at all — while
+    // cron/auto-release branched on 'MARKET'. The two disagreed; they only
+    // matched because no MARKET row exists. payoutRecipientId is now the single
+    // answer both use. See lib/gigRoles.ts.
+    if (!gig.assigned_worker_id) {
+      return NextResponse.json({ error: "No counterparty assigned yet." }, { status: 400 });
+    }
+    const recipientId = payoutRecipientId(gig);
+    if (!recipientId) {
+      return NextResponse.json({ error: "Cannot determine who to pay for this listing." }, { status: 400 });
+    }
+
+    // Refuse to let the recipient fund their own payout. On a SERVICE listing
+    // the poster is the one being paid, so the poster is not the payer.
+    if (user.id === recipientId) {
+      return NextResponse.json(
+        { error: "You are the one being paid for this listing." },
+        { status: 403 }
+      );
+    }
 
     // 4. Fetch Recipient Stats (for Tiered Fee) & Payer Details (for Gateway)
     // We need the payer's name/email/phone to prefill checkout
