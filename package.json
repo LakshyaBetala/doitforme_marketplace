@@ -22,7 +22,8 @@
     "cf:size": "wrangler deploy --dry-run --outdir=.wrangler-dryrun",
     "cf:tail": "wrangler tail",
     "cf:secrets": "node scripts/cf-set-secrets.mjs",
-    "cf:secrets:cron": "node scripts/cf-set-secrets.mjs --config workers/cron/wrangler.jsonc"
+    "cf:secrets:cron": "node scripts/cf-set-secrets.mjs --config workers/cron/wrangler.jsonc",
+    "test:service-request": "node scripts/service-request-test.mjs"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

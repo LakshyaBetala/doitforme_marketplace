@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
-import { payoutRecipientId } from "@/lib/gigRoles";
+import { payoutRecipientId, canFundEscrow } from "@/lib/gigRoles";
 import { createRazorpayOrder, razorpayConfigured } from "@/lib/razorpay";
 
 
@@ -27,6 +27,18 @@ export async function POST(req: Request) {
 
     if (gigError || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
+    // A service listing is a shopfront advert and cannot hold escrow. Funding
+    // one produces a gig whose delivery step nobody is able to perform, because
+    // the provider is its poster and /api/gig/deliver only accepts the assigned
+    // worker. Hiring goes through /api/gig/request-service, which creates a real
+    // engagement. See lib/gigRoles.ts.
+    if (!canFundEscrow(gig)) {
+      return NextResponse.json(
+        { error: "This is a service listing. Send the provider a request to hire them." },
+        { status: 400 }
+      );
+    }
+
     // 3. Determine Recipient (who gets the money, and whose stats set the fee).
     //
     // This used to assign gig.poster_id and then overwrite it unconditionally
@@ -42,8 +54,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Cannot determine who to pay for this listing." }, { status: 400 });
     }
 
-    // Refuse to let the recipient fund their own payout. On a SERVICE listing
-    // the poster is the one being paid, so the poster is not the payer.
+    // Refuse to let the recipient fund their own payout — a round trip that
+    // charges a platform fee on money that never changed hands.
     if (user.id === recipientId) {
       return NextResponse.json(
         { error: "You are the one being paid for this listing." },

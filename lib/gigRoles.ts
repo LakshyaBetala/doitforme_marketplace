@@ -1,36 +1,45 @@
-// Who is selling, who is buying, and who gets paid.
+// Who pays, who is paid, and which listings can hold money at all.
 //
-// This exists because two code paths answered that question differently and only
-// agreed by accident:
+// DoItForMe is a freelance platform, not a marketplace. That single sentence
+// settles the question this file exists to answer, and it is the opposite of
+// what the code had drifted into believing.
 //
-//   payments/create-order  set recipientId = poster_id, then immediately
-//                          overwrote it with assigned_worker_id, with no
-//                          listing_type check at all.
-//   cron/auto-release      paid the poster when listing_type === 'MARKET' and
-//                          the worker otherwise.
+// THE ONE MONEY DIRECTION
 //
-// There are zero MARKET rows in the database, so both happened to land on the
-// worker and nobody noticed. The moment a listing type that pays the poster
-// actually settles, they would disagree and money would move to the wrong
-// person. Import from here instead of re-deciding at each call site — same
-// reason lib/fees.ts exists.
+// On a freelance platform there is exactly one shape of transaction:
 //
-// THE TWO DIRECTIONS
+//     the POSTER is the client and pays.
+//     the assigned WORKER does the work and is paid.
 //
-// A listing is one of two things, and the difference is who owes whom:
+// Every lifecycle step is built on that and only that — /api/gig/deliver checks
+// the worker, manual_release_escrow authorizes the poster, dispute and
+// request-changes are poster actions. Those are correct and must stay.
 //
-//   DEMAND  ("I need something done")  HUSTLE, COMPANY_TASK
-//           The poster is paying. Students apply; the poster picks one, funds
-//           escrow, and the assigned worker is paid on approval.
+// WHERE IT WENT WRONG
 //
-//   SUPPLY  ("I'm offering a service") SERVICE, MARKET
-//           The poster is being paid. Someone browsing wants to hire them, so
-//           the interested party is the client and the POSTER is the recipient.
+// SERVICE listings ("I am offering a service") were modelled as a second,
+// mirrored money direction where the poster collects instead of pays. That
+// inverted every one of the guards above, so a service listing could not
+// complete even in principle: the customer was not allowed to fund it, the
+// customer would have had to deliver the work, and the provider would have
+// approved their own delivery.
 //
-// SUPPLY is 407 of 444 live listings and had never once settled — 787 people
-// registered interest and not one transaction completed, because every screen
-// told the buyer to "Apply for Task" and the payout would have gone to whoever
-// clicked apply.
+// It never actually paid anyone the wrong amount, because it never got that
+// far — 407 of 444 listings are SERVICE, they took 787 applications, and not
+// one was ever funded, assigned, completed or paid.
+//
+// THE FIX IS TO STOP MIRRORING
+//
+// A SERVICE listing is a shopfront advert. app/post/page.tsx already calls it
+// exactly that, and /talent browses them while /feed carries the task board, so
+// the separation was already in the product — only the money model disagreed.
+// An advert never holds escrow. Hiring from one creates a NORMAL engagement via
+// /api/gig/request-service, where the customer is the poster and the provider
+// is the assigned worker. The whole lifecycle then applies unchanged.
+//
+// So there is no second direction to support, and no seller/buyer concept to
+// introduce. There is one direction, plus a kind of listing that is not a
+// transaction.
 
 export type GigLike = {
   listing_type?: string | null;
@@ -38,61 +47,71 @@ export type GigLike = {
   assigned_worker_id?: string | null;
 };
 
-/** Listing types where the POSTER is the one being paid. */
-const POSTER_IS_PAID = new Set(["SERVICE", "MARKET"]);
-
-/** Listing types where the poster is paying someone else. */
-const POSTER_PAYS = new Set(["HUSTLE", "COMPANY_TASK"]);
+const typeOf = (gig: GigLike) => String(gig.listing_type || "").toUpperCase();
 
 /**
- * True when the poster is selling — advertising a service or an item — so the
- * money flows toward them rather than away.
+ * A shopfront advert — someone publishing what they can do, not a job.
+ *
+ * Adverts are browsable and messageable but cannot be applied to, assigned,
+ * funded or settled. canFundEscrow is the guard that enforces it.
+ */
+export function isServiceAdvert(gig: GigLike): boolean {
+  return typeOf(gig) === "SERVICE";
+}
+
+/**
+ * Listings that can hold escrow. Everything except an advert.
+ *
+ * Payment routes check this so a service listing is refused at the door with an
+ * explanation, rather than funding a gig whose delivery step nobody can perform.
+ */
+export function canFundEscrow(gig: GigLike): boolean {
+  return !isServiceAdvert(gig);
+}
+
+/**
+ * True only for MARKET — a sold or rented item, where the poster is the seller
+ * and therefore the one being paid.
+ *
+ * MARKET belongs to the sister marketplace on marketforme.in and has ZERO rows
+ * in this database. It is preserved because the fee and release code already
+ * handles it and removing it is a separate migration, not because this product
+ * has a second money direction. For every listing this platform actually runs,
+ * the answer here is false.
  */
 export function posterIsRecipient(gig: GigLike): boolean {
-  return POSTER_IS_PAID.has(String(gig.listing_type || "").toUpperCase());
-}
-
-/** Human-facing direction, for copy and CTAs. */
-export function gigDirection(gig: GigLike): "SUPPLY" | "DEMAND" {
-  return posterIsRecipient(gig) ? "SUPPLY" : "DEMAND";
+  return typeOf(gig) === "MARKET";
 }
 
 /**
- * The user id that receives the payout.
+ * The user id that receives the payout: the assigned worker.
  *
- * SUPPLY  -> the poster (they did the work / sold the item)
- * DEMAND  -> the assigned worker
- *
- * Returns null when the counterparty is not yet decided, which callers must
- * treat as "cannot settle yet" rather than falling back to a default — paying
- * the wrong side is worse than refusing.
+ * Returns null when nobody is assigned, which callers must treat as "cannot
+ * settle yet" rather than falling back to a default — refusing to pay is always
+ * recoverable, paying the wrong person is not.
  */
 export function payoutRecipientId(gig: GigLike): string | null {
   return (posterIsRecipient(gig) ? gig.poster_id : gig.assigned_worker_id) ?? null;
 }
 
-/**
- * The user id expected to FUND escrow — the mirror of payoutRecipientId.
- *
- * SUPPLY  -> the interested party held in assigned_worker_id (the client)
- * DEMAND  -> the poster
- */
+/** The user id expected to fund escrow — the mirror of payoutRecipientId. */
 export function payerId(gig: GigLike): string | null {
   return (posterIsRecipient(gig) ? gig.assigned_worker_id : gig.poster_id) ?? null;
 }
 
 /**
- * What the person browsing this listing is about to do, as a verb they will
- * recognise. A service listing is not a task, and telling someone to "apply"
- * for one is what made 787 applications go nowhere.
+ * What the person reading this listing is about to do.
+ *
+ * An advert is not a task, and telling a prospective customer to "apply" for
+ * one described the opposite transaction — which is what 787 people followed.
  */
 export function browserActionLabel(gig: GigLike): string {
-  return posterIsRecipient(gig) ? "Request this service" : "Apply for task";
+  return isServiceAdvert(gig) ? "Request this service" : "Apply for task";
 }
 
-/** Badge text. Never render listing_type raw — "SERVICE" in caps is a database value, not a label. */
+/** Badge text. Never render listing_type raw — "SERVICE" in caps is a column value, not a label. */
 export function listingTypeLabel(gig: GigLike): string {
-  switch (String(gig.listing_type || "").toUpperCase()) {
+  switch (typeOf(gig)) {
     case "COMPANY_TASK": return "Company task";
     case "HUSTLE": return "Task";
     case "SERVICE": return "Service";
@@ -101,5 +120,17 @@ export function listingTypeLabel(gig: GigLike): string {
   }
 }
 
-/** Sanity guard for tests and callers: every known type is classified exactly once. */
-export const KNOWN_LISTING_TYPES = [...POSTER_IS_PAID, ...POSTER_PAYS];
+/**
+ * What to call the people who responded to a listing.
+ *
+ * Nobody "applies" to an advert — they enquire. Calling a prospective customer
+ * an applicant is what put a "Hire & pay" button in front of the provider,
+ * pointed at the person who was supposed to be paying them.
+ */
+export function responderNoun(gig: GigLike, count: number): string {
+  if (isServiceAdvert(gig)) return count === 1 ? "enquiry" : "enquiries";
+  return count === 1 ? "applicant" : "applicants";
+}
+
+/** Every listing type this platform recognises. */
+export const KNOWN_LISTING_TYPES = ["HUSTLE", "COMPANY_TASK", "SERVICE", "MARKET"];

@@ -11,7 +11,8 @@ import { toast } from "sonner";
 import { friendlyError, friendlyHttpError } from "@/lib/errors";
 import { isDocAttachment, isImageAttachment, attachmentLabel } from "@/lib/attachments";
 import { platformFeeFor, audienceForGig, PLATFORM_FEES } from "@/lib/fees";
-import { posterIsRecipient, browserActionLabel, listingTypeLabel } from "@/lib/gigRoles";
+import { blurOnWheel } from "@/lib/inputs";
+import { isServiceAdvert, browserActionLabel, listingTypeLabel } from "@/lib/gigRoles";
 
 export default function GigDetailsPage() {
   const params = useParams();
@@ -30,6 +31,13 @@ export default function GigDetailsPage() {
   // Apply Modal State
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [offerPitch, setOfferPitch] = useState("");
+  // What the applicant wants to be paid (or, on an advert, the budget the
+  // customer is offering). The API, the applicant list and /api/gig/hire have
+  // all read applications.negotiated_price the whole time — there was simply no
+  // field anywhere in the product that set it, so every hire happened at the
+  // asking price and the two offer modals in /chat and /messages are dead code
+  // that nothing opens.
+  const [offerPrice, setOfferPrice] = useState("");
 
   const [isApplying, setIsApplying] = useState(false);
 
@@ -98,7 +106,17 @@ export default function GigDetailsPage() {
     const hasResume = !!userProfile?.resume_url;
     const hasPhone = !!userProfile?.phone;
 
-    if ((!hasSkills && !hasResume) || !hasPhone) {
+    // The skills-or-resume gate exists so a poster has something to judge an
+    // applicant on. Someone HIRING is not being judged — asking a customer for
+    // a CV before they may spend money is friction with nothing behind it. They
+    // still need a phone number, because the provider has to reach them.
+    if (isAdvert) {
+      if (!hasPhone) {
+        toast.error("Add a phone number so they can reach you.");
+        router.push(`/onboarding?next=/gig/${gigId}`);
+        return;
+      }
+    } else if ((!hasSkills && !hasResume) || !hasPhone) {
       toast.error("Please complete your profile to continue.");
       router.push(`/profile/worker-setup?from=apply&gigId=${gigId}`);
       return;
@@ -115,12 +133,40 @@ export default function GigDetailsPage() {
     setIsApplying(true);
 
     try {
+      // A service listing is a shopfront advert, so there is nothing to apply
+      // to — the reader is a customer who wants to hire this person. Requesting
+      // creates a NEW engagement where the customer is the poster and pays, and
+      // the provider is the assigned worker and is paid, which is the only money
+      // direction the rest of the lifecycle supports. See lib/gigRoles.ts.
+      if (isAdvert) {
+        const res = await fetch("/api/gig/request-service", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            serviceId: gigId,
+            brief: offerPitch,
+            offerPrice: offerPrice ? Number(offerPrice) : undefined,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(friendlyHttpError(res.status, data?.error));
+          return;
+        }
+
+        toast.success("Request sent — agree the details in chat, then pay to start.");
+        router.push(`/chat/${data.gigId}`);
+        return;
+      }
+
       const res = await fetch("/api/gig/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gigId,
           offerPitch,
+          offerPrice: offerPrice ? Number(offerPrice) : undefined,
         })
       });
 
@@ -220,6 +266,8 @@ export default function GigDetailsPage() {
   if (!gig) return <div className="h-screen bg-[#0B0B11] flex flex-col gap-4 justify-center items-center text-white"><p className="text-white/50">Gig not found.</p><button onClick={() => router.push('/dashboard')} className="text-[#C9A9FF] text-sm font-medium">← Back to dashboard</button></div>;
 
   const isCompanyTask = gig.listing_type === 'COMPANY_TASK';
+  // A shopfront advert: the reader is a customer, not an applicant.
+  const isAdvert = isServiceAdvert(gig);
   // Both flavours render the same brand purple accent; no off-brand indigo.
   const accentColor = '#8825F5';
   const isMyGig = currentUser?.id === gig.poster_id;
@@ -276,13 +324,14 @@ export default function GigDetailsPage() {
                   take-home, and finding that out only at payout is how you get
                   an angry student and a dispute. */}
               {Number(gig.price) > 0 && (
-                posterIsRecipient(gig) ? (
-                  // Supply listing: the reader is the customer. Quote what they
-                  // pay, not a payout they will never receive — this block used
-                  // to be hidden entirely for SERVICE, so a service listing
-                  // showed a bare number with no explanation of it at all.
+                isAdvert ? (
+                  // An advert: the reader is a customer. Quote what they pay,
+                  // not a payout they will never receive — this block used to be
+                  // hidden entirely for SERVICE, so a service listing showed a
+                  // bare number with nothing explaining it at all.
                   <p className="text-xs text-white/45 mt-1.5">
-                    Starting price. Held in escrow and released only once you approve the work.
+                    Starting price — you agree the final amount together. Held in escrow and released
+                    only once you approve the work.
                   </p>
                 ) : (
                   <p className="text-xs text-white/45 mt-1.5">
@@ -440,6 +489,8 @@ export default function GigDetailsPage() {
           isApplying={isApplying}
           offerPitch={offerPitch}
           setOfferPitch={setOfferPitch}
+          offerPrice={offerPrice}
+          setOfferPrice={setOfferPrice}
           isCompanyTask={isCompanyTask}
         />
       )}
@@ -448,7 +499,10 @@ export default function GigDetailsPage() {
   );
 }
 
-function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isApplying, offerPitch, setOfferPitch, isCompanyTask }: any) {
+function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isApplying, offerPitch, setOfferPitch, offerPrice, setOfferPrice, isCompanyTask }: any) {
+  // On an advert the person in this modal is buying, not applying. Every label
+  // below has to say so, or the screen contradicts the button that opened it.
+  const isAdvert = isServiceAdvert(gig || {});
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Lock body scroll when modal is open
@@ -469,8 +523,8 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
             <X size={20} />
         </button>
         
-        <h2 className="text-3xl font-bold text-white tracking-tight mb-2">Connect & Apply</h2>
-        <p className="text-sm font-medium text-zinc-400 mb-10">How would you like to get paid?</p>
+        <h2 className="text-3xl font-bold text-white tracking-tight mb-2">{isAdvert ? "Request this service" : "Connect & Apply"}</h2>
+        <p className="text-sm font-medium text-zinc-400 mb-10">{isAdvert ? "Tell them what you need. You pay once you have agreed the details." : "How would you like to get paid?"}</p>
 
         <div className="space-y-10">
             
@@ -493,32 +547,66 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                     Protected
                   </span>
                 </div>
-                <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed mt-3">
-                  The poster funds the task before you start, and we hold it. Finish the work and
-                  the money is released to you — they can&apos;t disappear with it.
-                </p>
-                {/* Reassurance at the exact moment of doubt. "Will I actually get
-                    paid, and when?" is the question every applicant has here, and
-                    leaving it unanswered is why people push to settle over UPI
-                    instead. Concrete timing beats vague promises. */}
-                <ul className="mt-4 space-y-2 text-[12px] text-zinc-400 leading-relaxed">
-                  <li className="flex items-start gap-2">
-                    <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
-                    Money is locked before you start — you never work unpaid.
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
-                    After you deliver, the poster has 24 hours to approve. If they don&apos;t,
-                    it releases to you automatically.
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
-                    Payouts go to your UPI. Add it after you&apos;re hired — not now.
-                  </li>
-                </ul>
-                <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">
-                  A small platform fee is deducted from your payout only when you actually get paid.
-                </p>
+                {/* Reassurance at the exact moment of doubt — but the doubt is
+                    not the same on both sides. An applicant is asking "will I
+                    actually get paid?"; a customer is asking "what happens to my
+                    money?". Showing the worker's answers to a buyer promised them
+                    a payout into their own UPI, which is the opposite of the
+                    transaction they are actually in. */}
+                {isAdvert ? (
+                  <>
+                    <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed mt-3">
+                      Nothing is charged now. Once you have agreed the details you pay into escrow —
+                      we hold it, and release it to them only when you approve the work.
+                    </p>
+                    <ul className="mt-4 space-y-2 text-[12px] text-zinc-400 leading-relaxed">
+                      <li className="flex items-start gap-2">
+                        <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                        Sending a request costs nothing and commits you to nothing.
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                        Your money is held by us, not sent to them — they cannot take it and vanish.
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                        If the work is not what you agreed, ask for changes or raise a dispute and we review it.
+                      </li>
+                    </ul>
+                    <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">
+                      Keep it on the platform — paying by UPI directly voids this protection.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                  <p className="text-xs md:text-[13px] font-medium text-zinc-400 leading-relaxed mt-3">
+                    The poster funds the task before you start, and we hold it. Finish the work and
+                    the money is released to you — they can&apos;t disappear with it.
+                  </p>
+                  {/* Reassurance at the exact moment of doubt. "Will I actually get
+                      paid, and when?" is the question every applicant has here, and
+                      leaving it unanswered is why people push to settle over UPI
+                      instead. Concrete timing beats vague promises. */}
+                  <ul className="mt-4 space-y-2 text-[12px] text-zinc-400 leading-relaxed">
+                    <li className="flex items-start gap-2">
+                      <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                      Money is locked before you start — you never work unpaid.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                      After you deliver, the poster has 24 hours to approve. If they don&apos;t,
+                      it releases to you automatically.
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <Check size={13} className="text-[#C9A9FF] shrink-0 mt-0.5" />
+                      Payouts go to your UPI. Add it after you&apos;re hired — not now.
+                    </li>
+                  </ul>
+                  <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">
+                    A small platform fee is deducted from your payout only when you actually get paid.
+                  </p>
+                  </>
+                )}
               </div>
             </div>
 
@@ -548,12 +636,42 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
               </div>
             )}
 
+            {/* Naming a price. On a task the applicant is quoting for the job;
+                on an advert the customer is saying what the job is worth to
+                them. Either way it lands in applications.negotiated_price, which
+                the applicant list displays and /api/gig/hire charges — a chain
+                that was already complete except for this input. */}
             <div className="space-y-4">
-              <label className="text-xs font-semibold text-zinc-400 block">Application Pitch</label>
+              <label className="text-xs font-semibold text-zinc-400 block">
+                {isAdvert ? "Your budget" : "Your price"}
+                <span className="text-zinc-600 font-medium ml-1.5">optional</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 text-sm font-medium">₹</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={offerPrice}
+                  onChange={(e: any) => setOfferPrice(e.target.value)}
+                  onWheel={blurOnWheel}
+                  placeholder={String(gig?.price ?? "")}
+                  className="w-full bg-black/40 border border-white/10 rounded-2xl py-4 pl-9 pr-5 text-sm font-medium text-white outline-none focus:border-[#8825F5]/50 focus:ring-1 focus:ring-[#8825F5]/50 transition placeholder:text-zinc-600 shadow-inner"
+                />
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-relaxed">
+                {isAdvert
+                  ? `They ask from ₹${gig?.price ?? 0}. Offer more if the job is bigger — you agree the final amount together.`
+                  : `Leave blank to accept the listed ₹${gig?.price ?? 0}. The poster sees your number and can hire you at it.`}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <label className="text-xs font-semibold text-zinc-400 block">{isAdvert ? "What do you need?" : "Application Pitch"}</label>
               <textarea 
                 value={offerPitch}
                 onChange={e => setOfferPitch(e.target.value)}
-                placeholder="Explain why you're a good fit for this gig…"
+                placeholder={isAdvert ? "Describe the work, any deadline, and anything they should know…" : "Explain why you're a good fit for this gig…"}
                 className="w-full bg-black/40 border border-white/10 rounded-2xl p-5 text-sm font-medium text-white outline-none focus:border-[#8825F5]/50 focus:ring-1 focus:ring-[#8825F5]/50 resize-none transition placeholder:text-zinc-600 shadow-inner"
                 rows={4}
               />
@@ -599,7 +717,7 @@ function ApplicationModal({ isOpen, onClose, gig, currentUser, handleApply, isAp
                 : 'bg-white text-black hover:bg-zinc-200 active:scale-95 shadow-[0_4px_14px_0_rgb(255,255,255,0.39)]'
               }`}
             >
-              {isApplying ? <Loader2 className="animate-spin w-5 h-5" /> : "Submit Application"}
+              {isApplying ? <Loader2 className="animate-spin w-5 h-5" /> : isAdvert ? "Send request" : "Submit Application"}
             </button>
 
         </div>

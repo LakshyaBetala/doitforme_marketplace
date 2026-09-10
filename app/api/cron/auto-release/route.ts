@@ -43,11 +43,9 @@ export async function GET(req: Request) {
     // 2. Process Auto-Release
     for (const gig of gigs) {
       // Who gets paid comes from lib/gigRoles, not from an inline check here.
-      // This previously tested only for 'MARKET' — of which there are zero rows
-      // — so SERVICE listings (407 of 444) fell through to the assigned worker,
-      // who on a service listing is the CLIENT, not the provider. It never fired
-      // because no SERVICE listing had ever been funded, but it would have paid
-      // the buyer the moment one did.
+      // Every money path — create-order, hire, complete, resolve-dispute and
+      // this cron — asks the same function, because the previous arrangement had
+      // each one deciding for itself and they had already drifted apart.
       const recipientId = payoutRecipientId(gig);
       const recipient = posterIsRecipient(gig) ? gig.poster : gig.worker;
 

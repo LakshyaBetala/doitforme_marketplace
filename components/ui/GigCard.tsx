@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee, Users, Sparkles, Zap } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "./StatusBadge";
+import { isServiceAdvert, responderNoun } from "@/lib/gigRoles";
 
 /**
  * Canonical gig card. Renders any gigs row regardless of listing_type.
@@ -113,10 +114,20 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
 
 export default function GigCard({ gig, imageUrl, variant = "detailed", className = "" }: GigCardProps) {
   const isMarket = gig.listing_type === "MARKET";
+  const isAdvert = isServiceAdvert(gig);
   const isHighlighted = !!gig.is_featured || !!(gig.is_highlighted && gig.highlight_expires_at && new Date(gig.highlight_expires_at) > new Date());
   const showStatus = gig.status && gig.status.toLowerCase() !== "open";
-  const isHiring = !isMarket && (gig.applicant_count ?? 0) > 0;
-  const hiringLabel = isHiring ? `${gig.applicant_count} hiring` : null;
+  const responderCount = gig.applicant_count ?? 0;
+  // "3 hiring" is a fact about a task: three people want the job. On a service
+  // advert the same number means three people want to BUY, so the word has to
+  // flip with the listing — calling a prospective customer an applicant is what
+  // pointed this whole flow backwards. See lib/gigRoles.ts.
+  const responderLabel =
+    !isMarket && responderCount > 0
+      ? isAdvert
+        ? `${responderCount} ${responderNoun(gig, responderCount)}`
+        : `${responderCount} hiring`
+      : null;
 
   const ringClass = isHighlighted
     ? "border-[#8825F5]/40 ring-1 ring-[#8825F5]/20"
@@ -161,9 +172,9 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
               <span>{timeAgo(gig.created_at)}</span>
             </div>
             <div className="mt-2 flex items-center gap-2 flex-wrap">
-              {hiringLabel && (
+              {responderLabel && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/10 border border-[#8825F5]/20 px-2 py-0.5 rounded-full">
-                  <Users size={10} /> {hiringLabel}
+                  <Users size={10} /> {responderLabel}
                 </span>
               )}
               {showStatus && (
@@ -198,6 +209,10 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
         <div className="flex items-baseline gap-1 mb-auto">
           {gig.price != null ? (
             <>
+              {/* An advert quotes a starting rate, not a fixed budget — the
+                  final figure is agreed per job. Saying "from" is the
+                  difference between a price and a quote. */}
+              {isAdvert && <span className="text-xs text-white/40 mr-1">from</span>}
               <span className="text-xl font-semibold text-white tracking-tight">₹{gig.price}</span>
               {isMarket && gig.market_type === "RENT" && <span className="text-xs text-white/40">/day</span>}
             </>
@@ -211,9 +226,9 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
             {posterLabel(gig) && <span className="text-white/30">· {posterLabel(gig)}</span>}
           </span>
           <div className="flex items-center gap-2">
-            {hiringLabel && (
+            {responderLabel && (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/10 border border-[#8825F5]/20 px-2 py-0.5 rounded-full">
-                <Users size={10} /> {hiringLabel}
+                <Users size={10} /> {responderLabel}
               </span>
             )}
             {showStatus && <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>}

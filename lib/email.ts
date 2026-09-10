@@ -26,6 +26,7 @@ const SITE = "https://doitforme.in";
 type EmailKind =
   | "applied"
   | "new_applicant"
+  | "service_requested"
   | "application_accepted"
   | "application_rejected"
   | "hired_direct"
@@ -110,7 +111,11 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
       };
 
     case "new_applicant":
-      const applicantReviewUrl = `${SITE}/company/task/${args.gigId}`;
+      // /company/task/<id> hard-checks company ownership and bounces anyone else
+      // to /company/dashboard, so every STUDENT poster who got this mail landed
+      // on a redirect instead of their applicants. /gig/<id>/applicants
+      // authorizes on poster_id alone and therefore works for both.
+      const applicantReviewUrl = `${SITE}/gig/${args.gigId}/applicants`;
       return {
         subject: `New applicant on ${args.gigTitle || "your gig"}`,
         preheader: "Review the pitch and respond.",
@@ -118,6 +123,22 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p>Hi ${name},</p>
           <p>You have a new applicant on <strong>${title}</strong>.</p>
           <p><a href="${applicantReviewUrl}" class="cta">Review applicant</a></p>
+        `,
+      };
+
+    // Someone wants to hire you from your service listing. This is the good
+    // news end of the shopfront, so it says plainly what happens next: they pay
+    // into escrow, you do the work, you get paid. See lib/gigRoles.ts for why a
+    // request creates a fresh engagement rather than attaching to the advert.
+    case "service_requested":
+      return {
+        subject: `Someone wants to hire you — ${args.gigTitle || "your service"}`,
+        preheader: "A client sent you a request. Reply to get started.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>A client wants to hire you for <strong>${title}</strong>${rupees ? ` at <strong>${rupees}</strong>` : ""}.</p>
+          <p>Reply to them and agree the details. When they pay, the money is held in escrow until you deliver — so it is there before you start work.</p>
+          <p><a href="${url}" class="cta">View the request</a></p>
         `,
       };
 

@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createRazorpayOrder, razorpayConfigured } from "@/lib/razorpay";
 import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
+import { canFundEscrow } from "@/lib/gigRoles";
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createClient } from "@supabase/supabase-js";
@@ -38,6 +39,23 @@ export async function POST(req: Request) {
 
     if (gig.poster_id !== user.id) {
       return NextResponse.json({ error: "You do not have permission to hire for this task." }, { status: 403 });
+    }
+
+    // A service listing is a shopfront advert and cannot hold escrow. Because
+    // this route requires the caller to be the poster, on an advert that means
+    // the PROVIDER — so the only person allowed to pay was the one who should
+    // have been paid, and the customer could not fund anything at all. Hiring
+    // from an advert goes through /api/gig/request-service, which creates a real
+    // engagement with the customer as poster. See lib/gigRoles.ts.
+    if (!canFundEscrow(gig)) {
+      return NextResponse.json(
+        { error: "This is a service listing, so it can't be funded directly. Clients hire you by sending a request." },
+        { status: 400 }
+      );
+    }
+
+    if (!workerId || workerId === user.id) {
+      return NextResponse.json({ error: "Choose someone else to hire." }, { status: 400 });
     }
 
     // Check for Negotiated Price in Applications

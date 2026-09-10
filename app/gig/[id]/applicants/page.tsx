@@ -8,6 +8,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Avatar from "@/components/ui/Avatar";
 import TrustSignals from "@/components/TrustSignals";
 import EmptyState from "@/components/ui/EmptyState";
+import { isServiceAdvert, responderNoun } from "@/lib/gigRoles";
 import { toast } from "sonner";
 import {
   Loader2, ChevronLeft, MessageSquare, FileText, ExternalLink,
@@ -61,6 +62,9 @@ export default function ApplicantsPage() {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
   const [hiring, setHiring] = useState<string | null>(null);
+
+  // A service listing is an advert, not a job — nobody can be hired FROM it.
+  const isAdvert = isServiceAdvert(gig || {});
 
   const load = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -145,17 +149,36 @@ export default function ApplicantsPage() {
           className="text-2xl md:text-3xl font-semibold tracking-tight mb-1"
           style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.02em" }}
         >
-          {applicants.length} {applicants.length === 1 ? "applicant" : "applicants"}
+          {applicants.length} {responderNoun(gig || {}, applicants.length)}
         </h1>
         <p className="text-sm text-white/55 mb-8 truncate">
           {gig?.title} · <span className="tabular-nums">₹{gig?.price}</span>
         </p>
 
+        {/* A service listing is a shopfront advert: these people want to HIRE
+            you, so there is nobody here for you to pay. The page used to offer
+            "Hire & pay ₹500" against the very person who was meant to pay you.
+            Anyone still listed here enquired before hiring worked; reply and
+            they can send a proper request. See lib/gigRoles.ts. */}
+        {isAdvert && applicants.length > 0 && (
+          <div className="mb-6 rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--brand-purple)]/[0.06] p-4">
+            <p className="text-[13px] text-white/80 leading-relaxed">
+              These are people who want to <strong>hire you</strong> — not people applying for work.
+              Reply to them and they can send you a paid request; the money is held in escrow before
+              you start.
+            </p>
+          </div>
+        )}
+
         {applicants.length === 0 ? (
           <EmptyState
             icon={Users}
-            title="Nobody has applied yet"
-            description="We'll notify you the moment someone does. Sharing the link speeds it up."
+            title={isAdvert ? "No enquiries yet" : "Nobody has applied yet"}
+            description={
+              isAdvert
+                ? "We'll notify you the moment a client gets in touch. Sharing your listing link speeds it up."
+                : "We'll notify you the moment someone does. Sharing the link speeds it up."
+            }
             actionLabel="Back to Activity"
             actionHref="/activity"
           />
@@ -268,7 +291,7 @@ export default function ApplicantsPage() {
                     >
                       <MessageSquare size={15} /> Message
                     </button>
-                    {!alreadyFilled && !isHired && (
+                    {!isAdvert && !alreadyFilled && !isHired && (
                       <button
                         onClick={() => hire(app.worker_id, w?.name || "them")}
                         disabled={hiring === app.worker_id}

@@ -13,6 +13,7 @@ npm run test:e2e        # Playwright (auto-starts `npm run dev` on :3000 via web
 npx playwright test tests/golden-path.spec.ts   # run a single spec
 npm run test:unit       # explicit file list — see the tsx --test trap below
 npm run test:escrow     # end-to-end escrow money movement, disposable rows
+npm run test:service-request  # live-schema check that hiring from an advert builds a valid engagement
 npm run db:audit        # live DB: are the constraints we rely on actually there?
 npm run db:anon-audit   # live DB: what can a stranger read with the anon key?
 npm run db:migrate <file.sql ...>   # direct-Postgres migration runner
@@ -51,9 +52,44 @@ Auth has two layers that must both pass:
 The OAuth callback at [app/auth/callback/route.ts](app/auth/callback/route.ts) exchanges the code, then POSTs to `/api/auth/create-user` to sync the user row, and optionally POSTs to `/api/referral/apply` if a `ref` code was attached.
 
 ### Gig lifecycle & escrow (core domain model)
-Two listing types drive branching logic everywhere:
-- `HUSTLE` — service work; the **assigned worker** is the payout recipient.
-- `MARKET` with `market_type` ∈ `SELL | RENT | REQUEST` — product; the **poster (seller)** is the payout recipient. `RENT` additionally tracks `security_deposit` which is refunded to the renter on release.
+
+**There is one money direction, and [lib/gigRoles.ts](lib/gigRoles.ts) is the only
+place that answers questions about it.** This is a freelance platform: the
+**poster is the client and pays**, the **assigned worker does the work and is
+paid**. Every lifecycle guard is built on exactly that — `/api/gig/deliver`
+accepts only the assigned worker, `manual_release_escrow` authorizes only the
+poster, dispute and request-changes are poster actions. Do not add a second,
+mirrored direction; that is the bug described below, not a feature.
+
+- `HUSTLE` / `COMPANY_TASK` — a task. The **assigned worker** is the payout recipient.
+- `SERVICE` — **a shopfront advert, not a transaction.** Someone publishing what
+  they can do. It is browsable at `/talent` (`/feed` carries only the task
+  board), it can be messaged, and it can **never hold escrow** — `canFundEscrow()`
+  is false for it and both payment routes refuse it at the door. Hiring from one
+  goes through [app/api/gig/request-service/route.ts](app/api/gig/request-service/route.ts),
+  which creates a **normal engagement** (customer = poster, provider = assigned
+  worker, `source_service_id` linking back to the advert), so the entire
+  lifecycle then applies with no special cases. A DB CHECK constraint,
+  `gigs_service_advert_never_assigned`, enforces that an advert is never assigned
+  or funded.
+- `MARKET` with `market_type` ∈ `SELL | RENT | REQUEST` — product; the **poster
+  (seller)** is the payout recipient. This is the sister marketplace on
+  marketforme.in and has **zero rows** in this database; it is the one type where
+  `posterIsRecipient()` is true, and nothing else may join it. `RENT` additionally
+  tracks `security_deposit` which is refunded to the renter on release.
+
+**The inversion that cost 787 conversions.** `SERVICE` used to be modelled as a
+mirrored money direction where the poster collects instead of paying. That
+inverted every guard above at once, so a service listing could not complete even
+in principle: the customer was not allowed to fund it (`/api/gig/hire` requires
+the caller to be the poster, which on an advert is the *provider*), the customer
+would have had to deliver the work, and the provider would have approved their
+own delivery. Meanwhile `/api/payments/create-order` set the recipient to the
+poster and then overwrote it with `assigned_worker_id` unconditionally, while
+`cron/auto-release` branched on `MARKET` — of which there are zero rows — so the
+two only agreed by accident. 407 of 444 listings are `SERVICE`; they took **787
+applications and never once funded, assigned, completed or paid**. Guarded by
+[tests/unit/gig-roles.test.mjs](tests/unit/gig-roles.test.mjs).
 
 Escrow flow: payment creates `HELD` funds → delivery sets `status='DELIVERED'` + `auto_release_at = now + 24h` → after 24h the cron releases (or the poster manually releases sooner).
 

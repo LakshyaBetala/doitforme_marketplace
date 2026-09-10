@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { isAdminEmail } from "@/lib/admins";
+import { payoutRecipientId } from "@/lib/gigRoles";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -73,15 +74,19 @@ export async function POST(req: Request) {
     try {
       const { data: gig } = await supabase
         .from('gigs')
-        .select('title, assigned_worker_id, net_worker_pay')
+        .select('title, assigned_worker_id, poster_id, listing_type, net_worker_pay')
         .eq('id', gigId)
         .single();
 
-      if (gig?.assigned_worker_id) {
+      // Tell whoever was actually paid, not whoever happens to be the assigned
+      // worker — lib/gigRoles is the one place that answers this.
+      const paidUserId = gig ? payoutRecipientId(gig) : null;
+
+      if (gig && paidUserId) {
         const { data: worker } = await supabase
           .from('users')
           .select('email, name, telegram_chat_id')
-          .eq('id', gig.assigned_worker_id)
+          .eq('id', paidUserId)
           .single();
 
         if (worker?.email) {

@@ -162,8 +162,22 @@ export async function settleGigEscrow(
     totalOriginalAmount += Number(e.original_amount || 0);
   }
 
+  // `workerId` is the payout RECIPIENT (escrow.worker_id, read back by
+  // manual_release_escrow). `assigned_worker_id` is a different question: it is
+  // the gig's counterparty, the person who is not the poster. For a task those
+  // are the same person and the distinction never mattered.
+  //
+  // They come apart on any listing where the poster is the one being paid, and
+  // there `assigned_worker_id: workerId` would set the poster as their own
+  // counterparty — erasing the record of who the client was, and leaving a gig
+  // whose two parties are one person. Derive it from the payer instead: whoever
+  // funded it that is not the poster is the counterparty.
+  const payerUserId: string | undefined = txn.user_id;
+  const counterpartyId =
+    payerUserId && payerUserId !== gig.poster_id ? payerUserId : workerId;
+
   const gigUpdate: any = {
-    assigned_worker_id: workerId,
+    assigned_worker_id: counterpartyId,
     payment_status: "ESCROW_FUNDED",
     escrow_status: "HELD",
     escrow_amount: totalAmountHeld,
