@@ -107,6 +107,22 @@ function mapKnownMessage(raw: string): FriendlyError | null {
     return youError("Email not verified yet", "Check your inbox for the verification code first.");
   if (m.includes("token has expired") || m.includes("invalid otp") || m.includes("otp_expired") || m.includes("expired"))
     return youError("That code expired", "Request a fresh code and enter it within a few minutes.");
+  // Supabase answers a weak password with a dump of its character classes:
+  // "Password should contain at least one character of each:
+  //  abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789,
+  //  !@#$%^&*()..." — which is the alphabet, not an instruction. A user wrote
+  // in after a Google-suggested password was rejected with it; they had no way
+  // to tell a symbol was the missing piece.
+  if (m.includes("password should contain at least one character of each"))
+    return youError(
+      "Password needs a wider mix",
+      "Use at least 8 characters with an uppercase letter, a lowercase letter, a number and a symbol (like ! or @)."
+    );
+  if (m.includes("password should be at least"))
+    return youError("Password is too short", "Use at least 8 characters, including a number and a symbol.");
+  if (m.includes("password is known to be weak") || m.includes("pwned"))
+    return youError("That password has been leaked", "It appears in a public breach list. Please choose a different one.");
+
   if (m.includes("for security purposes") || m.includes("rate limit") || m.includes("too many requests"))
     return youError("Too many attempts", "Please wait a few seconds, then try again.");
   if (m.includes("duplicate") || m.includes("already applied"))

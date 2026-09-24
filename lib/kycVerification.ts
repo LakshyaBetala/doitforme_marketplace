@@ -45,32 +45,67 @@ export async function verifyStudentIdImage(
 
   const prompt = buildKycPrompt(opts);
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+  const body = JSON.stringify({
+    contents: [
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                { inline_data: { mime_type: mimeType, data: imageBase64 } },
-              ],
-            },
-          ],
-          generationConfig: { temperature: 0, responseMimeType: "application/json" },
-        }),
-        // Don't let a slow vision call hang the upload request forever.
-        signal: AbortSignal.timeout(20_000),
-      }
-    );
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mimeType, data: imageBase64 } },
+        ],
+      },
+    ],
+    generationConfig: { temperature: 0, responseMimeType: "application/json" },
+  });
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      console.error(`[kyc] Gemini ${res.status}: ${body.slice(0, 300)}`);
-      return manualReview("We couldn't auto-verify your ID — it's queued for a quick manual review.");
+  try {
+    // 60s, and retry once.
+    //
+    // This was a single attempt with a 20-SECOND timeout, which Gemini's vision
+    // model routinely overshoots: a measured cold call on a 70 KB ID took
+    // 24.6s, and the warm call right after took 4.4s. So the first upload of
+    // the day aborted, fell open to manual_review, and sat there — because
+    // nothing reviews that queue. 261 students were parked in it with
+    // confidence 0, and they are the ones writing to support asking why
+    // verification has been "pending" for days.
+    //
+    // Failing open is still right; failing open on a timer shorter than the
+    // service's own p50 is not. The retry is what converts the slow-cold-start
+    // case into a normal result rather than a queue entry.
+    let res: Response | null = null;
+    let lastStatus = 0;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+            signal: AbortSignal.timeout(60_000),
+          }
+        );
+      } catch (e) {
+        console.error(`[kyc] attempt ${attempt} threw:`, (e as Error)?.name || e);
+        res = null;
+      }
+      if (res?.ok) break;
+      lastStatus = res?.status ?? 0;
+      // A quota rejection will not pass on a retry — don't burn the second one.
+      if (lastStatus === 429) break;
+      if (attempt === 1) await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    if (!res || !res.ok) {
+      const text = res ? await res.text().catch(() => "") : "";
+      console.error(`[kyc] Gemini ${lastStatus || "no response"}: ${text.slice(0, 300)}`);
+      // Name the quota case distinctly. "Queued for review" told the student
+      // a human was coming, and told us nothing about why, which is how a
+      // service outage stayed invisible for weeks.
+      return manualReview(
+        lastStatus === 429
+          ? "Our verification service is at its daily limit — your ID is queued and will be checked shortly."
+          : "We couldn't auto-verify your ID — it's queued for a quick manual review."
+      );
     }
 
     const data = await res.json();
@@ -131,7 +166,14 @@ export function buildKycPrompt(opts: VerifyOpts): string {
     "An ID CARD IS NOT REQUIRED. Any official document naming the student and the institution and showing current enrolment is EQUALLY VALID — accept it with the same confidence as a card. This explicitly includes: a bonafide / study certificate, an admission or allotment letter, a fee receipt or challan, a recent marksheet or report card, an exam hall ticket or admit card, a library or hostel card, or a transfer certificate.",
     "Judge the DOCUMENT, not its format: if it is on institutional letterhead, or bears an institutional seal, stamp or signature, and names the student, treat it as genuine proof.",
     "Be lenient about the document type and the institution, but STRICT about authenticity: reject blank or unreadable images, random photos/selfies, memes, screenshots of plain text, obvious digital fakes, or government identity documents that say nothing about studying (Aadhaar, PAN, driving licence and passport are NOT proof of student status on their own).",
-    opts.declaredName ? `The user says their name is "${opts.declaredName}".` : "",
+    // Offered as a WEAK hint only. Students sign up with handles, nicknames and
+    // initials — "Shanks D. Shekhar" against an ID reading "Shashank Shekhar"
+    // was scored down to 0.6 and parked in manual review, which is a real
+    // student blocked by a naming convention rather than by any doubt about the
+    // document.
+    opts.declaredName
+      ? `For context only, the account name is "${opts.declaredName}". Account names are often nicknames, handles or initials, so DO NOT reduce confidence when it differs from the document — judge the document's authenticity on its own. Only treat a name as disqualifying if it belongs to an obviously different person.`
+      : "",
     opts.declaredCollege ? `The user says their institution is "${opts.declaredCollege}".` : "",
     "Respond with ONLY a compact JSON object (no markdown) using exactly these keys:",
     '{"is_student_id": boolean, "institution": string|null, "student_name": string|null, "id_type": "school"|"college"|"university"|"graduate"|"certificate"|"admission_letter"|"fee_receipt"|"marksheet"|"other"|null, "confidence": number 0..1, "reason": "one short sentence a student would understand"}',

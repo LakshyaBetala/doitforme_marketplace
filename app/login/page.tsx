@@ -163,6 +163,13 @@ function AuthPage() {
       return setMessage("Please fill in all required fields. UPI is optional and can be added later in your profile.");
     }
 
+    // Catch what Supabase would reject anyway, but say which part is missing.
+    const pwMissing = passwordProblems(password);
+    if (pwMissing.length > 0) {
+      setLoading(false);
+      return setMessage(`Your password still needs: ${pwMissing.join(", ").toLowerCase()}.`);
+    }
+
     // College is no longer pre-filled, so it has to be checked. It was never
     // validated before because the dropdown always held a value — the first one
     // in the list, whether or not the user had ever looked at it.
@@ -429,6 +436,8 @@ function AuthPage() {
                 </button>
               </div>
 
+              <PasswordChecklist value={password} />
+
               {/* Referral Code */}
               <div className="relative">
                 <input
@@ -517,6 +526,52 @@ function AuthPage() {
 function ChevronDown({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+  );
+}
+
+// Supabase's password policy for this project, verified by probing the live
+// auth endpoint: minimum 8, plus one each of lowercase, uppercase, digit and
+// symbol. None of it was shown anywhere on the form.
+//
+// A user signed up with a password Google had generated for them, got a 422,
+// and had to reverse-engineer the requirement from the raw API error to learn a
+// symbol was missing. Anything the server will reject has to be visible on the
+// form before submit, not discovered afterwards.
+const PASSWORD_RULES: { label: string; test: (v: string) => boolean }[] = [
+  { label: "At least 8 characters", test: (v) => v.length >= 8 },
+  { label: "A lowercase letter", test: (v) => /[a-z]/.test(v) },
+  { label: "An uppercase letter", test: (v) => /[A-Z]/.test(v) },
+  { label: "A number", test: (v) => /[0-9]/.test(v) },
+  { label: "A symbol (! @ # etc.)", test: (v) => /[^A-Za-z0-9]/.test(v) },
+];
+
+const passwordProblems = (v: string) => PASSWORD_RULES.filter((r) => !r.test(v)).map((r) => r.label);
+
+function PasswordChecklist({ value }: { value: string }) {
+  // Hidden until they start typing — an untouched form should not open with a
+  // list of things the user has already failed to do.
+  if (!value) {
+    return (
+      <p className="mt-2 ml-1 text-[11px] text-white/40">
+        8+ characters, with an uppercase letter, a number and a symbol.
+      </p>
+    );
+  }
+  return (
+    <ul className="mt-2 ml-1 grid grid-cols-2 gap-x-3 gap-y-1">
+      {PASSWORD_RULES.map((r) => {
+        const ok = r.test(value);
+        return (
+          <li
+            key={r.label}
+            className={`flex items-center gap-1.5 text-[11px] transition-colors ${ok ? "text-emerald-400" : "text-white/45"}`}
+          >
+            <span aria-hidden className="shrink-0">{ok ? "\u2713" : "\u25CB"}</span>
+            {r.label}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
