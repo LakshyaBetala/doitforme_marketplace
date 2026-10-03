@@ -110,7 +110,7 @@ export async function POST(req: Request) {
   const paidAmount = Number(payment.amount) / 100; // paise → rupees
 
   if (notes.type === "COMPANY_PRO") {
-    return NextResponse.json(await settleCompanyPro(orderId, payment.id, notes));
+    return settlementResponse(await settleCompanyPro(orderId, payment.id, notes));
   }
 
   const gigId: string | undefined = notes.gig_id;
@@ -119,7 +119,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, skipped: "missing gig/worker notes" });
   }
 
-  return NextResponse.json(
+  return settlementResponse(
     await settleGigEscrow(orderId, gigId, workerId, payment.id, paidAmount)
   );
+}
+
+/**
+ * Answer Razorpay with a status that reflects whether settlement actually
+ * happened.
+ *
+ * This route used to return the settlement result inside a flat 200. But
+ * settleGigEscrow reports a failed escrow write as `{ ok: false }` in the body,
+ * not by throwing — so a failure left the webhook replying 200 OK, Razorpay
+ * marked it delivered, and it was never retried. The money is captured at that
+ * point; only escrow is missing. The one mechanism that exists to survive a
+ * closed tab was silently reporting success on the exact failures it exists to
+ * catch.
+ *
+ * A 5xx is the only way to ask for a retry — Razorpay re-delivers a failed
+ * webhook with backoff for roughly 24 hours, which is long enough to cover a
+ * database outage, a quota restriction (402) or a bad deploy.
+ *
+ * `ok: true` with a `skipped` reason is NOT a failure: already settled, no
+ * pending transaction, an event we don't act on. Those are terminal and must
+ * stay 200, or Razorpay retries them forever.
+ */
+function settlementResponse(result: { ok: boolean; skipped?: string }) {
+  if (result.ok) return NextResponse.json(result);
+  console.error(`[webhook] settlement FAILED, asking Razorpay to retry: ${result.skipped}`);
+  return NextResponse.json({ ...result, retry: true }, { status: 500 });
 }
