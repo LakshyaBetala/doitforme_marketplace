@@ -30,6 +30,10 @@ const SCHEDULE: Record<string, string> = {
   "*/15 * * * *": "/api/cron/auto-release",
   "30 7 * * *": "/api/cron/nudge-posters",
   "0 9 * * *": "/api/cron/process-payouts",
+  // Retention. The notification tables were 79% of a database that had gone 50%
+  // over the free tier; capping the fan-out fixed the inflow, this is the
+  // outflow. 03:30 UTC (09:00 IST) is the quietest hour.
+  "30 3 * * *": "/api/cron/prune-data",
 };
 
 async function runJob(env: Env, path: string): Promise<void> {

@@ -73,3 +73,7 @@ scratchpad/
 .wrangler/
 .wrangler-dryrun*/
 .dev.vars
+
+# Figma Make export — a separate Vite project with its own deps and tsconfig.
+# Kept locally as a design reference; it is not part of the app build.
+Freelance platform app design/
