@@ -37,7 +37,24 @@ const PROTECTED_ROUTES = [
 // Flip to false and redeploy to bring the site back — nothing else to undo.
 const MAINTENANCE_MODE = true
 
-const MAINTENANCE_ALLOWED = [
+// Pages that still work with no backend, so they stay up.
+//
+// The landing page touches Supabase only for an optional auth.getUser() to
+// greet a signed-in visitor; supabase-js resolves that with an error object
+// rather than throwing, so it renders exactly as normal. The legal pages are
+// static text. Taking those down would cost SEO and tell a first-time visitor
+// nothing about what we do — the maintenance page is for people trying to get
+// INTO the product, not for everyone who hears the name.
+//
+// /talent and /u/[username] are deliberately NOT here: both read gigs and
+// profiles from Supabase and would render an empty shell.
+const MAINTENANCE_PUBLIC = [
+  '/pricing',
+  '/terms',
+  '/privacy-policy',
+  '/refund-policy',
+  '/shipping-policy',
+  '/contact',
   '/maintenance',
   '/api/waitlist',
   // Keep the webhook reachable. Razorpay retries a 5xx for ~24h, so answering
@@ -46,10 +63,13 @@ const MAINTENANCE_ALLOWED = [
   '/api/webhooks',
 ]
 
+const isMaintenancePublic = (pathname: string) =>
+  pathname === '/' || MAINTENANCE_PUBLIC.some(p => pathname.startsWith(p))
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  if (MAINTENANCE_MODE && !MAINTENANCE_ALLOWED.some(p => pathname.startsWith(p))) {
+  if (MAINTENANCE_MODE && !isMaintenancePublic(pathname)) {
     // Rewrite, not redirect: the visitor keeps the URL they came for, so a
     // shared /gig/<id> link still works the moment the flag goes off.
     const url = request.nextUrl.clone()
