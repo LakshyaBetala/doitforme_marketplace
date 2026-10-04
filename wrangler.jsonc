@@ -19,6 +19,21 @@
 			"service": "doitforme1"
 		}
 	],
+	// Signups captured while Supabase is restricted.
+	//
+	// Supabase Auth and REST both answer 402 (exceed_storage_size_quota), so the
+	// normal signup path cannot record anyone. D1 is free, binds natively to this
+	// Worker, and is a real SQL database we can export from — so nobody who turns
+	// up during the outage is lost. These rows get replayed into public.users once
+	// service is restored.
+	"d1_databases": [
+		{
+			"binding": "WAITLIST",
+			"database_name": "doitforme-waitlist",
+			"database_id": "9f83b32e-6c34-4117-98f6-4f8e2ad002e7"
+		}
+	],
+
 	"images": {
 		// Enable image optimization
 		// see https://opennext.js.org/cloudflare/howtos/image

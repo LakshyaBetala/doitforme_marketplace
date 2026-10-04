@@ -22,8 +22,40 @@ const PROTECTED_ROUTES = [
   '/admin',
 ]
 
+// MAINTENANCE MODE.
+//
+// Supabase answers 402 on every endpoint (exceed_storage_size_quota), which
+// takes Auth, REST, Storage and Realtime with it — so login, signup, the feed
+// and every gig page are dead, not slow. Leaving them reachable means students
+// meet a broken login form and write to support about "authentication errors",
+// which is exactly what started happening.
+//
+// Everything is rewritten to /maintenance, which talks to Cloudflare D1 instead
+// and so keeps working. Two things stay reachable: the page itself, and
+// /api/waitlist, which is the only reason the page exists.
+//
+// Flip to false and redeploy to bring the site back — nothing else to undo.
+const MAINTENANCE_MODE = true
+
+const MAINTENANCE_ALLOWED = [
+  '/maintenance',
+  '/api/waitlist',
+  // Keep the webhook reachable. Razorpay retries a 5xx for ~24h, so answering
+  // it with a maintenance page would consume those retries and silently drop
+  // payments that were actually captured.
+  '/api/webhooks',
+]
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+
+  if (MAINTENANCE_MODE && !MAINTENANCE_ALLOWED.some(p => pathname.startsWith(p))) {
+    // Rewrite, not redirect: the visitor keeps the URL they came for, so a
+    // shared /gig/<id> link still works the moment the flag goes off.
+    const url = request.nextUrl.clone()
+    url.pathname = '/maintenance'
+    return NextResponse.rewrite(url, { status: 503, headers: { 'Retry-After': '604800' } })
+  }
 
   const isProtected = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
 

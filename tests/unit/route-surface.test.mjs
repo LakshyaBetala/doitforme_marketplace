@@ -98,6 +98,13 @@ test("every route handler authenticates or checks a shared secret", () => {
     "app/api/auth/check-username/route.ts", // availability probe, no PII returned
     "app/api/telegram/webhook/route.ts", // verified by bot-token path secrecy
     "app/auth/callback/route.ts", // the OAuth exchange itself
+    // Public on purpose, and only while Supabase is restricted. It is the
+    // signup form on /maintenance — the visitor has no account and no session
+    // to authenticate with, which is the entire reason the endpoint exists.
+    // It writes to Cloudflare D1, never to Supabase, stores no password, and
+    // the unique index on lower(email) bounds what one address can create.
+    // DELETE THIS LINE when maintenance mode ends and the route is removed.
+    "app/api/waitlist/route.ts",
   ]);
 
   const unguarded = routes.filter((r) => {
