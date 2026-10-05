@@ -34,8 +34,12 @@ const PROTECTED_ROUTES = [
 // and so keeps working. Two things stay reachable: the page itself, and
 // /api/waitlist, which is the only reason the page exists.
 //
-// Flip to false and redeploy to bring the site back — nothing else to undo.
-const MAINTENANCE_MODE = true
+// Env-driven so the hold page can be lifted without a code change, and so dev
+// can work on signed-in screens while production stays held. Default is ON:
+// forgetting to set a variable must not accidentally expose a broken site.
+//   MAINTENANCE_MODE=off   in .env.local  -> normal site (dev)
+//   unset / anything else                 -> hold page (production today)
+const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE !== 'off' 
 
 // Pages that still work with no backend, so they stay up.
 //

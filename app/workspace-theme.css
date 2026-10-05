@@ -1,0 +1,77 @@
+/* Workspace theme — the logged-in surfaces only.
+ *
+ * Tokens read off the Figma export (logo-theme.css / index.css), not invented:
+ * grape sidebar on a cream page, orange as the single active accent, violet for
+ * links and counts. The marketing site stays on the dark palette in
+ * globals.css; these are scoped to .workspace so the two cannot bleed.
+ *
+ * Type is DM Sans for everything with Manrope for display, which is what the
+ * design specifies. Loaded through next/font in the layout rather than an
+ * @import here, so there is no render-blocking stylesheet request.
+ */
+
+.workspace {
+  /* surfaces */
+  --w-page: #fff9ef;
+  --w-surface: #fffdf9;
+  --w-raised: #ffffff;
+  --w-line: #f0e4d9;
+  --w-line-strong: #eedfd4;
+
+  /* ink */
+  --w-ink: #2d1937;
+  --w-ink-strong: #341044;
+  --w-muted: #756e7d;
+  --w-faint: #aaa4ad;
+
+  /* sidebar — the one dark surface */
+  --w-rail: #341044;
+  --w-rail-line: #5a2b6e;
+  --w-rail-ink: #ccb5d3;
+  --w-rail-hover: #512063;
+  --w-rail-faint: #ad8eb9;
+
+  /* brand */
+  --w-violet: #8426b2;
+  --w-violet-soft: #f2e9f8;
+  --w-orange: #ffa51e;
+  --w-orange-soft: #ffecd0;
+  --w-orange-ink: #a96210;
+
+  background: var(--w-page);
+  color: var(--w-ink);
+}
+
+/* One radius scale for the whole workspace. Mixed radii is the fastest way to
+ * make a product UI look assembled rather than designed. */
+.workspace {
+  --w-r-sm: 8px;
+  --w-r-md: 11px;
+  --w-r-lg: 16px;
+}
+
+.workspace ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+.workspace ::-webkit-scrollbar-thumb {
+  background: #ded8e5;
+  border-radius: 20px;
+}
+
+/* Focus is visible everywhere, once, rather than per-component. */
+.workspace :focus-visible {
+  outline: 2px solid var(--w-violet);
+  outline-offset: 2px;
+  border-radius: var(--w-r-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace *,
+  .workspace *::before,
+  .workspace *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
