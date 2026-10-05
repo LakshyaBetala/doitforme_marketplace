@@ -76,4 +76,6 @@ scratchpad/
 
 # Figma Make export — a separate Vite project with its own deps and tsconfig.
 # Kept locally as a design reference; it is not part of the app build.
-Freelance platform app design/
+# Glob, not one exact name: a second download arrives as
+# "Freelance platform app design (1)/" and broke the app's type check again.
+Freelance platform app design*/
