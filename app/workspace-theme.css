@@ -66,14 +66,33 @@
   border-radius: var(--w-r-sm);
 }
 
+/* Reduced motion means fewer and gentler, not none.
+ *
+ * The blanket "kill every transition" rule is the usual version of this and it
+ * is too blunt: it also removes the colour and opacity changes that tell you a
+ * button registered your press or a menu opened, which are comprehension, not
+ * decoration. What people with vestibular triggers need removed is MOVEMENT.
+ *
+ * So: transforms and animations go, opacity and colour stay (shortened). The
+ * sheet still fades its scrim and still becomes visible — it just no longer
+ * flies in from the edge. */
 @media (prefers-reduced-motion: reduce) {
   .workspace *,
   .workspace *::before,
   .workspace *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, visibility !important;
+    transition-duration: 120ms !important;
   }
+
+  /* No transform override here on purpose. Dropping `transform` from
+   * transition-property already does the job: the sheet and the popover JUMP to
+   * their open and closed positions instead of sliding, which is the behaviour
+   * reduced motion is asking for. Forcing `transform: none` as well would also
+   * hit the transforms that are pure layout — `-translate-y-1/2` on a centred
+   * icon, `translate-x-full` on the closed sheet — and move things that were
+   * never animating. */
 }
 
 /* ---------------------------------------

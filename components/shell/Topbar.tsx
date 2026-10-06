@@ -6,7 +6,39 @@ import { MessageCircle } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { ALL_NAV_ITEMS } from "./nav";
 
-const TITLES = Object.fromEntries(ALL_NAV_ITEMS.map((n) => [n.href, n.label]));
+const TITLES: Record<string, string> = Object.fromEntries(
+  ALL_NAV_ITEMS.map((n) => [n.href, n.label])
+);
+
+/**
+ * Routes that are real destinations but deliberately not in the nav — you reach
+ * them from a card, a button or an account menu. Without them the breadcrumb
+ * fell back to "Workspace", directly under a crumb already reading "Workspace".
+ */
+const EXTRA_TITLES: Record<string, string> = {
+  "/post": "Post a task",
+  "/payouts": "Payouts",
+  "/verify-id": "Verify your ID",
+  "/settings/notifications": "Notifications",
+  "/profile/worker-setup": "Payment details",
+};
+
+function titleFor(pathname: string): string {
+  if (TITLES[pathname]) return TITLES[pathname];
+  if (EXTRA_TITLES[pathname]) return EXTRA_TITLES[pathname];
+  // Longest prefix wins, so /inner-circle/outreach keeps its own label while
+  // /gig/<id> inherits a sensible parent instead of repeating "Workspace".
+  const prefix = [...Object.keys(TITLES), ...Object.keys(EXTRA_TITLES)]
+    .filter((href) => href !== "/dashboard" && pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
+  if (prefix) return TITLES[prefix] ?? EXTRA_TITLES[prefix];
+  if (pathname.startsWith("/gig/")) return "Task";
+  if (pathname.startsWith("/u/")) return "Profile";
+  // Last resort: title-case the first segment. Still better than a second
+  // "Workspace", because it at least names where you are.
+  const seg = pathname.split("/").filter(Boolean)[0];
+  return seg ? seg.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase()) : "Overview";
+}
 
 /**
  * Desktop top bar: where you are, and the one action that matters here.
@@ -17,7 +49,7 @@ const TITLES = Object.fromEntries(ALL_NAV_ITEMS.map((n) => [n.href, n.label]));
  */
 export default function Topbar({ action }: { action?: React.ReactNode }) {
   const pathname = usePathname();
-  const title = TITLES[pathname] ?? "Workspace";
+  const title = titleFor(pathname);
 
   return (
     <header className="sticky top-0 z-20 hidden h-[72px] items-center justify-between border-b border-[var(--w-line)] bg-[var(--w-surface)] px-8 lg:flex">

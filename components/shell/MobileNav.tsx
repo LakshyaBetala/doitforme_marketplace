@@ -77,19 +77,34 @@ export default function MobileNav({
         </div>
       </div>
 
-      {/* sheet */}
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close menu"
-            onClick={() => setOpen(false)}
-            className="absolute inset-0 bg-[#2d1937]/45"
-          />
-          <nav
-            aria-label="Menu"
-            className="absolute right-0 top-0 flex h-full w-[82%] max-w-[320px] flex-col bg-[var(--w-rail)] pt-[env(safe-area-inset-top)]"
-          >
+      {/* sheet — always mounted so it can animate out, inert while closed */}
+      <div
+        className={[
+          "fixed inset-0 z-50 lg:hidden",
+          "transition-[visibility] duration-[var(--dur-sheet)]",
+          open ? "visible" : "invisible delay-[var(--dur-sheet)]",
+        ].join(" ")}
+      >
+        <button
+          type="button"
+          aria-label="Close menu"
+          tabIndex={open ? 0 : -1}
+          onClick={() => setOpen(false)}
+          className={[
+            "absolute inset-0 bg-[#2d1937]/45",
+            "transition-opacity duration-[var(--dur-sheet)] ease-[var(--ease-out)]",
+            open ? "opacity-100" : "pointer-events-none opacity-0",
+          ].join(" ")}
+        />
+        <nav
+          aria-label="Menu"
+          aria-hidden={!open}
+          className={[
+            "absolute right-0 top-0 flex h-full w-[82%] max-w-[320px] flex-col bg-[var(--w-rail)] pt-[env(safe-area-inset-top)]",
+            "transition-transform duration-[var(--dur-sheet)] ease-[var(--ease-drawer)] will-change-transform",
+            open ? "translate-x-0" : "translate-x-full",
+          ].join(" ")}
+        >
             <div className="flex h-[62px] items-center justify-between border-b border-[#623373] px-4">
               <span className="text-[13px] font-bold text-[var(--w-rail-faint)]">
                 {name || "Your account"}
@@ -103,7 +118,7 @@ export default function MobileNav({
                 <X size={20} />
               </button>
             </div>
-            <div className="grid flex-1 content-start gap-1 overflow-y-auto p-3.5">
+            <div className="grid flex-1 content-start gap-1 overflow-y-auto overscroll-contain p-3.5">
               {[...PRIMARY_NAV, ...secondary].map((item) => {
                 const Icon = item.icon;
                 const active = isActive(pathname, item.href);
@@ -132,12 +147,11 @@ export default function MobileNav({
               })}
             </div>
 
-            <div className="border-t border-[#623373] p-3.5 pb-[calc(14px+env(safe-area-inset-bottom))]">
-              <AccountMenu name={name} role={role} variant="rail" />
-            </div>
-          </nav>
-        </div>
-      )}
+          <div className="border-t border-[#623373] p-3.5 pb-[calc(14px+env(safe-area-inset-bottom))]">
+            <AccountMenu name={name} role={role} variant="rail" />
+          </div>
+        </nav>
+      </div>
 
       {/* bottom bar */}
       <nav

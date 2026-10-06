@@ -90,7 +90,7 @@ export default function NotificationBell() {
     <div className="relative" ref={wrapRef}>
       <button
         onClick={toggle}
-        className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--chip-strong)] hover:bg-[var(--chip-strong)] text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors relative"
+        className="relative flex h-10 w-10 items-center justify-center rounded-[11px] text-[var(--fg-muted)] transition-colors hover:bg-[var(--chip)] hover:text-[var(--fg)]"
         aria-label="Notifications"
       >
         <Bell size={18} />

@@ -79,3 +79,11 @@ scratchpad/
 # Glob, not one exact name: a second download arrives as
 # "Freelance platform app design (1)/" and broke the app's type check again.
 Freelance platform app design*/
+
+# Screenshot output from scripts/shoot*.mjs. These are generated artifacts for
+# looking at the UI — 34MB per full run — and they go stale the moment anything
+# changes. screenshots/before/ predates this and stays tracked.
+screenshots/responsive/
+screenshots/regions/
+screenshots/states/
+screenshots/crop-*.png

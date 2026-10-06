@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee, Users, Sparkles, Zap } from "lucide-react";
+import { MapPin, Briefcase, ShoppingBag, Building2, Users, Sparkles, Zap } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "./StatusBadge";
 import { isServiceAdvert, responderNoun } from "@/lib/gigRoles";
 
@@ -134,51 +134,89 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
     : "border-[var(--line)] hover:border-[var(--line-strong)]";
 
   if (variant === "compact") {
+    // THE MEDIA BOX ONLY EXISTS WHEN THERE IS MEDIA.
+    //
+    // This used to render `aspect-square` unconditionally, with a 28px briefcase
+    // centred in it when the gig had no photo. Most gigs have no photo — this is
+    // a task board, not a gallery — so the common case was a card whose top 350px
+    // on a phone (and ~640px in a three-column desktop grid) was empty cream with
+    // a small grey icon in the middle. Three cards filled a phone screen with
+    // almost no information on it.
+    //
+    // With no image the card becomes text-first and about a third of the height,
+    // which is what makes the feed scannable. With an image, nothing changes.
+    const hasMedia = Boolean(imageUrl);
+    const priceChip =
+      gig.price != null && gig.market_type !== "REQUEST" ? (
+        <span className="inline-flex shrink-0 items-baseline text-[13.5px] font-bold tabular-nums text-[var(--fg)]">
+          ₹{gig.price}
+          {isMarket && gig.market_type === "RENT" && (
+            <span className="ml-0.5 text-[10px] font-semibold text-[var(--fg-faint)]">/day</span>
+          )}
+        </span>
+      ) : null;
+
     return (
-      <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
-        <div className={`bg-[var(--surface)] rounded-2xl overflow-hidden border transition-colors ${ringClass}`}>
-          <div className="w-full aspect-square bg-[var(--chip)] relative overflow-hidden">
-            {imageUrl ? (
+      <Link href={`/gig/${gig.id}`} className={`block group h-full ${className}`}>
+        <div
+          className={`flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--surface)] border transition-colors ${ringClass}`}
+        >
+          {hasMedia && (
+            <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--chip)]">
               <Image
-                src={imageUrl}
+                src={imageUrl!}
                 alt={gig.title}
                 fill
-                sizes="(max-width: 768px) 50vw, 33vw"
-                className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-[var(--fg-faint)]">
-                {isMarket ? <ShoppingBag size={28} /> : <Briefcase size={28} />}
-              </div>
-            )}
-            <div className="absolute top-2 left-2 z-10">
-              <TypePill listing_type={gig.listing_type} market_type={gig.market_type} isPriority={isHighlighted} />
+              {/* The dark scrim is right over a photograph and wrong over a flat
+                  placeholder, which is the other reason the no-image card does
+                  not keep it — the price moves inline below instead. */}
+              <span className="absolute right-2 top-2 z-10 inline-flex items-center rounded-full border border-white/20 bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-md">
+                {gig.price != null && gig.market_type !== "REQUEST" ? `₹${gig.price}` : "Open offer"}
+              </span>
             </div>
-            {gig.price != null && gig.market_type !== "REQUEST" && (
-              <div className="absolute top-2 right-2 z-10 inline-flex items-center px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[11px] font-semibold text-white">
-                <IndianRupee size={10} className="mr-0.5" />
-                {gig.price}
-              </div>
-            )}
-          </div>
-          <div className="p-3">
-            <h3 className="text-sm font-semibold text-[var(--fg)] leading-snug line-clamp-2 mb-2 group-hover:text-[var(--accent-ink)] transition-colors">
+          )}
+
+          <div className="flex flex-1 flex-col p-3.5">
+            <div className="flex items-start justify-between gap-2">
+              <TypePill
+                listing_type={gig.listing_type}
+                market_type={gig.market_type}
+                isPriority={isHighlighted}
+              />
+              {!hasMedia && priceChip}
+            </div>
+
+            <h3 className="mt-2.5 line-clamp-2 text-[14.5px] font-semibold leading-snug text-[var(--fg)] transition-colors group-hover:text-[var(--accent-ink)]">
               {gig.title}
             </h3>
-            <div className="flex items-center justify-between text-[11px] text-[var(--fg-muted)]">
-              <span className="flex items-center gap-1 truncate max-w-[60%]">
-                <MapPin size={10} /> {gig.location || posterLabel(gig) || "Campus"}
-              </span>
-              <span>{timeAgo(gig.created_at)}</span>
-            </div>
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
-              {responderLabel && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--accent-ink)] bg-[var(--accent-soft)] border border-[var(--accent-line)] px-2 py-0.5 rounded-full">
-                  <Users size={10} /> {responderLabel}
+
+            {/* mt-auto pins the meta row to the bottom so cards in a grid line up
+                along their footer even when titles wrap to different heights. */}
+            <div className="mt-auto pt-2.5">
+              <div className="flex items-center justify-between gap-2 text-[11.5px] text-[var(--fg-muted)]">
+                <span className="flex min-w-0 items-center gap-1 truncate">
+                  <MapPin size={11} className="shrink-0" />
+                  <span className="truncate">{gig.location || posterLabel(gig) || "Campus"}</span>
                 </span>
-              )}
-              {showStatus && (
-                <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>
+                <span className="shrink-0">{timeAgo(gig.created_at)}</span>
+              </div>
+
+              {(responderLabel || showStatus) && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {responderLabel && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--accent-line)] bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent-ink)]">
+                      <Users size={10} /> {responderLabel}
+                    </span>
+                  )}
+                  {showStatus && (
+                    <StatusBadge tone={statusToTone(gig.status)}>
+                      {humanizeStatus(gig.status)}
+                    </StatusBadge>
+                  )}
+                </div>
               )}
             </div>
           </div>

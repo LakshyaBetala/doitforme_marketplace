@@ -438,23 +438,23 @@ export default function LandingPage() {
           </div>
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35 mb-4">Platform</h4>
-            <ul className="space-y-2.5 text-[14px]">
-              <li><button onClick={() => scrollToSection("how")} className="text-white/50 hover:text-white transition-colors">How it works</button></li>
-              <li><button onClick={() => scrollToSection("pricing")} className="text-white/50 hover:text-white transition-colors">Pricing</button></li>
-              <li><Link href="/company/onboarding" className="text-white/50 hover:text-white transition-colors">Hire talent</Link></li>
-              <li><Link href="/login" className="text-white/50 hover:text-white transition-colors">Start earning</Link></li>
+            <ul className="text-[14px]">
+              <li><button onClick={() => scrollToSection("how")} className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">How it works</button></li>
+              <li><button onClick={() => scrollToSection("pricing")} className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Pricing</button></li>
+              <li><Link href="/company/onboarding" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Hire talent</Link></li>
+              <li><Link href="/login" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Start earning</Link></li>
             </ul>
           </div>
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35 mb-4">Company</h4>
-            <ul className="space-y-2.5 text-[14px]">
-              <li><Link href="/about" className="text-white/50 hover:text-white transition-colors">About</Link></li>
-              <li><Link href="/contact" className="text-white/50 hover:text-white transition-colors">Contact</Link></li>
-              <li><Link href="/terms" className="text-white/50 hover:text-white transition-colors">Terms</Link></li>
-              <li><Link href="/privacy-policy" className="text-white/50 hover:text-white transition-colors">Privacy</Link></li>
-              <li><Link href="/refund-policy" className="text-white/50 hover:text-white transition-colors">Refunds</Link></li>
-              <li><Link href="/shipping-policy" className="text-white/50 hover:text-white transition-colors">Delivery</Link></li>
-              <li><Link href="/pricing" className="text-white/50 hover:text-white transition-colors">Pricing</Link></li>
+            <ul className="text-[14px]">
+              <li><Link href="/about" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">About</Link></li>
+              <li><Link href="/contact" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Contact</Link></li>
+              <li><Link href="/terms" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Terms</Link></li>
+              <li><Link href="/privacy-policy" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Privacy</Link></li>
+              <li><Link href="/refund-policy" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Refunds</Link></li>
+              <li><Link href="/shipping-policy" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Delivery</Link></li>
+              <li><Link href="/pricing" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Pricing</Link></li>
             </ul>
           </div>
         </div>

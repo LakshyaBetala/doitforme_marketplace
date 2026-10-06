@@ -398,3 +398,25 @@ body {
   --ok-solid: #10b981;
   --bad-solid: #ef4444;
 }
+
+/* ---------------------------------------
+    MOTION TOKENS
+   ---------------------------------------
+   The browser's built-in easings are too weak to read as deliberate — `ease-out`
+   is nearly linear over 200ms. These are the standard strong curves; take new
+   ones from easing.dev rather than hand-rolling a cubic-bezier that looks about
+   right.
+
+   Durations are short on purpose. UI motion stays under 300ms: a 180ms dropdown
+   feels more responsive than a 400ms one, and anything a person triggers dozens
+   of times a day should be barely perceptible or absent. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  /* The iOS drawer curve — a long tail that makes a sheet feel weighted. */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --dur-press: 120ms;
+  --dur-pop: 170ms;
+  --dur-sheet: 280ms;
+}
