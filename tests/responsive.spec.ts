@@ -105,8 +105,20 @@ test.describe("mobile shell", () => {
     // which makes "is it actually hidden" a real question rather than a given.
     await expect(sheet).toBeHidden();
 
-    await page.getByRole("button", { name: "Open menu" }).click();
-    await expect(sheet).toBeVisible();
+    // Retry the click, not just the assertion.
+    //
+    // Run on its own this passed every time; run with the rest of the suite in
+    // parallel it failed about half the time. The cause is hydration: the dev
+    // server is compiling several routes at once, the markup paints before React
+    // attaches, and a click that lands in that window hits a button with no
+    // handler yet — so setOpen never fires and no amount of waiting on the
+    // assertion will help. toPass() re-runs the click too. Opening twice is
+    // harmless; setOpen(true) is idempotent.
+    const openMenu = page.getByRole("button", { name: "Open menu" });
+    await expect(async () => {
+      await openMenu.click();
+      await expect(sheet).toBeVisible({ timeout: 1500 });
+    }).toPass({ timeout: 20000 });
 
     // Body scroll is locked while the sheet is open, or dragging the menu scrolls
     // the page behind it and you land somewhere you did not navigate to.

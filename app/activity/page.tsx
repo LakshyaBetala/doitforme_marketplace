@@ -440,7 +440,6 @@ export default function ActivityHubPage() {
               Every task you have posted or applied for, and what it is waiting on.
             </p>
           </div>
-          <button onClick={() => router.push('/dashboard')} className="text-xs text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors bg-[var(--chip)] border border-[var(--line)] px-3 py-2 rounded-xl">← Dashboard</button>
         </div>
 
         {/* TABS */}

@@ -70,6 +70,19 @@ const MAINTENANCE_PUBLIC = [
 const isMaintenancePublic = (pathname: string) =>
   pathname === '/' || MAINTENANCE_PUBLIC.some(p => pathname.startsWith(p))
 
+/**
+ * True only in a dev build with the preview flag on. See lib/devPreview.ts.
+ *
+ * `process.env.NODE_ENV` is a build-time literal, so a production build compiles
+ * this to `return false` and drops the require() — which is what keeps the
+ * fixtures, and this bypass, out of the deployed Worker entirely.
+ */
+function devPreviewEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') return false
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return (require('./lib/devPreview') as typeof import('./lib/devPreview')).DEV_PREVIEW
+}
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
@@ -80,6 +93,16 @@ export async function proxy(request: NextRequest) {
     url.pathname = '/maintenance'
     return NextResponse.rewrite(url, { status: 503, headers: { 'Retry-After': '604800' } })
   }
+
+  // DEV PREVIEW. Supabase Auth is 402, so auth.getUser() fails and every
+  // protected route redirects to /login — which makes the whole signed-in
+  // product impossible to look at. This lets it through with fixture data.
+  //
+  // DEV_PREVIEW is `process.env.NODE_ENV !== "production" && <opt-in flag>`, and
+  // NODE_ENV is a compile-time constant, so in a production build this folds to
+  // `if (false)` and the auth gate is exactly as it was. An env var cannot turn
+  // it on in the deployed Worker. See lib/devPreview.ts.
+  if (devPreviewEnabled()) return NextResponse.next()
 
   const isProtected = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
 

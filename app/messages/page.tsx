@@ -738,11 +738,8 @@ function MessagesContent() {
 
             {/* SIDEBAR */}
             <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] flex-col border-r border-[var(--line)] bg-[var(--w-page)] shrink-0`}>
-                <div className="p-3 border-b border-[var(--line)] flex gap-2 items-center bg-[var(--card)]">
-                    <button onClick={() => router.back()} className="p-1.5 -ml-1 hover:bg-[var(--chip-strong)] rounded-full transition-colors text-[var(--fg-muted)] hover:text-[var(--fg)]">
-                        <ArrowLeft size={16} />
-                    </button>
-                    <h1 className="text-base font-bold tracking-tight">Messages</h1>
+                <div className="flex items-center gap-2 border-b border-[var(--line)] bg-[var(--card)] p-3">
+                    <h2 className="text-base font-bold tracking-tight">Conversations</h2>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
@@ -808,7 +805,7 @@ function MessagesContent() {
                     <>
                         {/* Header */}
                         <div className="p-3 border-b border-[var(--line)] bg-[var(--card)] flex items-center gap-3 z-20 shadow-sm">
-                            <button onClick={() => setActiveChat(null)} className="p-2 -ml-1 hover:bg-[var(--chip-strong)] rounded-full shrink-0" aria-label="Back">
+                            <button onClick={() => setActiveChat(null)} className="-ml-1 shrink-0 rounded-full p-2 hover:bg-[var(--chip-strong)] md:hidden" aria-label="Back to conversations">
                                 <ArrowLeft size={18} />
                             </button>
 

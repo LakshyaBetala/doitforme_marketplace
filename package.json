@@ -23,7 +23,8 @@
     "cf:tail": "wrangler tail",
     "cf:secrets": "node scripts/cf-set-secrets.mjs",
     "cf:secrets:cron": "node scripts/cf-set-secrets.mjs --config workers/cron/wrangler.jsonc",
-    "test:service-request": "node scripts/service-request-test.mjs"
+    "test:service-request": "node scripts/service-request-test.mjs",
+    "dev:preview": "node scripts/dev-preview.mjs"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.15.0",

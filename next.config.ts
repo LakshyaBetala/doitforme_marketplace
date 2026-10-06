@@ -103,12 +103,30 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       "sharptools": false,
       "onnxruntime-node": false,
     };
+
+    // Keep the dev-preview fixtures out of production builds entirely.
+    //
+    // lib/devPreview.ts holds sample data and a fake Supabase client so the
+    // signed-in pages can be rendered without a backend. Its flag folds to a
+    // literal `false` in a production build, so the code is unreachable — but
+    // unreachable is not absent: webpack records a require() as a dependency at
+    // PARSE time, before any dead-code elimination, so ~7.6KB of fixtures were
+    // still landing in both bundles.
+    //
+    // Aliasing it to `false` at the resolver removes it from the graph instead
+    // of relying on DCE. This is a normal first-party module, so unlike
+    // @xenova/transformers below it does not need the externals treatment —
+    // nothing marks it external, so the alias is actually consulted.
+    if (!dev) {
+      config.resolve.alias["@/lib/devPreview"] = false;
+      config.resolve.alias[path.resolve(__dirname, "lib/devPreview.ts")] = false;
+    }
 
     if (isServer) {
       // Resolve @xenova/transformers to an empty object in the SERVER bundle.

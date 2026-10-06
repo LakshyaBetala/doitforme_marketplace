@@ -12,7 +12,7 @@ import LogoutButton from "@/components/LogoutButton";
 import {
   User, Mail, ShieldCheck, ShieldAlert, Star, Briefcase,
   Loader2, Wallet, Calendar, CheckCircle2,
-  Phone, GraduationCap, ArrowLeft, Edit2, Check, X,
+  Phone, GraduationCap, Edit2, Check, X,
   Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock, Send, Camera, AtSign, XCircle
 } from "lucide-react";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";

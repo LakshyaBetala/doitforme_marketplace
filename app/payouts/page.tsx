@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { Loader2, ArrowLeft, Clock, CheckCircle2, XCircle, AlertTriangle, TrendingUp } from "lucide-react";
+import { Loader2, Clock, CheckCircle2, XCircle, AlertTriangle, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import StatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
