@@ -35,7 +35,7 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from("users")
-    .select("name, role, phone, college, upi_id")
+    .select("name, role, phone, college, upi_id, is_elite, inner_circle_role")
     .eq("id", user.id)
     .single();
 
@@ -44,7 +44,12 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
 
   return (
     <div className={`${dmSans.className} ${manrope.variable}`}>
-      <AppShell name={profile.name} role={profile.role}>
+      <AppShell
+        name={profile.name}
+        role={profile.role}
+        isElite={profile.is_elite}
+        innerCircleRole={profile.inner_circle_role}
+      >
         {children}
       </AppShell>
     </div>

@@ -75,3 +75,94 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------------------------------------
+    THE CREAM HALF OF THE SHARED CONTRACT
+   ---------------------------------------
+   The same semantic names globals.css defines in dark, redefined in cream. Any
+   primitive or page written against these renders correctly on both sides with
+   no branching — see the block at the end of app/globals.css for why.
+
+   --accent-ink inverts: a light lavender is unreadable on #fff9ef, so the role
+   "brand-colored text" resolves to a dark violet here. */
+
+.workspace {
+  --fg: var(--w-ink);
+  --fg-muted: var(--w-muted);
+  --fg-faint: var(--w-faint);
+
+  --surface: var(--w-raised);
+  --surface-2: var(--w-surface);
+
+  --line: var(--w-line);
+  --line-strong: var(--w-line-strong);
+
+  --chip: #fdf6ec;
+  --chip-strong: #f7ead9;
+
+  --accent: var(--w-violet);
+  --accent-ink: #7a1fa6;
+  --accent-soft: var(--w-violet-soft);
+  --accent-line: #e4d2ee;
+  --on-accent: #ffffff;
+
+  --ok: #1a7f52;
+  --ok-soft: #e8f6ee;
+  --ok-line: #bfe3cf;
+  --warn: var(--w-orange-ink);
+  --warn-soft: var(--w-orange-soft);
+  --warn-line: #f6ddb4;
+  --bad: #b3261e;
+  --bad-soft: #fdeceb;
+  --bad-line: #f3cfcc;
+  /* Darker than the dark theme's: #10b981 under white text is 1.9:1 on cream's
+     white cards, which fails. These pass AA for the 14px bold labels used. */
+  --ok-solid: #0f7a4f;
+  --bad-solid: #c0271f;
+
+  /* The legacy names a dozen pages still reference directly, pointed at the
+     cream palette so a page that has not been migrated yet degrades to
+     readable rather than invisible. */
+  --background: var(--w-page);
+  --card: var(--w-raised);
+  --card-elevated: var(--w-surface);
+  --card-border: var(--w-line-strong);
+  --foreground: var(--w-ink);
+  --foreground-muted: var(--w-muted);
+  --brand-purple: var(--w-violet);
+  --brand-purple-soft: #7a1fa6;
+
+  /* TRAP 1: NATIVE CONTROLS.
+     globals.css sets color-scheme:dark on :root so the browser paints
+     scrollbars, <select> dropdowns and date/time pickers dark. Inherited into a
+     cream page, the date and time inputs in the post flow render as black
+     panels — the same bug in reverse that the dark setting was added to fix.
+     Scoping it here is what keeps native UI matching the surface it sits on. */
+  color-scheme: light;
+}
+
+/* TRAP 2: AUTOFILL.
+   The global rule forces a #0B0B11 inset shadow and white fill-color on any
+   autofilled input, which on cream paints a saved email as white-on-black
+   inside an otherwise white field. Chrome only honours a box-shadow here, so
+   the override has to repeat the same technique rather than set a background. */
+.workspace input:-webkit-autofill,
+.workspace input:-webkit-autofill:hover,
+.workspace input:-webkit-autofill:focus,
+.workspace input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--w-raised) inset !important;
+  -webkit-text-fill-color: var(--w-ink) !important;
+  caret-color: var(--w-ink) !important;
+}
+
+/* Text selection, which otherwise keeps the marketing site's purple-on-dark. */
+.workspace ::selection {
+  background: var(--w-orange-soft);
+  color: var(--w-ink-strong);
+}
+
+/* Placeholder text, once, so inputs stop each picking their own gray. */
+.workspace ::placeholder {
+  color: var(--w-faint);
+  opacity: 1;
+}

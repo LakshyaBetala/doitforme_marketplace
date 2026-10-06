@@ -1,478 +1,404 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
-  Plus, Briefcase, Search, MapPin, MessageSquare, User,
-  Home, Inbox, Star, Settings, LogOut, Bell, ChevronDown, CheckCircle2,
-  DollarSign, ArrowRight, Zap, ShieldCheck, AlertTriangle, X, Gift, Copy, Clock, Filter, Tags
+  ArrowRight, Plus, ShieldCheck, Users, Clock, IndianRupee,
+  CheckCircle2, Upload, Wallet2, Sparkles,
 } from "lucide-react";
-import InstallAppButton from "@/components/InstallAppButton";
-import EnableNotificationsButton from "@/components/EnableNotificationsButton";
-import NotificationBell from "@/components/NotificationBell";
-import Avatar from "@/components/ui/Avatar";
 import GigCard from "@/components/ui/GigCard";
-import EmptyState from "@/components/ui/EmptyState";
 import Skeleton, { GigCardSkeleton } from "@/components/ui/Skeleton";
 import ProfileCompletion from "@/components/ProfileCompletion";
 
-export default function Dashboard() {
+/**
+ * Overview — what needs you, and what you are owed.
+ *
+ * This page used to be a second feed with its own 72px top bar carrying the
+ * logo, a search box, a Refer & Earn chip, a messages button, the notification
+ * bell and a profile dropdown; then a filter rail; then the same gig list that
+ * /feed renders. Against a persistent sidebar that is three navigations for one
+ * product, and it is why the brief asked for "no menu options repeating two
+ * times". The bar is gone — its one-of-a-kind contents (log out, install app,
+ * enable alerts) moved into the sidebar account menu, and the bell and inbox
+ * into the top bar, so nothing was dropped on the floor.
+ *
+ * What replaces it is the thing a landing surface should do and never did:
+ * answer "is anything waiting on me". Those actions existed only if you went
+ * looking for them on /activity — a poster with five applicants and an unfunded
+ * escrow saw a gig list indistinguishable from a stranger's.
+ *
+ * Earnings are folded in here, which is where /payouts goes. There is still no
+ * Wallet: payouts are manual, so a withdrawable balance would be a promise we
+ * cannot keep. This shows what is owed and links to the record.
+ */
+
+type ActionItem = {
+  id: string;
+  href: string;
+  label: string;
+  detail: string;
+  tone: "act" | "wait";
+  icon: typeof Users;
+};
+
+const lower = (v: unknown) => String(v ?? "").toLowerCase();
+
+export default function Overview() {
   const supabase = supabaseBrowser();
   const router = useRouter();
 
   const [user, setUser] = useState<any>(null);
-  const [gigs, setGigs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  // 'TASKS' (demand) is the default view. There is deliberately no tab that mixes
-  // demand and self-promotion — that mix is what inverted the marketplace.
-  const [feedType, setFeedType] = useState<'TASKS' | 'COMPANY_TASK' | 'SERVICE'>('TASKS');
-  const [campusFilter, setCampusFilter] = useState<'ALL' | 'MY_CAMPUS'>('ALL');
-  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isCategoryFilterOpen, setIsCategoryFilterOpen] = useState(false);
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-
-  // User Preferences Onboarding
+  const [actions, setActions] = useState<ActionItem[]>([]);
+  const [owed, setOwed] = useState(0);
+  const [paid, setPaid] = useState(0);
+  const [fresh, setFresh] = useState<any[]>([]);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
-  // Unread messages indicator
-  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
-
-  // Referral state
-  const [referralCode, setReferralCode] = useState("");
-  const [pointsBalance, setPointsBalance] = useState(0);
-  const [referralCount, setReferralCount] = useState(0);
-  const [activePoints, setActivePoints] = useState<any[]>([]);
-  const [codeCopied, setCodeCopied] = useState(false);
-
   useEffect(() => {
-    const loadUserAndGigs = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return router.push("/login");
-
+    const load = async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) { setLoading(false); return; }
+      if (!authUser) return router.push("/login");
 
       const nowIso = new Date().toISOString();
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-      // ⚡ Run all DB fetches in parallel instead of sequentially
-      const [dbUserRes, unreadRes, gigsRes, refsRes, ptsRes] = await Promise.all([
+      const [dbUserRes, postedRes, workingRes, payoutRes, freshRes] = await Promise.all([
         supabase.from("users").select("*").eq("id", authUser.id).single(),
-        supabase.from("messages").select("id").eq("receiver_id", authUser.id).gt("created_at", oneDayAgo).limit(1),
-        supabase.from("gigs")
-          .select("*, users:poster_id(college, name, rating, rating_count), companies:company_id(name)")
+
+        // What I posted that is still live, with how many people applied.
+        supabase
+          .from("gigs")
+          .select("id, title, status, payment_status, price, auto_release_at, applications(count)")
+          .eq("poster_id", authUser.id)
+          .not("status", "in", "(completed,cancelled)")
+          .order("created_at", { ascending: false })
+          .limit(30),
+
+        // What I am being paid to do.
+        supabase
+          .from("gigs")
+          .select("id, title, status, payment_status, price, auto_release_at")
+          .eq("assigned_worker_id", authUser.id)
+          .not("status", "in", "(completed,cancelled)")
+          .order("created_at", { ascending: false })
+          .limit(30),
+
+        supabase.from("payout_queue").select("amount, status").eq("worker_id", authUser.id),
+
+        // A short taste of the board. Deliberately a glance, not a feed — the
+        // filters, pagination and campus toggle all live on /feed, and having
+        // two of them is the duplication this redesign exists to remove.
+        supabase
+          .from("gigs")
+          .select("*, users:poster_id(college), companies:company_id(name), applications(count)")
           .neq("poster_id", authUser.id)
           .eq("status", "open")
-          .or(`deadline.is.null,deadline.gt.${nowIso}`)
-          // Same age rule as /feed, which this list had drifted away from: it was
-          // filtering only on status, so 90-day-old listings still surfaced here.
-          // Hustles age out at 30 days; company roles never do.
-          .or(`listing_type.eq.COMPANY_TASK,created_at.gt.${thirtyDaysAgo}`)
-          // Demand only. SERVICE listings are self-promotion and live at /talent.
-          .in("listing_type", ["HUSTLE", "COMPANY_TASK", "SERVICE"])
-          // Exclude work already under way. A gig can still be status='open'
-          // while partially staffed (multi-worker) or already handed to someone,
-          // and showing it wastes an applicant's time on something they cannot get.
           .is("assigned_worker_id", null)
-          // Hiring someone from their service advert creates a private gig
-          // addressed to that one person. It is a HUSTLE with status='open' and
-          // no assigned worker, so it matches this query exactly — and because
-          // this list excludes your OWN posts, the customer would be the only
-          // person who could not see their own private request. /api/gig/apply
-          // refuses it anyway, so surfacing it here only wastes people's time.
           .is("source_service_id", null)
+          .in("listing_type", ["HUSTLE", "COMPANY_TASK"])
+          .or(`deadline.is.null,deadline.gt.${nowIso}`)
+          .or(`listing_type.eq.COMPANY_TASK,created_at.gt.${thirtyDaysAgo}`)
           .order("created_at", { ascending: false })
-          .limit(20),
-        supabase.from("referrals").select("id").eq("referrer_id", authUser.id),
-        supabase.from("points_transactions")
-          .select("amount, expires_at, reason")
-          .eq("user_id", authUser.id)
-          .eq("type", "EARN")
-          .eq("redeemed", false)
-          .gt("expires_at", nowIso)
-          .order("expires_at", { ascending: true }),
+          .limit(3),
       ]);
 
       const dbUser = dbUserRes.data;
-      if (dbUser?.role === 'COMPANY') {
-         return router.push('/company/dashboard');
-      }
+      if (dbUser?.role === "COMPANY") return router.push("/company/dashboard");
       setUser({ ...authUser, user_metadata: { ...authUser.user_metadata, ...dbUser } });
-      setHasUnreadMessages((unreadRes.data?.length || 0) > 0);
-      setGigs(gigsRes.data || []);
-      setReferralCount(refsRes.data?.length || 0);
-      setActivePoints(ptsRes.data || []);
-      if (dbUser?.referral_code) setReferralCode(dbUser.referral_code);
-      setPointsBalance(dbUser?.points_balance || 0);
 
-      // Show preferences modal only if: no prefs set AND user hasn't dismissed it before
+      // ---- derive the action list ------------------------------------------
+      const items: ActionItem[] = [];
+
+      for (const g of (postedRes.data as any[]) || []) {
+        const status = lower(g.status);
+        const pay = lower(g.payment_status);
+        const applicants = Array.isArray(g.applications) ? g.applications[0]?.count ?? 0 : 0;
+
+        if (status === "open" && applicants > 0) {
+          items.push({
+            id: `pick-${g.id}`, href: `/gig/${g.id}`, tone: "act", icon: Users,
+            label: `${applicants} ${applicants === 1 ? "person" : "people"} applied`,
+            detail: g.title,
+          });
+        } else if (status === "assigned" && pay !== "held") {
+          // Nothing starts until escrow is funded, so this is the most expensive
+          // item on the page to leave sitting.
+          items.push({
+            id: `fund-${g.id}`, href: `/gig/${g.id}`, tone: "act", icon: ShieldCheck,
+            label: "Add money to escrow to start",
+            detail: g.title,
+          });
+        } else if (status === "delivered") {
+          const hrs = g.auto_release_at
+            ? Math.max(0, Math.round((new Date(g.auto_release_at).getTime() - Date.now()) / 36e5))
+            : null;
+          items.push({
+            id: `review-${g.id}`, href: `/gig/${g.id}`, tone: "act", icon: CheckCircle2,
+            label: "Work delivered — review it",
+            detail: hrs !== null ? `${g.title} · releases on its own in ${hrs}h` : g.title,
+          });
+        }
+      }
+
+      for (const g of (workingRes.data as any[]) || []) {
+        const status = lower(g.status);
+        if (status === "assigned") {
+          items.push({
+            id: `deliver-${g.id}`, href: `/gig/${g.id}`, tone: "act", icon: Upload,
+            label: lower(g.payment_status) === "held" ? "Money is held — submit your work" : "You are hired for this",
+            detail: g.title,
+          });
+        } else if (status === "delivered") {
+          items.push({
+            id: `await-${g.id}`, href: `/gig/${g.id}`, tone: "wait", icon: Clock,
+            label: "Waiting for the client to approve",
+            detail: g.title,
+          });
+        }
+      }
+
+      // Act-now before waiting-on-someone-else. Nothing else about the order is
+      // meaningful, and a stable sort stops it reshuffling between loads.
+      items.sort((a, b) => (a.tone === b.tone ? 0 : a.tone === "act" ? -1 : 1));
+      setActions(items.slice(0, 6));
+
+      const payouts = (payoutRes.data as any[]) || [];
+      setOwed(payouts.filter((p) => lower(p.status) === "pending").reduce((s, p) => s + Number(p.amount || 0), 0));
+      setPaid(payouts.filter((p) => lower(p.status) === "completed").reduce((s, p) => s + Number(p.amount || 0), 0));
+
+      setFresh(
+        ((freshRes.data as any[]) || []).map((g) => ({
+          ...g,
+          applicant_count: Array.isArray(g.applications) ? g.applications[0]?.count ?? 0 : 0,
+        }))
+      );
+
       const dismissed = localStorage.getItem(`doitforme_prefs_dismissed_${authUser.id}`);
       if ((!dbUser?.preferences || dbUser.preferences.length === 0) && !dismissed) {
         setShowPreferencesModal(true);
       }
-
       setLoading(false);
     };
-    loadUserAndGigs();
+    load();
   }, [router, supabase]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/");
-  };
+  if (loading) return <OverviewSkeleton />;
 
-  const filteredGigs = gigs.filter(gig => {
-    const matchesSearch = gig.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      gig.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType =
-      feedType === 'TASKS'
-        ? (gig.listing_type === 'HUSTLE' || gig.listing_type === 'COMPANY_TASK')
-        : gig.listing_type === feedType;
-    const matchesCampus = campusFilter === 'ALL'
-      ? true
-      : (!gig.is_physical || gig.users?.college === user?.user_metadata?.college);
-    const matchesCategory = categoryFilter === 'ALL' || gig.category === categoryFilter;
-    return matchesSearch && matchesType && matchesCampus && matchesCategory;
-  }).sort((a, b) => {
-    const aHighlighted = a.is_highlighted && a.highlight_expires_at && new Date(a.highlight_expires_at) > new Date();
-    const bHighlighted = b.is_highlighted && b.highlight_expires_at && new Date(b.highlight_expires_at) > new Date();
-    if (aHighlighted && !bHighlighted) return -1;
-    if (!aHighlighted && bHighlighted) return 1;
-
-    const aCompany = a.listing_type === 'COMPANY_TASK';
-    const bCompany = b.listing_type === 'COMPANY_TASK';
-    if (aCompany && !bCompany) return -1;
-    if (!aCompany && bCompany) return 1;
-
-    return 0;
-  });
-
-  // Dynamic opportunity counts (computed from ALL gigs, ignoring search/type filters)
-  const hustleCount = gigs.filter(g => g.listing_type === 'HUSTLE').length;
-  const companyTaskCount = gigs.filter(g => g.listing_type === 'COMPANY_TASK').length;
-  const serviceCount = gigs.filter(g => g.listing_type === 'SERVICE').length;
-
-  const handleFeedTypeChange = (type: 'TASKS' | 'COMPANY_TASK' | 'SERVICE') => {
-    setFeedType(type);
-    setCategoryFilter('ALL'); // Reset category filter when switching tabs
-  };
-
-  const activeCategories = Array.from(new Set([
-    ...(feedType === 'TASKS' || feedType === 'COMPANY_TASK' || feedType === 'SERVICE' ? ["Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities", "Commerce & Finance", "Academics & Gigs", "Errands & Manual Labor", "Writing & Content", "Marketing & PR", "Data & Research", "Tutoring", "Other"] : [])
-  ]));
-
-  const username = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Partner";
-  const [profileAlertDismissed, setProfileAlertDismissed] = useState(false);
-
-  // Detect missing profile fields
-  const missingFields: string[] = [];
-  if (user) {
-    const meta = user.user_metadata || {};
-    if (!meta.name && !meta.full_name) missingFields.push("Name");
-    if (!meta.phone) missingFields.push("Phone");
-    if (!meta.college) missingFields.push("College");
-    if (!meta.upi_id) missingFields.push("UPI ID");
-  }
-  const showProfileAlert = missingFields.length > 0 && !profileAlertDismissed;
-
-  if (loading) return <DashboardSkeleton />;
+  const meta = user?.user_metadata || {};
+  const firstName = String(meta.name || meta.full_name || user?.email?.split("@")[0] || "there").split(" ")[0];
+  const kycDone = Boolean(meta.kyc_verified);
+  const needsAction = actions.filter((a) => a.tone === "act").length;
 
   return (
-    <div className="h-[100dvh] bg-[var(--background)] text-white flex flex-col font-sans overflow-hidden">
-      {/* --------------------------------------------------
-          1. TOP BAR (Global Navigation)
-      -------------------------------------------------- */}
-      <header className="h-[64px] md:h-[72px] bg-[var(--background)]/80 backdrop-blur-xl border-b border-white/[0.08] flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
-        <div className="flex items-center gap-2 md:gap-6 min-w-0 flex-1">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="relative w-8 h-8 md:w-9 md:h-9 rounded-lg overflow-hidden flex items-center justify-center">
-              <Image src="/logo.png" alt="DoItForMe" fill className="object-contain" />
-            </div>
-            <span className="font-semibold text-lg tracking-tight hidden md:block transition-colors" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>DoItForMe</span>
-          </Link>
+    <div className="pb-2">
+      <p className="text-[13px] font-bold text-[var(--w-faint)]">YOUR WORKSPACE</p>
+      <h1
+        className="mt-1.5 text-[30px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[var(--w-ink-strong)] sm:text-[34px]"
+        style={{ fontFamily: "var(--font-display), sans-serif" }}
+      >
+        Hey, {firstName}
+      </h1>
+      <p className="mt-2 text-[14.5px] leading-[1.6] text-[var(--w-muted)]">
+        {needsAction > 0
+          ? `${needsAction} ${needsAction === 1 ? "thing needs" : "things need"} you today.`
+          : actions.length > 0
+          ? "Nothing needs you right now — a couple of things are with other people."
+          : "Nothing waiting on you. Good time to find work."}
+      </p>
 
-          {/* Search Bar */}
-          <div className="flex relative w-full max-w-[150px] md:max-w-none md:w-80 min-w-0">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-            <input
-              type="text"
-              placeholder="Search hustles…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--card)] border border-white/[0.08] rounded-full py-2 pl-9 pr-4 text-xs md:text-sm text-white placeholder:text-zinc-500 focus:border-brand-purple/50 focus:outline-none transition-colors shadow-inner"
-            />
-          </div>
-        </div>
-
-        {/* Global Actions */}
-        <div className="flex items-center gap-2 md:gap-4 relative shrink-0 pl-2">
-
-          <Link href="/profile#refer" className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-brand-purple/20 border border-brand-purple/30 rounded-lg shadow-sm hover:bg-brand-purple/30 transition-colors">
-            <Gift size={14} className="text-brand-purple" />
-            <span className="text-xs font-bold text-brand-purple uppercase tracking-widest mt-0.5">Refer & Earn</span>
-          </Link>
-
-          <button onClick={() => router.push('/messages')} className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors relative group">
-            <MessageSquare size={18} />
-            {hasUnreadMessages && <div className="absolute top-2 right-2 w-2 h-2 bg-brand-purple rounded-full"></div>}
-          </button>
-
-          <NotificationBell />
-
-          <div className="h-6 w-px bg-white/10 mx-1 md:mx-2"></div>
-
-          {/* Profile Dropdown */}
-          <div className="relative">
-            <button onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)} className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border border-white/[0.08] bg-white/10 hover:bg-white/10 transition-colors">
-              <Avatar fallback={username} className="w-8 h-8" textClassName="text-sm" />
-              <span className="text-sm font-medium hidden md:block">{username}</span>
-              <ChevronDown size={14} className="text-zinc-500" />
-            </button>
-
-            {isProfileDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-56 bg-[var(--card)] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden py-1 z-50">
-                <Link href="/profile" className="flex items-center px-4 py-3 hover:bg-white/10 text-sm text-zinc-300 hover:text-white transition-colors">
-                  <User size={16} className="mr-3 shrink-0" />
-                  <span className="font-medium">Profile</span>
-                </Link>
-                <InstallAppButton />
-                <EnableNotificationsButton />
-                <div className="h-px bg-white/10 my-1"></div>
-                <button onClick={handleLogout} className="w-full flex items-center px-4 py-3 hover:bg-red-500/10 text-sm text-red-400 transition-colors">
-                  <LogOut size={16} className="mr-3 shrink-0" />
-                  <span className="font-medium">Logout</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-
-
-
-        {/* --------------------------------------------------
-            3. MAIN CONTENT AREA (Core Zone)
-        -------------------------------------------------- */}
-        <main className="flex-1 overflow-y-auto bg-[var(--background)] scrollbar-hide relative">
-          {/* Ambient purple glow — gives the dashboard depth without screaming */}
-          <div aria-hidden className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[600px] rounded-full bg-[#8825F5]/[0.07] blur-[180px]" />
-          <div aria-hidden className="pointer-events-none absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-[#0097FF]/[0.05] blur-[160px]" />
-
-          <div className="relative max-w-5xl mx-auto p-4 md:p-8 space-y-8 pb-24 md:pb-8">
-
-            {/* Claim-your-page: the retention surface for users who have no gig
-                to do yet. Sits above the KYC prompt because a shareable profile
-                is a reason to come back; ID verification is not. */}
-            <ProfileCompletion user={user?.user_metadata} />
-
-            {/* KYC Verification Prompt */}
-            {user && !user.user_metadata?.kyc_verified && (
-              <Link href="/verify-id" className="block bg-[var(--brand-purple)]/[0.08] border border-[var(--brand-purple)]/25 rounded-2xl p-4 flex items-center gap-3 relative animate-in fade-in slide-in-from-top-4 duration-500 group hover:bg-[var(--brand-purple)]/[0.12] transition active:scale-[0.99]">
-                <div className="p-2 bg-[var(--brand-purple)]/15 rounded-xl shrink-0">
-                  <ShieldCheck size={20} className="text-[var(--brand-purple-soft)]" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-white mb-0.5">Verify your Student ID</p>
-                  <p className="text-xs text-white/55">Upload your college ID to unlock all features and build trust.</p>
-                </div>
-                <span className="shrink-0 px-4 py-2 bg-[var(--brand-purple)] text-white text-xs font-semibold rounded-xl group-hover:brightness-110 transition">
-                  Verify now
-                </span>
-              </Link>
-            )}
-
-            {/* Layer 1: Welcome + Identity */}
-            <section className="bg-[var(--card)] border border-white/[0.08] rounded-3xl p-5 md:p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden group mb-4">
-              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-purple/10 blur-[100px] rounded-full pointer-events-none"></div>
-              <div className="relative z-10 w-full md:w-auto mb-4 md:mb-0">
-                <h1 className="text-xl md:text-2xl font-semibold text-white tracking-tight mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Good afternoon, {username.split(' ')[0]}.</h1>
-                <p className="text-white/55 text-xs md:text-sm">Live work from peers and companies. Pick your task.</p>
-              </div>
-              <div className="hidden md:flex relative z-10 items-center justify-end">
-                <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-5 py-3 backdrop-blur-md flex items-center gap-6">
-                  <div>
-                    <p className="text-[11px] text-[var(--brand-purple-soft)] font-medium tracking-[0.1em] uppercase mb-1 flex items-center gap-1.5"><Zap size={10} className="fill-[var(--brand-purple-soft)]" /> Open now</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <div>
-                      <span className="text-xl font-semibold text-white tracking-tight tabular-nums">{hustleCount}</span>
-                      <span className="text-[10px] font-medium text-white/45 ml-1.5">Tasks</span>
-                    </div>
-                    <div className="w-px h-6 bg-white/[0.1] self-center"></div>
-                    <div>
-                      <span className="text-xl font-semibold text-white tracking-tight tabular-nums">{companyTaskCount}</span>
-                      <span className="text-[10px] font-medium text-white/45 ml-1.5">Company</span>
-                    </div>
-                    <div className="w-px h-6 bg-white/[0.1] self-center"></div>
-                    <div>
-                      <span className="text-xl font-semibold text-white tracking-tight tabular-nums">{serviceCount}</span>
-                      <span className="text-[10px] font-medium text-white/45 ml-1.5">For hire</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Layer 2: Quick Action Bar */}
-            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Link href="/post" className="group relative flex items-center gap-5 p-6 md:p-7 bg-[var(--card)] border border-white/[0.08] text-white rounded-3xl hover:border-[#8825F5]/40 active:scale-[0.99] transition overflow-hidden">
-                {/* purple wash on hover */}
-                <span aria-hidden className="pointer-events-none absolute -right-12 -bottom-12 w-44 h-44 rounded-full bg-[#8825F5]/15 blur-3xl opacity-60 group-hover:opacity-100 transition-opacity" />
-                <div className="relative w-14 h-14 rounded-2xl bg-[#8825F5] flex items-center justify-center shrink-0 shadow-[0_8px_24px_-8px_rgba(136,37,245,0.6)]">
-                  <Plus size={24} className="text-white" strokeWidth={2.5} />
-                </div>
-                <div className="relative flex-1 min-w-0">
-                  <span className="block font-semibold text-base md:text-lg text-white tracking-tight">Post a hustle</span>
-                  <span className="block text-xs md:text-sm text-white/55 mt-1">Need something done? Get offers in minutes.</span>
-                </div>
-              </Link>
-              <Link href="/activity" className="group relative flex items-center gap-5 p-6 md:p-7 bg-[var(--card)] border border-white/[0.08] text-white rounded-3xl hover:border-white/[0.18] active:scale-[0.99] transition">
-                <div className="w-14 h-14 rounded-2xl bg-white/[0.06] border border-white/[0.1] flex items-center justify-center shrink-0">
-                  <Briefcase size={22} className="text-white/85" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="block font-semibold text-base md:text-lg text-white tracking-tight">Activity</span>
-                  {/* Names the destination in the poster's own words. "Your posts,
-                      applications, and escrow" describes a database; posters were
-                      looking for where their gig went and who applied to it. */}
-                  <span className="block text-xs md:text-sm text-white/55 mt-1">
-                    Your posted gigs, who applied, and the work you&apos;re doing.
-                  </span>
-                </div>
-              </Link>
-            </section>
-
-            {/* Layer 3 removed. Refer & Earn relocated to Profile Page. */}
-
-            {/* Layer 4: Live Feed Section */}
-            <section>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sticky top-0 bg-[var(--background)]/90 backdrop-blur-md py-4 z-20">
-                <div>
-                  <h2 className="text-xl font-semibold text-white flex items-center gap-2 mb-1 tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-                    Live feed <span className="w-2 h-2 rounded-full bg-[var(--brand-purple-soft)] animate-pulse hidden sm:inline-block"></span>
-                  </h2>
-                  <p className="text-xs text-white/50">Fresh tasks from students and companies</p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {/* Type Filters */}
-                  <div className="flex items-center bg-[var(--card)] rounded-full p-1 border border-white/[0.08] overflow-x-auto scrollbar-hide shrink-0 max-w-[calc(100vw-120px)] md:max-w-none touch-pan-x">
-                    <FeedTab label="Find work" active={feedType === 'TASKS'} onClick={() => handleFeedTypeChange('TASKS')} />
-                    <FeedTab label="From companies" active={feedType === 'COMPANY_TASK'} onClick={() => handleFeedTypeChange('COMPANY_TASK')} />
-                    <FeedTab label="Hire someone" active={feedType === 'SERVICE'} onClick={() => handleFeedTypeChange('SERVICE')} />
-                  </div>
-
-                  {/* Campus Filter */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsFilterOpen(!isFilterOpen)}
-                      className={`p-2 rounded-full border transition ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple text-white border-brand-purple' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
+      {/* ---- needs you --------------------------------------------------- */}
+      {actions.length > 0 && (
+        <section className="mt-7">
+          <h2 className="text-[15px] font-extrabold tracking-[-0.01em] text-[var(--w-ink-strong)]">
+            Needs you
+          </h2>
+          <ul className="mt-3 grid gap-2.5">
+            {actions.map((a) => {
+              const Icon = a.icon;
+              const act = a.tone === "act";
+              return (
+                <li key={a.id}>
+                  <Link
+                    href={a.href}
+                    className="group flex items-center gap-3.5 rounded-[13px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-4 transition-colors hover:border-[var(--w-violet)]"
+                  >
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] ${
+                        act
+                          ? "bg-[var(--w-orange-soft)] text-[var(--w-orange-ink)]"
+                          : "bg-[var(--w-violet-soft)] text-[var(--w-violet)]"
+                      }`}
                     >
-                      <Filter size={16} />
-                    </button>
-                    {isFilterOpen && (
-                      <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--card)] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-                        <div className="p-2 space-y-1">
-                          <button
-                            onClick={() => { setCampusFilter('ALL'); setIsFilterOpen(false); }}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
-                          >
-                            All Campuses
-                            {campusFilter === 'ALL' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                          </button>
-                          <button
-                            onClick={() => { setCampusFilter('MY_CAMPUS'); setIsFilterOpen(false); }}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${campusFilter === 'MY_CAMPUS' ? 'bg-brand-purple/20 text-brand-purple' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
-                          >
-                            My Campus
-                            {campusFilter === 'MY_CAMPUS' && <div className="w-1.5 h-1.5 rounded-full bg-brand-purple"></div>}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                      <Icon size={18} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14.5px] font-bold text-[var(--w-ink-strong)]">
+                        {a.label}
+                      </span>
+                      <span className="block truncate text-[13px] text-[var(--w-muted)]">{a.detail}</span>
+                    </span>
+                    <ArrowRight
+                      size={17}
+                      className="shrink-0 text-[var(--w-faint)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--w-violet)]"
+                    />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
-                  {/* Category filter applies to every tab now that the default
-                      tab is a real selection rather than an unfiltered "All". */}
-                  {(
-                    <div className="relative">
-                      <button
-                        onClick={() => setIsCategoryFilterOpen(!isCategoryFilterOpen)}
-                        className={`p-2 rounded-full border transition ${categoryFilter !== 'ALL' ? 'bg-[var(--brand-purple)] text-white border-[var(--brand-purple)]' : 'border-white/[0.08] hover:bg-white/10 text-zinc-400 hover:text-white'}`}
-                        title="Filter by Category"
-                      >
-                        <Tags size={16} />
-                      </button>
-                      {isCategoryFilterOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-64 bg-[var(--card)] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 max-h-[300px] overflow-y-auto">
-                          <div className="p-2 space-y-1">
-                            <button
-                              onClick={() => { setCategoryFilter('ALL'); setIsCategoryFilterOpen(false); }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-between ${categoryFilter === 'ALL' ? 'bg-white/10 text-white' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
-                            >
-                              All Categories
-                              {categoryFilter === 'ALL' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
-                            </button>
-                            {activeCategories.map(cat => (
-                              <button
-                                key={cat}
-                                onClick={() => { setCategoryFilter(cat); setIsCategoryFilterOpen(false); }}
-                                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between ${categoryFilter === cat ? 'bg-[var(--brand-purple)]/15 text-[var(--brand-purple-soft)]' : 'text-zinc-500 hover:text-white hover:bg-white/10'}`}
-                              >
-                                {cat}
-                                {categoryFilter === cat && <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand-purple-soft)]"></div>}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+      {/* ---- the two things you can start ------------------------------- */}
+      <section className="mt-8 grid gap-4 sm:grid-cols-2">
+        <Link
+          href="/post"
+          className="flex items-center gap-4 rounded-[16px] bg-[linear-gradient(115deg,#351144_0%,#5b1479_63%,#8324af_100%)] p-6"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[13px] bg-[var(--w-orange)] text-[#371448]">
+            <Plus size={23} strokeWidth={2.6} />
+          </span>
+          <span className="min-w-0">
+            <span
+              className="block text-[17px] font-extrabold tracking-[-0.02em] text-white"
+              style={{ fontFamily: "var(--font-display), sans-serif" }}
+            >
+              Post a task
+            </span>
+            <span className="mt-0.5 block text-[13px] leading-[1.5] text-white/80">
+              Need something done? Get offers in minutes.
+            </span>
+          </span>
+        </Link>
+        <Link
+          href="/feed"
+          className="flex items-center gap-4 rounded-[16px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-6 transition-colors hover:border-[var(--w-violet)]"
+        >
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[13px] bg-[var(--w-violet-soft)] text-[var(--w-violet)]">
+            <Sparkles size={22} />
+          </span>
+          <span className="min-w-0">
+            <span
+              className="block text-[17px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]"
+              style={{ fontFamily: "var(--font-display), sans-serif" }}
+            >
+              Find work
+            </span>
+            <span className="mt-0.5 block text-[13px] leading-[1.5] text-[var(--w-muted)]">
+              Open tasks from students and companies.
+            </span>
+          </span>
+        </Link>
+      </section>
+
+      {/* ---- earnings, folded in from /payouts --------------------------- */}
+      {(owed > 0 || paid > 0) && (
+        <section className="mt-8 rounded-[16px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-[11px] bg-[var(--w-violet-soft)] text-[var(--w-violet)]">
+                <Wallet2 size={18} />
+              </span>
+              <div>
+                <h2 className="text-[15px] font-extrabold tracking-[-0.01em] text-[var(--w-ink-strong)]">
+                  Your earnings
+                </h2>
+                {/* Honest about the mechanism. Calling this a balance would imply
+                    a withdraw button, and there isn't one — a person pays these. */}
+                <p className="text-[13px] text-[var(--w-muted)]">
+                  Paid out by hand, usually within a day of release.
+                </p>
               </div>
-
-              {filteredGigs.length === 0 ? (
-                <EmptyState
-                  sloth="/sleeping_sloth.png"
-                  title="No tasks here. Even the sloth dozed off."
-                  description="Try clearing a filter or switching campus scope. New tasks post throughout the day."
-                  actionLabel="Post a task"
-                  actionHref="/post"
-                />
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredGigs.map((gig: any) => (
-                    <GigCard key={gig.id} gig={gig} variant="detailed" />
-                  ))}
-                </div>
-              )}
-            </section>
+            </div>
+            <Link
+              href="/payouts"
+              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] px-3 text-[13px] font-bold text-[var(--w-violet)] hover:bg-[var(--w-violet-soft)]"
+            >
+              See all <ArrowRight size={14} />
+            </Link>
           </div>
-        </main>
+          <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-[13px] bg-[var(--w-orange-soft)] p-4">
+              <dt className="text-[12.5px] font-bold text-[var(--w-orange-ink)]">Owed to you</dt>
+              <dd
+                className="mt-1 flex items-center text-[26px] font-extrabold tracking-[-0.02em] text-[#5c3407]"
+                style={{ fontFamily: "var(--font-display), sans-serif" }}
+              >
+                <IndianRupee size={20} strokeWidth={2.6} />
+                {owed.toLocaleString("en-IN")}
+              </dd>
+            </div>
+            <div className="rounded-[13px] bg-[var(--chip)] p-4">
+              <dt className="text-[12.5px] font-bold text-[var(--w-muted)]">Paid so far</dt>
+              <dd
+                className="mt-1 flex items-center text-[26px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]"
+                style={{ fontFamily: "var(--font-display), sans-serif" }}
+              >
+                <IndianRupee size={20} strokeWidth={2.6} />
+                {paid.toLocaleString("en-IN")}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      )}
 
+      {/* ---- nudges ------------------------------------------------------ */}
+      <div className="mt-8 grid gap-4">
+        <ProfileCompletion user={user?.user_metadata} />
 
+        {!kycDone && (
+          <Link
+            href="/verify-id"
+            className="flex items-center gap-3.5 rounded-[13px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-4 transition-colors hover:border-[var(--w-violet)]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--w-violet-soft)] text-[var(--w-violet)]">
+              <ShieldCheck size={18} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[14.5px] font-bold text-[var(--w-ink-strong)]">
+                Verify your student ID
+              </span>
+              <span className="block text-[13px] text-[var(--w-muted)]">
+                Any student ID works — school, college or graduate. Takes a minute.
+              </span>
+            </span>
+            <ArrowRight size={17} className="shrink-0 text-[var(--w-faint)]" />
+          </Link>
+        )}
       </div>
 
-      {/* Preferences Modal Component */}
+      {/* ---- a glance at the board --------------------------------------- */}
+      {fresh.length > 0 && (
+        <section className="mt-9">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="text-[15px] font-extrabold tracking-[-0.01em] text-[var(--w-ink-strong)]">
+              Fresh on the board
+            </h2>
+            <Link
+              href="/feed"
+              className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[var(--w-violet)] hover:underline"
+            >
+              Explore all work <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {fresh.map((gig) => (
+              <GigCard key={gig.id} gig={gig} variant="detailed" />
+            ))}
+          </div>
+        </section>
+      )}
+
       {showPreferencesModal && (
         <PreferencesModal
           user={user}
           supabase={supabase}
           onClose={() => {
-            // Persist dismissal so it never pops up again on this device
-            if (user?.id) localStorage.setItem(`doitforme_prefs_dismissed_${user.id}`, '1');
+            if (user?.id) localStorage.setItem(`doitforme_prefs_dismissed_${user.id}`, "1");
             setShowPreferencesModal(false);
           }}
         />
@@ -481,160 +407,98 @@ export default function Dashboard() {
   );
 }
 
-// ----------------------------------------------------------------------
-// HELPER COMPONENTS
-// ----------------------------------------------------------------------
-
-function SidebarLink({ href, icon: Icon, label, active, badge }: any) {
+function OverviewSkeleton() {
   return (
-    <Link href={href} className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition group ${active ? 'bg-brand-purple/10 text-brand-purple' : 'text-zinc-400 hover:bg-white/10 hover:text-white'}`}>
-      <div className="flex items-center gap-3 text-sm font-bold">
-        <Icon size={18} className={active ? 'text-brand-purple' : 'text-zinc-500 group-hover:text-white transition-colors'} />
-        {label}
+    <div className="pb-2">
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="mt-3 h-9 w-56" />
+      <Skeleton className="mt-3 h-4 w-72" />
+      <div className="mt-7 grid gap-2.5">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-[74px] rounded-[13px]" />
+        ))}
       </div>
-      {badge && (
-        <span className="px-2 py-0.5 rounded-md bg-[var(--brand-purple)] text-white text-[10px] font-semibold">{badge}</span>
-      )}
-    </Link>
-  );
-}
-
-function StatCard({ title, value, icon: Icon, color, bg, subtext, progress }: any) {
-  return (
-    <div className="bg-[var(--card)] border border-white/[0.08] rounded-2xl p-5 relative overflow-hidden group hover:-translate-y-1 hover:shadow-xl transition h-[150px] flex flex-col justify-between">
-      <div className="flex justify-between items-start relative z-10 mb-2">
-        <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center ${color} shadow-inner group-hover:scale-110 transition-transform`}>
-          <Icon size={20} />
-        </div>
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <Skeleton className="h-[96px] rounded-[16px]" />
+        <Skeleton className="h-[96px] rounded-[16px]" />
       </div>
-      <div className="relative z-10 flex-1 flex flex-col justify-end">
-        <div className="text-2xl md:text-3xl font-semibold text-white tracking-tight mb-0.5" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{value}</div>
-        <div className="text-[10px] md:text-xs uppercase tracking-widest text-zinc-400 font-bold mb-1.5">{title}</div>
-
-        {progress ? (
-          <div className="w-full mt-1">
-            <div className="flex justify-between items-end mb-1">
-              <span className="text-[9px] text-zinc-500 font-medium">Goal: ₹{progress.target.toLocaleString()}</span>
-              <span className="text-[9px] text-brand-purple font-bold">₹{progress.current.toLocaleString()} / ₹{progress.target.toLocaleString()}</span>
-            </div>
-            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-brand-purple rounded-full" style={{ width: `${Math.min(100, Math.max(0, (progress.current / progress.target) * 100))}%` }}></div>
-            </div>
-          </div>
-        ) : (
-          <div className="text-[10px] text-zinc-500 font-medium group-hover:text-zinc-300 transition-colors">
-            {subtext}
-          </div>
-        )}
+      <div className="mt-9 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <GigCardSkeleton key={i} />
+        ))}
       </div>
     </div>
   );
 }
 
-function FeedTab({ label, active, onClick }: any) {
-  return (
-    <button onClick={onClick} className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${active ? 'bg-white/10 text-white shadow-sm' : 'text-zinc-500 hover:text-white'}`}>
-      {label}
-    </button>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="min-h-screen bg-[#0B0B11] text-white">
-      {/* Top nav skeleton */}
-      <div className="border-b border-white/[0.06] px-4 md:px-8 h-16 flex items-center justify-between">
-        <Skeleton className="h-6 w-28" />
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-8 w-8 rounded-full" />
-        </div>
-      </div>
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        {/* Filter bar skeleton */}
-        <div className="flex items-center gap-2 mb-6">
-          <Skeleton className="h-9 w-24 rounded-full" />
-          <Skeleton className="h-9 w-24 rounded-full" />
-          <Skeleton className="h-9 w-9 rounded-full ml-auto" />
-        </div>
-        {/* Gig grid skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <GigCardSkeleton key={i} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PreferencesModal({ user, supabase, onClose }: { user: any, supabase: any, onClose: () => void }) {
+function PreferencesModal({ user, supabase, onClose }: { user: any; supabase: any; onClose: () => void }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   const categories = [
     "Tech & Engineering", "Design & Creative", "Science & Medical", "Law & Humanities",
     "Commerce & Finance", "Academics & Gigs", "Errands & Manual Labor", "Writing & Content",
-    "Tutoring", "Other"
+    "Tutoring", "Other",
   ];
 
   const handleToggle = (cat: string) => {
-    if (selected.includes(cat)) {
-      setSelected(selected.filter(c => c !== cat));
-    } else {
-      if (selected.length < 5) {
-        setSelected([...selected, cat]);
-      }
-    }
+    if (selected.includes(cat)) setSelected(selected.filter((c) => c !== cat));
+    else if (selected.length < 5) setSelected([...selected, cat]);
   };
 
   const handleSave = async () => {
     if (selected.length === 0) return;
     setLoading(true);
     await supabase.from("users").update({ preferences: selected }).eq("id", user.id);
-    onClose(); // onClose also saves the localStorage flag
+    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 animate-in fade-in">
-      <div className="w-full max-w-md max-h-[90vh] flex flex-col bg-[var(--card)] border border-white/[0.08] rounded-[24px] md:rounded-3xl p-5 md:p-8 pt-8 relative shadow-2xl overflow-y-auto scrollbar-hide">
-        <button onClick={onClose} className="absolute top-3 right-3 md:top-4 md:right-4 p-2 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors">
-          <X size={20} />
-        </button>
-        <div className="flex justify-center mb-5 md:mb-6 shrink-0">
-          <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-brand-purple/20 flex items-center justify-center border border-brand-purple/30">
-            <Star size={28} className="text-brand-purple md:w-8 md:h-8" />
-          </div>
-        </div>
-        <h2 className="text-xl md:text-2xl font-semibold text-white text-center mb-2 shrink-0 tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Your interests?</h2>
-        <p className="text-xs md:text-sm text-zinc-400 text-center mb-5 md:mb-6 shrink-0">
-          Select 1 to 5 categories to get personalized opportunities and stand out to buyers. Highly recommended!
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2d1937]/55 p-4">
+      <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-y-auto rounded-[18px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-6 sm:p-8">
+        <h2
+          className="text-[22px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]"
+          style={{ fontFamily: "var(--font-display), sans-serif" }}
+        >
+          What kind of work interests you?
+        </h2>
+        <p className="mt-2 text-[14px] leading-[1.6] text-[var(--w-muted)]">
+          Pick up to five. We use this to decide what to show you first, and what to email you about.
         </p>
-        <div className="flex flex-wrap gap-2 mb-6 md:mb-8 justify-center overflow-y-auto no-scrollbar pb-2">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => handleToggle(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition touch-manipulation ${selected.includes(cat) ? 'bg-brand-purple text-white border-brand-purple shadow-[0_0_15px_rgba(136,37,245,0.4)]' : 'bg-white/[0.04] border-white/[0.08] text-zinc-400 hover:text-white hover:border-zinc-600'}`}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="mt-5 flex flex-wrap gap-2">
+          {categories.map((cat) => {
+            const on = selected.includes(cat);
+            return (
+              <button
+                key={cat}
+                onClick={() => handleToggle(cat)}
+                aria-pressed={on}
+                className={`min-h-[40px] rounded-[10px] border px-3.5 text-[13px] font-bold transition-colors ${
+                  on
+                    ? "border-[var(--w-orange)] bg-[var(--w-orange)] text-[#371448]"
+                    : "border-[var(--w-line-strong)] text-[var(--w-ink)] hover:bg-[var(--chip)]"
+                }`}
+              >
+                {cat}
+              </button>
+            );
+          })}
         </div>
-        <button
-          onClick={handleSave}
-          disabled={loading || selected.length === 0}
-          className="w-full bg-brand-purple hover:bg-[#7D5FFF] text-white py-3.5 md:py-4 rounded-xl font-bold transition disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center shrink-0 touch-manipulation"
-        >
-          {loading ? "Saving..." : `Save Preferences (${selected.length}/5)`}
-        </button>
-        {/* Skip option — saves dismissal flag so it never appears again */}
-        <button
-          onClick={onClose}
-          className="mt-3 w-full text-zinc-500 hover:text-zinc-300 text-xs font-medium py-2 transition-colors"
-        >
-          Skip for now
-        </button>
+        <div className="mt-7 flex items-center gap-3">
+          <button
+            onClick={handleSave}
+            disabled={loading || selected.length === 0}
+            className="min-h-[46px] flex-1 rounded-[11px] bg-[var(--w-orange)] px-5 text-[14.5px] font-bold text-[#371448] transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {loading ? "Saving" : "Save"}
+          </button>
+          <button
+            onClick={onClose}
+            className="min-h-[46px] rounded-[11px] px-4 text-[14px] font-bold text-[var(--w-muted)] hover:bg-[var(--chip)]"
+          >
+            Not now
+          </button>
+        </div>
       </div>
     </div>
   );

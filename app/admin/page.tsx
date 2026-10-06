@@ -22,7 +22,16 @@ export default function AdminDashboardPage() {
     const [isAdmin, setIsAdmin] = useState(false);
     
     // Tabs state
-    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "DISPUTES" | "MANAGED" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "BROADCAST">("PAYOUTS");
+    // Inner Circle applications. users.is_elite existed for months with zero rows
+    // flagged because nothing in the product could set it; this is the queue that
+    // finally can. See app/api/admin/inner-circle/route.ts.
+    const [icApps, setIcApps] = useState<any[]>([]);
+    const [icNote, setIcNote] = useState<Record<string, string>>({});
+    const [icRole, setIcRole] = useState<Record<string, string>>({});
+    const [icBusy, setIcBusy] = useState<string | null>(null);
+    const [icError, setIcError] = useState("");
+
+    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "DISPUTES" | "MANAGED" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "INNER_CIRCLE" | "BROADCAST">("PAYOUTS");
 
     // Disputes desk. A disputed gig has frozen escrow and a 48-hour promise
     // attached to it, so this queue is the most time-sensitive one here.
@@ -76,6 +85,15 @@ export default function AdminDashboardPage() {
     };
 
     const fetchAllData = async () => {
+        // Inner Circle queue. Deliberately not fatal: a failure here must not
+        // blank the payouts desk, which is the tab that moves money.
+        try {
+            const r = await fetch("/api/admin/inner-circle");
+            if (r.ok) setIcApps((await r.json()).applications || []);
+        } catch (e) {
+            console.error("[admin] inner-circle queue failed to load:", e);
+        }
+
         setLoading(true);
         await Promise.all([
             fetchPayouts(),
@@ -442,6 +460,35 @@ export default function AdminDashboardPage() {
         setProcessingId(null);
     };
 
+    const decideInnerCircle = async (app: any, action: "approve" | "reject") => {
+        const note = (icNote[app.id] || "").trim();
+        if (action === "reject" && !note) {
+            setIcError("Write a note first — it is the only thing the student is told.");
+            return;
+        }
+        setIcBusy(app.id);
+        setIcError("");
+        try {
+            const res = await fetch("/api/admin/inner-circle", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    applicationId: app.id,
+                    action,
+                    note,
+                    role: icRole[app.id] || app.role,
+                }),
+            });
+            const body = await res.json();
+            if (!res.ok) throw new Error(body.error || "Could not save that decision.");
+            await fetchAllData();
+        } catch (e: any) {
+            setIcError(e.message);
+        } finally {
+            setIcBusy(null);
+        }
+    };
+
   if (!isAdmin) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center text-white font-black uppercase tracking-[0.4em]">Unauthorized Access // Terminal Locked</div>;
 
   const getTabClass = (tab: typeof activeTab) => `
@@ -498,6 +545,9 @@ export default function AdminDashboardPage() {
                 </button>
                 <button onClick={() => setActiveTab("PENDING_KYC")} className={getTabClass("PENDING_KYC")}>
                     Student IDs ({pendingKyc.length})
+                </button>
+                <button onClick={() => setActiveTab("INNER_CIRCLE")} className={getTabClass("INNER_CIRCLE")}>
+                    Inner Circle ({icApps.filter((a) => a.status === "pending").length})
                 </button>
                 <button onClick={() => setActiveTab("BROADCAST")} className={getTabClass("BROADCAST")}>
                     Broadcast Gig
@@ -907,6 +957,123 @@ export default function AdminDashboardPage() {
                                     <p className="text-[#444] text-[10px] font-bold uppercase tracking-[0.3em]">No IDs awaiting review.</p>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {/* INNER CIRCLE: approve into a role, or say no with a reason */}
+                    {activeTab === "INNER_CIRCLE" && (
+                        <div className="space-y-px bg-[#222] border border-[#222]">
+                            {icError && (
+                                <div className="bg-[#2a0a0a] p-6 text-[11px] font-bold text-red-400">{icError}</div>
+                            )}
+                            {icApps.length === 0 && (
+                                <div className="bg-[#0a0a0a] p-12 text-center text-[10px] font-black uppercase tracking-[0.3em] text-[#444]">
+                                    No applications yet
+                                </div>
+                            )}
+                            {icApps.map((app) => {
+                                const u = app.users || {};
+                                const pending = app.status === "pending";
+                                const role = icRole[app.id] || app.role || "TECH";
+                                return (
+                                    <div key={app.id} className="bg-[#0a0a0a] p-8 space-y-5">
+                                        <div className="flex flex-wrap items-start justify-between gap-4">
+                                            <div className="min-w-0">
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <span className="text-xl font-black text-white italic">{u.name || "Unnamed"}</span>
+                                                    <span className="px-2 py-0.5 border border-[#333] text-[9px] font-black uppercase tracking-widest text-[#888]">
+                                                        {app.role}
+                                                    </span>
+                                                    {!pending && (
+                                                        <span className="px-2 py-0.5 border border-[#333] text-[9px] font-black uppercase tracking-widest text-[#555]">
+                                                            {app.status}
+                                                        </span>
+                                                    )}
+                                                    {u.is_elite && (
+                                                        <span className="px-2 py-0.5 bg-[#8825F5] text-[9px] font-black uppercase tracking-widest text-white">
+                                                            Member · {u.inner_circle_role || "?"}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="mt-2 text-[11px] text-[#666] font-bold">
+                                                    {u.email} {u.college ? `· ${u.college}` : ""}
+                                                </div>
+                                                {/* The delivery record, which is the only evidence that is not
+                                                    self-reported. It is the thing to judge on. */}
+                                                <div className="mt-2 text-[11px] text-[#888] font-bold">
+                                                    {u.jobs_completed ?? 0} jobs done ·{" "}
+                                                    {u.rating_count ? `${u.rating} from ${u.rating_count} ratings` : "no ratings yet"} ·{" "}
+                                                    {u.kyc_verified ? "ID verified" : "ID NOT verified"}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {app.pitch && (
+                                            <p className="text-sm text-[#ccc] leading-relaxed whitespace-pre-wrap border-l-2 border-[#333] pl-4">
+                                                {app.pitch}
+                                            </p>
+                                        )}
+                                        {Array.isArray(app.links) && app.links.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {app.links.map((l: string) => (
+                                                    <a
+                                                        key={l}
+                                                        href={l}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer nofollow"
+                                                        className="px-3 py-1.5 border border-[#333] text-[10px] font-bold text-[#8825F5] hover:bg-[#111] truncate max-w-[280px]"
+                                                    >
+                                                        {l}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {!pending && app.decision_note && (
+                                            <p className="text-[11px] text-[#666] font-bold">Note sent: {app.decision_note}</p>
+                                        )}
+
+                                        {pending && (
+                                            <div className="space-y-3 pt-2">
+                                                <textarea
+                                                    rows={2}
+                                                    value={icNote[app.id] || ""}
+                                                    onChange={(e) => setIcNote({ ...icNote, [app.id]: e.target.value })}
+                                                    placeholder="Note to the student — required to reject, and emailed either way."
+                                                    className="w-full bg-[#0B0B11] border border-[#222] text-white text-sm p-4 focus:outline-none focus:border-[#444] resize-none"
+                                                />
+                                                <div className="flex flex-wrap items-center gap-px bg-[#222] border border-[#222]">
+                                                    {/* Admitting into a different role than they asked for is a
+                                                        real decision — someone applies to build and is plainly
+                                                        better at outreach. */}
+                                                    <select
+                                                        value={role}
+                                                        onChange={(e) => setIcRole({ ...icRole, [app.id]: e.target.value })}
+                                                        className="bg-[#0a0a0a] text-white text-[10px] font-black uppercase tracking-[0.2em] px-5 py-5 focus:outline-none"
+                                                    >
+                                                        <option value="TECH">Admit as TECH</option>
+                                                        <option value="OUTREACH">Admit as OUTREACH</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => decideInnerCircle(app, "approve")}
+                                                        disabled={icBusy === app.id}
+                                                        className="flex-1 px-6 py-5 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-200 disabled:opacity-40"
+                                                    >
+                                                        {icBusy === app.id ? "..." : "Approve"}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => decideInnerCircle(app, "reject")}
+                                                        disabled={icBusy === app.id}
+                                                        className="px-6 py-5 bg-[#0a0a0a] text-red-400 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#2a0a0a] disabled:opacity-40"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
 

@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import Link from "next/link";
 import { blurOnWheel } from "@/lib/inputs";
 import { friendlyError } from "@/lib/errors";
-import { Check, Loader2 } from "lucide-react";
+import { INNER_CIRCLE_ROLES, type InnerCircleRole } from "@/lib/innerCircle";
+import { ArrowRight, Check, Hammer, Loader2, Target } from "lucide-react";
 
 /**
  * The Inner Circle.
@@ -26,7 +28,10 @@ type AppRow = {
   status: "pending" | "approved" | "rejected" | "withdrawn";
   decision_note: string | null;
   created_at: string;
+  role: InnerCircleRole;
 };
+
+const ROLE_ICON = { TECH: Hammer, OUTREACH: Target } as const;
 
 const FIELD =
   "w-full min-h-[48px] rounded-[11px] border border-[var(--w-line-strong)] bg-white px-4 py-3 " +
@@ -38,6 +43,8 @@ export default function InnerCirclePage() {
   const [loading, setLoading] = useState(true);
   const [isElite, setIsElite] = useState(false);
   const [application, setApplication] = useState<AppRow | null>(null);
+  const [role, setRole] = useState<InnerCircleRole>("TECH");
+  const [memberRole, setMemberRole] = useState<InnerCircleRole | null>(null);
   const [pitch, setPitch] = useState("");
   const [links, setLinks] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -50,17 +57,22 @@ export default function InnerCirclePage() {
     if (!user) return setLoading(false);
 
     const [{ data: profile }, { data: apps }] = await Promise.all([
-      supabase.from("users").select("is_elite").eq("id", user.id).maybeSingle(),
+      supabase.from("users").select("is_elite, inner_circle_role").eq("id", user.id).maybeSingle(),
       supabase
         .from("inner_circle_applications")
-        .select("id, status, decision_note, created_at")
+        .select("id, status, decision_note, created_at, role")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1),
     ]);
 
     setIsElite(Boolean(profile?.is_elite));
-    setApplication((apps?.[0] as AppRow) ?? null);
+    setMemberRole((profile?.inner_circle_role as InnerCircleRole) ?? null);
+    const latest = (apps?.[0] as AppRow) ?? null;
+    setApplication(latest);
+    // Pre-select whatever they asked for last time, so a re-application after a
+    // rejection does not silently switch them back to the default role.
+    if (latest?.role) setRole(latest.role);
     setLoading(false);
   }, [supabase]);
 
@@ -83,6 +95,7 @@ export default function InnerCirclePage() {
 
       const { error: insertError } = await supabase.from("inner_circle_applications").insert({
         user_id: user.id,
+        role,
         pitch: pitch.trim(),
         links: links
           .split(/[\s,]+/)
@@ -130,8 +143,38 @@ export default function InnerCirclePage() {
         </div>
       </section>
 
-      {/* What it is, stated plainly. Three facts, no pricing-table dressing. */}
-      <dl className="mt-8 grid gap-5 sm:grid-cols-3">
+      {/* Two roles, stated plainly. This is the first thing to understand about
+          the tier, so it comes before anything is asked of the reader. */}
+      <section className="mt-8">
+        <h2 className="text-[15px] font-extrabold tracking-[-0.01em] text-[var(--w-ink-strong)]">
+          There are two ways in
+        </h2>
+        <dl className="mt-3 grid gap-4 sm:grid-cols-2">
+          {INNER_CIRCLE_ROLES.map((r) => {
+            const Icon = ROLE_ICON[r.value];
+            return (
+              <div
+                key={r.value}
+                className="rounded-[16px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-5"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-[11px] bg-[var(--w-orange-soft)] text-[var(--w-orange-ink)]">
+                  <Icon size={18} />
+                </span>
+                <dt className="mt-3.5 text-[15.5px] font-extrabold text-[var(--w-ink-strong)]">
+                  {r.label}{" "}
+                  <span className="font-semibold text-[var(--w-muted)]">&middot; {r.tagline}</span>
+                </dt>
+                <dd className="mt-1.5 text-[13.5px] leading-[1.65] text-[var(--w-muted)]">
+                  {r.blurb}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
+      </section>
+
+      {/* What membership means in practice. Three facts, no pricing-table dressing. */}
+      <dl className="mt-7 grid gap-5 sm:grid-cols-3">
         {[
           ["Company briefs first", "You see paid company work before it reaches the open board."],
           ["We vouch for you", "We put your name forward directly instead of leaving you in a pile."],
@@ -163,9 +206,19 @@ export default function InnerCirclePage() {
               You&apos;re in the Inner Circle
             </h2>
             <p className="mt-2 max-w-[52ch] text-[14px] leading-[1.65] text-[var(--w-muted)]">
-              Company briefs come to you first. Keep your profile current so we can put you forward
-              for the right ones.
+              {memberRole === "OUTREACH"
+                ? "Your pipeline is yours to work. Keep the next action set on every open lead and the day sorts itself."
+                : "Company briefs come to you first. Keep your profile current so we can put you forward for the right ones."}
             </p>
+            {memberRole && (
+              <Link
+                href={memberRole === "OUTREACH" ? "/inner-circle/outreach" : "/inner-circle/work"}
+                className="mt-5 inline-flex min-h-[46px] items-center gap-2 rounded-[11px] bg-[var(--w-orange)] px-5 text-[14.5px] font-bold text-[#371448] transition-opacity hover:opacity-90"
+              >
+                {memberRole === "OUTREACH" ? "Open your pipeline" : "See your briefs"}
+                <ArrowRight size={16} />
+              </Link>
+            )}
           </div>
         ) : pending ? (
           <div>
@@ -179,8 +232,13 @@ export default function InnerCirclePage() {
               We&apos;re reading your application
             </h2>
             <p className="mt-2 max-w-[52ch] text-[14px] leading-[1.65] text-[var(--w-muted)]">
-              A person reads every one of these, so it takes a few days. We&apos;ll email you either
-              way. In the meantime, finished work on the platform is the strongest thing you can add.
+              You applied for{" "}
+              <strong className="font-bold text-[var(--w-ink-strong)]">
+                {application?.role === "OUTREACH" ? "Outreach" : "Build"}
+              </strong>
+              . A person reads every one of these, so it takes a few days. We&apos;ll email you
+              either way. In the meantime, finished work on the platform is the strongest thing you
+              can add.
             </p>
           </div>
         ) : (
@@ -201,18 +259,70 @@ export default function InnerCirclePage() {
               something you have made.
             </p>
 
+            <fieldset className="mt-6">
+              <legend className="text-[13px] font-bold text-[var(--w-ink-strong)]">
+                Which one are you applying for?
+              </legend>
+              {/* Radios in a label, not a segmented control: this is a form field
+                  that gets submitted, and it has to work with a keyboard and be
+                  announced as a group. The visual selection is on the label. */}
+              <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
+                {INNER_CIRCLE_ROLES.map((r) => {
+                  const Icon = ROLE_ICON[r.value];
+                  const on = role === r.value;
+                  return (
+                    <label
+                      key={r.value}
+                      className={`flex cursor-pointer gap-3 rounded-[13px] border p-4 transition-colors ${
+                        on
+                          ? "border-[var(--w-violet)] bg-[var(--w-violet-soft)]"
+                          : "border-[var(--w-line-strong)] hover:bg-[var(--chip)]"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="ic-role"
+                        value={r.value}
+                        checked={on}
+                        onChange={() => setRole(r.value)}
+                        className="sr-only"
+                      />
+                      <Icon
+                        size={18}
+                        className={`mt-0.5 shrink-0 ${
+                          on ? "text-[var(--w-violet)]" : "text-[var(--w-faint)]"
+                        }`}
+                      />
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-bold text-[var(--w-ink-strong)]">
+                          {r.label}
+                        </span>
+                        <span className="mt-0.5 block text-[12.5px] leading-[1.55] text-[var(--w-muted)]">
+                          {r.tagline}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+
             <label
               htmlFor="pitch"
               className="mt-6 block text-[13px] font-bold text-[var(--w-ink-strong)]"
             >
-              What are you best at?
+              {role === "OUTREACH" ? "Who could you get us in front of?" : "What are you best at?"}
             </label>
             <textarea
               id="pitch"
               rows={4}
               value={pitch}
               onChange={(e) => setPitch(e.target.value)}
-              placeholder="The work you want to be hired for, and why you're good at it."
+              placeholder={
+                role === "OUTREACH"
+                  ? "Companies or people you can already reach, and how you would open the conversation."
+                  : "The work you want to be hired for, and why you are good at it."
+              }
               className={`${FIELD} mt-2 resize-none`}
             />
 

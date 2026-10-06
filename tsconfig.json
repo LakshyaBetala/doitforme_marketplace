@@ -39,6 +39,14 @@
   "exclude": [
     "node_modules",
     "workers",
-    "Freelance platform app design*"
+    "Freelance platform app design*",
+    // Capacitor's config imports its type from @capacitor/cli, which is
+    // deliberately NOT a dependency of this project — the native build happens
+    // on a machine with Android Studio / Xcode, and adding the Capacitor
+    // packages here would put them in the Cloudflare Worker bundle for nothing.
+    // Without this line `next build` compiles fine and then dies in the type
+    // check with TS2307 on a file that is never part of the web app. Capacitor's
+    // CLI loads the file with its own loader and ignores this tsconfig.
+    "capacitor.config.ts"
   ]
 }

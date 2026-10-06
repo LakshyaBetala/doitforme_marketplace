@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { PRIMARY_NAV, SECONDARY_NAV } from "./nav";
+import { MessageCircle } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
+import { ALL_NAV_ITEMS } from "./nav";
 
-const TITLES = Object.fromEntries(
-  [...PRIMARY_NAV, ...SECONDARY_NAV].map((n) => [n.href, n.label])
-);
+const TITLES = Object.fromEntries(ALL_NAV_ITEMS.map((n) => [n.href, n.label]));
 
 /**
  * Desktop top bar: where you are, and the one action that matters here.
@@ -31,7 +31,20 @@ export default function Topbar({ action }: { action?: React.ReactNode }) {
         <span className="font-bold text-[var(--w-ink-strong)]">{title}</span>
       </nav>
 
-      <div className="flex items-center gap-3">{action}</div>
+      <div className="flex items-center gap-2">
+        {action}
+        {/* Not navigation: a count that changes and an inbox. The sidebar still
+            owns "where can I go" — these are status, which is why they sit here
+            and are not repeated as nav items. */}
+        <NotificationBell />
+        <Link
+          href="/messages"
+          aria-label="Messages"
+          className="flex h-10 w-10 items-center justify-center rounded-[11px] text-[var(--w-muted)] transition-colors hover:bg-[var(--chip)] hover:text-[var(--w-ink)]"
+        >
+          <MessageCircle size={19} />
+        </Link>
+      </div>
     </header>
   );
 }

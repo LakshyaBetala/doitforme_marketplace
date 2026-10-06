@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { PRIMARY_NAV, SECONDARY_NAV, isActive, type NavItem } from "./nav";
+import { PRIMARY_NAV, isActive, secondaryNavFor, type NavItem } from "./nav";
+import AccountMenu from "./AccountMenu";
 
 /**
  * The one dark surface in the workspace.
@@ -54,8 +55,19 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   );
 }
 
-export default function Sidebar({ name, role }: { name?: string | null; role?: string | null }) {
+export default function Sidebar({
+  name,
+  role,
+  isElite,
+  innerCircleRole,
+}: {
+  name?: string | null;
+  role?: string | null;
+  isElite?: boolean | null;
+  innerCircleRole?: string | null;
+}) {
   const pathname = usePathname();
+  const secondary = secondaryNavFor({ isElite, innerCircleRole });
 
   return (
     <aside className="sticky top-0 z-20 hidden h-[100dvh] w-[244px] shrink-0 flex-col border-r border-[var(--w-rail-line)] bg-[var(--w-rail)] lg:flex">
@@ -84,27 +96,19 @@ export default function Sidebar({ name, role }: { name?: string | null; role?: s
         <div className="my-5 h-px bg-[#5a2e6a]" />
 
         <div className="grid gap-1">
-          {SECONDARY_NAV.map((item) => (
+          {secondary.map((item) => (
             <NavLink key={item.href} item={item} active={isActive(pathname, item.href)} />
           ))}
         </div>
       </nav>
 
+      {/* The account menu, which is also the only way to sign out. This used to
+          be a static name card; log out lived exclusively in the dashboard's own
+          top bar, so removing that bar would have stranded it. */}
       <div className="border-t border-[#623373] p-3.5">
-        <div className="flex items-center gap-3 rounded-[11px] bg-[#421750] p-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ffdf9a] text-[13px] font-extrabold text-[#5b1f79]">
-            {(name || "?").trim().charAt(0).toUpperCase()}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-[13px] font-bold text-white">
-              {name || "Your account"}
-            </span>
-            <span className="block truncate text-[11px] text-[#b99bc5]">
-              {role === "COMPANY" ? "Company account" : "Student account"}
-            </span>
-          </span>
-        </div>
+        <AccountMenu name={name} role={role} variant="rail" />
       </div>
+
     </aside>
   );
 }

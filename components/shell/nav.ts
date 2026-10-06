@@ -6,8 +6,11 @@ import {
   UserCog,
   Sparkles,
   LifeBuoy,
+  Hammer,
+  Target,
   type LucideIcon,
 } from "lucide-react";
+import type { InnerCircleRole } from "@/lib/innerCircle";
 
 /**
  * The workspace navigation, in one place.
@@ -64,10 +67,54 @@ export const MOBILE_NAV: NavItem[] = [
 ];
 
 /**
+ * The Inner Circle's two working surfaces. These are NOT in SECONDARY_NAV
+ * because almost nobody can use them: a TECH member has no business in a lead
+ * list holding other companies' contact details, and an OUTREACH member has no
+ * delivery queue. Showing a nav item that 403s is worse than not showing it.
+ *
+ * The nav is a convenience, not the boundary — RLS and is_outreach() are. See
+ * 20261006_inner_circle_roles_and_outreach.sql.
+ */
+const ROLE_NAV: Record<InnerCircleRole, NavItem> = {
+  TECH: { label: "My briefs", href: "/inner-circle/work", icon: Hammer },
+  OUTREACH: { label: "Outreach", href: "/inner-circle/outreach", icon: Target },
+};
+
+export type Membership = {
+  isElite?: boolean | null;
+  innerCircleRole?: string | null;
+};
+
+/**
+ * The secondary nav for this particular person.
+ *
+ * A member's role surface sits directly under The Inner Circle, so the tier and
+ * the work it unlocks read as one thing rather than two unrelated entries.
+ */
+export function secondaryNavFor({ isElite, innerCircleRole }: Membership): NavItem[] {
+  const items = [...SECONDARY_NAV];
+  const role = innerCircleRole as InnerCircleRole | null | undefined;
+  if (isElite && role && ROLE_NAV[role]) {
+    items.splice(1, 0, ROLE_NAV[role]);
+  }
+  return items;
+}
+
+/** Every href the nav can produce — used by Topbar to title the current page. */
+export const ALL_NAV_ITEMS: NavItem[] = [
+  ...PRIMARY_NAV,
+  ...SECONDARY_NAV,
+  ...Object.values(ROLE_NAV),
+];
+
+/**
  * Longest match wins, so /dashboard does not light up while you are on
  * /dashboard/settings and /profile does not light up on /profile/worker-setup.
  */
 export function isActive(pathname: string, href: string): boolean {
   if (href === "/dashboard") return pathname === "/dashboard";
+  // /inner-circle has children that are their own nav items, so a prefix match
+  // would light up two rows at once on /inner-circle/outreach.
+  if (href === "/inner-circle") return pathname === "/inner-circle";
   return pathname === href || pathname.startsWith(`${href}/`);
 }

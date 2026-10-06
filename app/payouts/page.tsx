@@ -68,27 +68,26 @@ export default function PayoutsPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center">
-                <Loader2 className="w-10 h-10 text-brand-purple animate-spin" />
+            <div className="flex min-h-[40vh] items-center justify-center">
+                <Loader2 className="h-7 w-7 animate-spin text-[var(--w-violet)]" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#0B0B11] text-white font-sans selection:bg-brand-purple p-4 md:p-8">
+        <div className="pb-2">
+            <p className="text-[13px] font-bold text-[var(--w-faint)]">EARNINGS</p>
+            <h1
+                className="mt-1.5 text-[30px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[var(--w-ink-strong)] sm:text-[34px]"
+                style={{ fontFamily: "var(--font-display), sans-serif" }}
+            >
+                Payouts
+            </h1>
 
-            {/* HEADER */}
-            <div className="max-w-2xl mx-auto mb-8 flex items-center gap-4">
-                <Link href="/dashboard" className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
-                    <ArrowLeft size={24} />
-                </Link>
-                <h1 className="text-2xl font-bold tracking-tight">Financial Dashboard</h1>
-            </div>
-
-            <div className="max-w-2xl mx-auto space-y-8">
+            <div className="mt-7 max-w-2xl space-y-8">
 
                 {/* HERO CARD: SHADOW WALLET */}
-                <div className="bg-[var(--card)] border border-white/[0.08] rounded-3xl p-8 relative overflow-hidden">
+                <div className="bg-[var(--card)] border border-[var(--line)] rounded-3xl p-8 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--brand-purple)]/[0.12] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
                     <div className="relative z-10">
@@ -97,12 +96,12 @@ export default function PayoutsPage() {
                             <span className="text-xs font-medium uppercase tracking-[0.1em]">Pending payouts</span>
                         </div>
                         <div className="flex items-baseline gap-1">
-                            <span className="text-2xl text-white/60 font-light">₹</span>
-                            <span className="text-5xl md:text-6xl font-semibold tracking-tight text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                            <span className="text-2xl text-[var(--fg-muted)] font-light">₹</span>
+                            <span className="text-5xl md:text-6xl font-semibold tracking-tight text-[var(--fg)]" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                                 {totalPending.toLocaleString('en-IN')}
                             </span>
                         </div>
-                        <p className="mt-4 text-sm text-white/60 leading-relaxed max-w-sm">
+                        <p className="mt-4 text-sm text-[var(--fg-muted)] leading-relaxed max-w-sm">
                             Money currently held in Escrow or processing. It will be transferred to your UPI once the gig is marked complete.
                         </p>
                     </div>
@@ -112,42 +111,42 @@ export default function PayoutsPage() {
                 <div>
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                         Activity History
-                        <span className="text-xs font-normal text-white/60 bg-white/10 px-2 py-0.5 rounded-full">{payouts.length}</span>
+                        <span className="text-xs font-normal text-[var(--fg-muted)] bg-[var(--chip-strong)] px-2 py-0.5 rounded-full">{payouts.length}</span>
                     </h2>
 
                     {payouts.length === 0 ? (
-                        <div className="text-center py-12 bg-[#1A1A24] rounded-3xl border border-white/5 border-dashed">
+                        <div className="text-center py-12 bg-[var(--surface-2)] rounded-3xl border border-[var(--line)] border-dashed">
                             <div className="relative w-24 h-24 mx-auto mb-4 animate-[float_8s_ease-in-out_infinite]">
                                 <Image src="/moneysloth.png" alt="" fill className="object-contain" sizes="96px" />
                             </div>
-                            <p className="text-white/80 font-medium">No earnings yet. The sloth&apos;s wallet is empty.</p>
-                            <p className="text-white/50 text-sm mt-1">Land your first task and watch this fill up.</p>
-                            <Link href="/feed" className="inline-block mt-4 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-bold uppercase tracking-wider transition">
+                            <p className="text-[var(--fg-muted)] font-medium">No earnings yet. The sloth&apos;s wallet is empty.</p>
+                            <p className="text-[var(--fg-muted)] text-sm mt-1">Land your first task and watch this fill up.</p>
+                            <Link href="/feed" className="inline-block mt-4 px-6 py-2 bg-[var(--chip-strong)] hover:bg-[var(--chip-strong)] rounded-full text-xs font-bold uppercase tracking-wider transition">
                                 Find Work
                             </Link>
                         </div>
                     ) : (
                         <div className="space-y-3">
                             {payouts.map((p) => (
-                                <div key={p.id} className="bg-[#1A1A24] border border-white/5 rounded-2xl p-4 flex items-center justify-between hover:border-white/10 transition-colors group">
+                                <div key={p.id} className="bg-[var(--surface-2)] border border-[var(--line)] rounded-2xl p-4 flex items-center justify-between hover:border-[var(--line)] transition-colors group">
                                     <div className="flex items-center gap-4 overflow-hidden">
-                                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-white/[0.04] border border-white/[0.06] text-white/60">
+                                        <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-[var(--chip)] border border-[var(--line)] text-[var(--fg-muted)]">
                                             {p.status === 'COMPLETED' ? <CheckCircle2 size={18} /> :
                                                 p.status === 'FAILED' ? <XCircle size={18} /> :
                                                     <Clock size={18} />}
                                         </div>
                                         <div className="min-w-0">
-                                            <h3 className="font-semibold text-sm text-white truncate group-hover:text-[#C9A9FF] transition-colors">
+                                            <h3 className="font-semibold text-sm text-[var(--fg)] truncate group-hover:text-[var(--accent-ink)] transition-colors">
                                                 {p.gig?.title || "Unknown gig"}
                                             </h3>
-                                            <p className="text-[10px] text-white/50 font-mono mt-0.5">
+                                            <p className="text-[10px] text-[var(--fg-muted)] font-mono mt-0.5">
                                                 {new Date(p.created_at).toLocaleDateString()} · ID: {p.id.slice(0, 8)}
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                                        <p className="font-mono font-semibold text-white">₹{p.amount}</p>
+                                        <p className="font-mono font-semibold text-[var(--fg)]">₹{p.amount}</p>
                                         <StatusBadge tone={statusToTone(p.status)}>{humanizeStatus(p.status)}</StatusBadge>
                                     </div>
                                 </div>

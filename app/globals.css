@@ -306,4 +306,95 @@ button,
 [role="button"] {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  /* Long-pressing a button selected its label, or popped the iOS copy/share
+     callout on a link. Native controls never do that. Controls only — body text
+     stays selectable, because people copy order numbers and error messages. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Stop the page rubber-banding and Android pull-to-refresh firing when a scroll
+   reaches the top. This is an app with its own scroll containers and a drawer
+   the user drags; a refresh gesture in the middle of that is a lost form. */
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
+/* Inner scrollers keep their own bounce but stop handing the scroll to the page
+   behind them at the end — the mobile nav sheet, the notification panel, the
+   message list. */
+.overscroll-isolate,
+[role="menu"],
+[role="dialog"] {
+  overscroll-behavior: contain;
+}
+
+/* ---------------------------------------
+    SHARED SURFACE CONTRACT
+   ---------------------------------------
+   One set of semantic names, two palettes. These are the DARK values, used by
+   the marketing site and every public page; app/workspace-theme.css redefines
+   the same names in cream for signed-in surfaces.
+
+   This exists because the primitives in components/ui/ were written with the
+   dark palette hardcoded — bg-[#13131A], text-white, border-white/[0.08] — and
+   GigCard alone is rendered on /talent (public, dark) AND /feed + /dashboard
+   (workspace, cream). Hardcoded literals force a fork of every shared
+   component. Tokens mean one component renders correctly in both, because the
+   nearest ancestor decides what the name resolves to.
+
+   Note which way --accent-ink flips: on dark it is a LIGHT lavender for text on
+   a near-black surface; on cream it is a DARK violet. Same role, inverted
+   value. That inversion is the whole reason to name the role rather than the
+   color — "soft purple" would have to mean two opposite things.
+
+   Keep these names stable; they are referenced from page markup as
+   text-[var(--fg)] / bg-[var(--surface)] and a rename is a find-and-replace
+   across every workspace page. */
+
+:root {
+  /* text */
+  --fg: #fafafa;
+  --fg-muted: rgba(250, 250, 250, 0.62);
+  --fg-faint: rgba(250, 250, 250, 0.40);
+
+  /* surfaces */
+  --surface: #13131A;
+  --surface-2: #1A1A24;
+
+  /* hairlines */
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+
+  /* subtle fills — chips, hovers, inputs */
+  --chip: rgba(255, 255, 255, 0.05);
+  --chip-strong: rgba(255, 255, 255, 0.10);
+
+  /* brand */
+  --accent: #8825F5;
+  --accent-ink: #C9A9FF;
+  --accent-soft: rgba(136, 37, 245, 0.10);
+  --accent-line: rgba(136, 37, 245, 0.25);
+  /* Text/icon color ON an accent fill. White in both palettes — named rather
+     than written as text-white so a theme sweep cannot silently turn a button
+     label the same color as its own background. */
+  --on-accent: #ffffff;
+
+  /* status, as tokens so pills stop being inline ternaries of tailwind colors */
+  --ok: #6ee7b7;
+  --ok-soft: rgba(16, 185, 129, 0.08);
+  --ok-line: rgba(16, 185, 129, 0.20);
+  --warn: #fcd34d;
+  --warn-soft: rgba(245, 158, 11, 0.08);
+  --warn-line: rgba(245, 158, 11, 0.20);
+  --bad: #fca5a5;
+  --bad-soft: rgba(239, 68, 68, 0.08);
+  --bad-line: rgba(239, 68, 68, 0.20);
+
+  /* Solid fills for confirm/destroy buttons. These carry white labels, so they
+     need enough depth for white to pass contrast on both palettes. */
+  --ok-solid: #10b981;
+  --bad-solid: #ef4444;
 }

@@ -43,7 +43,9 @@ type EmailKind =
   | "company_pro_activated"
   | "kyc_approved"
   | "kyc_rejected"
-  | "new_gig_alert";
+  | "new_gig_alert"
+  | "inner_circle_approved"
+  | "inner_circle_rejected";
 
 interface BaseArgs {
   to: string;
@@ -335,6 +337,43 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p>Hi ${name},</p>
           <p>Your student ID${institution ? ` from <strong>${institution}</strong>` : ""} has been <strong>verified</strong>. The verified badge is now live on your profile, and posters can see you're a real student.</p>
           <p><a href="${SITE}/feed" class="cta">Find your first gig</a></p>
+        `,
+      };
+    }
+
+    case "inner_circle_approved": {
+      const role = String(args.extra?.role || "TECH") === "OUTREACH" ? "outreach" : "building";
+      return {
+        subject: "You're in the Inner Circle",
+        preheader: "Company briefs come to you first now.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>You're in the <strong>Inner Circle</strong>, on the ${role} side.</p>
+          <p>${
+            role === "outreach"
+              ? "Your pipeline is live. Add the companies you can reach, keep a next action on everything open, and we'll back you up when a conversation gets real."
+              : "Paid company briefs come to you before they reach the open board, and we put your name forward directly instead of leaving you in a pile. Money is held in escrow before you start, exactly as it is everywhere else on the platform."
+          }</p>
+          <p><a href="${SITE}/inner-circle" class="cta">Open the Inner Circle</a></p>
+        `,
+      };
+    }
+
+    case "inner_circle_rejected": {
+      // The note is written by a person and is the only thing the student is
+      // told, so it is the body of the email rather than a footnote to it.
+      const note = args.extra?.reason
+        ? escapeHtml(String(args.extra.reason))
+        : "We're keeping the group small for now.";
+      return {
+        subject: "About your Inner Circle application",
+        preheader: "Not this time — here's where you stand.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>Thanks for applying to the Inner Circle. We're not taking you on right now.</p>
+          <p>${note}</p>
+          <p>You can apply again, and this isn't a closed door — finished work on the open board is the strongest thing you can add, because it's what we point to when we vouch for someone.</p>
+          <p><a href="${SITE}/feed" class="cta">Find work on the board</a></p>
         `,
       };
     }

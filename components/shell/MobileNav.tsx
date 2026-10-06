@@ -3,9 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { MOBILE_NAV, PRIMARY_NAV, SECONDARY_NAV, isActive } from "./nav";
+import { MOBILE_NAV, PRIMARY_NAV, isActive, secondaryNavFor } from "./nav";
+import AccountMenu from "./AccountMenu";
+import NotificationBell from "@/components/NotificationBell";
 
 /**
  * Phone navigation: a bottom bar for the four things people do, plus a sheet
@@ -16,9 +18,38 @@ import { MOBILE_NAV, PRIMARY_NAV, SECONDARY_NAV, isActive } from "./nav";
  * on the Android phones this is actually used on — so Inner Circle, profile and
  * support move into the sheet rather than being crushed into a fifth slot.
  */
-export default function MobileNav({ name }: { name?: string | null }) {
+export default function MobileNav({
+  name,
+  role,
+  isElite,
+  innerCircleRole,
+}: {
+  name?: string | null;
+  role?: string | null;
+  isElite?: boolean | null;
+  innerCircleRole?: string | null;
+}) {
   const pathname = usePathname();
+  const secondary = secondaryNavFor({ isElite, innerCircleRole });
   const [open, setOpen] = useState(false);
+
+  // Lock the page behind the sheet. Without this the body scrolls under an open
+  // sheet on iOS — you drag the menu, the page moves instead, and closing it
+  // leaves you somewhere you did not navigate to.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  // Close the sheet on navigation. It is rendered outside the page, so a route
+  // change does not unmount it and it would otherwise stay open over the new page.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   return (
     <>
@@ -33,14 +64,17 @@ export default function MobileNav({ name }: { name?: string | null }) {
             do<span className="text-[var(--w-orange)]">it</span>forme
           </span>
         </Link>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Open menu"
-          className="flex h-11 w-11 items-center justify-center rounded-[11px] text-[var(--w-ink)]"
-        >
-          <Menu size={22} />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Open menu"
+            className="flex h-11 w-11 items-center justify-center rounded-[11px] text-[var(--w-ink)]"
+          >
+            <Menu size={22} />
+          </button>
+        </div>
       </div>
 
       {/* sheet */}
@@ -69,8 +103,8 @@ export default function MobileNav({ name }: { name?: string | null }) {
                 <X size={20} />
               </button>
             </div>
-            <div className="grid gap-1 overflow-y-auto p-3.5">
-              {[...PRIMARY_NAV, ...SECONDARY_NAV].map((item) => {
+            <div className="grid flex-1 content-start gap-1 overflow-y-auto p-3.5">
+              {[...PRIMARY_NAV, ...secondary].map((item) => {
                 const Icon = item.icon;
                 const active = isActive(pathname, item.href);
                 return (
@@ -96,6 +130,10 @@ export default function MobileNav({ name }: { name?: string | null }) {
                   </Link>
                 );
               })}
+            </div>
+
+            <div className="border-t border-[#623373] p-3.5 pb-[calc(14px+env(safe-area-inset-bottom))]">
+              <AccountMenu name={name} role={role} variant="rail" />
             </div>
           </nav>
         </div>

@@ -90,41 +90,41 @@ export default function NotificationBell() {
     <div className="relative" ref={wrapRef}>
       <button
         onClick={toggle}
-        className="w-10 h-10 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/15 text-zinc-400 hover:text-white transition-colors relative"
+        className="w-10 h-10 rounded-full flex items-center justify-center bg-[var(--chip-strong)] hover:bg-[var(--chip-strong)] text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors relative"
         aria-label="Notifications"
       >
         <Bell size={18} />
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-brand-purple text-white text-[10px] font-bold rounded-full border-2 border-[#0B1021]">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[var(--accent)] text-[var(--on-accent)] text-[10px] font-bold rounded-full border-2 border-[#0B1021]">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-80 max-w-[90vw] bg-[var(--card)] border border-white/[0.08] rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-            <span className="text-sm font-semibold text-white">Notifications</span>
-            {items.length > 0 && <CheckCheck size={14} className="text-white/30" />}
+        <div className="absolute top-full right-0 mt-2 w-80 max-w-[90vw] bg-[var(--card)] border border-[var(--line)] rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--line)]">
+            <span className="text-sm font-semibold text-[var(--fg)]">Notifications</span>
+            {items.length > 0 && <CheckCheck size={14} className="text-[var(--fg-faint)]" />}
           </div>
           <div className="max-h-[60vh] overflow-y-auto">
             {items.length === 0 ? (
-              <p className="px-4 py-10 text-center text-xs text-white/40">You&apos;re all caught up.</p>
+              <p className="px-4 py-10 text-center text-xs text-[var(--fg-faint)]">You&apos;re all caught up.</p>
             ) : (
               items.map((n) => (
                 <button
                   key={n.id}
                   onClick={() => go(n)}
-                  className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-white/[0.04] transition-colors border-b border-white/[0.04] last:border-0"
+                  className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-[var(--chip)] transition-colors border-b border-[var(--line)] last:border-0"
                 >
-                  <span className="mt-0.5 shrink-0 text-[#C9A9FF]">
+                  <span className="mt-0.5 shrink-0 text-[var(--accent-ink)]">
                     {n.type === "message" ? <MessageSquare size={15} /> : <Briefcase size={15} />}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-xs text-white/80 leading-snug">{n.content}</span>
-                    <span className="block text-[10px] text-white/35 mt-1">{timeAgo(n.created_at)}</span>
+                    <span className="block text-xs text-[var(--fg-muted)] leading-snug">{n.content}</span>
+                    <span className="block text-[10px] text-[var(--fg)]/35 mt-1">{timeAgo(n.created_at)}</span>
                   </span>
-                  {!n.is_read && <span className="mt-1.5 w-2 h-2 rounded-full bg-brand-purple shrink-0" />}
+                  {!n.is_read && <span className="mt-1.5 w-2 h-2 rounded-full bg-[var(--accent)] shrink-0" />}
                 </button>
               ))
             )}

@@ -71,7 +71,7 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
   // one loud label so students can spot paid company work at a glance.
   if (listing_type === "COMPANY_TASK" && isPriority) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#8825F5] text-white border border-[#8825F5] text-[10px] font-semibold tracking-tight uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent)] text-[var(--on-accent)] border border-[var(--accent)] text-[10px] font-semibold tracking-tight uppercase">
         <Zap size={10} />
         Priority
       </span>
@@ -79,7 +79,7 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
   }
   if (listing_type === "MARKET") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60 border border-white/[0.08] text-[10px] font-medium tracking-tight uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--chip)] text-[var(--fg-muted)] border border-[var(--line)] text-[10px] font-medium tracking-tight uppercase">
         <ShoppingBag size={10} />
         {market_type === "REQUEST" ? "Looking for" : market_type || "Market"}
       </span>
@@ -90,7 +90,7 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
   // page can tell "work available" from "person available" at a glance.
   if (listing_type === "SERVICE") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60 border border-white/[0.08] text-[10px] font-medium tracking-tight uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--chip)] text-[var(--fg-muted)] border border-[var(--line)] text-[10px] font-medium tracking-tight uppercase">
         <Sparkles size={10} />
         Offering
       </span>
@@ -98,14 +98,14 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
   }
   if (listing_type === "COMPANY_TASK") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#8825F5]/10 text-[#C9A9FF] border border-[#8825F5]/20 text-[10px] font-medium tracking-tight uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--accent-line)] text-[10px] font-medium tracking-tight uppercase">
         <Building2 size={10} />
         Company
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#8825F5]/10 text-[#C9A9FF] border border-[#8825F5]/20 text-[10px] font-medium tracking-tight uppercase">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--accent-line)] text-[10px] font-medium tracking-tight uppercase">
       <Briefcase size={10} />
       Hustle
     </span>
@@ -130,14 +130,14 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
       : null;
 
   const ringClass = isHighlighted
-    ? "border-[#8825F5]/40 ring-1 ring-[#8825F5]/20"
-    : "border-white/[0.08] hover:border-white/[0.16]";
+    ? "border-[var(--accent-line)] ring-1 ring-[var(--accent-soft)]"
+    : "border-[var(--line)] hover:border-[var(--line-strong)]";
 
   if (variant === "compact") {
     return (
       <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
-        <div className={`bg-[#13131A] rounded-2xl overflow-hidden border transition-colors ${ringClass}`}>
-          <div className="w-full aspect-square bg-[#0B0B11] relative overflow-hidden">
+        <div className={`bg-[var(--surface)] rounded-2xl overflow-hidden border transition-colors ${ringClass}`}>
+          <div className="w-full aspect-square bg-[var(--chip)] relative overflow-hidden">
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -147,7 +147,7 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
                 className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/20">
+              <div className="w-full h-full flex items-center justify-center text-[var(--fg-faint)]">
                 {isMarket ? <ShoppingBag size={28} /> : <Briefcase size={28} />}
               </div>
             )}
@@ -155,17 +155,17 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
               <TypePill listing_type={gig.listing_type} market_type={gig.market_type} isPriority={isHighlighted} />
             </div>
             {gig.price != null && gig.market_type !== "REQUEST" && (
-              <div className="absolute top-2 right-2 z-10 inline-flex items-center px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-white">
+              <div className="absolute top-2 right-2 z-10 inline-flex items-center px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[11px] font-semibold text-white">
                 <IndianRupee size={10} className="mr-0.5" />
                 {gig.price}
               </div>
             )}
           </div>
           <div className="p-3">
-            <h3 className="text-sm font-semibold text-white leading-snug line-clamp-2 mb-2 group-hover:text-[#C9A9FF] transition-colors">
+            <h3 className="text-sm font-semibold text-[var(--fg)] leading-snug line-clamp-2 mb-2 group-hover:text-[var(--accent-ink)] transition-colors">
               {gig.title}
             </h3>
-            <div className="flex items-center justify-between text-[11px] text-white/50">
+            <div className="flex items-center justify-between text-[11px] text-[var(--fg-muted)]">
               <span className="flex items-center gap-1 truncate max-w-[60%]">
                 <MapPin size={10} /> {gig.location || posterLabel(gig) || "Campus"}
               </span>
@@ -173,7 +173,7 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
             </div>
             <div className="mt-2 flex items-center gap-2 flex-wrap">
               {responderLabel && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/10 border border-[#8825F5]/20 px-2 py-0.5 rounded-full">
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--accent-ink)] bg-[var(--accent-soft)] border border-[var(--accent-line)] px-2 py-0.5 rounded-full">
                   <Users size={10} /> {responderLabel}
                 </span>
               )}
@@ -191,19 +191,19 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
   // COMPANY_TASK is distinguished only by its pill + a hairline purple ring, never a hue change.
   const isCompany = gig.listing_type === "COMPANY_TASK";
   const detailedRing = isHighlighted || isCompany
-    ? "border-[#8825F5]/30 hover:border-[#8825F5]/50"
-    : "border-white/[0.08] hover:border-white/[0.16]";
+    ? "border-[var(--accent-line)] hover:border-[var(--accent)]"
+    : "border-[var(--line)] hover:border-[var(--line-strong)]";
 
   return (
     <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
-      <div className={`bg-[#13131A] rounded-2xl p-5 md:p-6 border transition-colors flex flex-col h-full ${detailedRing}`}>
+      <div className={`bg-[var(--surface)] rounded-2xl p-5 md:p-6 border transition-colors flex flex-col h-full ${detailedRing}`}>
         <div className="flex items-center justify-between mb-3">
           <TypePill listing_type={gig.listing_type} market_type={gig.market_type} isPriority={isHighlighted} />
           {isHighlighted && (
-            <span className="text-[10px] font-medium tracking-tight text-[#C9A9FF] uppercase">Featured</span>
+            <span className="text-[10px] font-medium tracking-tight text-[var(--accent-ink)] uppercase">Featured</span>
           )}
         </div>
-        <h3 className="font-semibold text-white text-base leading-snug line-clamp-2 mb-3 group-hover:text-[#C9A9FF] transition-colors">
+        <h3 className="font-semibold text-[var(--fg)] text-base leading-snug line-clamp-2 mb-3 group-hover:text-[var(--accent-ink)] transition-colors">
           {gig.title}
         </h3>
         <div className="flex items-baseline gap-1 mb-auto">
@@ -212,27 +212,27 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
               {/* An advert quotes a starting rate, not a fixed budget — the
                   final figure is agreed per job. Saying "from" is the
                   difference between a price and a quote. */}
-              {isAdvert && <span className="text-xs text-white/40 mr-1">from</span>}
-              <span className="text-xl font-semibold text-white tracking-tight">₹{gig.price}</span>
-              {isMarket && gig.market_type === "RENT" && <span className="text-xs text-white/40">/day</span>}
+              {isAdvert && <span className="text-xs text-[var(--fg-faint)] mr-1">from</span>}
+              <span className="text-xl font-semibold text-[var(--fg)] tracking-tight">₹{gig.price}</span>
+              {isMarket && gig.market_type === "RENT" && <span className="text-xs text-[var(--fg-faint)]">/day</span>}
             </>
           ) : (
-            <span className="text-xs text-white/40">Open offer</span>
+            <span className="text-xs text-[var(--fg-faint)]">Open offer</span>
           )}
         </div>
-        <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-[11px] text-white/50">
+        <div className="mt-5 pt-4 border-t border-[var(--line)] flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-[11px] text-[var(--fg-muted)]">
             <MapPin size={11} /> {gig.is_physical ? (isCompany ? "On-site" : "Physical") : "Remote"}
-            {posterLabel(gig) && <span className="text-white/30">· {posterLabel(gig)}</span>}
+            {posterLabel(gig) && <span className="text-[var(--fg-faint)]">· {posterLabel(gig)}</span>}
           </span>
           <div className="flex items-center gap-2">
             {responderLabel && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/10 border border-[#8825F5]/20 px-2 py-0.5 rounded-full">
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--accent-ink)] bg-[var(--accent-soft)] border border-[var(--accent-line)] px-2 py-0.5 rounded-full">
                 <Users size={10} /> {responderLabel}
               </span>
             )}
             {showStatus && <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>}
-            <span className="text-[11px] text-white/40">{timeAgo(gig.created_at)}</span>
+            <span className="text-[11px] text-[var(--fg-faint)]">{timeAgo(gig.created_at)}</span>
           </div>
         </div>
       </div>

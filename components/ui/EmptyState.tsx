@@ -32,34 +32,34 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
-      className={`bg-[#13131A] border border-white/[0.08] rounded-2xl px-6 py-12 md:py-16 flex flex-col items-center text-center ${className}`}
+      className={`bg-[var(--surface)] border border-[var(--line)] rounded-2xl px-6 py-12 md:py-16 flex flex-col items-center text-center ${className}`}
     >
       {sloth ? (
         <div className="relative w-24 h-24 mb-4 opacity-90 animate-[float_8s_ease-in-out_infinite]">
           <Image src={sloth} alt="" fill className="object-contain" sizes="96px" />
         </div>
       ) : Icon && (
-        <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center mb-4">
-          <Icon size={22} className="text-white/40" strokeWidth={1.6} />
+        <div className="w-14 h-14 rounded-2xl bg-[var(--chip)] border border-[var(--line)] flex items-center justify-center mb-4">
+          <Icon size={22} className="text-[var(--fg-faint)]" strokeWidth={1.6} />
         </div>
       )}
-      <h3 className="text-base font-semibold text-white tracking-tight mb-1">{title}</h3>
+      <h3 className="text-base font-semibold text-[var(--fg)] tracking-tight mb-1">{title}</h3>
       {description && (
-        <p className="text-sm text-white/50 max-w-sm leading-relaxed">{description}</p>
+        <p className="text-sm text-[var(--fg-muted)] max-w-sm leading-relaxed">{description}</p>
       )}
       {(actionLabel && (actionHref || onAction)) && (
         <div className="mt-5">
           {actionHref ? (
             <Link
               href={actionHref}
-              className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#8825F5] text-white text-sm font-medium tracking-tight hover:bg-[#7a1fe0] transition-colors"
+              className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[var(--accent)] text-[var(--on-accent)] text-sm font-medium tracking-tight hover:brightness-110 transition-colors"
             >
               {actionLabel}
             </Link>
           ) : (
             <button
               onClick={onAction}
-              className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[#8825F5] text-white text-sm font-medium tracking-tight hover:bg-[#7a1fe0] transition-colors"
+              className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-[var(--accent)] text-[var(--on-accent)] text-sm font-medium tracking-tight hover:brightness-110 transition-colors"
             >
               {actionLabel}
             </button>

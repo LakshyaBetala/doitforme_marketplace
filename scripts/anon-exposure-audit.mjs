@@ -91,6 +91,35 @@ async function mustNotList(bucket) {
 
 const Z = "00000000-0000-0000-0000-000000000000";
 
+// PREFLIGHT: is the API actually answering?
+//
+// Every "must be denied" check below passes by matching Postgres error 42501.
+// When the Supabase project is restricted (402) or paused (503), the gateway
+// answers before Postgres ever sees the request, so NONE of those checks can
+// match and all of them report as leaks. That is exactly backwards — the API is
+// returning nothing to anyone — and it buries the handful of checks that are
+// still meaningful.
+//
+// So: establish that the API responds at all before drawing any conclusion from
+// what it says.
+{
+  const r = await fetch(`${URL_}/rest/v1/gigs?select=id&limit=1`, { headers: H });
+  if (r.status === 402 || r.status === 503) {
+    const body = await r.text();
+    console.error(
+      `\nCANNOT AUDIT — the Supabase API is answering ${r.status}, not Postgres.\n\n` +
+        `  ${body.slice(0, 180)}\n\n` +
+        `Every "denied" check in this script passes by matching Postgres error 42501.\n` +
+        `A gateway-level ${r.status} never reaches Postgres, so those checks would all\n` +
+        `report LEAK while the API is in fact returning nothing to anyone.\n\n` +
+        `This is NOT a pass and NOT a failure: the audit did not run. Re-run it once\n` +
+        `the project is unrestricted. To check grants and policies in the meantime,\n` +
+        `query information_schema directly over DATABASE_URL.\n`
+    );
+    process.exit(2); // distinct from 1, which means real exposures were found
+  }
+}
+
 console.log("\nAnonymous exposure audit — anything READABLE here is published.\n");
 
 console.log("users — contact details and KYC");

@@ -1,6 +1,7 @@
 import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
 import Topbar from "./Topbar";
+import WorkspaceThemeColor from "./WorkspaceThemeColor";
 
 /**
  * The frame every signed-in page renders inside.
@@ -19,19 +20,25 @@ export default function AppShell({
   children,
   name,
   role,
+  isElite,
+  innerCircleRole,
   action,
 }: {
   children: React.ReactNode;
   name?: string | null;
   role?: string | null;
+  /** Inner Circle membership, which decides whether the role surface is in nav. */
+  isElite?: boolean | null;
+  innerCircleRole?: string | null;
   action?: React.ReactNode;
 }) {
   return (
     <div className="workspace flex min-h-[100dvh]">
-      <Sidebar name={name} role={role} />
+      <WorkspaceThemeColor />
+      <Sidebar name={name} role={role} isElite={isElite} innerCircleRole={innerCircleRole} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileNav name={name} />
+        <MobileNav name={name} role={role} isElite={isElite} innerCircleRole={innerCircleRole} />
         <Topbar action={action} />
 
         {/* Bottom padding clears the mobile bar; lg drops it since the bar is gone. */}

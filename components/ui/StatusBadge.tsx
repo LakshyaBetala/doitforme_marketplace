@@ -3,22 +3,25 @@ import { ReactNode } from "react";
 /**
  * Single source of truth for all status pills across the app.
  *
- * Design rule: depth comes from the BORDER color, not a saturated background fill.
- * This keeps the dark-minimal aesthetic intact while still signalling intent.
+ * Design rule: depth comes from the BORDER color, not a saturated background
+ * fill. Written against the shared token contract so the same pill reads
+ * correctly on the dark marketing pages and on the cream workspace — the tones
+ * used to be hardcoded tailwind dark-mode colors (text-emerald-300 on cream is
+ * a pale green on near-white, which is how status disappears).
  */
 export type Tone = "neutral" | "info" | "success" | "warning" | "danger";
 
 const TONES: Record<Tone, string> = {
-  // muted gray — default; pending, draft, applied
-  neutral: "bg-white/[0.04] text-white/70 border-white/[0.08]",
-  // brand purple — in-progress, assigned, delivered, hired
-  info: "bg-[#8825F5]/10 text-[#C9A9FF] border-[#8825F5]/25",
-  // green — completed, released, accepted, paid
-  success: "bg-emerald-500/[0.08] text-emerald-300 border-emerald-500/20",
-  // amber — needs-action, held, awaiting-release
-  warning: "bg-amber-500/[0.08] text-amber-300 border-amber-500/20",
-  // red — cancelled, rejected, disputed, refunded
-  danger: "bg-red-500/[0.08] text-red-300 border-red-500/20",
+  // default — pending, draft, applied
+  neutral: "bg-[var(--chip)] text-[var(--fg-muted)] border-[var(--line)]",
+  // brand — in-progress, assigned, delivered, hired
+  info: "bg-[var(--accent-soft)] text-[var(--accent-ink)] border-[var(--accent-line)]",
+  // completed, released, accepted, paid
+  success: "bg-[var(--ok-soft)] text-[var(--ok)] border-[var(--ok-line)]",
+  // needs-action, held, awaiting-release
+  warning: "bg-[var(--warn-soft)] text-[var(--warn)] border-[var(--warn-line)]",
+  // cancelled, rejected, disputed, refunded
+  danger: "bg-[var(--bad-soft)] text-[var(--bad)] border-[var(--bad-line)]",
 };
 
 type StatusBadgeProps = {

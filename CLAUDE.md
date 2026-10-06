@@ -323,6 +323,30 @@ From README + handler code:
   message means it **executed**, not that it was blocked. Only `42501 permission
   denied` is a denial.
 
+- **`REVOKE ... FROM PUBLIC` is only half the fix on Supabase; `anon` is granted
+  directly too.** The rule above is correct — `anon` inherits `EXECUTE` from
+  `PUBLIC` — but Supabase *also* runs `ALTER DEFAULT PRIVILEGES` granting
+  `EXECUTE` on every new function in `public` to `anon` and `authenticated`
+  **directly**. So a function hardened with `REVOKE ... FROM PUBLIC` keeps a
+  direct grant that the revoke never touches, and the migration reads as
+  complete while changing nothing.
+  `prune_notification_tables()` lived like this: `SECURITY DEFINER`, it
+  **deletes rows**, and it was reachable at
+  `POST /rest/v1/rpc/prune_notification_tables` by anyone holding the anon key
+  that ships in every page load — one unauthenticated call wipes every user's
+  notifications older than 14 days. `20261003_stop_the_notification_fanout.sql`
+  revoked it `FROM PUBLIC` and granted `service_role`, exactly as documented,
+  and `anon` kept `EXECUTE` the whole time. Found by auditing `pg_proc` against
+  `information_schema.routine_privileges`, not by reading the migration.
+  Always `REVOKE ALL ... FROM PUBLIC, anon, authenticated` and then `GRANT` back
+  explicitly, and assert the result with `has_function_privilege` inside the
+  migration so it fails loudly instead of lying —
+  [20261006_revoke_execute_from_anon_directly.sql](supabase/migrations/20261006_revoke_execute_from_anon_directly.sql)
+  is the pattern. **`is_admin()` is the one deliberate exception**: policies on
+  anon-readable tables are `USING (... OR is_admin())` and `EXECUTE` is checked
+  against the calling role even inside a policy, so revoking it makes anonymous
+  reads of `/talent` fail with `42501` instead of returning rows.
+
 - **A `SECURITY DEFINER` guard on `auth.uid()` is not a guard for anonymous callers.**
   `manual_release_escrow` reads `if auth.uid() is distinct from poster_id and not
   is_admin()`. With no JWT, `auth.uid()` is NULL and `is_admin()` returns NULL, so
@@ -445,6 +469,108 @@ From README + handler code:
 Four tables were dropped on 2026-06-19 ([supabase/migrations/20260619_drop_unused_tables.sql](supabase/migrations/20260619_drop_unused_tables.sql)) — `vasooli_bounties`, `deliveries`, `payout_methods`, `chat_blocked_logs`. Older migrations and schema dumps still reference them. Delivery artifacts live on `gigs.delivery_link` / `delivery_files` + `messages`; payout UPI lives on `users.upi_id` and payouts are manual.
 
 [supabase/README.md](supabase/README.md) references files `supabase/sql/01_..08_*.sql`. That directory was removed in commit `0c8f119` ("Cleanup: remove redundant root sql directory"). The live migrations are in [supabase/migrations/](supabase/migrations/) and are date-stamped (e.g. `20260421_standardize_naming_and_rls.sql`). Trust the dated migrations, not the README's ordering.
+
+## The workspace shell and the two palettes
+
+Signed-in routes render inside an app shell; public routes do not. The two have
+different palettes, and that split is the thing to understand before touching any
+UI.
+
+**There was no shell at all before [components/shell/](components/shell/).**
+`app/dashboard/layout.tsx` was a 36-line auth gate around a bare `<div>`, the root
+layout rendered `{children}` with no navigation, and **25 files hand-rolled their
+own back button**. `/dashboard` additionally carried a full 72px top bar — logo,
+search, Refer & Earn, messages, notification bell, profile dropdown — so against
+a sidebar that was three navigations for one product.
+
+- [components/shell/nav.ts](components/shell/nav.ts) is the only place navigation
+  is declared. `secondaryNavFor({ isElite, innerCircleRole })` adds the Inner
+  Circle role surface for members who can use it. **There is deliberately no
+  Wallet**: payouts are manual, so a withdrawable balance would be a promise we
+  cannot keep. `/payouts` survives as an account-menu item and an Overview panel,
+  not a destination.
+- [AppShell](components/shell/AppShell.tsx) composes Sidebar (desktop rail),
+  MobileNav (top bar + sheet + 4-item bottom bar) and Topbar (breadcrumb, **not** a
+  second nav). [WorkspaceLayout](components/shell/WorkspaceLayout.tsx) is the auth
+  gate + fonts + shell, and each workspace route has a thin `layout.tsx` calling
+  it — rather than moving 2,800 lines of page code into a route group.
+- [AccountMenu](components/shell/AccountMenu.tsx) holds **log out**. Before the
+  shell, logging out existed only inside the dashboard's top-bar dropdown, along
+  with Install app and Enable alerts. Deleting that bar without moving them first
+  would leave a signed-in user with no way to sign out from anywhere.
+
+### One token contract, two palettes
+The primitives in [components/ui/](components/ui/) had the dark palette hardcoded
+(`bg-[#13131A]`, `text-white`, `border-white/[0.08]`), and `GigCard` renders on
+`/talent` (public, dark) **and** `/feed` + `/dashboard` (workspace, cream).
+Literals force a fork of every shared component, so there is now a semantic
+contract: `--fg` / `--fg-muted` / `--fg-faint`, `--surface` / `--surface-2`,
+`--line` / `--line-strong`, `--chip` / `--chip-strong`, `--accent` /
+`--accent-ink` / `--accent-soft` / `--accent-line` / `--on-accent`, and
+`--ok|warn|bad(-soft|-line|-solid)`. Dark values are at the end of
+[app/globals.css](app/globals.css); cream values are in
+[app/workspace-theme.css](app/workspace-theme.css), scoped to `.workspace`.
+
+Write page and component colors as `text-[var(--fg)]` / `bg-[var(--surface)]`,
+never as a literal. Two traps this encodes:
+
+- **`--accent-ink` inverts between palettes** — a light lavender on near-black,
+  a dark violet on cream. Name the role, not the color; "soft purple" would have
+  to mean two opposite things.
+- **`--on-accent` exists so a theme sweep cannot make a button invisible.** A
+  blanket `text-white` → `text-[var(--fg)]` rewrite turned "Pay & start work"
+  into dark-violet text on a violet fill — the primary escrow action, unreadable.
+  Any solid fill carries `--on-accent`, never `--fg`.
+- `.workspace` also sets `color-scheme: light` and re-does the autofill
+  box-shadow. The global `:root` sets `color-scheme: dark` and a `#0B0B11`
+  autofill shadow, which on cream render date pickers as black panels and
+  autofilled email as white-on-black inside a white field.
+
+## The Inner Circle — two roles
+
+`users.is_elite` existed since the managed-mode pivot and the assignment desk
+sorted by it, but **nothing ever set it (0 rows) and nothing in the product
+mentioned it** — a tier that was real in the database and invisible to everyone it
+was meant to reward.
+
+- [20261005_inner_circle.sql](supabase/migrations/20261005_inner_circle.sql) adds
+  the application trail;
+  [20261006_inner_circle_roles_and_outreach.sql](supabase/migrations/20261006_inner_circle_roles_and_outreach.sql)
+  adds the two roles and the outreach CRM.
+- `users.inner_circle_role ∈ TECH | OUTREACH`. Membership stays `is_elite` (that
+  is what the assignment desk reads); the role sits beside it. Approving flips
+  both, via [api/admin/inner-circle](app/api/admin/inner-circle/route.ts), and the
+  **user row is written first** — a half-failure then leaves a member whose
+  application reads pending, which is visible, rather than an approved application
+  with no access, which looks like it worked.
+- **TECH's workflow is derived, not stored.** `workflowFor()` in
+  [lib/innerCircle.ts](lib/innerCircle.ts) projects the seven steps from the gig
+  row. There are already three state machines describing one gig (`gigs.status`,
+  `gigs.payment_status`, `gigs.managed_status`) and the third has to be kept in
+  sync by hand; a fourth could disagree with the money, and the one that disagrees
+  is always the one the UI reads. Pinned by
+  [tests/unit/inner-circle.test.mjs](tests/unit/inner-circle.test.mjs).
+- **OUTREACH gets a real table** (`outreach_leads` + append-only
+  `outreach_touches`) because its pipeline has no existing home. Readable only via
+  `is_outreach()` or `is_admin()` — it holds third-party contact details — and
+  updates are owner-only. A unique index on `lower(btrim(company_name))` stops two
+  members cold-emailing the same company in the same week. Reads and writes go
+  through the browser client against RLS on purpose: there is no authorization an
+  API route could add that the policies do not already enforce, and a route would
+  be a second place for the rules to drift.
+
+## Mobile and the store builds
+
+[docs/APP.md](docs/APP.md) is the runbook; [capacitor.config.ts](capacitor.config.ts)
+explains why the wrapper loads the live site instead of a static export.
+
+The one to remember: **`viewportFit: "cover"` is load-bearing.** Until it was added
+to the `viewport` export in [app/layout.tsx](app/layout.tsx), every
+`env(safe-area-inset-*)` in the app resolved to `0px` — so the mobile bottom bar
+sat under the iPhone home indicator while the CSS looked correct. Also
+`hoverOnlyWhenSupported` in [tailwind.config.js](tailwind.config.js): Tailwind v3
+emits `hover:` as a bare `:hover`, which touch browsers apply on first tap and
+leave applied, so every tapped button kept its hover fill.
 
 ## Design system (read before any UI change)
 

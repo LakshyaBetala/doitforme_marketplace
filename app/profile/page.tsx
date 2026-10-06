@@ -539,8 +539,8 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center">
-        <Loader2 className="w-10 h-10 text-[#8825F5] animate-spin" />
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-7 w-7 animate-spin text-[var(--w-violet)]" />
       </div>
     );
   }
@@ -560,25 +560,20 @@ export default function ProfilePage() {
   if (!profile.upi_id) missingFields.push("UPI ID");
 
   return (
-    <main className="min-h-[100dvh] bg-[var(--background)] p-4 md:p-6 lg:p-12 pb-24 text-white selection:bg-[#8825F5]/30 selection:text-white overflow-x-hidden relative font-sans">
-      <div className="max-w-5xl mx-auto space-y-6 md:space-y-8 relative z-10">
-
-        {/* Back Button */}
-        <Link href="/dashboard" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors py-2 active:scale-95 text-sm font-medium">
-          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
-        </Link>
+    <main className="pb-2">
+      <div className="space-y-6 md:space-y-8">
 
         {/* Profile Incomplete Alert */}
         {missingFields.length > 0 && !isEditing && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="bg-[var(--warn-soft)] border border-[var(--warn-line)] rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-start md:items-center gap-3">
-              <AlertTriangle size={18} className="text-amber-400 shrink-0 mt-0.5 md:mt-0" />
+              <AlertTriangle size={18} className="text-[var(--warn)] shrink-0 mt-0.5 md:mt-0" />
               <div>
-                <p className="text-sm font-bold text-amber-400">Profile incomplete</p>
-                <p className="text-xs text-amber-400/70 mt-0.5">Missing: {missingFields.join(", ")}. Complete your profile to post and apply.</p>
+                <p className="text-sm font-bold text-[var(--warn)]">Profile incomplete</p>
+                <p className="text-xs text-[var(--warn)]/70 mt-0.5">Missing: {missingFields.join(", ")}. Complete your profile to post and apply.</p>
               </div>
             </div>
-            <button onClick={startEditing} className="shrink-0 px-5 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 text-xs font-bold rounded-xl transition active:scale-95 whitespace-nowrap">
+            <button onClick={startEditing} className="shrink-0 px-5 py-2 bg-[var(--warn-soft)] border border-[var(--warn-line)] text-[var(--warn)] hover:brightness-95 text-xs font-bold rounded-xl transition active:scale-95 whitespace-nowrap">
               Complete Profile
             </button>
           </div>
@@ -587,7 +582,7 @@ export default function ProfilePage() {
         {/* Save Message Toast */}
         {saveMessage && (
           <div className={`rounded-2xl p-4 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-300 ${
-            saveMessage.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'
+            saveMessage.type === 'success' ? 'bg-[var(--ok-soft)] border border-[var(--ok-line)] text-[var(--ok)]' : 'bg-[var(--bad-soft)] border border-[var(--bad-line)] text-[var(--bad)]'
           }`}>
             {saveMessage.type === 'success' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
             <span className="text-sm font-bold">{saveMessage.text}</span>
@@ -600,7 +595,7 @@ export default function ProfilePage() {
           {/* ==================================================== */}
           {/* MAIN IDENTITY & EDIT CARD (LEFT BENTO) */}
           {/* ==================================================== */}
-          <div className="lg:col-span-7 rounded-[32px] border border-white/[0.08] bg-[var(--card)] overflow-hidden relative h-fit">
+          <div className="lg:col-span-7 rounded-[32px] border border-[var(--line)] bg-[var(--card)] overflow-hidden relative h-fit">
 
             {/* Cover Photo Area */}
             <div className="h-32 md:h-40 bg-[var(--card-elevated)] relative flex items-start justify-end p-5 md:p-6">
@@ -611,13 +606,13 @@ export default function ProfilePage() {
                 {!isEditing ? (
                   <>
                     {identityLocked && (
-                      <span className="text-[10px] text-white/50 bg-black/20 px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-sm border border-white/5 hidden md:flex">
+                      <span className="text-[10px] text-[var(--fg-muted)] bg-[var(--chip)] px-3 py-1.5 rounded-full flex items-center gap-1.5 backdrop-blur-sm border border-[var(--line)] hidden md:flex">
                         <Lock size={10} /> Name &amp; phone unlock {nextEditDate}
                       </span>
                     )}
                     <button
                       onClick={startEditing}
-                      className="px-4 py-2 md:px-5 md:py-2.5 bg-black/20 hover:bg-[#8825F5] border border-white/10 hover:border-[#8825F5] text-white text-xs font-bold rounded-xl transition active:scale-95 flex items-center gap-2 backdrop-blur-sm shadow-lg"
+                      className="px-4 py-2 md:px-5 md:py-2.5 bg-[var(--chip)] hover:bg-[var(--accent)] border border-[var(--line)] hover:border-[var(--accent)] text-[var(--fg)] hover:text-[var(--on-accent)] text-xs font-bold rounded-xl transition active:scale-95 flex items-center gap-2 backdrop-blur-sm shadow-lg"
                     >
                       <Edit2 size={12} /> Edit Profile
                     </button>
@@ -626,14 +621,14 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={cancelEditing}
-                      className="px-4 py-2 md:py-2.5 bg-black/20 border border-white/10 text-white/60 text-xs font-bold rounded-xl hover:bg-white/5 hover:text-white transition active:scale-95 backdrop-blur-sm"
+                      className="px-4 py-2 md:py-2.5 bg-[var(--chip)] border border-[var(--line)] text-[var(--fg-muted)] text-xs font-bold rounded-xl hover:bg-[var(--chip)] hover:text-[var(--fg)] transition active:scale-95 backdrop-blur-sm"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={saveProfile}
                       disabled={saving}
-                      className="px-5 py-2 md:py-2.5 bg-[#8825F5] text-white text-xs font-bold rounded-xl hover:bg-[#7D5FFF] transition active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(136,37,245,0.3)]"
+                      className="px-5 py-2 md:py-2.5 bg-[var(--accent)] text-[var(--on-accent)] text-xs font-bold rounded-xl hover:bg-[#7D5FFF] transition active:scale-95 disabled:opacity-50 flex items-center gap-2 shadow-[0_0_15px_rgba(136,37,245,0.3)]"
                     >
                       {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                       {saving ? "Saving..." : "Save"}
@@ -654,12 +649,12 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   aria-label="Change profile photo"
-                  className="w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[var(--card)] relative z-10 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A9FF] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+                  className="w-28 h-28 md:w-32 md:h-32 rounded-full p-[6px] bg-[var(--card)] relative z-10 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Avatar src={profile.avatar_url} fallback={avatarLetter} className="w-full h-full text-4xl group-hover:opacity-50 transition-opacity" />
                   <div className="absolute inset-[6px] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40">
-                    {uploadingAvatar ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Camera className="w-8 h-8 text-white" />}
+                    {uploadingAvatar ? <Loader2 className="w-6 h-6 text-[var(--fg)] animate-spin" /> : <Camera className="w-8 h-8 text-[var(--fg)]" />}
                   </div>
                 </button>
                 {/* Outside the button on purpose — an <input> nested inside a
@@ -670,15 +665,15 @@ export default function ProfilePage() {
                 {/* Badges */}
                 <div className="absolute bottom-2 right-2 z-20 flex gap-2">
                   {stats.isLightningResponder ? (
-                    <div className="bg-[var(--brand-purple)] text-white p-2 rounded-full ring-2 ring-[var(--card)]" title="Lightning Responder">
+                    <div className="bg-[var(--brand-purple)] text-[var(--fg)] p-2 rounded-full ring-2 ring-[var(--card)]" title="Lightning Responder">
                       <Zap className="w-4 h-4 fill-current" />
                     </div>
                   ) : profile.kyc_verified ? (
-                    <div className="bg-[var(--brand-purple)] text-white p-2 rounded-full ring-2 ring-[var(--card)]" title="Verified student">
+                    <div className="bg-[var(--brand-purple)] text-[var(--fg)] p-2 rounded-full ring-2 ring-[var(--card)]" title="Verified student">
                       <ShieldCheck className="w-4 h-4" />
                     </div>
                   ) : (
-                    <div className="bg-white/10 text-white/70 border border-white/15 p-2 rounded-full ring-2 ring-[var(--card)]" title="Not verified">
+                    <div className="bg-[var(--chip-strong)] text-[var(--fg-muted)] border border-[var(--line)] p-2 rounded-full ring-2 ring-[var(--card)]" title="Not verified">
                       <ShieldAlert className="w-4 h-4" />
                     </div>
                   )}
@@ -690,8 +685,8 @@ export default function ProfilePage() {
                 {isEditing ? (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
-                        Full Name {identityLocked && <Lock size={10} className="text-zinc-600" />}
+                      <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                        Full Name {identityLocked && <Lock size={10} className="text-[var(--fg-faint)]" />}
                       </label>
                       <input
                         type="text"
@@ -700,19 +695,19 @@ export default function ProfilePage() {
                         placeholder="Your name"
                         autoComplete="name"
                         disabled={identityLocked}
-                        className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-lg font-bold placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full p-3 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-lg font-bold placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] transition disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       {identityLocked && (
-                        <p className="text-[10px] px-1 mt-1.5 text-white/40">Editable again on {nextEditDate}. Bio and preferences can be changed any time.</p>
+                        <p className="text-[10px] px-1 mt-1.5 text-[var(--fg-faint)]">Editable again on {nextEditDate}. Bio and preferences can be changed any time.</p>
                       )}
                     </div>
                     {!profile.username && (
                       <div>
-                        <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                        <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1 flex items-center gap-1">
                           Username <span className="normal-case opacity-50 font-normal">(Permanent once set)</span>
                         </label>
                         <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-sm pointer-events-none select-none">@</span>
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--fg-faint)] text-sm pointer-events-none select-none">@</span>
                           <input
                             type="text"
                             value={editUsername}
@@ -721,19 +716,19 @@ export default function ProfilePage() {
                             id="username-input"
                             autoComplete="off"
                             maxLength={20}
-                            className="w-full pl-9 pr-11 py-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
+                            className="w-full pl-9 pr-11 py-3 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] transition"
                           />
                           <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                              {usernameStatus === "checking" && <Loader2 size={14} className="text-white/40 animate-spin" />}
-                              {usernameStatus === "available" && <CheckCircle2 size={14} className="text-emerald-400" />}
-                              {(usernameStatus === "taken" || usernameStatus === "invalid") && <XCircle size={14} className="text-red-400" />}
-                              {usernameStatus === "idle" && <AtSign size={14} className="text-white/40" />}
+                              {usernameStatus === "checking" && <Loader2 size={14} className="text-[var(--fg-faint)] animate-spin" />}
+                              {usernameStatus === "available" && <CheckCircle2 size={14} className="text-[var(--ok)]" />}
+                              {(usernameStatus === "taken" || usernameStatus === "invalid") && <XCircle size={14} className="text-[var(--bad)]" />}
+                              {usernameStatus === "idle" && <AtSign size={14} className="text-[var(--fg-faint)]" />}
                           </div>
                         </div>
                         <p className={`text-[10px] px-1 mt-1.5 leading-tight ${
-                            usernameStatus === "available" ? "text-emerald-400" :
-                            usernameStatus === "taken" || usernameStatus === "invalid" ? "text-red-400" :
-                            "text-white/60"
+                            usernameStatus === "available" ? "text-[var(--ok)]" :
+                            usernameStatus === "taken" || usernameStatus === "invalid" ? "text-[var(--bad)]" :
+                            "text-[var(--fg-muted)]"
                         }`}>
                             {usernameStatus === "available" && editUsername
                                 ? `doitforme.in/u/${editUsername} — available`
@@ -746,7 +741,7 @@ export default function ProfilePage() {
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1">
-                    <h1 className="text-3xl md:text-4xl font-semibold text-white tracking-tight leading-none flex items-center gap-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                    <h1 className="text-3xl md:text-4xl font-semibold text-[var(--fg)] tracking-tight leading-none flex items-center gap-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {displayName}
                       {stats.isLightningResponder && (
                         <span className="px-2 py-0.5 bg-[var(--brand-purple)]/10 border border-[var(--brand-purple)]/25 text-[var(--brand-purple-soft)] text-[10px] font-medium tracking-wide rounded-md items-center gap-1 hidden md:flex">
@@ -756,11 +751,11 @@ export default function ProfilePage() {
                     </h1>
                     
                     {profile.username ? (
-                      <Link href={`/u/${profile.username}`} target="_blank" className="text-sm text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 mt-1 w-fit">
+                      <Link href={`/u/${profile.username}`} target="_blank" className="text-sm text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors flex items-center gap-1.5 mt-1 w-fit">
                         doitforme.in/u/{profile.username} <Send size={12} className="opacity-50" />
                       </Link>
                     ) : (
-                      <button onClick={startEditing} className="text-sm text-[#8825F5] hover:text-[#7D5FFF] transition-colors mt-1 font-medium w-fit text-left">
+                      <button onClick={startEditing} className="text-sm text-[var(--accent-ink)] hover:text-[#7D5FFF] transition-colors mt-1 font-medium w-fit text-left">
                         + Claim your @username
                       </button>
                     )}
@@ -774,7 +769,7 @@ export default function ProfilePage() {
                 {/* Bio — the one field that shows on the public page as prose.
                     Spans the full grid because it is the only long-form input. */}
                 <div className="md:col-span-2">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1">Bio</label>
+                  <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1">Bio</label>
                   {isEditing ? (
                     <>
                       <textarea
@@ -784,17 +779,17 @@ export default function ProfilePage() {
                         rows={3}
                         maxLength={BIO_MAX}
                         placeholder="One or two lines on what you do and what you're good at."
-                        className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm leading-relaxed placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition resize-none"
+                        className="w-full p-3 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm leading-relaxed placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] transition resize-none"
                       />
-                      <p className="text-[10px] px-1 mt-1.5 text-white/40 flex items-center justify-between gap-2">
+                      <p className="text-[10px] px-1 mt-1.5 text-[var(--fg-faint)] flex items-center justify-between gap-2">
                         <span>Shown on your public page. No phone numbers or social handles.</span>
-                        <span className={editBio.length >= BIO_MAX ? "text-amber-400" : ""}>{editBio.length}/{BIO_MAX}</span>
+                        <span className={editBio.length >= BIO_MAX ? "text-[var(--warn)]" : ""}>{editBio.length}/{BIO_MAX}</span>
                       </p>
                     </>
                   ) : (
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
-                      <User size={16} className="text-zinc-500 shrink-0 mt-0.5" />
-                      <span className={profile.bio ? "text-zinc-300 leading-relaxed whitespace-pre-wrap" : "text-zinc-600 italic"}>
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-[var(--chip)] border border-transparent text-sm">
+                      <User size={16} className="text-[var(--fg-muted)] shrink-0 mt-0.5" />
+                      <span className={profile.bio ? "text-[var(--fg-muted)] leading-relaxed whitespace-pre-wrap" : "text-[var(--fg-faint)] italic"}>
                         {profile.bio || "No bio yet"}
                       </span>
                     </div>
@@ -803,18 +798,18 @@ export default function ProfilePage() {
 
                 {/* Email (Always Read-only) */}
                 <div>
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                  <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1 flex items-center gap-1">
                     Email <span className="normal-case opacity-50 font-normal">(Read Only)</span>
                   </label>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm text-zinc-300">
-                    <Mail size={16} className="text-zinc-500 shrink-0" />
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border border-transparent text-sm text-[var(--fg-muted)]">
+                    <Mail size={16} className="text-[var(--fg-muted)] shrink-0" />
                     <span className="truncate">{profile.email}</span>
                   </div>
                 </div>
 
                 {/* Phone */}
                 <div>
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1">Phone</label>
+                  <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1">Phone</label>
                   {isEditing ? (
                     <input
                       type="tel"
@@ -824,20 +819,20 @@ export default function ProfilePage() {
                       autoComplete="tel"
                       inputMode="tel"
                       disabled={identityLocked}
-                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full p-3 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] transition disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
-                      <Phone size={16} className="text-zinc-500 shrink-0" />
-                      <span className={profile.phone ? "text-zinc-300" : "text-zinc-600 italic"}>{profile.phone || "Not set"}</span>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border border-transparent text-sm">
+                      <Phone size={16} className="text-[var(--fg-muted)] shrink-0" />
+                      <span className={profile.phone ? "text-[var(--fg-muted)]" : "text-[var(--fg-faint)] italic"}>{profile.phone || "Not set"}</span>
                     </div>
                   )}
                 </div>
 
                 {/* UPI ID */}
                 <div>
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
-                    UPI ID {profile.upi_id && <Lock size={10} className="text-zinc-600" />}
+                  <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                    UPI ID {profile.upi_id && <Lock size={10} className="text-[var(--fg-faint)]" />}
                   </label>
                   {isEditing && !profile.upi_id ? (
                     <input
@@ -848,20 +843,20 @@ export default function ProfilePage() {
                       autoCapitalize="off"
                       onChange={(e) => setEditUpiId(e.target.value)}
                       placeholder="name@oksbi"
-                      className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
+                      className="w-full p-3 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] transition"
                     />
                   ) : (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
-                      <Wallet size={16} className="text-zinc-500 shrink-0" />
-                      <span className={profile.upi_id ? "text-zinc-300 truncate" : "text-zinc-600 italic"}>{profile.upi_id || "Not set"}</span>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border border-transparent text-sm">
+                      <Wallet size={16} className="text-[var(--fg-muted)] shrink-0" />
+                      <span className={profile.upi_id ? "text-[var(--fg-muted)] truncate" : "text-[var(--fg-faint)] italic"}>{profile.upi_id || "Not set"}</span>
                     </div>
                   )}
                 </div>
 
                 {/* College */}
                 <div>
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-1.5 block ml-1 flex items-center gap-1">
-                    University / College {identityLocked && <Lock size={10} className="text-zinc-600" />}
+                  <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1 flex items-center gap-1">
+                    University / College {identityLocked && <Lock size={10} className="text-[var(--fg-faint)]" />}
                   </label>
                   {isEditing && !identityLocked ? (
                     <div className="relative z-[60]">
@@ -873,15 +868,15 @@ export default function ProfilePage() {
                             placeholder="University Name"
                             value={editCustomCollege}
                             onChange={(e) => setEditCustomCollege(e.target.value)}
-                            className="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#8825F5] transition"
+                            className="w-full p-3 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] transition"
                           />
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-black/10 border border-transparent text-sm">
-                      <GraduationCap size={16} className="text-zinc-500 shrink-0" />
-                      <span className={profile.college ? "text-zinc-300 truncate" : "text-zinc-600 italic"}>{profile.college || "Not set"}</span>
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border border-transparent text-sm">
+                      <GraduationCap size={16} className="text-[var(--fg-muted)] shrink-0" />
+                      <span className={profile.college ? "text-[var(--fg-muted)] truncate" : "text-[var(--fg-faint)] italic"}>{profile.college || "Not set"}</span>
                     </div>
                   )}
                 </div>
@@ -889,10 +884,10 @@ export default function ProfilePage() {
               </div>
 
               {/* Interests */}
-              <div className="mt-8 pt-8 border-t border-white/5">
-                <label className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4 flex justify-between items-center">
+              <div className="mt-8 pt-8 border-t border-[var(--line)]">
+                <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-4 flex justify-between items-center">
                   Interests & Strengths
-                  {isEditing && <span className="text-[9px] text-zinc-600 font-normal normal-case">Select 3-5 ({editPreferences.length}/5)</span>}
+                  {isEditing && <span className="text-[9px] text-[var(--fg-faint)] font-normal normal-case">Select 3-5 ({editPreferences.length}/5)</span>}
                 </label>
                 
                 {isEditing ? (
@@ -908,7 +903,7 @@ export default function ProfilePage() {
                             setEditPreferences([...editPreferences, cat]);
                           }
                         }}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition ${editPreferences.includes(cat) ? 'bg-[#8825F5] text-white border-[#8825F5]' : 'bg-black/20 border-white/10 text-zinc-400 hover:text-white hover:border-white/20'}`}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition ${editPreferences.includes(cat) ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--chip)] border-[var(--line)] text-[var(--fg-muted)] hover:text-[var(--fg)] hover:border-[var(--line-strong)]'}`}
                       >
                         {cat}
                       </button>
@@ -917,10 +912,10 @@ export default function ProfilePage() {
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {(!profile.preferences || profile.preferences.length === 0) ? (
-                      <span className="text-sm text-zinc-600 italic px-2">No preferences set</span>
+                      <span className="text-sm text-[var(--fg-faint)] italic px-2">No preferences set</span>
                     ) : (
                       profile.preferences.map((cat: string) => (
-                        <span key={cat} className="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-white/5 bg-white/5 text-zinc-300">
+                        <span key={cat} className="px-3 py-1.5 rounded-lg text-[11px] font-bold border border-[var(--line)] bg-[var(--chip)] text-[var(--fg-muted)]">
                           {cat}
                         </span>
                       ))
@@ -938,40 +933,40 @@ export default function ProfilePage() {
           <div className="lg:col-span-5 space-y-6">
 
             {/* Performance Stats */}
-            <div className="rounded-[32px] border border-white/[0.08] bg-[var(--card)] p-6 md:p-8 flex items-center justify-between">
+            <div className="rounded-[32px] border border-[var(--line)] bg-[var(--card)] p-6 md:p-8 flex items-center justify-between">
               <div className="space-y-1 flex-1">
-                <div className="text-[11px] uppercase tracking-[0.1em] text-white/45 font-medium flex items-center gap-1.5 mb-2"><Briefcase size={12} className="text-white/45"/> Total earned</div>
-                <div className="text-3xl font-semibold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{stats.earnings}</div>
-                <div className="text-[11px] text-white/45 mt-1">{stats.completed} {stats.completed === 1 ? "gig" : "gigs"} completed</div>
+                <div className="text-[11px] uppercase tracking-[0.1em] text-[var(--fg)]/45 font-medium flex items-center gap-1.5 mb-2"><Briefcase size={12} className="text-[var(--fg)]/45"/> Total earned</div>
+                <div className="text-3xl font-semibold text-[var(--fg)] tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{stats.earnings}</div>
+                <div className="text-[11px] text-[var(--fg)]/45 mt-1">{stats.completed} {stats.completed === 1 ? "gig" : "gigs"} completed</div>
               </div>
 
-              <div className="w-px h-16 bg-white/10 mx-6"></div>
+              <div className="w-px h-16 bg-[var(--chip-strong)] mx-6"></div>
 
               <div className="space-y-1 flex-1">
-                <div className="text-[11px] uppercase tracking-[0.1em] text-white/45 font-medium flex items-center gap-1.5 mb-2"><Star size={12} className="text-[var(--brand-purple-soft)]"/> Reputation</div>
+                <div className="text-[11px] uppercase tracking-[0.1em] text-[var(--fg)]/45 font-medium flex items-center gap-1.5 mb-2"><Star size={12} className="text-[var(--brand-purple-soft)]"/> Reputation</div>
                 <div className="flex items-baseline gap-2">
-                  <div className="text-3xl font-semibold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
+                  <div className="text-3xl font-semibold text-[var(--fg)] tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
                 </div>
-                <div className="text-[11px] text-white/45 mt-1">{profile.rating_count || 0} {profile.rating_count === 1 ? "review" : "reviews"}</div>
+                <div className="text-[11px] text-[var(--fg)]/45 mt-1">{profile.rating_count || 0} {profile.rating_count === 1 ? "review" : "reviews"}</div>
               </div>
             </div>
 
             {/* KYC Alert — state-aware (rejected / under review / not yet verified) */}
             {!profile.kyc_verified && (
-              <div className="rounded-[24px] border border-amber-500/20 bg-amber-500/5 p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+              <div className="rounded-[24px] border border-[var(--warn-line)] bg-[var(--warn-soft)] p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-amber-500/20 text-amber-500 rounded-xl shrink-0">
+                  <div className="p-3 bg-[var(--warn-soft)] text-[var(--warn)] rounded-xl shrink-0">
                     <ShieldAlert size={20} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-amber-400">
+                    <h3 className="text-sm font-bold text-[var(--warn)]">
                       {profile.kyc_status === "rejected"
                         ? "Verification failed"
                         : profile.kyc_status === "manual_review"
                           ? "Under review"
                           : "Verification pending"}
                     </h3>
-                    <p className="text-amber-400/60 text-xs mt-0.5">
+                    <p className="text-[var(--warn)]/60 text-xs mt-0.5">
                       {profile.kyc_status === "rejected"
                         ? (profile.kyc_rejection_reason || "Please re-upload a clear photo of your student ID.")
                         : profile.kyc_status === "manual_review"
@@ -981,7 +976,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 {profile.kyc_status !== "manual_review" && (
-                  <Link href="/verify-id" className="w-full sm:w-auto px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 text-amber-400 text-xs font-bold rounded-xl transition whitespace-nowrap text-center">
+                  <Link href="/verify-id" className="w-full sm:w-auto px-5 py-2.5 bg-[var(--warn-soft)] border border-[var(--warn-line)] hover:brightness-95 text-[var(--warn)] text-xs font-bold rounded-xl transition whitespace-nowrap text-center">
                     {profile.kyc_status === "rejected" ? "Re-upload ID" : "Verify Now"}
                   </Link>
                 )}
@@ -989,48 +984,48 @@ export default function ProfilePage() {
             )}
 
             {/* Worker Setup CTA */}
-            <div className="rounded-[32px] border border-white/5 bg-[var(--card)] p-6 md:p-8 flex flex-col gap-6 shadow-xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-[50px] pointer-events-none transition"></div>
+            <div className="rounded-[32px] border border-[var(--line)] bg-[var(--card)] p-6 md:p-8 flex flex-col gap-6 shadow-xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-[var(--chip)] rounded-full blur-[50px] pointer-events-none transition"></div>
               
               <div className="flex items-start gap-4 relative z-10">
-                <div className="p-3 bg-white/5 rounded-xl shrink-0 border border-white/5">
-                  <Briefcase size={20} className="text-white" />
+                <div className="p-3 bg-[var(--chip)] rounded-xl shrink-0 border border-[var(--line)]">
+                  <Briefcase size={20} className="text-[var(--fg)]" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Worker profile</h3>
-                  <p className="text-white/55 text-[13px] mt-1.5 leading-relaxed">Add specialized skills, portfolio links, and your resume to stand out to employers.</p>
+                  <h3 className="text-lg font-semibold text-[var(--fg)] tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Worker profile</h3>
+                  <p className="text-[var(--fg)]/55 text-[13px] mt-1.5 leading-relaxed">Add specialized skills, portfolio links, and your resume to stand out to employers.</p>
                 </div>
               </div>
               
-              <Link href="/profile/worker-setup" className="w-full py-3.5 bg-white/10 border border-white/10 text-white font-bold rounded-xl text-center hover:bg-white/20 active:scale-95 transition relative z-10 text-sm">
+              <Link href="/profile/worker-setup" className="w-full py-3.5 bg-[var(--chip-strong)] border border-[var(--line)] text-[var(--fg)] font-bold rounded-xl text-center hover:bg-[var(--chip-strong)] active:scale-95 transition relative z-10 text-sm">
                 {profile.skills && profile.skills.length > 0 ? "Edit Details" : "Setup Profile"}
               </Link>
             </div>
 
             {/* Refer & Earn */}
             {referralCode && (
-              <div className="rounded-[32px] border border-white/5 bg-[var(--card)] p-6 shadow-xl relative overflow-hidden group">
+              <div className="rounded-[32px] border border-[var(--line)] bg-[var(--card)] p-6 shadow-xl relative overflow-hidden group">
                 <div className="flex items-center gap-3 mb-4 relative z-10">
                   <div className="w-8 h-8 rounded-lg bg-[var(--brand-purple)]/10 flex items-center justify-center shrink-0 border border-[var(--brand-purple)]/20">
                     <Gift size={14} className="text-[var(--brand-purple-soft)]" />
                   </div>
-                  <h3 className="text-sm font-semibold text-white tracking-tight">Refer & earn</h3>
+                  <h3 className="text-sm font-semibold text-[var(--fg)] tracking-tight">Refer & earn</h3>
                 </div>
 
-                <p className="text-xs text-white/55 mb-5 leading-relaxed relative z-10">Share your code with friends. You both get 25 reward points when they join.</p>
+                <p className="text-xs text-[var(--fg)]/55 mb-5 leading-relaxed relative z-10">Share your code with friends. You both get 25 reward points when they join.</p>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3 relative z-10">
-                  <div className="flex-1 w-full flex items-center justify-between bg-black/20 border border-white/5 rounded-xl px-4 py-3">
-                    <span className="text-sm font-mono font-bold text-white tracking-[0.2em]">{referralCode}</span>
+                  <div className="flex-1 w-full flex items-center justify-between bg-[var(--chip)] border border-[var(--line)] rounded-xl px-4 py-3">
+                    <span className="text-sm font-mono font-bold text-[var(--fg)] tracking-[0.2em]">{referralCode}</span>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(referralCode);
                         setCodeCopied(true);
                         setTimeout(() => setCodeCopied(false), 2000);
                       }}
-                      className="p-1.5 rounded-md hover:bg-white/10 text-zinc-500 hover:text-white transition"
+                      className="p-1.5 rounded-md hover:bg-[var(--chip-strong)] text-[var(--fg-muted)] hover:text-[var(--fg)] transition"
                     >
-                      {codeCopied ? <CheckCircle2 size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                      {codeCopied ? <CheckCircle2 size={14} className="text-[var(--ok)]" /> : <Copy size={14} />}
                     </button>
                   </div>
                   <button
@@ -1044,7 +1039,7 @@ export default function ProfilePage() {
                         setTimeout(() => setCodeCopied(false), 2000);
                       }
                     }}
-                    className="w-full sm:w-auto px-6 py-3 bg-white/5 border border-white/5 text-white text-xs font-bold rounded-xl hover:bg-white/10 transition active:scale-95 whitespace-nowrap"
+                    className="w-full sm:w-auto px-6 py-3 bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-xs font-bold rounded-xl hover:bg-[var(--chip-strong)] transition active:scale-95 whitespace-nowrap"
                   >
                     Share
                   </button>
@@ -1056,7 +1051,7 @@ export default function ProfilePage() {
             <div className="rounded-[24px] border border-[#0088cc]/20 bg-[var(--card)] p-5 relative overflow-hidden shadow-xl">
               <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full">
                 <div className="flex-1 w-full text-center sm:text-left">
-                  <h3 className="text-sm font-bold text-white flex items-center justify-center sm:justify-start gap-2">
+                  <h3 className="text-sm font-bold text-[var(--fg)] flex items-center justify-center sm:justify-start gap-2">
                     <Send size={14} className="text-[#0088cc]" /> Telegram Sync
                   </h3>
                 </div>
