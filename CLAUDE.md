@@ -465,6 +465,42 @@ From README + handler code:
   [scripts/migrate-resumes-private.mjs](scripts/migrate-resumes-private.mjs) — run
   it **before** flipping a bucket like this, or every link breaks in between.
 
+- **`.env.local` reaches production, and OpenNext bakes it into the Worker.**
+  Next loads `.env.local` in **every** environment, including `next build`.
+  `@opennextjs/cloudflare` then writes everything Next loaded into
+  `.open-next/cloudflare/next-env.mjs` and `populateProcessEnv()` injects it
+  into the Worker's `process.env`. So `.env.local` is not a local file — it is
+  **production configuration and part of the deployed artifact**.
+  `MAINTENANCE_MODE=off` was set there so the signed-in pages could be worked on
+  while Supabase was 402. It travelled into the build and **lifted the hold page
+  the moment the Worker was deployed** — no diff said so, and `proxy.ts` looked
+  correct, because it *is* correct: it defaults the flag ON (`!== 'off'`)
+  specifically so a missing variable cannot expose a broken site. A default
+  cannot save you from a value set for the wrong environment.
+  Two rules follow. Dev-only overrides go in **`.env.development.local`**, which
+  is loaded only when `NODE_ENV=development`. Anything production depends on is
+  declared where you can see it — `vars` in [wrangler.jsonc](wrangler.jsonc) for
+  non-secrets, `wrangler secret put` for the rest.
+  Precedence is the one piece of good news: `populateProcessEnv()` applies
+  Cloudflare bindings **first** and only fills gaps from the baked values with
+  `??=`, so a Cloudflare var or secret always wins over `.env.local` and
+  rotating a secret genuinely takes effect. But the baked copies still **ship**:
+  the service-role key, `CRON_SECRET`, the Telegram and Gemini keys and the
+  VAPID private key all sit in plaintext inside the bundle, alongside whatever
+  is stale — two live **Cashfree** production keys were still riding along in a
+  repo whose gateway was deleted months ago. Keep `.env.local` to what is
+  actually read; a dead key there is a deployed key.
+
+- **`resolve.alias` and file tracing are different mechanisms.** Aliasing
+  `lib/devPreview` to `false` removes it from the module graph — `.open-next/worker.js`
+  has zero references and the dev-preview auth bypass is genuinely unreachable.
+  Tracing does not consult the alias: it read the same `require()` and OpenNext
+  copied the raw 17.7KB `.ts` into `.open-next/server-functions/default/lib/`
+  anyway. Unreachable, unexecutable, and still inside a bundle at **2982.89 KiB
+  gzipped against a 3 MB ceiling**. It takes `outputFileTracingExcludes` as
+  well. Grepping `.next/` is not enough — grep `.open-next/` too, since that is
+  what ships.
+
 ## Stale-doc warning
 Four tables were dropped on 2026-06-19 ([supabase/migrations/20260619_drop_unused_tables.sql](supabase/migrations/20260619_drop_unused_tables.sql)) — `vasooli_bounties`, `deliveries`, `payout_methods`, `chat_blocked_logs`. Older migrations and schema dumps still reference them. Delivery artifacts live on `gigs.delivery_link` / `delivery_files` + `messages`; payout UPI lives on `users.upi_id` and payouts are manual.
 
