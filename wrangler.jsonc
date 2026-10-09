@@ -7,6 +7,23 @@
 		"nodejs_compat",
 		"global_fetch_strictly_public"
 	],
+	// Production liveness, stated out loud rather than inherited.
+	//
+	// proxy.ts reads `process.env.MAINTENANCE_MODE !== 'off'`, defaulting the
+	// hold page ON so that a missing variable cannot expose a broken site. That
+	// default was correct and still got defeated: the value arrived from
+	// .env.local, which Next loads for production builds too and OpenNext bakes
+	// into the Worker — so a flag set for local development lifted the hold page
+	// in production on deploy, with nothing in the diff that said so.
+	//
+	// It belongs here instead. OpenNext's populateProcessEnv() applies
+	// Cloudflare bindings FIRST and only fills gaps from the baked .env with
+	// `??=`, so this is the authoritative value and the one place to change it.
+	// Set it to anything other than "off" to put the hold page back up; no
+	// rebuild is needed, because proxy.ts reads it at runtime.
+	"vars": {
+		"MAINTENANCE_MODE": "off"
+	},
 	"assets": {
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
