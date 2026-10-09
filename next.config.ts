@@ -18,6 +18,17 @@ const nextConfig: NextConfig = {
       './node_modules/onnxruntime-node/**',
       './node_modules/@xenova/**',
       './node_modules/babel-plugin-react-compiler/**',
+      // Resolution and tracing are different mechanisms, and excluding a module
+      // from one does not exclude it from the other. The resolve.alias below
+      // drops lib/devPreview from the module GRAPH, which is what keeps the
+      // auth bypass and the fixtures out of executed code — verified: zero
+      // references in .open-next/worker.js. But file tracing reads the same
+      // require(), so OpenNext copied the raw 17.7KB .ts into
+      // .open-next/server-functions/default/lib/ regardless: unreachable,
+      // unexecutable, and still inside the bundle we ship against a 3MB
+      // ceiling. An earlier commit message claimed the fixtures were gone from
+      // the build; this is the line that makes that true.
+      './lib/devPreview.ts',
     ],
   },
   // Security headers. None of these were being sent — not on Cloudflare and not

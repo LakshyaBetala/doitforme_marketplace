@@ -13,15 +13,23 @@ export async function POST(req: Request) {
   try {
     const { gigId } = await req.json();
 
-    if (!gigId) {
-      return NextResponse.json({ error: "Missing gigId" }, { status: 400 });
-    }
-
+    // Authenticate BEFORE validating the body.
+    //
+    // Answering an anonymous caller with a 400 that names the missing fields
+    // confirms the endpoint exists and tells a prober exactly what to send
+    // next; a 401 tells them only that they are not signed in. This is the
+    // same ordering bug /api/payments/verify-payment had, which
+    // tests/uat-readiness.spec.ts pins — it was pinned for one route, not as
+    // a rule, so five others kept doing it.
     // get session user
     const authSupabase = await supabaseServer();
     const { data: userData } = await authSupabase.auth.getUser();
     const user = userData?.user ?? null;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (!gigId) {
+      return NextResponse.json({ error: "Missing gigId" }, { status: 400 });
+    }
 
     // Authorize HERE, not in the RPC.
     //
