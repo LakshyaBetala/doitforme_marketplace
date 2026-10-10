@@ -4,8 +4,10 @@ import { supabaseServer } from "@/lib/supabaseServer";
 import {
   DOC_BUCKETS,
   ERASE_COLUMNS,
+  IN_FLIGHT_CHECKS,
+  type InFlightCounts,
   inFlightMessage,
-  moneyInFlight,
+  summarizeInFlight,
 } from "@/lib/accountErasure";
 
 /**
@@ -61,7 +63,19 @@ export async function POST(req: Request) {
     );
   }
 
-  const flight = await moneyInFlight(admin, user.id);
+  // The rule is shared; the five counts are run here with the client this route
+  // already holds. See the note on IN_FLIGHT_CHECKS for why it is not a
+  // function taking the client.
+  const counts: InFlightCounts = {};
+  for (const check of IN_FLIGHT_CHECKS) {
+    const { count } = await admin
+      .from(check.table)
+      .select("id", { count: "exact", head: true })
+      .eq(check.userColumn, user.id)
+      .eq(check.column, check.value);
+    counts[check.key] = count ?? 0;
+  }
+  const flight = summarizeInFlight(counts);
   if (flight.blocked) {
     return NextResponse.json(
       { error: inFlightMessage(flight), code: "MONEY_IN_FLIGHT", detail: flight },

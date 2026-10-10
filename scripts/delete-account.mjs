@@ -39,8 +39,9 @@ import { createClient } from "@supabase/supabase-js";
 import {
   DOC_BUCKETS,
   ERASE_COLUMNS,
+  IN_FLIGHT_CHECKS,
   inFlightMessage,
-  moneyInFlight,
+  summarizeInFlight,
 } from "../lib/accountErasure.ts";
 
 config({ path: ".env.local", quiet: true });
@@ -98,7 +99,16 @@ for (const email of emails) {
   // directly, not just the gig columns: a gig can sit at status 'assigned' while
   // its escrow row still reads HELD, which is the shape of the one payment that
   // has been stuck for over a month.
-  const flight = await moneyInFlight(supabase, user.id);
+  const counts = {};
+  for (const check of IN_FLIGHT_CHECKS) {
+    const { count } = await supabase
+      .from(check.table)
+      .select("id", { count: "exact", head: true })
+      .eq(check.userColumn, user.id)
+      .eq(check.column, check.value);
+    counts[check.key] = count ?? 0;
+  }
+  const flight = summarizeInFlight(counts);
   if (flight.blocked) {
     console.log(`  REFUSE ${email} — ${inFlightMessage(flight)}`);
     refused++;

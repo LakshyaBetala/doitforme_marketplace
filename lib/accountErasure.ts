@@ -95,32 +95,42 @@ export type InFlight = {
  * keying only off gigs would let that user erase themselves out of a live
  * escrow.
  */
-export async function moneyInFlight(
-  // The service-role client. Typed loosely on purpose: the route and the .mjs
-  // script construct it differently and neither benefits from a shared generic.
-  supabase: {
-    from: (t: string) => any;
-  },
-  userId: string
-): Promise<InFlight> {
-  const [posted, working, payouts, escrowPoster, escrowWorker] = await Promise.all([
-    supabase.from("gigs").select("id", { count: "exact", head: true })
-      .eq("poster_id", userId).eq("payment_status", "ESCROW_FUNDED"),
-    supabase.from("gigs").select("id", { count: "exact", head: true })
-      .eq("assigned_worker_id", userId).eq("payment_status", "ESCROW_FUNDED"),
-    supabase.from("payout_queue").select("id", { count: "exact", head: true })
-      .eq("worker_id", userId).eq("status", "PENDING"),
-    supabase.from("escrow").select("id", { count: "exact", head: true })
-      .eq("poster_id", userId).eq("status", "HELD"),
-    supabase.from("escrow").select("id", { count: "exact", head: true })
-      .eq("worker_id", userId).eq("status", "HELD"),
-  ]);
+/**
+ * What counts as money in flight, as data rather than as a function taking a
+ * client.
+ *
+ * The first version of this took the Supabase client so both callers could
+ * share one query. It typechecked for the .mjs script and failed for the route
+ * with TS2589, "type instantiation is excessively deep" — the generated
+ * database types are too large to match against a hand-written structural
+ * interface, and the honest alternatives were a cast or an `any`.
+ *
+ * The part that must never differ between an operator and a user is the RULE,
+ * not the plumbing: which tables, which column holds the user, which value
+ * means the money has not settled. That is what lives here. Each caller runs
+ * five counts with the client it already has, which is about six lines and
+ * needs no shared generic.
+ */
+export const IN_FLIGHT_CHECKS = [
+  { key: "postedFunded", table: "gigs", userColumn: "poster_id", column: "payment_status", value: "ESCROW_FUNDED" },
+  { key: "workingFunded", table: "gigs", userColumn: "assigned_worker_id", column: "payment_status", value: "ESCROW_FUNDED" },
+  { key: "pendingPayouts", table: "payout_queue", userColumn: "worker_id", column: "status", value: "PENDING" },
+  // Checked as well as the gig columns, not instead of them. A gig can sit at
+  // status 'assigned' while its escrow row still reads HELD — the shape of the
+  // ₹500 that has been stuck for 35 days — so keying off gigs alone would let
+  // someone erase themselves out of a live escrow.
+  { key: "heldEscrowPoster", table: "escrow", userColumn: "poster_id", column: "status", value: "HELD" },
+  { key: "heldEscrowWorker", table: "escrow", userColumn: "worker_id", column: "status", value: "HELD" },
+] as const;
 
-  const postedFunded = posted?.count ?? 0;
-  const workingFunded = working?.count ?? 0;
-  const pendingPayouts = payouts?.count ?? 0;
-  const heldEscrow = (escrowPoster?.count ?? 0) + (escrowWorker?.count ?? 0);
+export type InFlightCounts = Partial<Record<(typeof IN_FLIGHT_CHECKS)[number]["key"], number>>;
 
+/** Fold the five counts into the answer both callers act on. */
+export function summarizeInFlight(counts: InFlightCounts): InFlight {
+  const postedFunded = counts.postedFunded ?? 0;
+  const workingFunded = counts.workingFunded ?? 0;
+  const pendingPayouts = counts.pendingPayouts ?? 0;
+  const heldEscrow = (counts.heldEscrowPoster ?? 0) + (counts.heldEscrowWorker ?? 0);
   return {
     blocked: postedFunded + workingFunded + pendingPayouts + heldEscrow > 0,
     postedFunded,

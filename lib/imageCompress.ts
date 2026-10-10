@@ -42,6 +42,12 @@ const isCompressibleImage = (file: File): boolean =>
   /^image\/(jpeg|jpg|png|webp)$/i.test(file.type);
 
 /**
+ * Exported so lib/attachments.ts can tell "this will shrink" from "this is as
+ * big as it gets" — which is the whole basis of its size limits.
+ */
+export const isCompressible = isCompressibleImage;
+
+/**
  * Returns a compressed File, or the original when compression is not possible
  * or not worthwhile. Never throws.
  */

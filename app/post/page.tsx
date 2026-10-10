@@ -2,6 +2,7 @@
 
 import { toast } from "sonner";
 import { compressImage, COMPRESS_PRESETS } from "@/lib/imageCompress";
+import { attachmentRejection, uploadRejection } from "@/lib/attachments";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/no-unescaped-entities */
 
@@ -75,10 +76,24 @@ export default function PostGigWizard() {
       return;
     }
     const newFiles = Array.from(files).filter((f) => {
-      if (listingType === "HUSTLE") {
-        return f.type.startsWith("image/") || f.type === "application/pdf" || f.type.includes("word") || f.type.includes("document");
+      const allowed =
+        listingType === "HUSTLE"
+          ? f.type.startsWith("image/") ||
+            f.type === "application/pdf" ||
+            f.type.includes("word") ||
+            f.type.includes("document")
+          : f.type.startsWith("image/");
+      if (!allowed) return false;
+      // Documents are not compressible, so an oversize one has to be refused
+      // here — compressImage returns it untouched and it lands in storage at
+      // full size. A fifth of the storage quota is uncompressed coursework that
+      // arrived exactly this way, including a single 29 MB PDF.
+      const rejection = attachmentRejection(f);
+      if (rejection) {
+        toast.error(rejection);
+        return false;
       }
-      return f.type.startsWith("image/");
+      return true;
     });
     const newPreviews = newFiles.map(file => URL.createObjectURL(file));
     setImages(prev => [...prev, ...newFiles]);
@@ -178,6 +193,11 @@ export default function PostGigWizard() {
           images.map(async (raw) => {
             // Documents pass through untouched; photos are resized first.
             const file = await compressImage(raw, COMPRESS_PRESETS.attachment);
+            // compressImage fails open: when canvas cannot re-encode the file it
+            // returns the original untouched, so a photo can arrive here as big
+            // as it left the phone. This is the backstop that catches it.
+            const tooBig = uploadRejection(file);
+            if (tooBig) throw new Error(tooBig);
             const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
             const path = `${user.id}/${Date.now()}_${fileName}`;
             const { error: uploadError } = await supabase.storage.from("gig-images").upload(path, file, { cacheControl: "3600", upsert: false });
