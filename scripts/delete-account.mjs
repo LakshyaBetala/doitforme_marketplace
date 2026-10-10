@@ -1,7 +1,13 @@
 // Erase a user's personal data on request (DPDP Act 2023, right to erasure).
 //
-//   node scripts/delete-account.mjs a@b.com c@d.com        # dry run, shows the plan
-//   node scripts/delete-account.mjs a@b.com --apply        # actually does it
+//   npx tsx scripts/delete-account.mjs a@b.com c@d.com     # dry run, shows the plan
+//   npx tsx scripts/delete-account.mjs a@b.com --apply     # actually does it
+//
+// Run with tsx, not node: the rules below are imported from
+// lib/accountErasure.ts, which is TypeScript. That import is the point. The
+// same rules now serve the self-serve route at /api/account/delete, and a
+// second copy of "which columns identify a person" is exactly how the admin
+// whitelist ended up in eight files and the KYC prompt in two.
 //
 // WHY THIS IS NOT `DELETE FROM users`
 //
@@ -30,6 +36,12 @@
 
 import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import {
+  DOC_BUCKETS,
+  ERASE_COLUMNS,
+  inFlightMessage,
+  moneyInFlight,
+} from "../lib/accountErasure.ts";
 
 config({ path: ".env.local", quiet: true });
 
@@ -47,43 +59,9 @@ const supabase = createClient(
   { auth: { persistSession: false } }
 );
 
-// Every column on public.users that identifies a person. Anything not listed
-// here is either a counter, a timestamp, or a foreign key other rows depend on.
-const ERASE = {
-  email: null,
-  name: "Deleted user",
-  phone: null,
-  college: null,
-  avatar_url: null,
-  username: null,
-  display_name: null,
-  bio: null,
-  upi_id: null,
-  id_card_url: null,
-  resume_url: null,
-  telegram_chat_id: null,
-  experience: null,
-  year_of_study: null,
-  branch: null,
-  skills: [],
-  portfolio_links: [],
-  preferences: [],
-  referral_code: null,
-  kyc_status: "none",
-  kyc_verified: false,
-  kyc_institution: null,
-  kyc_rejection_reason: null,
-  kyc_confidence: null,
-  kyc_reviewed_at: null,
-  signup_source: null,
-  signup_source_detail: null,
-  signup_referrer: null,
-  signup_landing: null,
-};
-
-// Private buckets holding identity documents. Removing the storage.objects row
-// is not enough on its own — go through the storage API so the file itself goes.
-const DOC_BUCKETS = ["resumes", "kyc-ids", "verification-docs"];
+// The column list, the buckets and the money-in-flight rule all come from
+// lib/accountErasure.ts so this script and /api/account/delete cannot drift.
+const ERASE = ERASE_COLUMNS;
 
 async function purgeBucket(bucket, userId) {
   const { data: files, error } = await supabase.storage.from(bucket).list(userId, { limit: 1000 });
@@ -115,20 +93,14 @@ for (const email of emails) {
     continue;
   }
 
-  // Money in flight is a hard stop.
-  const [{ count: postedFunded }, { count: workingFunded }, { count: payouts }] = await Promise.all([
-    supabase.from("gigs").select("id", { count: "exact", head: true })
-      .eq("poster_id", user.id).eq("payment_status", "ESCROW_FUNDED"),
-    supabase.from("gigs").select("id", { count: "exact", head: true })
-      .eq("assigned_worker_id", user.id).eq("payment_status", "ESCROW_FUNDED"),
-    supabase.from("payout_queue").select("id", { count: "exact", head: true })
-      .eq("worker_id", user.id).eq("status", "PENDING"),
-  ]);
-
-  if ((postedFunded || 0) + (workingFunded || 0) + (payouts || 0) > 0) {
-    console.log(
-      `  REFUSE ${email} — money in flight (funded posted ${postedFunded}, funded working ${workingFunded}, pending payouts ${payouts}). Settle first.`
-    );
+  // Money in flight is a hard stop, and the rule is shared with the route so
+  // an operator and a user get the same answer. It also checks the escrow table
+  // directly, not just the gig columns: a gig can sit at status 'assigned' while
+  // its escrow row still reads HELD, which is the shape of the one payment that
+  // has been stuck for over a month.
+  const flight = await moneyInFlight(supabase, user.id);
+  if (flight.blocked) {
+    console.log(`  REFUSE ${email} — ${inFlightMessage(flight)}`);
     refused++;
     continue;
   }

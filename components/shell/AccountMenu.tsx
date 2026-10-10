@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
-import { ChevronUp, LogOut, UserCog, Wallet2 } from "lucide-react";
+import { ChevronUp, LogOut, Settings, UserCog, Wallet2 } from "lucide-react";
 import InstallAppButton from "@/components/InstallAppButton";
 import EnableNotificationsButton from "@/components/EnableNotificationsButton";
 
@@ -91,6 +91,15 @@ export default function AccountMenu({
           installed, or notifications already granted/unsupported. */}
       <InstallAppButton />
       <EnableNotificationsButton />
+
+      <Link
+        href="/settings/account"
+        onClick={() => setOpen(false)}
+        className="flex min-h-[44px] items-center gap-3 rounded-[9px] px-3 text-[13px] font-semibold text-[var(--w-ink)] hover:bg-[var(--chip)]"
+      >
+        <Settings size={16} className="text-[var(--w-muted)]" />
+        Account settings
+      </Link>
 
       <div className="my-1 h-px bg-[var(--w-line)]" />
 
