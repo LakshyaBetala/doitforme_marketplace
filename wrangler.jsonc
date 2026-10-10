@@ -22,7 +22,7 @@
 	// Set it to anything other than "off" to put the hold page back up; no
 	// rebuild is needed, because proxy.ts reads it at runtime.
 	"vars": {
-		"MAINTENANCE_MODE": "off"
+		"MAINTENANCE_MODE": "on"
 	},
 	"assets": {
 		"directory": ".open-next/assets",
