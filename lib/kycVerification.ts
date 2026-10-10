@@ -21,12 +21,50 @@ export interface KycResult {
   idType: string | null; // school | college | university | graduate | other
   confidence: number; // 0..1
   reason: string; // plain-language, shown to the student when rejected
+  /**
+   * Why this was NOT a real decision, when it was not one.
+   *
+   * null means the model actually looked at the image and said what it thought.
+   * Anything else means we failed open: the decision is manual_review because
+   * the service could not answer, not because the document was ambiguous.
+   *
+   * Without this the two are indistinguishable in the database, and they were.
+   * 348 of the 372 students sitting in manual_review had confidence exactly
+   * 0.00 and no reason recorded, which reads like 348 unclear documents and was
+   * actually a service that had stopped answering. A caller that needs to tell
+   * them apart - the backfill, which must stop rather than stamp hundreds of
+   * students with a non-answer - now can.
+   */
+  failure: KycFailure | null;
 }
+
+export type KycFailure = "quota" | "network" | "unreadable" | "unconfigured";
 
 // Approve at/above APPROVE; treat below REJECT as "unsure" -> manual review.
 export const KYC_APPROVE_THRESHOLD = 0.85;
 export const KYC_REJECT_THRESHOLD = 0.5;
-const GEMINI_MODEL = "gemini-2.5-flash";
+/**
+ * Tried in order, falling through on a 429.
+ *
+ * The free tier is metered PER MODEL PER DAY and the ceiling is far lower than
+ * it looks. The live quota for gemini-2.5-flash, read off the 429 itself, is
+ *
+ *   GenerateRequestsPerDayPerProjectPerModel-FreeTier = 20
+ *
+ * Twenty verifications a day. Every upload past the twentieth failed open to
+ * manual_review, and because nothing reviews that queue the student simply
+ * waited - which is the real reason 348 of them are parked there with
+ * confidence 0, rather than the cold-start timeout diagnosed below. That one
+ * was real too and the retry fixed it; this is the other half.
+ *
+ * Because the quota id is PerProjectPerModel, a second model carries its own
+ * twenty. Falling through does not make the limit generous, but it stops a
+ * single model's daily cap from being a cliff for everyone who uploads after
+ * it. The real fix is billing on the Google project, where this costs a
+ * fraction of a paisa per ID. Until then order matters: the stronger model
+ * reads first and the lighter one is the safety net, not the default.
+ */
+export const KYC_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"] as const;
 
 interface VerifyOpts {
   declaredName?: string | null;
@@ -40,7 +78,10 @@ export async function verifyStudentIdImage(
 ): Promise<KycResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return manualReview("Verification service not configured — a human will review your ID shortly.");
+    return manualReview(
+      "Verification service not configured — a human will review your ID shortly.",
+      "unconfigured"
+    );
   }
 
   const prompt = buildKycPrompt(opts);
@@ -73,26 +114,32 @@ export async function verifyStudentIdImage(
     // case into a normal result rather than a queue entry.
     let res: Response | null = null;
     let lastStatus = 0;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body,
-            signal: AbortSignal.timeout(60_000),
-          }
-        );
-      } catch (e) {
-        console.error(`[kyc] attempt ${attempt} threw:`, (e as Error)?.name || e);
-        res = null;
+    // Each model gets the two timeout attempts; a 429 moves to the NEXT model
+    // instead of ending the verification, because the daily cap is per-model
+    // and the next one still has its own.
+    outer: for (const model of KYC_MODELS) {
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body,
+              signal: AbortSignal.timeout(60_000),
+            }
+          );
+        } catch (e) {
+          console.error(`[kyc] ${model} attempt ${attempt} threw:`, (e as Error)?.name || e);
+          res = null;
+        }
+        if (res?.ok) break outer;
+        lastStatus = res?.status ?? 0;
+        // A quota rejection will not pass on a retry — don't burn the second
+        // attempt on it, go and try the next model.
+        if (lastStatus === 429) break;
+        if (attempt === 1) await new Promise((r) => setTimeout(r, 1500));
       }
-      if (res?.ok) break;
-      lastStatus = res?.status ?? 0;
-      // A quota rejection will not pass on a retry — don't burn the second one.
-      if (lastStatus === 429) break;
-      if (attempt === 1) await new Promise((r) => setTimeout(r, 1500));
     }
 
     if (!res || !res.ok) {
@@ -104,7 +151,8 @@ export async function verifyStudentIdImage(
       return manualReview(
         lastStatus === 429
           ? "Our verification service is at its daily limit — your ID is queued and will be checked shortly."
-          : "We couldn't auto-verify your ID — it's queued for a quick manual review."
+          : "We couldn't auto-verify your ID — it's queued for a quick manual review.",
+        lastStatus === 429 ? "quota" : "network"
       );
     }
 
@@ -112,7 +160,10 @@ export async function verifyStudentIdImage(
     const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     const parsed = safeParse(text);
     if (!parsed) {
-      return manualReview("We couldn't read the verification result — it's queued for a quick manual review.");
+      return manualReview(
+        "We couldn't read the verification result — it's queued for a quick manual review.",
+        "unreadable"
+      );
     }
 
     const confidence = clamp01(Number(parsed.confidence));
@@ -138,10 +189,11 @@ export async function verifyStudentIdImage(
       idType: nullable(parsed.id_type),
       confidence,
       reason: aiReason || defaultReason(decision),
+      failure: null,
     };
   } catch (e) {
     console.error("[kyc] verify threw:", e);
-    return manualReview("Verification timed out — your ID is queued for a quick manual review.");
+    return manualReview("Verification timed out — your ID is queued for a quick manual review.", "network");
   }
 }
 
@@ -182,7 +234,7 @@ export function buildKycPrompt(opts: VerifyOpts): string {
     .join("\n");
 }
 
-function manualReview(reason: string): KycResult {
+function manualReview(reason: string, failure: KycFailure): KycResult {
   return {
     decision: "manual_review",
     isStudentId: false,
@@ -191,6 +243,7 @@ function manualReview(reason: string): KycResult {
     idType: null,
     confidence: 0,
     reason,
+    failure,
   };
 }
 
