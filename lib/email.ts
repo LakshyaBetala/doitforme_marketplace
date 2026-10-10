@@ -38,6 +38,7 @@ type EmailKind =
   | "changes_requested"
   | "poster_nudge"
   | "hire_followup"
+  | "delivery_overdue"
   | "application_closed"
   | "company_approved"
   | "company_pro_activated"
@@ -211,6 +212,45 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p class="muted">Keep everything here — the money is only released once the work is approved.</p>
         `,
       };
+
+    // Deliberately NOT hire_followup, which says "there haven't been any
+    // messages since". That is a different situation and the wrong thing to
+    // tell someone who has been talking to their counterparty for a month. This
+    // one is about the money having no exit: nothing was delivered, so
+    // auto-release cannot fire, and it will sit there until a human acts.
+    case "delivery_overdue": {
+      const days = Number(args.extra?.days ?? 0);
+      // extra is Record<string, string | number | null | undefined>, so the
+      // audience travels as a flag rather than a boolean.
+      const forWorker = args.extra?.forWorker === "1";
+      return {
+        subject: forWorker
+          ? `Still waiting on your work — ${args.gigTitle || "your gig"}`
+          : `Nothing delivered yet — ${args.gigTitle || "your gig"}`,
+        preheader: forWorker
+          ? "The payment is held and cannot reach you until you submit."
+          : "Your payment is still held. You can ask for it, or raise a dispute.",
+        bodyHtml: forWorker
+          ? `
+          <p>Hi ${name},</p>
+          <p><strong>${title}</strong> was funded ${days} days ago and nothing has been
+             submitted yet. The money is sitting in escrow and it cannot reach you
+             until you deliver — there is no timer that pays it out on its own.</p>
+          <p><a href="${SITE}/gig/${args.gigId}" class="cta">Submit your work</a></p>
+          <p class="muted">If you can no longer do it, say so in the chat so the poster
+             can get their money back. That is a much better outcome than silence.</p>
+        `
+          : `
+          <p>Hi ${name},</p>
+          <p>You paid for <strong>${title}</strong> ${days} days ago and nothing has been
+             delivered. Your money is still held in escrow — it has not been paid out,
+             and it will not move until the work is submitted.</p>
+          <p><a href="${SITE}/gig/${args.gigId}" class="cta">Open the gig</a></p>
+          <p class="muted">Chase it in the chat, or raise a dispute from the gig page and
+             we will review it and return your money if the work never arrives.</p>
+        `,
+      };
+    }
 
     case "application_rejected":
       return {
