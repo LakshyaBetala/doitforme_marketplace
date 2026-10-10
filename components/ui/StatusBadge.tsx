@@ -56,8 +56,21 @@ export function statusToTone(status: string | null | undefined): Tone {
   // needs attention
   if (["pending", "submitted", "awaiting_release", "applied"].includes(s)) return "warning";
   // failure / terminated
-  if (["cancelled", "rejected", "refunded", "failed", "disputed", "open", "opted_out", "expired"].includes(s)) return "danger";
-  // neutral default — draft, signed_up, anything unrecognized
+  if (["cancelled", "rejected", "refunded", "failed", "disputed", "expired"].includes(s)) return "danger";
+  // Resting states, deliberately quiet.
+  //
+  // `open` used to be in the danger list, so every healthy listing accepting
+  // applications wore a RED pill — on a board where open is the overwhelming
+  // majority (995 of 1,254 gigs), which made the feed read as broken at a
+  // glance. It is not an error and it is not an achievement; it is the state a
+  // listing rests in. Neutral is also the right visual WEIGHT: a coloured pill
+  // repeated on every card is noise, and the pills that matter — delivered,
+  // disputed, completed — stop standing out.
+  //
+  // `opted_out` is a choice someone made about the referral programme, not a
+  // failure, and it was red for the same reason.
+  if (["open", "opted_out", "draft"].includes(s)) return "neutral";
+  // neutral default — signed_up, anything unrecognized
   return "neutral";
 }
 

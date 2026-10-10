@@ -171,7 +171,25 @@ export default function MobileNav({
                 active ? "text-[var(--w-violet)]" : "text-[var(--w-muted)]",
               ].join(" ")}
             >
-              <Icon size={20} strokeWidth={active ? 2.4 : 2} />
+              {/*
+                The rail and the sheet both mark the current page with a filled
+                pill; this bar marked it with colour alone, so the same idea was
+                said two different ways depending on which navigation you were
+                looking at.
+                The COLOUR has to differ — the rail is grape and the orange fill
+                it uses reads 1.94:1 on this cream bar, which is unusable — but
+                the language does not. Violet on violet-soft is 6.13:1.
+                The pill sits inside the link so the 60px tap target is
+                untouched.
+              */}
+              <span
+                className={[
+                  "flex items-center justify-center rounded-full px-3.5 py-0.5 transition-colors",
+                  active ? "bg-[var(--w-violet-soft)]" : "bg-transparent",
+                ].join(" ")}
+              >
+                <Icon size={20} strokeWidth={active ? 2.4 : 2} />
+              </span>
               {item.label}
             </Link>
           );
