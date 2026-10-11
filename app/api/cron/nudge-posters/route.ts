@@ -82,6 +82,27 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized cron invocation" }, { status: 401 });
   }
 
+  // EVERY STAGE IN HERE TELLS SOMEONE TO COME AND LOOK AT THE SITE.
+  //
+  // The cron routes stay reachable while the hold page is up, and for
+  // auto-release that is the point: escrow must keep settling whatever the
+  // front door says. This job is the opposite. It nudges, expires listings and
+  // emails applicants, and every message it sends links to a page that is
+  // currently answering 503. Sending "your application was closed, here is the
+  // listing" to hundreds of students who then hit a hold page is worse than
+  // sending nothing, and it burns the day's mail allowance doing it.
+  //
+  // It defers rather than skips: nothing here is time-critical, the ages only
+  // grow, and the first run after the hold page lifts picks up the whole
+  // backlog in age order.
+  if (process.env.MAINTENANCE_MODE !== "off") {
+    return NextResponse.json({
+      success: true,
+      skipped: "maintenance",
+      note: "Hold page is up; every notification this job sends would link to a 503.",
+    });
+  }
+
   const now = Date.now();
   const nudgeCutoff = new Date(now - NUDGE_AFTER_HOURS * 3600e3).toISOString();
   const expireCutoff = new Date(now - EXPIRE_AFTER_DAYS * 86400e3).toISOString();
@@ -89,13 +110,46 @@ export async function GET(req: Request) {
   const result = { nudged: 0, expired: 0, applicantsClosed: 0, errors: [] as string[] };
 
   try {
-    // Open gigs that have at least one still-pending application. One query,
-    // then group in memory — the volumes here are small (tens of gigs).
-    const { data: gigs, error: gigErr } = await supabase
-      .from("gigs")
-      .select("id, title, poster_id, listing_type, poster_nudged_at, applications(id, worker_id, status, created_at)")
-      .eq("status", "open")
-      .limit(200);
+    // DRIVEN FROM THE APPLICATIONS, NOT FROM A SLICE OF GIGS.
+    //
+    // This used to ask for `gigs?status=eq.open&limit=200` with no ORDER BY, and
+    // the comment said "the volumes here are small (tens of gigs)". They are
+    // not: there are 983 open gigs and 463 of them hold a pending application.
+    // An unordered LIMIT returns whatever the plan produces, and for a table
+    // that is not changing underneath it that is the SAME 200 rows every run —
+    // so the remainder was not merely delayed, it was unreachable on every run
+    // forever. Measured on the live database:
+    //
+    //   463 gigs hold a pending application
+    //   147 of them fell inside the 200 the cron could see
+    //   316 never reached, stranding 849 applications
+    //
+    // Which makes the file's own opening claim false. It was written because
+    // "silence — not rejection — is what was killing the applicant side", and it
+    // was reaching under a third of the gigs causing that silence. ~53 of its
+    // 200 slots were also spent on gigs with no applications at all.
+    //
+    // Driving from `applications` fixes both: the stale thing is the
+    // application, so order by ITS age, oldest first. Nothing can be starved,
+    // because anything not handled this run is still the oldest next run.
+    const { data: staleApps, error: staleErr } = await supabase
+      .from("applications")
+      .select("gig_id")
+      .in("status", ["pending", "applied"])
+      .order("created_at", { ascending: true })
+      .limit(600); // under PostgREST's 1,000-row ceiling, which silently truncates
+
+    if (staleErr) return NextResponse.json({ error: staleErr.message }, { status: 500 });
+
+    const candidateIds = [...new Set((staleApps || []).map((a) => a.gig_id))].slice(0, 200);
+
+    const { data: gigs, error: gigErr } = candidateIds.length
+      ? await supabase
+          .from("gigs")
+          .select("id, title, poster_id, listing_type, poster_nudged_at, applications(id, worker_id, status, created_at)")
+          .eq("status", "open")
+          .in("id", candidateIds)
+      : { data: [], error: null };
 
     if (gigErr) return NextResponse.json({ error: gigErr.message }, { status: 500 });
 
