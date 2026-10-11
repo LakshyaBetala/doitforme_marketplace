@@ -316,9 +316,31 @@ button,
 
 /* Stop the page rubber-banding and Android pull-to-refresh firing when a scroll
    reaches the top. This is an app with its own scroll containers and a drawer
-   the user drags; a refresh gesture in the middle of that is a lost form. */
-html,
-body {
+   the user drags; a refresh gesture in the middle of that is a lost form.
+
+   ON html ONLY. It was on html AND body, and that combination stopped the
+   mouse wheel and the trackpad scrolling ANY page on the site:
+
+     - `overflow-x: hidden` higher up in this file applies to html and body.
+       Per spec, when one axis is not `visible` the other computes to `auto`,
+       so BODY silently became a scroll container (computed `overflow: hidden
+       auto`).
+     - Body's content box is exactly as tall as its content, so body itself has
+       nothing to scroll.
+     - A wheel over the page therefore targets body, body cannot move, and
+       `overscroll-behavior-y: none` on body forbids it from handing the scroll
+       up to html — which is the element that actually scrolls.
+
+   The wheel was being swallowed by an element with nowhere to go. Keyboard and
+   window.scrollTo() kept working, because those address the scrolling element
+   directly instead of chaining, which is why the page looked fine in every
+   check that did not physically scroll it.
+
+   Confirmed on the live site by flipping one property at a time:
+   `body { overscroll-behavior-y: auto }` restored scrolling; changing body's
+   overflow-x or touch-action did nothing. html alone still blocks
+   pull-to-refresh, which is the whole point of the rule. */
+html {
   overscroll-behavior-y: none;
 }
 

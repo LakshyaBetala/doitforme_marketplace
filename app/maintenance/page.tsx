@@ -267,8 +267,8 @@ export default function MaintenancePage() {
                               proof, right where it is made. */}
                           <span className="mt-0.5 block text-[12.5px] leading-[1.6] text-white/55">
                             The students we put in front of real companies first. Invite-only, and
-                            we are still building the selection properly — this puts you on the
-                            list we invite from, it is not an application yet.
+                            we are still building the selection properly. This puts you on the
+                            list we invite from, not an application yet.
                           </span>
                           {icWaiting > 0 && (
                             <span className="mt-1.5 block text-[12px] font-semibold text-[#C9A9FF]">
@@ -282,7 +282,7 @@ export default function MaintenancePage() {
                         <fieldset className="mt-3.5 border-t border-white/[0.12] pt-3.5">
                           <legend className="sr-only">Which side interests you</legend>
                           <p className="text-[12px] font-medium text-white/55">
-                            Which side interests you? Optional — &ldquo;not sure&rdquo; is a real
+                            Which side interests you? Optional. &ldquo;Not sure&rdquo; is a real
                             answer.
                           </p>
                           <div className="mt-2.5 flex flex-wrap gap-2">
@@ -409,7 +409,7 @@ export default function MaintenancePage() {
                     loudest colour on the page, competing with the form for
                     attention while saying things the opt-in now says itself. */}
                 <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/70">
-                  Two sides to start with — building the work, and bringing it in — and more as this
+                  Two sides to start with: building the work, and bringing it in. More as this
                   grows. Tick{" "}
                   <strong className="font-semibold text-white">
                     &ldquo;Put me forward for the Inner Circle&rdquo;
@@ -445,7 +445,7 @@ export default function MaintenancePage() {
 
         <footer className="mt-16 border-t border-white/[0.08] pt-7 text-[13px] leading-[1.7] text-white/40">
           <p>
-            Already have an account? It&apos;s untouched — sign in as normal when we&apos;re back.
+            Already have an account? It&apos;s untouched. Sign in as normal when we&apos;re back.
           </p>
           <p className="mt-1">
             Anything urgent:{" "}

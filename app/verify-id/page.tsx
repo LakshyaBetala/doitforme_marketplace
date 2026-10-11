@@ -55,8 +55,19 @@ export default function VerifyIDPage() {
 
   const handleFile = (selected: File | null) => {
     if (!selected) return;
-    if (!selected.type.startsWith("image/")) {
-      setError("Please upload an image file (JPG/PNG)");
+    // Backstop for the desktop file picker, where the accept list is a filter
+    // and not a guarantee — you can still choose "All files". HEIC is named
+    // explicitly because it is the one a phone will hand over by accident, and
+    // "please upload an image" would be baffling when the thing you picked IS
+    // a photo.
+    if (/heic|heif/i.test(selected.type) || /\.(heic|heif)$/i.test(selected.name)) {
+      setError(
+        "That photo is in Apple's HEIC format, which we can't read. Open it in Photos and share or export it as JPEG, or set Camera → Formats to \"Most Compatible\" and take it again."
+      );
+      return;
+    }
+    if (!/^image\/(jpeg|jpg|png|webp)$/i.test(selected.type)) {
+      setError("Please upload a JPG, PNG or WebP image.");
       return;
     }
     if (selected.size > 5 * 1024 * 1024) { 
@@ -257,7 +268,18 @@ export default function VerifyIDPage() {
             <input 
               ref={fileInputRef}
               type="file" 
-              accept="image/*" 
+              /*
+                Explicit types rather than image/*, because of HEIC.
+                iPhones shoot HEIC by default. With accept="image/*" iOS hands
+                over the raw .heic; Chrome cannot render it for the preview, and
+                the verifier is sent a format the pipeline does not reliably
+                handle. Every HEIC upload in the database — 5 of 5 — is sitting
+                in manual_review.
+                Naming the formats is the fix rather than a warning: iOS
+                CONVERTS to JPEG automatically when the accept list excludes
+                HEIC, so the student does nothing differently and it just works.
+              */
+              accept="image/jpeg,image/png,image/webp" 
               className="hidden" 
               onChange={(e) => handleFile(e.target.files?.[0] || null)}
             />
