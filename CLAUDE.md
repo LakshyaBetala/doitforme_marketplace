@@ -264,7 +264,21 @@ recognising at a glance.
 
 ## Required environment variables
 From README + handler code:
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_WEBHOOK_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), **one** of `BREVO_API_KEY` / `ZEPTOMAIL_TOKEN` / `RESEND_API_KEY` (transactional email — none set = email no-ops; optional `EMAIL_PROVIDER` pins the choice), `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_WEBHOOK_SECRET`, `CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), **one** of `BREVO_API_KEY` / `ZEPTOMAIL_TOKEN` / `RESEND_API_KEY` (transactional email — none set = email no-ops; optional `EMAIL_PROVIDER` pins the choice), `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
+
+Three entries were listed here and are **not read by anything**: `ADMIN_SECRET`
+and `VAPID_PUBLIC_KEY` have zero `process.env` references (the push key is
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, because the browser needs it), and
+`NEXT_PUBLIC_SITE_URL` is read in six places but every one falls back to a
+hardcoded `https://www.doitforme.in`, so leaving it unset changes nothing.
+`lib/email.ts` hardcodes its own `SITE`. Keeping dead names on a required list
+is not harmless: this is the list someone copies into a new environment, and
+`.env.local` IS production configuration (see the trap below), so a dead name
+there becomes a deployed secret.
+
+`MAINTENANCE_MODE` is **not** in this list on purpose. It is declared in
+[wrangler.jsonc](wrangler.jsonc) under `vars`, where it is visible in a diff,
+and `proxy.ts` defaults it ON so a missing value cannot expose a broken site.
 
 ## Traps that have already bitten (do not re-learn these)
 
@@ -500,6 +514,88 @@ From README + handler code:
   gzipped against a 3 MB ceiling**. It takes `outputFileTracingExcludes` as
   well. Grepping `.next/` is not enough — grep `.open-next/` too, since that is
   what ships.
+
+- **An unordered `LIMIT` is a permanent filter, not a page.** The
+  application-nudge cron asked for `gigs?status=eq.open&limit=200` with no
+  `ORDER BY`, under a comment reading "the volumes here are small (tens of
+  gigs)". There were **983** open gigs, **463** of them holding a pending
+  application. An unordered LIMIT returns whatever the plan produces, and
+  against a table that is not changing underneath it that is the *same* 200 rows
+  every run — so **316 gigs and 849 applications were unreachable on every run,
+  forever**, and ~53 of the 200 slots went to gigs with no applications at all.
+  The job written to fix the application black hole had one inside it, and it
+  reported success every day. The fix is to drive from the thing that is
+  actually stale — the application — ordered by its own age, so nothing can be
+  starved. If you write a `.limit()`, either order it or justify in a comment
+  why an arbitrary subset is acceptable.
+  Related: **PostgREST silently truncates at 1,000 rows.** Asking for
+  `limit=2000` returns 1,000 with no error and no warning, which is how the
+  first measurement of this bug undercounted it, and how 97% of storage files
+  once looked orphaned. Count in SQL, not over REST.
+
+- **Gemini's free tier is 20 requests per model per DAY.** Not per minute, and
+  far below what the KYC auto-approve was built on. Read straight off the 429:
+  `GenerateRequestsPerDayPerProjectPerModel-FreeTier = 20`, against 2,065 new
+  users a month. Every upload past the twentieth each day failed open to
+  `manual_review`, and since nothing reviews that queue the student simply
+  waited — which is why **348 of the 372** people parked there sat at confidence
+  exactly `0.00`. The quota id ends in `PerProjectPerModel`, so a second model
+  carries its own twenty: `KYC_MODELS` in
+  [lib/kycVerification.ts](lib/kycVerification.ts) is an ordered cascade that
+  falls through on a 429. Note that `gemini-2.5-flash-lite` is **measurably more
+  lenient** — it approved an entrance-exam score card that `gemini-2.5-flash`
+  had rejected minutes earlier — so it is a safety net, not a default. The real
+  fix is billing on the Google project.
+  **A fail-open must be distinguishable from a decision.** `KycResult.failure`
+  exists because a service that could not answer and a document that was
+  genuinely unclear were being written to the database identically, which is
+  what made a dead service look like 348 ambiguous IDs.
+
+- **Nothing times out a funded gig that is never delivered.**
+  `cron/auto-release` only scans `status='DELIVERED'`, so a gig that was paid
+  for and never submitted sits at `status='assigned'` /
+  `payment_status='ESCROW_FUNDED'` indefinitely, and the only exit is a dispute
+  **only the poster can open**. A nudge that looks like it covers this does not:
+  it skips the gig the moment one message exists after the money landed
+  (`if ((recentMsgs || 0) > 0) continue;`), so it only ever reaches the pair who
+  never started. Live, **100%** of funded-undelivered gigs had such a message,
+  so it was disabled for every one — including ₹500 held 35 days between a real
+  company and a real student who had exchanged 20 messages and stopped. STAGE 4
+  of [cron/nudge-posters](app/api/cron/nudge-posters/route.ts) keys off **age
+  alone**, because talking is not delivering, and escalates to an admin at 14
+  days. Its escalation deliberately reads **no new env var** — the first version
+  guarded on a `TELEGRAM_ADMIN_CHAT_ID` that is set nowhere in this project,
+  which would have made it the silent no-op it exists to replace.
+
+- **`kyc_verified` is a cache of `kyc_status = 'approved'`, and it had drifted.**
+  The boolean is what the product reads — `gig/apply`, the `COMPANY_TASK` gate,
+  the profile tick, the public `/u` page, the OG share card — while
+  `kyc_status` drives the admin queue. Three users held a verified tick on an
+  application that had been refused or never decided. Both paths that matter set
+  the pair in one UPDATE; the hole was `/api/auth/create-user`, the profile
+  upsert, which preserved the flag by **reading it and writing it back** — a lost
+  update, so a student approved between that SELECT and the UPSERT lost it
+  again. An upsert updates only the columns it names, so the fix was to stop
+  naming it. Now enforced by a CHECK
+  ([20261011_kyc_verified_cannot_drift.sql](supabase/migrations/20261011_kyc_verified_cannot_drift.sql)),
+  written as `coalesce(kyc_verified,false) = (kyc_status = 'approved')` because
+  the column is nullable and **a CHECK that evaluates to NULL passes** — a bare
+  equality would have let a NULL masquerading as approved walk through the
+  constraint meant to stop it.
+
+- **Attachments that cannot be compressed had no size limit.**
+  [lib/imageCompress.ts](lib/imageCompress.ts) only shrinks images and returns
+  everything else untouched, so documents arrived at full size: `gig-images`
+  holds 310 MB of which **145 MB is not images** (52 PDFs, 15 Word documents, 8
+  PowerPoints), ten files over 5 MB accounting for 111 MB, the largest a single
+  **29 MB PDF**. About a fifth of the whole storage quota is uncompressed
+  coursework nobody decided to allow — it was simply never refused.
+  `/company/task` carried the only check in the product, a local 10 MB
+  `find()`; `/post` and `/company/post` had none. The limits now live in
+  [lib/attachments.ts](lib/attachments.ts), which already owned the accept list
+  and the image/document split: 5 MB for documents, refused at the picker, and 8
+  MB for images checked **after** compression, because compressImage fails open
+  and returns the original when canvas cannot re-encode.
 
 ## Stale-doc warning
 Four tables were dropped on 2026-06-19 ([supabase/migrations/20260619_drop_unused_tables.sql](supabase/migrations/20260619_drop_unused_tables.sql)) — `vasooli_bounties`, `deliveries`, `payout_methods`, `chat_blocked_logs`. Older migrations and schema dumps still reference them. Delivery artifacts live on `gigs.delivery_link` / `delivery_files` + `messages`; payout UPI lives on `users.upi_id` and payouts are manual.
