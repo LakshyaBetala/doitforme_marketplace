@@ -31,11 +31,19 @@ export default function MaintenancePage() {
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
   const [waiting, setWaiting] = useState<number | null>(null);
+  const [icWaiting, setIcWaiting] = useState(0);
+  const [innerCircle, setInnerCircle] = useState(false);
+  // "" means interested with no preference, which is a real answer and is
+  // stored as NULL rather than being forced into one of the two roles.
+  const [icRole, setIcRole] = useState("");
 
   useEffect(() => {
     fetch("/api/waitlist")
       .then((r) => r.json())
-      .then((d) => typeof d.count === "number" && d.count > 0 && setWaiting(d.count))
+      .then((d) => {
+        if (typeof d.count === "number" && d.count > 0) setWaiting(d.count);
+        if (typeof d.innerCircle === "number") setIcWaiting(d.innerCircle);
+      })
       .catch(() => {});
   }, []);
 
@@ -51,7 +59,12 @@ export default function MaintenancePage() {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, intent }),
+        body: JSON.stringify({
+          ...form,
+          intent,
+          innerCircle,
+          innerCircleRole: icRole || null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -223,6 +236,70 @@ export default function MaintenancePage() {
                     />
                   </div>
 
+                  {/* Inner Circle interest.
+                      The panel on the right describes the tier and says "this
+                      list is where the invitations come from", then offered no
+                      way to put your hand up — a promise the page could not
+                      keep, and we learned nothing about who wants it.
+                      It lives inside this form on purpose: one email, one
+                      submit, no second piece of state that can disagree with
+                      the first. Students only — a company is not a candidate. */}
+                  {intent === "student" && (
+                    <div className="mt-4 rounded-lg border border-[#8825F5]/35 bg-[#8825F5]/[0.07] p-4">
+                      <label className="flex cursor-pointer items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={innerCircle}
+                          onChange={(e) => setInnerCircle(e.target.checked)}
+                          className="mt-0.5 h-[18px] w-[18px] shrink-0 accent-[#8825F5]"
+                        />
+                        <span className="min-w-0">
+                          <span className="block text-[13.5px] font-semibold text-white">
+                            Put me forward for the Inner Circle
+                          </span>
+                          <span className="mt-0.5 block text-[12.5px] leading-[1.6] text-white/55">
+                            Invite-only, and we are still building the selection properly. This puts
+                            you on the list we invite from — it is not an application yet.
+                          </span>
+                        </span>
+                      </label>
+
+                      {innerCircle && (
+                        <fieldset className="mt-3.5 border-t border-white/[0.12] pt-3.5">
+                          <legend className="sr-only">Which side interests you</legend>
+                          <p className="text-[12px] font-medium text-white/55">
+                            Which side interests you? Optional — &ldquo;not sure&rdquo; is a real
+                            answer.
+                          </p>
+                          <div className="mt-2.5 flex flex-wrap gap-2">
+                            {[
+                              { value: "TECH", label: "Build the work" },
+                              { value: "OUTREACH", label: "Bring the work in" },
+                              { value: "", label: "Not sure yet" },
+                            ].map((o) => {
+                              const on = icRole === o.value;
+                              return (
+                                <button
+                                  key={o.label}
+                                  type="button"
+                                  onClick={() => setIcRole(o.value)}
+                                  aria-pressed={on}
+                                  className={`min-h-[40px] rounded-lg border px-3.5 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C9A9FF] ${
+                                    on
+                                      ? "border-[#C9A9FF] bg-[#8825F5] text-white"
+                                      : "border-white/[0.14] text-white/70 hover:bg-white/[0.06]"
+                                  }`}
+                                >
+                                  {o.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </fieldset>
+                      )}
+                    </div>
+                  )}
+
                   {message && (
                     <p role="alert" className="mt-3 text-[13px] text-red-400">
                       {message}
@@ -237,11 +314,41 @@ export default function MaintenancePage() {
                     {status === "saving" ? "Saving" : "Save my spot"}
                   </button>
 
-                  <p className="mt-3 text-[12px] leading-[1.6] text-white/35">
+                  {/* The live count, given its own line and readable contrast.
+                      It used to be appended to the disclaimer below at
+                      white/35, which is 3.13:1 on this background — a real
+                      number about real people, failing AA at 12px and reading
+                      as fine print. white/62 is 7.71:1. */}
+                  {waiting !== null && (
+                    <p
+                      aria-live="polite"
+                      className="mt-4 flex items-center gap-2 text-[13px] font-medium text-white/[0.62]"
+                    >
+                      <span
+                        aria-hidden
+                        className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#C9A9FF]"
+                      />
+                      <span>
+                        <strong className="font-semibold text-white">
+                          {waiting.toLocaleString("en-IN")}
+                        </strong>{" "}
+                        {waiting === 1 ? "person is" : "people are"} already waiting
+                        {icWaiting > 0 && (
+                          <>
+                            {" "}
+                            &middot;{" "}
+                            <strong className="font-semibold text-white">
+                              {icWaiting.toLocaleString("en-IN")}
+                            </strong>{" "}
+                            for the Inner Circle
+                          </>
+                        )}
+                      </span>
+                    </p>
+                  )}
+
+                  <p className="mt-2.5 text-[12px] leading-[1.6] text-white/45">
                     One email when we reopen. Nothing else.
-                    {waiting !== null && (
-                      <> {waiting.toLocaleString()} people are already on the list.</>
-                    )}
                   </p>
                 </form>
               )}
@@ -281,12 +388,23 @@ export default function MaintenancePage() {
                   proper budgets, and work worth putting your name on.
                 </p>
                 <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/70">
-                  It&apos;s invite-only — and this list is where the invitations come from.
+                  It&apos;s invite-only — and this list is where the invitations come from. Tick{" "}
+                  <strong className="font-semibold text-white">
+                    &ldquo;Put me forward for the Inner Circle&rdquo;
+                  </strong>{" "}
+                  when you save your spot.
+                </p>
+                <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/70">
+                  Two sides to start with — building the work, and bringing it in — and more as this
+                  grows. We are building the selection properly rather than picking quietly, so
+                  putting your hand up now is how you hear about it first.
                 </p>
               </div>
               <div className="border-t border-white/20 px-6 sm:px-7 py-4">
                 <p className="text-[13px] text-white/75">
-                  Premium side of DoItForMe. Same escrow, bigger work.
+                  {icWaiting > 0
+                    ? `${icWaiting.toLocaleString("en-IN")} already asked to be considered.`
+                    : "Premium side of DoItForMe. Same escrow, bigger work."}
                 </p>
               </div>
             </section>

@@ -44,6 +44,8 @@ type Body = {
   intent?: string;
   lookingFor?: string;
   referralCode?: string;
+  innerCircle?: boolean;
+  innerCircleRole?: string;
 };
 
 const clean = (v: unknown, max = 200) =>
@@ -66,6 +68,25 @@ export async function POST(req: Request) {
 
   const intent = body.intent === "company" ? "company" : "student";
 
+  // Interest in the Inner Circle, not an application to it.
+  //
+  // The real flow is still being designed, and these people do not have
+  // accounts yet — inner_circle_applications.user_id is a foreign key into
+  // public.users, so there is nothing to attach an application to until they
+  // finish signup. This is "tell me when it opens, and here is the side I care
+  // about", which is what the hold page can honestly offer today.
+  //
+  // A company is not a candidate, so the flag is ignored for them rather than
+  // silently stored and later replayed into a student cohort.
+  const wantsInnerCircle = intent === "student" && body.innerCircle === true;
+  // Matches inner_circle_roles.value in Postgres so the replay is a straight
+  // mapping. Null is a real answer — "interested, no preference" — and is not
+  // forced into one of the two.
+  const innerCircleRole =
+    wantsInnerCircle && (body.innerCircleRole === "TECH" || body.innerCircleRole === "OUTREACH")
+      ? body.innerCircleRole
+      : null;
+
   try {
     const { env } = getCloudflareContext();
     const db = (env as { WAITLIST?: D1Database }).WAITLIST;
@@ -79,15 +100,21 @@ export async function POST(req: Request) {
     // already went out is never repeated.
     await db
       .prepare(
-        `INSERT INTO waitlist (email, name, phone, college, intent, looking_for, referral_code, source, user_agent)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+        `INSERT INTO waitlist (email, name, phone, college, intent, looking_for, referral_code, source, user_agent, inner_circle, inner_circle_role)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
          ON CONFLICT(lower(email)) DO UPDATE SET
            name = coalesce(excluded.name, waitlist.name),
            phone = coalesce(excluded.phone, waitlist.phone),
            college = coalesce(excluded.college, waitlist.college),
            intent = excluded.intent,
            looking_for = coalesce(excluded.looking_for, waitlist.looking_for),
-           referral_code = coalesce(excluded.referral_code, waitlist.referral_code)`
+           referral_code = coalesce(excluded.referral_code, waitlist.referral_code),
+           -- Opting in is sticky, opting out on a later submit is not: max()
+           -- keeps the yes. Someone correcting a typo in their college should
+           -- not quietly drop off the Inner Circle list because the checkbox
+           -- rendered unticked on a fresh page load.
+           inner_circle = max(waitlist.inner_circle, excluded.inner_circle),
+           inner_circle_role = coalesce(excluded.inner_circle_role, waitlist.inner_circle_role)`
       )
       .bind(
         email,
@@ -98,7 +125,9 @@ export async function POST(req: Request) {
         clean(body.lookingFor, 500),
         clean(body.referralCode, 40),
         "maintenance_page",
-        (req.headers.get("user-agent") || "").slice(0, 200)
+        (req.headers.get("user-agent") || "").slice(0, 200),
+        wantsInnerCircle ? 1 : 0,
+        innerCircleRole
       )
       .run();
 
@@ -109,15 +138,22 @@ export async function POST(req: Request) {
   }
 }
 
-/** Count only — so the page can show real numbers without exposing anybody. */
+/**
+ * Counts only — so the page can show real numbers without exposing anybody.
+ *
+ * No email, no name, no row ids: two integers. The hold page is public and
+ * uncached for everyone, so anything returned here is effectively published.
+ */
 export async function GET() {
   try {
     const { env } = getCloudflareContext();
     const db = (env as { WAITLIST?: D1Database }).WAITLIST;
-    if (!db) return NextResponse.json({ count: 0 });
-    const row = await db.prepare("SELECT count(*) AS n FROM waitlist").first<{ n: number }>();
-    return NextResponse.json({ count: row?.n ?? 0 });
+    if (!db) return NextResponse.json({ count: 0, innerCircle: 0 });
+    const row = await db
+      .prepare("SELECT count(*) AS n, coalesce(sum(inner_circle), 0) AS ic FROM waitlist")
+      .first<{ n: number; ic: number }>();
+    return NextResponse.json({ count: row?.n ?? 0, innerCircle: row?.ic ?? 0 });
   } catch {
-    return NextResponse.json({ count: 0 });
+    return NextResponse.json({ count: 0, innerCircle: 0 });
   }
 }

@@ -18,20 +18,57 @@
  * It is also directly unit-testable, which a table is not.
  */
 
+/**
+ * A role that has a WORKSPACE in this codebase.
+ *
+ * Deliberately narrower than "a role that exists". The roles themselves live in
+ * the `inner_circle_roles` table so opening one is an INSERT rather than a
+ * migration plus four edits (see 20261011_inner_circle_role_registry.sql), but
+ * a role only has somewhere to land once someone writes its page: TECH has the
+ * brief tracker, OUTREACH has the CRM. This union is exactly the set with a
+ * surface, and ROLE_NAV in components/shell/nav.ts is keyed by it so a role
+ * cannot be advertised into a navigation entry that does not exist.
+ */
 export type InnerCircleRole = "TECH" | "OUTREACH";
 
-export const INNER_CIRCLE_ROLES: {
-  value: InnerCircleRole;
+export function hasWorkspace(v: unknown): v is InnerCircleRole {
+  return v === "TECH" || v === "OUTREACH";
+}
+
+/** @deprecated name kept for the admin route and the unit tests. */
+export const isRole = hasWorkspace;
+
+export type RoleStatus = "open" | "planned" | "closed";
+
+export type RoleRow = {
+  value: string;
   label: string;
   tagline: string;
   blurb: string;
-}[] = [
+  status: RoleStatus;
+  /** Target cohort size, or null when we genuinely have not decided. */
+  seats: number | null;
+  sort: number;
+};
+
+/**
+ * Renders the page when the registry query fails, rather than showing nothing.
+ *
+ * The apply page is the only way into the Inner Circle, and a dropped network
+ * call should not make the product look like it has no roles. These two are the
+ * ones that are open; a stale copy of a `planned` role would be worse than
+ * omitting it, because the whole point of advertising one is that it is real.
+ */
+export const FALLBACK_ROLES: RoleRow[] = [
   {
     value: "TECH",
     label: "Build",
     tagline: "You do the work",
     blurb:
       "You take company briefs and ship them — code, design, writing, research. Paid per brief, money held in escrow before you start.",
+    status: "open",
+    seats: 20,
+    sort: 10,
   },
   {
     value: "OUTREACH",
@@ -39,12 +76,81 @@ export const INNER_CIRCLE_ROLES: {
     tagline: "You bring the work in",
     blurb:
       "You find the companies and open the conversation. You get a pipeline to work, and credit for what you close.",
+    status: "open",
+    seats: 5,
+    sort: 20,
   },
 ];
 
-export function isRole(v: unknown): v is InnerCircleRole {
-  return v === "TECH" || v === "OUTREACH";
+/**
+ * The two roles that exist today, narrowed to the ones with a workspace.
+ *
+ * Still typed `value: InnerCircleRole` rather than `string` so the current
+ * apply page keeps compiling against it unchanged. The full registry-driven
+ * flow (planned roles, screening stages) is deliberately NOT wired up yet —
+ * the groundwork is in the database and in this file, and the page stays as it
+ * is until the flow for both roles has actually been designed.
+ */
+export const INNER_CIRCLE_ROLES: (RoleRow & { value: InnerCircleRole })[] = [
+  FALLBACK_ROLES[0] as RoleRow & { value: InnerCircleRole },
+  FALLBACK_ROLES[1] as RoleRow & { value: InnerCircleRole },
+];
+
+export const isOpenRole = (r: RoleRow) => r.status === "open";
+export const isPlannedRole = (r: RoleRow) => r.status === "planned";
+
+/* -------------------------------------------------------------------------- */
+/* Where an application has got to                                            */
+/* -------------------------------------------------------------------------- */
+
+export type ApplicationStage = "applied" | "screening" | "task" | "decided";
+
+export type StageableApplication = {
+  status: string;
+  screened_at?: string | null;
+  task_sent_at?: string | null;
+};
+
+/**
+ * DERIVED, for the same reason the delivery workflow is.
+ *
+ * A `stage` column would be a second state machine beside `status`, and this
+ * repo already documents what happens when two descriptions of one thing have
+ * to be hand-synced: the one the UI reads is the one that goes stale. So the
+ * database stores only facts — when a human read it, when the practical went
+ * out, what it scored — and the stage is read off them.
+ *
+ * It exists because "pending" is not an answer. Three people have been sitting
+ * on `pending` with nothing else to look at, and silence is the failure mode
+ * this product has already been bitten by on the applications side.
+ */
+export function applicationStage(app: StageableApplication): ApplicationStage {
+  if (app.status !== "pending") return "decided";
+  if (app.task_sent_at) return "task";
+  if (app.screened_at) return "screening";
+  return "applied";
 }
+
+export const STAGE_COPY: Record<ApplicationStage, { label: string; hint: string }> = {
+  applied: {
+    label: "Received",
+    hint: "We have it. Every application gets read by a person — we are not scoring these automatically.",
+  },
+  screening: {
+    label: "Being read",
+    hint: "Someone is going through your answers and your links now.",
+  },
+  task: {
+    label: "Practical sent",
+    hint: "Check your email. The practical is the part that actually decides it — nobody gets in on a pitch alone.",
+  },
+  decided: {
+    label: "Decided",
+    hint: "We have made a call and written you a reason.",
+  },
+};
+
+export const APPLICATION_STAGES: ApplicationStage[] = ["applied", "screening", "task", "decided"];
 
 /* -------------------------------------------------------------------------- */
 /* The tech delivery workflow                                                 */
