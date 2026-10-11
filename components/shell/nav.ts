@@ -8,6 +8,7 @@ import {
   LifeBuoy,
   Hammer,
   Target,
+  Banknote,
   type LucideIcon,
 } from "lucide-react";
 import type { InnerCircleRole } from "@/lib/innerCircle";
@@ -75,9 +76,16 @@ export const MOBILE_NAV: NavItem[] = [
  * The nav is a convenience, not the boundary — RLS and is_outreach() are. See
  * 20261006_inner_circle_roles_and_outreach.sql.
  */
-const ROLE_NAV: Record<InnerCircleRole, NavItem> = {
-  TECH: { label: "My briefs", href: "/inner-circle/work", icon: Hammer },
-  OUTREACH: { label: "Outreach", href: "/inner-circle/outreach", icon: Target },
+const ROLE_NAV: Record<InnerCircleRole, NavItem[]> = {
+  TECH: [{ label: "My briefs", href: "/inner-circle/work", icon: Hammer }],
+  OUTREACH: [
+    { label: "Outreach", href: "/inner-circle/outreach", icon: Target },
+    // Pay gets its own entry rather than a tab inside the pipeline. "What am I
+    // owed" is the question a commission-paid member opens the app to answer,
+    // and burying it one level inside a lead list is how it stops being
+    // believed. It is also the only screen that distinguishes earned from paid.
+    { label: "My earnings", href: "/inner-circle/earnings", icon: Banknote },
+  ],
 };
 
 export type Membership = {
@@ -95,7 +103,7 @@ export function secondaryNavFor({ isElite, innerCircleRole }: Membership): NavIt
   const items = [...SECONDARY_NAV];
   const role = innerCircleRole as InnerCircleRole | null | undefined;
   if (isElite && role && ROLE_NAV[role]) {
-    items.splice(1, 0, ROLE_NAV[role]);
+    items.splice(1, 0, ...ROLE_NAV[role]);
   }
   return items;
 }
@@ -104,7 +112,7 @@ export function secondaryNavFor({ isElite, innerCircleRole }: Membership): NavIt
 export const ALL_NAV_ITEMS: NavItem[] = [
   ...PRIMARY_NAV,
   ...SECONDARY_NAV,
-  ...Object.values(ROLE_NAV),
+  ...Object.values(ROLE_NAV).flat(),
 ];
 
 /**

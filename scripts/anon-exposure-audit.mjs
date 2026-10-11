@@ -146,6 +146,12 @@ for (const t of [
   // added after this audit was written, so it was passing on a surface that no
   // longer matched the product — the exact way a list like this rots.
   "inner_circle_applications", "outreach_leads", "outreach_touches",
+  // The agency program. program_term_acceptances is a signed agreement with an
+  // IP address attached; outreach_commissions is somebody's pay and the value
+  // of a third party's deal; program_probation_tasks is a person's score before
+  // anyone has told them. Added here in the same change that created them,
+  // rather than after an audit pass found them missing.
+  "program_term_acceptances", "outreach_commissions", "program_probation_tasks",
 ]) await mustBeEmpty(t);
 
 // The role registry is the one Inner Circle table that IS anon-readable, on
@@ -163,6 +169,11 @@ await mustDenyRpc("increment_worker_stats", { worker_id: Z, amount: 1 });
 // anonymous caller learns nothing useful — but EXECUTE was revoked from anon
 // deliberately and this keeps that true.
 await mustDenyRpc("is_kyc_approved", {});
+// Gates approval into the program. Supabase grants EXECUTE to anon DIRECTLY as
+// well as via PUBLIC, so the migration revokes from all three — this is the
+// check that proves it took, since a revoke from PUBLIC alone reads as complete
+// while changing nothing.
+await mustDenyRpc("has_accepted_terms", { p_version: "x", p_role: "TECH" });
 
 console.log("\nprivate storage");
 for (const b of ["resumes", "kyc-ids", "verification-docs"]) await mustNotList(b);

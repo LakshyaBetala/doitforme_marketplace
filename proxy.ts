@@ -20,6 +20,11 @@ const PROTECTED_ROUTES = [
   '/payouts',
   '/settings',
   '/admin',
+  // Same reasoning: the Inner Circle surfaces and the program terms render
+  // per-member data and a signed-out visitor got an empty shell rather than a
+  // login. WorkspaceLayout gates them too; this is the cheaper first layer.
+  '/inner-circle',
+  '/program',
 ]
 
 // MAINTENANCE MODE.

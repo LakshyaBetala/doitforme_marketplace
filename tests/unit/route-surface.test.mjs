@@ -110,12 +110,38 @@ test("every route handler authenticates or checks a shared secret", () => {
   const unguarded = routes.filter((r) => {
     if (exempt.has(r)) return false;
     const src = readFileSync(path.join(root, r), "utf8");
-    return !/getUser\(\)|isAdminEmail|CRON_SECRET|ADMIN_SECRET|WEBHOOK_SECRET|PUSH_DISPATCH_SECRET|verifyRazorpaySignature/.test(
+    // requireAdmin counts only because the test below proves the shared guard
+    // actually authenticates. A route delegating to a helper is still guarded;
+    // a route delegating to a helper that checks nothing is the hole this
+    // whole test exists to close, so the two assertions travel together.
+    return !/getUser\(\)|isAdminEmail|requireAdmin|CRON_SECRET|ADMIN_SECRET|WEBHOOK_SECRET|PUSH_DISPATCH_SECRET|verifyRazorpaySignature/.test(
       src
     );
   });
 
   assert.deepEqual(unguarded, [], "These handlers take no caller identity at all.");
+});
+
+// The shared admin guard is now load-bearing for the test above: several routes
+// contain no auth code of their own and are guarded solely by delegating to it.
+// If it ever stops checking the session or the whitelist, those routes become
+// open and the surface test would keep passing, which is the worst possible
+// combination.
+test("the shared admin guard really authenticates and whitelists", () => {
+  const src = readFileSync(path.join(root, "lib/adminGuard.ts"), "utf8");
+  assert.match(src, /getUser\(\)/, "adminGuard must ask Supabase who the caller is");
+  assert.match(src, /isAdminEmail/, "adminGuard must check the admin whitelist");
+  assert.match(src, /401/, "adminGuard must reject an anonymous caller");
+  assert.match(src, /403/, "adminGuard must reject a non-admin");
+
+  // The service-role client must be built AFTER the checks, not before. Built
+  // first, one early return away is a handler that bypasses RLS for anybody.
+  const guardIdx = src.indexOf("isAdminEmail");
+  const serviceIdx = src.indexOf("SUPABASE_SERVICE_ROLE_KEY");
+  assert.ok(
+    guardIdx !== -1 && serviceIdx !== -1 && guardIdx < serviceIdx,
+    "adminGuard builds a service-role client before it checks the caller"
+  );
 });
 
 // Authenticate before validating the body — as a RULE, not as one example.

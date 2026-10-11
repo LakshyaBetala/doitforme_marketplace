@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdminEmail } from "@/lib/admins";
 import { isRole } from "@/lib/innerCircle";
+import { TERMS_VERSION } from "@/lib/programTerms";
 
 /**
  * Admin review of Inner Circle applications.
@@ -85,6 +86,40 @@ export async function POST(req: Request) {
     }
 
     if (action === "approve") {
+      // NO MEMBER WITHOUT AN AGREEMENT.
+      //
+      // Under Indian copyright law the author owns the work unless it is
+      // assigned in writing, so a member admitted without accepting the terms
+      // is somebody whose output Almmatix cannot sell on and cannot warrant to
+      // a client. The gate is here, at the one door into the tier, rather than
+      // further down at assignment — by then they are a member who can see
+      // briefs, and asking afterwards is asking from a weaker position.
+      //
+      // Applicants from before the terms existed will hit this. That is the
+      // correct outcome and not a bug, so the message says exactly what to do.
+      const { data: accepted, error: termsErr } = await service
+        .from("program_term_acceptances")
+        .select("version")
+        .eq("user_id", application.user_id)
+        .eq("role", grantedRole)
+        .eq("version", TERMS_VERSION)
+        .maybeSingle();
+
+      if (termsErr) {
+        return NextResponse.json(
+          { error: `Could not check their accepted terms: ${termsErr.message}` },
+          { status: 500 }
+        );
+      }
+      if (!accepted) {
+        return NextResponse.json(
+          {
+            error: `They have not accepted the ${grantedRole} terms (version ${TERMS_VERSION}). Send them /program/terms?role=${grantedRole} and approve once they have.`,
+          },
+          { status: 409 }
+        );
+      }
+
       // Membership FIRST. See the note at the top of this file for why the order
       // is not arbitrary.
       const { error: userErr } = await service

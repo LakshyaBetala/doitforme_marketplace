@@ -691,6 +691,165 @@ was meant to reward.
   API route could add that the policies do not already enforce, and a route would
   be a second place for the rules to drift.
 
+## The agency program — Almmatix is the demand side
+
+DoItForMe had supply and no demand. **1,254 gigs posted, 12 ever assigned, one
+ever delivered** (₹100), 2,271 applications and 9 approved. Nothing was broken;
+there was simply never a buyer, only students who wanted to earn. More students
+could not fix that.
+
+So the model inverted: **Almmatix (the parent company) sells software services to
+real clients off-platform, and hires students through DoItForMe to build them.**
+DoItForMe stops being a marketplace hoping for posters and becomes the payment,
+escrow and tracking layer under a managed delivery team. Finding work is
+Almmatix's job.
+
+- **[lib/agency.ts](lib/agency.ts) is the only place project money is decided.**
+  A service catalogue with prices, and `DEAL_SPLIT` — the share of deal value
+  going to the finder, the build pool, the PM and overhead, with the margin as
+  the remainder. `quoteFor()` derives every fee from the price, so changing one
+  number moves the commission, both student fees, the PM fee and the margin
+  together. Pinned by [tests/unit/agency.test.mjs](tests/unit/agency.test.mjs),
+  which asserts the lines always sum back to the deal exactly.
+- **The anchor price is ₹1,50,000 and that is load-bearing.** It was ₹80,000,
+  with student fees written down as literals (frontend ₹5k, backend ₹7k) — so
+  the fees were not a decision about the work's worth, they were the residue
+  after the margin. At the Indian agency floor rate of ~₹1,000/hr, ₹80k buys
+  **80 billable hours total across three people** for an entire frontend, an
+  entire backend, integration and client management: the price implied far less
+  work than the scope described, and the shortfall came out of the students.
+  Market rate for a 3-4 person team on a 3-month build is ₹3-6 lakh, so ₹1.5L is
+  still at the bottom of the band. Repricing roughly doubled every line —
+  student net, PM fee, platform revenue and margin — with the same team and the
+  same three weeks. **If the anchor moves back down, the fees follow and the
+  retention argument collapses**, which is why the test pins it.
+- **The platform fee is paid by the workers, not by Almmatix.** `PLATFORM_FEES`
+  is deducted from the recipient's payout, so Almmatix's cost is the gross and
+  the recipients receive 90% of it. Every quote therefore carries `gross` *and*
+  `net`, and the product only ever shows net: a student told "₹12,000" who
+  receives ₹10,800 has been misled however correct the arithmetic was, and the
+  first payout is the conversation that decides whether they believe anything
+  else. `grossUpFor()` exists if that decision is ever reversed — it steps up
+  rather than dividing, because `platformFeeFor()` rounds up and is not
+  algebraically invertible.
+- **`AGENCY_FEE_AUDIENCE` is `BUSINESS` (10%).** Almmatix posts with a
+  `company_id`, so `audienceForGig()` already returns BUSINESS; the constant
+  exists so the published net figures and the actual deduction cannot disagree.
+
+### The PM is the constraint, not the leads and not the students
+
+A PM doing client contact, integration, QA and a second developer's coding
+carries **two concurrent projects**, strained — `monthlyCapacity(pmCount)`.
+Outreach paid per close will find more than that, so **intake is capped and the
+cap is published**: a lead past the cap is queued with the commission locked to
+whoever found it, so nobody is punished for being good at their job. The only
+scalable source of PMs is promotion off the `LADDER`; you cannot hire an
+integrator-who-also-codes at this rate on the open market.
+
+### Attribution: the obvious chain does not work
+
+`outreach_leads.converted_company_id` to `companies` to `gigs.company_id` looks
+like the way to answer "which lead earned this". It cannot work here, because
+**the end client never transacts on DoItForMe.** Almmatix sells to them
+off-platform and only pays students on the platform, so **every gig's
+`company_id` is Almmatix** and nothing in the data can infer which lead produced
+which project.
+
+`outreach_commissions` is that missing edge:
+[20261012_agency_program.sql](supabase/migrations/20261012_agency_program.sql).
+Two tranches per won lead — **40% when the client's first payment clears, 60% on
+client acceptance** — because one payment on signature pays identically for a
+dream client and a nightmare one, giving the finder no reason to care whether
+the lead was any good. `gig_id` links each tranche to the gig that pays it;
+unique on `(lead_id, tranche)` so raising twice is a no-op rather than a second
+payment. Admin-write only in RLS: letting the person owed the money write the
+row is not a pipeline, it is an invoice generator. Earnings are **not**
+team-readable — the shared-pipeline argument that makes `outreach_leads` visible
+to the whole team does not extend to anybody's pay.
+
+### Terms are code, and approval enforces them
+
+[lib/programTerms.ts](lib/programTerms.ts) holds the clauses and
+`TERMS_VERSION`; `/program/terms` renders them and `/api/program/terms` records
+the acceptance with IP and user agent — which is **why it is a route and not a
+browser write**, unlike the outreach CRM: two of the three columns that make it
+evidence cannot be collected client-side without trusting the client to report
+them honestly. The version is taken from the server's own copy and never from
+the request body.
+
+**`IP_ASSIGNMENT` is the clause that can void a paid deal.** Under Indian
+copyright law the author owns the work unless it is assigned in writing, so
+without it a client paying ₹1.5L owns software whose copyright sits with a
+student who signed nothing, and Almmatix cannot give the IP warranty and
+indemnity any serious client asks for at contract stage.
+[tests/unit/program-terms.test.mjs](tests/unit/program-terms.test.mjs) asserts
+the nine load-bearing clauses exist and are marked strict, that neither role is
+shown the other's clauses, and that the text has not drifted into legalese — an
+unread clause is a weak clause, and this one only works if it was understood.
+
+**[api/admin/inner-circle](app/api/admin/inner-circle/route.ts) refuses to
+approve anybody who has not accepted the current terms for the role being
+granted.** The gate is at the one door into the tier rather than later at
+assignment, because by then they are a member who can see briefs and asking
+afterwards is asking from a weaker position. Applicants from before the terms
+existed will hit this; that is the correct outcome, and the error names the URL
+to send them.
+
+### Probation: two rounds, and the second one decides
+
+**You cannot screen for consistency.** A test measures ability; consistency is a
+time series, so it can only be observed. `program_probation_tasks` holds two
+paid rounds per applicant — round one shows whether someone *can* do the work,
+round two, with timing deliberately unannounced, shows whether they do it again.
+[api/admin/probation](app/api/admin/probation/route.ts) refuses to send round 2
+until round 1 is scored, because sending both at once measures one burst of
+effort twice. Losing half the cohort between rounds is the mechanism working.
+
+Both rounds are posted as **real gigs**, so probation runs the genuine escrow,
+delivery and request-changes flow — an applicant's first experience of being
+paid should be the real thing.
+
+`SCORECARD` puts **60 of 100 points on shipping to the deadline and answering
+messages.** On a three-week client deal the brilliant developer who goes dark
+for four days is worse than the adequate one who replies to everything; scoring
+craft first assembles a team that is individually impressive and collectively
+late. The test asserts that someone who missed the deadline cannot pass on the
+other four marks combined. `marks` is stored alongside `score` because the
+weights are a dial that will be retuned, and a decision has to stay explicable
+under the weights it was actually made with.
+
+### No status columns on either new table
+
+A probation task's state is its gig's state; a commission tranche's state is its
+gig's state. Both are derived at read time, for the reason recorded above about
+`managed_status`: a second state machine beside the money is the one that goes
+stale, and it is always the one the UI reads. The tables store only facts —
+which gig, how much, when it was due, what it scored.
+
+### GST is a 5-month runway, not a permanent state
+
+Service providers must register above **₹20 lakh aggregate annual turnover**,
+computed **PAN-wide** — so if Almmatix and DoItForMe share a PAN their revenues
+combine, platform fees included. At three ₹1.5L projects a month that is ₹54L a
+year and the threshold arrives in month 5 (`gstRunwayMonths()`). Being
+unregistered is also **not** a price advantage with business clients: a
+GST-registered client reclaims the GST it pays, so buying from an unregistered
+vendor costs it more, and many mid-size companies will not onboard one at all.
+`GST_SERVICE_THRESHOLD` is a planning number — confirm with a CA.
+
+### lib/adminGuard.ts
+
+New admin routes authenticate through `requireAdmin()` rather than another
+copy-pasted block. The service-role client is constructed **only after** the
+whitelist check passes — built first, it is one early return away from a handler
+that bypasses RLS for anybody. `route-surface.test.mjs` accepts `requireAdmin`
+as caller identity *and* separately asserts that the guard really checks the
+session and the whitelist, because several routes now contain no auth code of
+their own; the two assertions have to travel together or a gutted guard would
+open those routes while the surface test kept passing. Existing admin routes
+keep their inline copies — rewriting eight working money handlers is a separate
+change from adding features.
+
 ## Mobile and the store builds
 
 [docs/APP.md](docs/APP.md) is the runbook; [capacitor.config.ts](capacitor.config.ts)
