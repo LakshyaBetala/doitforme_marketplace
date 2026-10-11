@@ -7,7 +7,7 @@ import Link from "next/link";
 import { blurOnWheel } from "@/lib/inputs";
 import { friendlyError } from "@/lib/errors";
 import { INNER_CIRCLE_ROLES, type InnerCircleRole } from "@/lib/innerCircle";
-import { ArrowRight, Check, Hammer, Loader2, Target } from "lucide-react";
+import { ArrowRight, Check, Hammer, Loader2, ShieldCheck, Target } from "lucide-react";
 
 /**
  * The Inner Circle.
@@ -45,6 +45,7 @@ export default function InnerCirclePage() {
   const [application, setApplication] = useState<AppRow | null>(null);
   const [role, setRole] = useState<InnerCircleRole>("TECH");
   const [memberRole, setMemberRole] = useState<InnerCircleRole | null>(null);
+  const [kycStatus, setKycStatus] = useState<string | null>(null);
   const [pitch, setPitch] = useState("");
   const [links, setLinks] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +58,11 @@ export default function InnerCirclePage() {
     if (!user) return setLoading(false);
 
     const [{ data: profile }, { data: apps }] = await Promise.all([
-      supabase.from("users").select("is_elite, inner_circle_role").eq("id", user.id).maybeSingle(),
+      supabase
+        .from("users")
+        .select("is_elite, inner_circle_role, kyc_status")
+        .eq("id", user.id)
+        .maybeSingle(),
       supabase
         .from("inner_circle_applications")
         .select("id, status, decision_note, created_at, role")
@@ -68,6 +73,7 @@ export default function InnerCirclePage() {
 
     setIsElite(Boolean(profile?.is_elite));
     setMemberRole((profile?.inner_circle_role as InnerCircleRole) ?? null);
+    setKycStatus((profile?.kyc_status as string) ?? null);
     const latest = (apps?.[0] as AppRow) ?? null;
     setApplication(latest);
     // Pre-select whatever they asked for last time, so a re-application after a
@@ -240,6 +246,42 @@ export default function InnerCirclePage() {
               either way. In the meantime, finished work on the platform is the strongest thing you
               can add.
             </p>
+          </div>
+        ) : kycStatus !== "approved" ? (
+          /*
+            Verified students only, and the database says so too: the RLS insert
+            policy requires is_kyc_approved() (20261011_inner_circle_requires_kyc.sql),
+            so without this the form would submit and come back 42501 with
+            nothing a person could act on. The Inner Circle is the group we put
+            in front of paying companies and vouch for by name — screening
+            someone we cannot confirm is a student is backwards.
+          */
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full bg-[var(--w-orange-soft)] px-3 py-1 text-[12px] font-bold text-[var(--w-orange-ink)]">
+              <ShieldCheck size={14} /> One step first
+            </span>
+            <h2
+              className="mt-3.5 text-[22px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]"
+              style={{ fontFamily: "var(--font-display), sans-serif" }}
+            >
+              Verify your student ID to apply
+            </h2>
+            <p className="mt-2 max-w-[52ch] text-[14px] leading-[1.65] text-[var(--w-muted)]">
+              {kycStatus === "manual_review"
+                ? "Your ID is being checked by hand. As soon as it clears you can apply — nothing else is needed from you."
+                : kycStatus === "rejected"
+                  ? "Your last ID could not be verified. Upload a clearer photo of the front of your card and you can apply straight after."
+                  : "We put this group in front of real companies and vouch for them by name, so we confirm you are a student first. It takes a few seconds and is usually instant."}
+            </p>
+            {kycStatus !== "manual_review" && (
+              <Link
+                href="/verify-id"
+                className="mt-5 inline-flex min-h-[46px] items-center gap-2 rounded-[11px] bg-[var(--w-orange)] px-5 text-[14.5px] font-bold text-[#371448] transition-opacity hover:opacity-90"
+              >
+                {kycStatus === "rejected" ? "Upload a new photo" : "Verify my ID"}
+                <ArrowRight size={16} />
+              </Link>
+            )}
           </div>
         ) : (
           <form onSubmit={apply}>

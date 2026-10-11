@@ -36,13 +36,77 @@ export interface KycResult {
    * students with a non-answer - now can.
    */
   failure: KycFailure | null;
+  /**
+   * True when the uploaded image should be DELETED rather than kept.
+   *
+   * Set only for the hopeless band: the image is demonstrably not a document,
+   * so there is nothing to review on appeal and no reason to retain a photo of
+   * somebody. The upload route removes the object and clears id_card_url so the
+   * next attempt starts clean.
+   */
+  purgeDocument: boolean;
 }
 
 export type KycFailure = "quota" | "network" | "unreadable" | "unconfigured";
 
-// Approve at/above APPROVE; treat below REJECT as "unsure" -> manual review.
-export const KYC_APPROVE_THRESHOLD = 0.85;
-export const KYC_REJECT_THRESHOLD = 0.5;
+/**
+ * The band logic, as a pure function so the thresholds are testable.
+ *
+ * Extracted from the middle of verifyStudentIdImage, which cannot be unit
+ * tested without a network call — so the one part of KYC that decides whether a
+ * real student gets in was the one part with no test. Covered by
+ * tests/unit/kyc-decision.test.mjs.
+ */
+export function decideKyc(
+  confidence: number,
+  isStudentId: boolean
+): { decision: KycDecision; purgeDocument: boolean } {
+  // No document in the frame at all. A decision, not a deferral.
+  if (confidence < KYC_HOPELESS_THRESHOLD) {
+    return { decision: "rejected", purgeDocument: true };
+  }
+  if (confidence >= KYC_APPROVE_THRESHOLD) {
+    // Confidently a document and confidently not a student ID — an Aadhaar
+    // card, a bus pass, somebody else's fee receipt. Kept, because that is the
+    // rejection a person might reasonably appeal.
+    return { decision: isStudentId ? "approved" : "rejected", purgeDocument: false };
+  }
+  // Genuinely ambiguous: [HOPELESS, APPROVE).
+  return { decision: "manual_review", purgeDocument: false };
+}
+
+/**
+ * Three bands, tuned so the overwhelming majority of uploads get an answer
+ * immediately instead of joining a queue.
+ *
+ *   >= APPROVE   and is a student ID  -> approved
+ *   >= APPROVE   and is NOT one       -> rejected, with a reason, re-uploadable
+ *   <  HOPELESS                       -> rejected AND the image is deleted
+ *   in between                        -> manual_review
+ *
+ * APPROVE was 0.85, which is a high bar for a model reading a phone photo of a
+ * laminated card, and REJECT was 0.5 — so EVERYTHING from 0 to 0.85 landed in
+ * manual_review, a queue nothing drains. 372 students were sitting in it. The
+ * band is now [0.10, 0.65), which is about a third as wide, and the ends are
+ * both decisions rather than deferrals.
+ *
+ * Lowering the approve bar is the right trade here and worth saying out loud:
+ * the cost of wrongly approving someone is that a non-student can apply for
+ * gigs, which escrow and ratings already bound. The cost of wrongly deferring a
+ * real student is that they wait forever and leave, which is what has actually
+ * been happening.
+ *
+ * HOPELESS is not "unsure", it is "there is no document here" — a selfie, a
+ * landscape, a blank wall. The model reports those at 0.00-0.05 with a plain
+ * explanation. Keeping the image serves nobody: there is nothing for an admin
+ * to review, and it is a photo of a person's face sitting in a private bucket,
+ * so it is deleted and they are asked to upload the right thing.
+ */
+export const KYC_APPROVE_THRESHOLD = 0.65;
+export const KYC_HOPELESS_THRESHOLD = 0.1;
+
+/** @deprecated kept so existing imports do not break; use the two above. */
+export const KYC_REJECT_THRESHOLD = KYC_HOPELESS_THRESHOLD;
 /**
  * Tried in order, falling through on a 429.
  *
@@ -117,8 +181,24 @@ export async function verifyStudentIdImage(
     // Each model gets the two timeout attempts; a 429 moves to the NEXT model
     // instead of ending the verification, because the daily cap is per-model
     // and the next one still has its own.
+    // A WALL-CLOCK BUDGET ACROSS THE WHOLE CASCADE.
+    //
+    // The student is waiting on this request with a spinner. Two models times
+    // two attempts times a 60s timeout is a four-minute worst case, which is
+    // not a slow verification, it is a hung browser — and the outcome after
+    // four minutes is the same manual_review it would have reached in one.
+    //
+    // 75s leaves room for one cold call (measured at 24.6s) plus a retry, and
+    // still gives the second model a chance when the first fails fast, which is
+    // what a 429 does. Past the budget we stop and fail open, which is the same
+    // answer sooner.
+    const deadline = Date.now() + 75_000;
     outer: for (const model of KYC_MODELS) {
       for (let attempt = 1; attempt <= 2; attempt++) {
+        if (Date.now() >= deadline) {
+          console.error("[kyc] cascade budget exhausted; failing open");
+          break outer;
+        }
         try {
           res = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -170,16 +250,15 @@ export async function verifyStudentIdImage(
     const isStudentId = Boolean(parsed.is_student_id);
     const aiReason = String(parsed.reason || "").slice(0, 300);
 
-    let decision: KycDecision;
-    if (confidence < KYC_REJECT_THRESHOLD) {
-      decision = "manual_review"; // model isn't sure either way
-    } else if (isStudentId && confidence >= KYC_APPROVE_THRESHOLD) {
-      decision = "approved";
-    } else if (!isStudentId && confidence >= KYC_APPROVE_THRESHOLD) {
-      decision = "rejected";
-    } else {
-      decision = "manual_review"; // borderline confidence
-    }
+    const { decision, purgeDocument } = decideKyc(confidence, isStudentId);
+
+    // The model's own sentence is usually the clearest thing we can say ("this
+    // is a selfie and not an official document"). What it never includes is
+    // what to do about it, and this is the one rejection where the image is
+    // also gone — so the instruction is appended rather than replacing it.
+    const reason = purgeDocument
+      ? `${aiReason || "That image does not appear to contain a student ID."} We have deleted it — please upload a clear photo of the front of your school, college or university ID card.`
+      : aiReason || defaultReason(decision);
 
     return {
       decision,
@@ -188,8 +267,9 @@ export async function verifyStudentIdImage(
       studentName: nullable(parsed.student_name),
       idType: nullable(parsed.id_type),
       confidence,
-      reason: aiReason || defaultReason(decision),
+      reason,
       failure: null,
+      purgeDocument,
     };
   } catch (e) {
     console.error("[kyc] verify threw:", e);
@@ -244,6 +324,10 @@ function manualReview(reason: string, failure: KycFailure): KycResult {
     confidence: 0,
     reason,
     failure,
+    // Never purge on a fail-open. Confidence is 0 here because nothing looked
+    // at the image, not because the image is empty — deleting it would destroy
+    // a perfectly good student ID whenever the service is down.
+    purgeDocument: false,
   };
 }
 
