@@ -140,12 +140,29 @@ console.log("\ntables that must be fully private");
 for (const t of [
   "applications", "messages", "ratings", "notifications", "escrow",
   "transactions", "payout_queue", "wallets", "push_subscriptions",
+  // Inner Circle. inner_circle_applications holds someone's pitch and a
+  // screening score; outreach_leads and outreach_touches hold third-party
+  // company contact details that were never ours to publish. All three were
+  // added after this audit was written, so it was passing on a surface that no
+  // longer matched the product — the exact way a list like this rots.
+  "inner_circle_applications", "outreach_leads", "outreach_touches",
 ]) await mustBeEmpty(t);
+
+// The role registry is the one Inner Circle table that IS anon-readable, on
+// purpose: it is the role list on a public-facing page and holds nothing but
+// labels, blurbs and a status. Asserted POSITIVELY so that "anon can read it"
+// stays a decision somebody made rather than an accident nobody notices, and
+// so the apply page cannot silently lose its role list to a tightening.
+await mustAllow("inner circle role registry", "inner_circle_roles", "value, label, status");
 
 console.log("\nmoney and state RPCs");
 await mustDenyRpc("manual_release_escrow", { p_gig_id: Z });
 await mustDenyRpc("refund_escrow_transactional", { p_gig_id: Z, p_poster_id: Z });
 await mustDenyRpc("increment_worker_stats", { worker_id: Z, amount: 1 });
+// Gates Inner Circle applications. It answers only about auth.uid(), so an
+// anonymous caller learns nothing useful — but EXECUTE was revoked from anon
+// deliberately and this keeps that true.
+await mustDenyRpc("is_kyc_approved", {});
 
 console.log("\nprivate storage");
 for (const b of ["resumes", "kyc-ids", "verification-docs"]) await mustNotList(b);

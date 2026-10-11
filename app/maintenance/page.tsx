@@ -257,10 +257,24 @@ export default function MaintenancePage() {
                           <span className="block text-[13.5px] font-semibold text-white">
                             Put me forward for the Inner Circle
                           </span>
+                          {/* This block has to stand on its own.
+                              The panel that explains the Inner Circle sits in
+                              the other column, which on a phone means it
+                              renders BELOW this checkbox — so the decision came
+                              before the context. Rather than reordering the
+                              page and pushing the form down, the choice carries
+                              its own one-line explanation and its own social
+                              proof, right where it is made. */}
                           <span className="mt-0.5 block text-[12.5px] leading-[1.6] text-white/55">
-                            Invite-only, and we are still building the selection properly. This puts
-                            you on the list we invite from — it is not an application yet.
+                            The students we put in front of real companies first. Invite-only, and
+                            we are still building the selection properly — this puts you on the
+                            list we invite from, it is not an application yet.
                           </span>
+                          {icWaiting > 0 && (
+                            <span className="mt-1.5 block text-[12px] font-semibold text-[#C9A9FF]">
+                              {icWaiting.toLocaleString("en-IN")} already asked to be considered
+                            </span>
+                          )}
                         </span>
                       </label>
 
@@ -357,7 +371,11 @@ export default function MaintenancePage() {
 
           {/* ───────────── mascot + the one loud thing ───────────── */}
           <div className="order-2 lg:pt-2">
-            <div className="rise flex justify-center lg:justify-start" style={{ animationDelay: "90ms" }}>
+            {/* Decorative, and on a phone it landed in the gap between the form
+                and the Inner Circle panel — a mascot floating in dead space,
+                pushing the thing that explains the checkbox even further below
+                the checkbox. Desktop has a column for it; a phone does not. */}
+            <div className="rise hidden lg:flex lg:justify-start" style={{ animationDelay: "90ms" }}>
               <Image
                 src="/sloth.png"
                 alt="The DoItForMe sloth, arms folded, entirely unhurried"
@@ -387,17 +405,16 @@ export default function MaintenancePage() {
                   A small group of students we put in front of real companies first. Paid briefs,
                   proper budgets, and work worth putting your name on.
                 </p>
+                {/* Two paragraphs, not four. This was a wall of text in the
+                    loudest colour on the page, competing with the form for
+                    attention while saying things the opt-in now says itself. */}
                 <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/70">
-                  It&apos;s invite-only — and this list is where the invitations come from. Tick{" "}
+                  Two sides to start with — building the work, and bringing it in — and more as this
+                  grows. Tick{" "}
                   <strong className="font-semibold text-white">
                     &ldquo;Put me forward for the Inner Circle&rdquo;
                   </strong>{" "}
                   when you save your spot.
-                </p>
-                <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/70">
-                  Two sides to start with — building the work, and bringing it in — and more as this
-                  grows. We are building the selection properly rather than picking quietly, so
-                  putting your hand up now is how you hear about it first.
                 </p>
               </div>
               <div className="border-t border-white/20 px-6 sm:px-7 py-4">
