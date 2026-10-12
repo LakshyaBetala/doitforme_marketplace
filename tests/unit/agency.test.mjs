@@ -46,6 +46,11 @@ import {
   COHORT,
   isServiceKey,
   AGENCY_FEE_AUDIENCE,
+  foundingPrice,
+  foundingQuoteFor,
+  discountCost,
+  FOUNDING_DISCOUNT,
+  FOUNDING_CLIENT_LIMIT,
   careBook,
   careBookForecast,
   plansToCoverFixedCosts,
@@ -117,7 +122,12 @@ test("the PM share rises with project size, and a PM can live on it", () => {
   // actually decides whether a second PM is hirable.
   const q = quoteFor("WEB_PLATFORM");
   const perMonth = (2 / (q.service.days / 21)) * q.projectManager.gross;
-  assert.ok(perMonth >= 35_000, `a PM at capacity earns only ${Math.round(perMonth)}/month`);
+  assert.ok(perMonth >= 45_000, "a PM at capacity earns only " + Math.round(perMonth) + "/month");
+  // And it must still clear a living wage at the DISCOUNTED price, because the
+  // first ten projects are all founding projects.
+  const f = foundingQuoteFor("WEB_PLATFORM");
+  const fPerMonth = (2 / (f.service.days / 21)) * f.projectManager.gross;
+  assert.ok(fPerMonth >= 30_000, "a PM on founding projects earns only " + Math.round(fPerMonth) + "/month");
 });
 
 test("the commission share is identical at every tier", () => {
@@ -158,16 +168,54 @@ test("every service is quotable, scoped and internally consistent", () => {
   assert.ok(!isServiceKey("NOT_A_SERVICE"));
 });
 
-test("the price ceilings the owner set are respected", () => {
-  // An app costs at most 1.5L and a business website at most 30k. These are
-  // deliberate undercuts of the market floor to buy the first references; if
-  // they drift up, the positioning that wins the early clients is gone, and if
-  // they drift down the builders' fees follow.
-  assert.equal(SERVICE_BY_KEY.MOBILE_APP.price, 150_000);
-  assert.equal(SERVICE_BY_KEY.MARKETING_SITE.price, 30_000);
+test("the founding discount lands exactly on the ceilings the owner set", () => {
+  // An app costs at most 1.5L to a founding client and a business website at
+  // most 30k. Those are the numbers that win the first references - but they
+  // are the DISCOUNTED numbers, not the list. A low list price is permanent: a
+  // client who paid 30k will never accept 45k for the same thing, and the price
+  // list is read by everyone who was ever quoted from it. A discount off a real
+  // list reverses cleanly, so the day the references exist it simply stops.
+  assert.equal(foundingPrice("MOBILE_APP"), 150_000);
+  assert.equal(foundingPrice("MARKETING_SITE"), 30_000);
   assert.equal(ANCHOR_SERVICE.key, "MOBILE_APP");
-  for (const s of SERVICES) {
-    assert.ok(s.price <= 150_000, `${s.key} at ${s.price} is over the 1.5L ceiling`);
+  assert.equal(SERVICE_BY_KEY.MOBILE_APP.price, 225_000);
+  assert.equal(SERVICE_BY_KEY.MARKETING_SITE.price, 45_000);
+});
+
+test("the discount is a real concession, rounds to a quotable number, and ends", () => {
+  assert.ok(FOUNDING_DISCOUNT > 0.15, "too small to feel like a concession");
+  assert.ok(FOUNDING_DISCOUNT < 0.5, "giving away more than a third is not a discount");
+  // A number of clients, not a date: what retires it is having references.
+  assert.ok(FOUNDING_CLIENT_LIMIT > 0 && FOUNDING_CLIENT_LIMIT <= 25);
+  for (const svc of SERVICES) {
+    const fp = foundingPrice(svc);
+    assert.ok(fp > 0 && fp < svc.price, svc.key + ": founding price is not below list");
+    // Rounded DOWN, so the concession is never smaller than promised.
+    assert.ok(fp <= svc.price * (1 - FOUNDING_DISCOUNT), svc.key + ": discount is short");
+    const step = fp >= 50_000 ? 5_000 : 1_000;
+    assert.equal(fp % step, 0, svc.key + ": " + fp + " is not a number a human would quote");
+  }
+});
+
+test("a founding project still pays everyone, just less", () => {
+  // The discount comes off every share, not out of the margin alone -
+  // absorbing it all in margin makes early clients unprofitable and quietly
+  // discourages the deals the discount exists to win. Every fee then rises on
+  // its own the day discounting ends.
+  for (const svc of SERVICES) {
+    const list = quoteFor(svc);
+    const founding = foundingQuoteFor(svc);
+    assert.ok(founding.margin > 0, svc.key + ": a founding client is unprofitable");
+    assert.ok(founding.margin < list.margin, svc.key + ": margin did not move");
+    for (const pp of [founding.outreach, founding.projectManager, ...founding.slots]) {
+      assert.ok(pp.net > 0, svc.key + ": somebody nets nothing on a founding project");
+    }
+    const c = discountCost(svc);
+    assert.equal(c.givenAway, list.dealValue - founding.dealValue);
+    assert.ok(
+      c.marginLost > 0 && c.marginLost < c.givenAway,
+      svc.key + ": the whole discount landed on one line"
+    );
   }
 });
 
@@ -187,8 +235,10 @@ test("server and usage costs are never inside a price", () => {
 });
 
 test("there is a cheap way in and a recurring way to stay", () => {
-  const cheapest = Math.min(...SERVICES.filter((s) => !s.recurring).map((s) => s.price));
-  assert.ok(cheapest <= 20_000, "nothing cheap enough to open a conversation with a small business");
+  // Measured at the founding price, which is what a first client is actually
+  // offered - a cheap way in that only exists at list price is not a way in.
+  const cheapest = Math.min(...SERVICES.filter((s) => !s.recurring).map((s) => foundingPrice(s)));
+  assert.ok(cheapest <= 15_000, "nothing cheap enough to open a conversation with a small business");
   const recurring = SERVICES.filter((s) => s.recurring);
   assert.ok(recurring.length >= 3, "the care book needs tiers, not one plan for every build size");
   // And the tiers have to be a real ladder, or they are one plan with three names.
@@ -237,22 +287,21 @@ test("platform revenue is exactly the fee on money paid to people", () => {
 
 test("the two ceiling services produce the numbers the plan was decided on", () => {
   const app = quoteFor("MOBILE_APP");
-  assert.equal(app.dealValue, 150_000);
+  assert.equal(app.dealValue, 225_000);
   assert.equal(app.tier, "large");
-  assert.equal(app.outreach.gross, 15_000);
-  assert.equal(app.outreach.net, 13_500);
-  assert.equal(app.projectManager.gross, 27_000);
-  assert.equal(app.overhead, 6_000);
-  assert.equal(app.margin, 72_000);
+  assert.equal(app.outreach.gross, 22_500);
+  assert.equal(app.outreach.net, 20_250);
+  assert.equal(app.projectManager.gross, 40_500);
+  assert.equal(app.margin, 107_900);
 
   const site = quoteFor("MARKETING_SITE");
-  assert.equal(site.dealValue, 30_000);
+  assert.equal(site.dealValue, 45_000);
   assert.equal(site.tier, "small");
   // One builder, not two: at 30k a second person makes both fees insulting.
   assert.equal(site.slots.length, 1);
-  assert.equal(site.slots[0].gross, 9_000);
-  assert.equal(site.slots[0].net, 8_100);
-  assert.equal(site.margin, 13_200);
+  assert.equal(site.slots[0].gross, 13_500);
+  assert.equal(site.slots[0].net, 12_150);
+  assert.equal(site.margin, 19_800);
 });
 
 test("the delivery pool is split by weight, not evenly", () => {
@@ -379,7 +428,12 @@ test("a care book reports its cost in people, not only its revenue", () => {
   // Revenue on its own is the number that makes a retainer book look free.
   const book = careBook({ CARE_STANDARD: 15, CARE_PRIORITY: 5 });
   assert.equal(book.plans, 20);
-  assert.equal(book.mrr, 15 * 6_000 + 5 * 12_000);
+  // Read from the catalogue, not written down again: a price change must not
+  // be able to make this test wrong rather than make the model wrong.
+  assert.equal(
+    book.mrr,
+    15 * SERVICE_BY_KEY.CARE_STANDARD.price + 5 * SERVICE_BY_KEY.CARE_PRIORITY.price,
+  );
   assert.equal(book.arr, book.mrr * 12);
   assert.equal(book.hours, 15 * CARE_LOAD_HOURS.CARE_STANDARD + 5 * CARE_LOAD_HOURS.CARE_PRIORITY);
   assert.equal(book.maintainersNeeded, Math.ceil(book.hours / MAINTAINER_HOURS_PER_MONTH));

@@ -243,7 +243,7 @@ export const SERVICES: Service[] = [
     key: "LANDING_PAGE",
     name: "Landing page",
     pitch: "One page that explains what you do and collects enquiries.",
-    price: 12_000,
+    price: 18_000,
     days: 3,
     family: "Websites",
     slots: [{ role: "FRONTEND", weight: 1 }],
@@ -260,8 +260,8 @@ export const SERVICES: Service[] = [
     key: "MARKETING_SITE",
     name: "Business website",
     pitch: "A fast, well-built site of up to six pages that people can find.",
-    price: 30_000,
-    days: 8,
+    price: 45_000,
+    days: 10,
     family: "Websites",
     slots: [{ role: "FRONTEND", weight: 1 }],
     includes: [
@@ -283,8 +283,8 @@ export const SERVICES: Service[] = [
     key: "ECOMMERCE",
     name: "Online store",
     pitch: "A store that takes payments, tracks stock and prints invoices.",
-    price: 55_000,
-    days: 14,
+    price: 110_000,
+    days: 18,
     family: "Websites",
     slots: [
       { role: "FRONTEND", weight: 5 },
@@ -308,8 +308,8 @@ export const SERVICES: Service[] = [
     key: "INTERNAL_TOOL",
     name: "Internal tool",
     pitch: "The dashboard that replaces the spreadsheet your team fights over.",
-    price: 60_000,
-    days: 12,
+    price: 85_000,
+    days: 14,
     family: "Apps & platforms",
     slots: [
       { role: "FRONTEND", weight: 3 },
@@ -332,7 +332,7 @@ export const SERVICES: Service[] = [
     key: "WEB_PLATFORM",
     name: "Web platform",
     pitch: "A full web application with accounts, a database and an admin panel.",
-    price: 110_000,
+    price: 150_000,
     days: 21,
     family: "Apps & platforms",
     slots: [
@@ -358,8 +358,8 @@ export const SERVICES: Service[] = [
     key: "MOBILE_APP",
     name: "Mobile app",
     pitch: "One focused Android and iOS app from a single codebase, on both stores.",
-    price: 150_000,
-    days: 30,
+    price: 225_000,
+    days: 35,
     family: "Apps & platforms",
     slots: [
       { role: "MOBILE", weight: 5 },
@@ -385,8 +385,8 @@ export const SERVICES: Service[] = [
     key: "AI_WORKFLOW",
     name: "Workflow automation",
     pitch: "Your tools talk to each other, so nobody retypes anything.",
-    price: 35_000,
-    days: 7,
+    price: 60_000,
+    days: 10,
     family: "AI automation",
     slots: [{ role: "AI", weight: 1 }],
     includes: [
@@ -405,8 +405,8 @@ export const SERVICES: Service[] = [
     key: "AI_ASSISTANT",
     name: "AI support assistant",
     pitch: "An assistant trained on your own documents that answers customers.",
-    price: 55_000,
-    days: 10,
+    price: 75_000,
+    days: 12,
     family: "AI automation",
     slots: [
       { role: "AI", weight: 4 },
@@ -429,8 +429,8 @@ export const SERVICES: Service[] = [
     key: "AI_DOCUMENTS",
     name: "Document AI pipeline",
     pitch: "Invoices, bills and forms read automatically into your system.",
-    price: 70_000,
-    days: 12,
+    price: 90_000,
+    days: 14,
     family: "AI automation",
     slots: [
       { role: "AI", weight: 5 },
@@ -453,8 +453,8 @@ export const SERVICES: Service[] = [
     key: "AUDIT",
     name: "Technical audit",
     pitch: "A week reading your system, then a written plan you own.",
-    price: 15_000,
-    days: 5,
+    price: 20_000,
+    days: 7,
     family: "Advisory",
     slots: [{ role: "BACKEND", weight: 1 }],
     includes: [
@@ -469,7 +469,7 @@ export const SERVICES: Service[] = [
     key: "CARE_ESSENTIAL",
     name: "Care plan — Essential",
     pitch: "It stays up, stays patched, and someone answers. Monthly.",
-    price: 2_500,
+    price: 3_500,
     days: 30,
     recurring: true,
     family: "Care plans",
@@ -490,7 +490,7 @@ export const SERVICES: Service[] = [
     key: "CARE_STANDARD",
     name: "Care plan — Standard",
     pitch: "Everything in Essential, plus two hours of changes a month.",
-    price: 6_000,
+    price: 9_000,
     days: 30,
     recurring: true,
     family: "Care plans",
@@ -511,7 +511,7 @@ export const SERVICES: Service[] = [
     key: "CARE_PRIORITY",
     name: "Care plan — Priority",
     pitch: "A development partner on retainer, not just a safety net.",
-    price: 12_000,
+    price: 18_000,
     days: 30,
     recurring: true,
     family: "Care plans",
@@ -658,6 +658,84 @@ export function grossUpFor(net: number, audience: FeeAudience = AGENCY_FEE_AUDIE
   let gross = target;
   while (gross - platformFeeFor(gross, audience) < target) gross += 1;
   return gross;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The founding-client discount                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * WHY A DISCOUNT AND NOT A LOWER PRICE LIST.
+ *
+ * An unknown company with no portfolio cannot win at mid-market, so the first
+ * ten clients have to be bought cheaply. The obvious move is to publish cheap
+ * prices. It is also the one that cannot be undone: a client who bought a
+ * 30,000 website will never accept 45,000 for the same thing next year, and a
+ * price list is read by everyone who was ever quoted from it.
+ *
+ * A discount off a real list price does the same job and reverses cleanly. The
+ * client gets a visible concession in exchange for something we actually want
+ * — a case study, a testimonial, a reference call — and when the references
+ * exist the discount simply stops. Same catalogue, same work, 38% more
+ * revenue, and no conversation in which anything "went up".
+ *
+ * The rate is set so the two ceilings the owner picked fall out exactly: a
+ * 2,25,000 app discounts to 1,50,000 and a 45,000 website to 30,000.
+ *
+ * THE DISCOUNT COMES OFF EVERYONE'S SHARE, NOT OUT OF THE MARGIN ALONE. Pay is
+ * derived from the money that actually arrives, so a founding project pays its
+ * builders less than a full-price one. That is deliberate and it must be said
+ * out loud when staffing: the alternative is absorbing the whole discount in
+ * margin, which makes early clients unprofitable and quietly discourages the
+ * very deals the discount exists to win. It also means every fee rises on its
+ * own the day discounting ends.
+ */
+
+/** A third off, in exchange for a case study and a reference call. */
+export const FOUNDING_DISCOUNT = 0.33;
+
+/**
+ * After this many delivered clients, the discount ends.
+ *
+ * A number rather than a date, because what retires it is having references,
+ * not time passing. Written down so it is a policy and not a habit — an
+ * "introductory" price with no stated end is just the price.
+ */
+export const FOUNDING_CLIENT_LIMIT = 10;
+
+/** What a founding client actually pays. Rounded to a number a human would quote. */
+export function foundingPrice(service: Service | ServiceKey): number {
+  const svc = typeof service === "string" ? SERVICE_BY_KEY[service] : service;
+  const raw = svc.price * (1 - FOUNDING_DISCOUNT);
+  // Round DOWN to a clean figure: the discount should never read as calculated
+  // to the rupee, and rounding down means the concession is never smaller than
+  // promised.
+  const step = raw >= 50_000 ? 5_000 : 1_000;
+  return Math.floor(raw / step) * step;
+}
+
+/** The founding quote: same arithmetic, applied to the money that arrives. */
+export function foundingQuoteFor(service: Service | ServiceKey): Quote {
+  const svc = typeof service === "string" ? SERVICE_BY_KEY[service] : service;
+  return quoteFor(svc, foundingPrice(svc));
+}
+
+/**
+ * What the discount costs, per service — the number worth knowing before
+ * offering it to the eleventh client out of habit.
+ */
+export function discountCost(service: Service | ServiceKey) {
+  const svc = typeof service === "string" ? SERVICE_BY_KEY[service] : service;
+  const list = quoteFor(svc);
+  const founding = foundingQuoteFor(svc);
+  return {
+    listPrice: list.dealValue,
+    foundingPrice: founding.dealValue,
+    givenAway: list.dealValue - founding.dealValue,
+    marginLost: list.margin - founding.margin,
+    buildersLost: list.slots.reduce((a, s) => a + s.net, 0) - founding.slots.reduce((a, s) => a + s.net, 0),
+    pmLost: list.projectManager.gross - founding.projectManager.gross,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
