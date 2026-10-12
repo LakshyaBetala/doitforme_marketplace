@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from 'sonner';
 import RealtimeListener from "@/components/RealtimeListener";
+import NativeShell from "@/components/NativeShell";
 import AttributionCapture from "@/components/AttributionCapture";
 import NotificationManager from "@/components/NotificationManager";
 // Request notification permission
@@ -185,6 +186,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Realtime Notification Listener */}
         <RealtimeListener />
+        {/* Renders nothing on the web; wires the Android back button and the
+            status bar in the Capacitor builds. See components/NativeShell.tsx. */}
+        <NativeShell />
 
         {/* Notification Manager */}
         <NotificationManager />
