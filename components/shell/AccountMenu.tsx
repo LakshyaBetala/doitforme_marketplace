@@ -173,11 +173,18 @@ export default function AccountMenu({
             "absolute bottom-[calc(100%+8px)] left-0 w-full origin-bottom rounded-[13px]",
             "border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-1.5",
             "shadow-[0_18px_44px_-14px_rgba(28,9,37,0.45)]",
-            "transition-[opacity,transform,visibility] duration-[var(--dur-pop)] ease-[var(--ease-out)]",
+            // Timing is set via the style prop below, not a bracketed duration
+            // utility: those are ambiguous under tailwindcss-animate and
+            // compile to nothing. See the note in tailwind.config.js.
+            "transition-[opacity,transform,visibility]",
             open
               ? "visible translate-y-0 scale-100 opacity-100"
               : "invisible translate-y-1 scale-[0.96] opacity-0",
           ].join(" ")}
+          style={{
+            transitionDuration: "var(--dur-pop)",
+            transitionTimingFunction: "var(--ease-out)",
+          }}
         >
           {items}
         </div>
@@ -188,9 +195,13 @@ export default function AccountMenu({
           inert={!open ? true : undefined}
           className={[
             "origin-top overflow-hidden rounded-[13px] border border-[var(--w-line-strong)] bg-[var(--w-raised)]",
-            "transition-[opacity,transform,max-height] duration-[var(--dur-pop)] ease-[var(--ease-out)]",
+            "transition-[opacity,transform,max-height]",
             open ? "mt-2 max-h-[420px] scale-100 p-1.5 opacity-100" : "max-h-0 scale-[0.98] opacity-0",
           ].join(" ")}
+          style={{
+            transitionDuration: "var(--dur-pop)",
+            transitionTimingFunction: "var(--ease-out)",
+          }}
         >
           {items}
         </div>

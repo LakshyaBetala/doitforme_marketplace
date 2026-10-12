@@ -88,5 +88,26 @@ module.exports = {
       },
     },
   },
-  plugins: [],
+  /**
+   * `tailwindcss-animate` supplies `animate-in`, `fade-in-*`,
+   * `slide-in-from-*` and `zoom-in-*`.
+   *
+   * THESE CLASSES WERE ALREADY USED IN 74 PLACES ACROSS 18 FILES AND NONE OF
+   * THEM DID ANYTHING. The plugin array was empty, so every one of those
+   * utilities compiled to nothing: Tailwind does not warn about a class it has
+   * no rule for, it simply emits no CSS. So every modal, bottom sheet,
+   * dropdown and toast in the product was written to animate in and instead
+   * appeared instantly — the apply sheet on `/gig/[id]`, the post form steps,
+   * the KYC screens. It read as cheap without pointing at a cause, because the
+   * markup says `animate-in slide-in-from-bottom-8` and looks correct in review.
+   *
+   * Installing the plugin is the whole fix; no component changed. Keep it in
+   * `plugins` rather than hand-rolling keyframes, because the existing call
+   * sites already use the plugin's exact class names and durations.
+   *
+   * Motion safety is handled globally: the `prefers-reduced-motion` block in
+   * app/globals.css zeroes every animation with `!important`, so enabling these
+   * does not override a user's OS-level request for less motion.
+   */
+  plugins: [require("tailwindcss-animate")],
 };

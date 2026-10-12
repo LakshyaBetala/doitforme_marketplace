@@ -77,13 +77,33 @@ export default function MobileNav({
         </div>
       </div>
 
-      {/* sheet — always mounted so it can animate out, inert while closed */}
+      {/*
+        sheet — always mounted so it can animate out, inert while closed
+
+        TIMING IS INLINE, NOT A TAILWIND CLASS, AND MUST STAY THAT WAY.
+        The arbitrary-value duration and delay utilities became ambiguous once
+        tailwindcss-animate was enabled (see tailwind.config.js): the plugin
+        registers animation-duration and animation-delay under the same names
+        core uses for the transition equivalents, so Tailwind cannot tell which
+        is meant and emits NOTHING AT ALL — no error, no class, just an
+        instantly-appearing drawer. Setting the properties here is explicit.
+
+        Do not write those utilities with a bracketed custom property in this
+        file again; use the style prop, as below.
+      */}
       <div
         className={[
           "fixed inset-0 z-50 lg:hidden",
-          "transition-[visibility] duration-[var(--dur-sheet)]",
-          open ? "visible" : "invisible delay-[var(--dur-sheet)]",
+          "transition-[visibility]",
+          open ? "visible" : "invisible",
         ].join(" ")}
+        style={{
+          transitionDuration: "var(--dur-sheet)",
+          // While closing, stay `visible` until the slide-out has finished —
+          // otherwise visibility flips first and the drawer vanishes instead
+          // of sliding away.
+          transitionDelay: open ? "0ms" : "var(--dur-sheet)",
+        }}
       >
         <button
           type="button"
@@ -92,18 +112,26 @@ export default function MobileNav({
           onClick={() => setOpen(false)}
           className={[
             "absolute inset-0 bg-[#2d1937]/45",
-            "transition-opacity duration-[var(--dur-sheet)] ease-[var(--ease-out)]",
+            "transition-opacity",
             open ? "opacity-100" : "pointer-events-none opacity-0",
           ].join(" ")}
+          style={{
+            transitionDuration: "var(--dur-sheet)",
+            transitionTimingFunction: "var(--ease-out)",
+          }}
         />
         <nav
           aria-label="Menu"
           aria-hidden={!open}
           className={[
             "absolute right-0 top-0 flex h-full w-[82%] max-w-[320px] flex-col bg-[var(--w-rail)] pt-[env(safe-area-inset-top)]",
-            "transition-transform duration-[var(--dur-sheet)] ease-[var(--ease-drawer)] will-change-transform",
+            "transition-transform will-change-transform",
             open ? "translate-x-0" : "translate-x-full",
           ].join(" ")}
+          style={{
+            transitionDuration: "var(--dur-sheet)",
+            transitionTimingFunction: "var(--ease-drawer)",
+          }}
         >
             <div className="flex h-[62px] items-center justify-between border-b border-[#623373] px-4">
               <span className="text-[13px] font-bold text-[var(--w-rail-faint)]">
