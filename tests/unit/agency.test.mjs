@@ -23,11 +23,11 @@ import {
   foundingPrice, foundingQuoteFor, discountCost, FOUNDING_DISCOUNT, FOUNDING_CLIENT_LIMIT,
   AI_SEAT_MONTHLY, SEATS, PROJECTS_PER_SEAT, WORKING_DAYS_PER_MONTH,
   overheadBudgetFor, feeVersusToolingFor,
-  amcFor, amcBreakdown, amcLoadHours, amcBook, amcBookForecast,
+  amcFor, amcMonth, amcYear, fixFeeFor, amcBook, amcBookForecast,
   AMC_YEAR_ONE_RATE, AMC_RENEWAL_RATE, AMC_MONTHLY_FLOOR, AMC_INCLUDES, AMC_EXCLUDES,
-  AMC_ATTACH_TARGET, AMC_ASSUMED_CHURN, AMC_ANNUAL_ESCALATION,
-  RECURRING_SPLIT, RECURRING_MARGIN_SHARE, RETAINER_COMMISSION_MONTHS, SUPPORT_HOURLY_RATE,
-  MAINTAINER_HOURS_PER_MONTH, PM_HOURS_PER_PLAN, PM_SPARE_HOURS_PER_MONTH,
+  AMC_ATTACH_TARGET, AMC_ASSUMED_CHURN, AMC_ANNUAL_ESCALATION, AMC_WORK_PROVISION,
+  FIX_DAY_RATE, FIX_MINIMUM_HOURS, SUPPORT_HOURLY_RATE,
+  PM_HOURS_PER_PLAN, PM_SPARE_HOURS_PER_MONTH,
   PLAYBOOK, LADDER, ladderFor, PROJECTS_PER_PM, monthlyCapacity,
   gstRunwayMonths, GST_SERVICE_THRESHOLD,
   FIXED_COSTS, FIXED_COSTS_MONTHLY, plansToCoverFixedCosts,
@@ -294,6 +294,24 @@ test("small builds are billed annually, because invoicing 500 costs more than 50
   }
 });
 
+test("the cheap plans do not promise a monthly change they cannot fund", () => {
+  // A 12,000 landing page's AMC is 200 a month - 2,400 a year - and one
+  // half-day fix is 500 of that. Promising a change every month would be
+  // promising 6,000 of work for 2,400.
+  assert.equal(amcFor("LANDING_PAGE").includesMonthlyChange, false);
+  assert.equal(amcFor("MOBILE_APP").includesMonthlyChange, true);
+  for (const s of SERVICES) {
+    const a = amcFor(s);
+    if (!a.includesMonthlyChange) continue;
+    // Where it IS promised, twelve of them must fit inside the year's provision.
+    const yr = amcYear({ monthly: a.yearOneMonthly, incidents: 0, changes: 12, changeHours: 2 });
+    assert.ok(
+      !yr.overProvision,
+      `${s.key}: promises a monthly change that costs ${yr.paidToStudents} against a ${yr.provision} provision`,
+    );
+  }
+});
+
 test("the AMC says what it includes and what it does not", () => {
   // "One new feature a month" left undefined is how the plan loses money on its
   // third month. The included change has to be bounded in writing.
@@ -304,71 +322,104 @@ test("the AMC says what it includes and what it does not", () => {
   assert.ok(/hosting/.test(exc), "hosting is not excluded");
 });
 
-test("an AMC month divides without overspending, and the commission expires", () => {
-  const paidOut = RECURRING_SPLIT.maintainer + RECURRING_SPLIT.pm +
-    RECURRING_SPLIT.commission + RECURRING_SPLIT.overhead;
-  assert.ok(paidOut < 1);
-  assert.ok(Math.abs(RECURRING_MARGIN_SHARE - (1 - paidOut)) < 1e-9);
-  // Most of an AMC is one person doing small jobs, so the maintainer takes the
-  // largest share. Running it on the BUILD split would pay a recruiter and a
-  // manager in perpetuity for a sale and a handover that happened once.
-  assert.ok(
-    RECURRING_SPLIT.maintainer > RECURRING_SPLIT.pm + RECURRING_SPLIT.commission,
-    "the person doing the work must take more than the people who are not",
-  );
-  assert.ok(RECURRING_SPLIT.maintainer > DEAL_SPLIT.delivery);
+test("an AMC is Almmatix revenue, with a provision rather than a standing wage", () => {
+  // The first version paid a maintainer 40% every month whether or not anything
+  // needed doing, which left Almmatix 32% of the AMC. Measured against a real
+  // year - 5 incidents and 12 small changes - hiring only when work arrives
+  // keeps 84%, and 98% in a quiet year. An AMC is an insurance premium plus a
+  // promise to respond, not a salary for somebody to stand by.
+  assert.ok(AMC_WORK_PROVISION > 0, "a plan with no provision pretends fixes are free");
+  assert.ok(AMC_WORK_PROVISION < 0.45, "a provision this large is a standing wage again");
 
   for (const m of [500, 1_000, 1_700, 2_500, 3_600]) {
-    const b = amcBreakdown(m);
-    assert.equal(
-      b.maintainer.gross + b.projectManager.gross + b.outreach.gross + b.overhead + b.margin,
-      m,
-      `${m}: AMC lines do not sum back to the month`,
-    );
-    assert.ok(b.margin > 0, `${m}: an AMC month is unprofitable`);
-    assert.ok(b.maintainer.gross > 0, `${m}: nobody is paid to do the work`);
-    // After twelve months nobody is still selling it, so the commission stops.
-    const after = amcBreakdown(m, false);
-    assert.equal(after.outreach.gross, 0);
-    assert.ok(after.margin > b.margin, `${m}: dropping the commission did not help the margin`);
+    const month = amcMonth(m);
+    assert.equal(month.monthly, m);
+    assert.equal(month.provision + month.marginIfSpent, m, `${m}: the month does not sum`);
+    assert.equal(month.marginIfQuiet, m, `${m}: a quiet month must keep the whole payment`);
+    assert.ok(month.marginIfSpent > 0, `${m}: unprofitable even before anything breaks`);
+    assert.ok(month.marginIfQuiet > month.marginIfSpent, `${m}: the provision costs nothing`);
   }
-  assert.ok(RETAINER_COMMISSION_MONTHS > 0 && RETAINER_COMMISSION_MONTHS <= 24);
+  assert.equal(amcMonth(0).provision, 0);
+  assert.equal(amcMonth(-500).monthly, 0);
 });
 
-test("AMC workload is derived from the maintainer's pay, not guessed", () => {
-  assert.ok(amcLoadHours(2_500) >= 8, "a 2,500 plan must fund enough hours for a small change");
-  assert.ok(amcLoadHours(3_600) > amcLoadHours(1_000), "a bigger plan must be more work");
-  assert.ok(amcLoadHours(1) >= 1, "never zero hours - somebody still has to look");
+test("a fix is a real gig, never paid in slivers of an hour", () => {
+  // A one-hour fix still costs a brief, a gig, a review and a payout. Paying
+  // for the hour and absorbing the rest as unpaid overhead is how small jobs
+  // become jobs nobody wants.
+  assert.equal(fixFeeFor(1), FIX_DAY_RATE / 2, "below the minimum must still pay half a day");
+  assert.equal(fixFeeFor(FIX_MINIMUM_HOURS), FIX_DAY_RATE / 2);
+  assert.equal(fixFeeFor(8), FIX_DAY_RATE, "a full day pays a full day");
+  assert.ok(fixFeeFor(12) > fixFeeFor(8), "more hours must pay more");
+  // Monotonic, so quoting an extra hour can never pay less.
+  let prev = 0;
+  for (let h = 0; h <= 40; h++) {
+    const fee = fixFeeFor(h);
+    assert.ok(fee >= prev, `fixFeeFor(${h}) fell below fixFeeFor(${h - 1})`);
+    prev = fee;
+  }
+});
+
+test("a year of AMC stays profitable through a bad year, and says when it does not", () => {
+  const monthly = amcFor("MOBILE_APP").yearOneMonthly;
+
+  const quiet = amcYear({ monthly, incidents: 2, changes: 0 });
+  const normal = amcYear({ monthly, incidents: 5, changes: 12 });
+  const bad = amcYear({ monthly, incidents: 12, incidentHours: 4, changes: 12, changeHours: 3 });
+
+  assert.ok(quiet.marginPct > normal.marginPct, "a quiet year must beat a normal one");
+  assert.ok(normal.marginPct > bad.marginPct, "a bad year must cost more");
+  // Even the bad year has to be worth having, or the AMC is a liability.
+  assert.ok(bad.margin > 0, `a bad year loses money: ${bad.margin}`);
+  assert.ok(normal.marginPct >= 60, `a normal year keeps only ${normal.marginPct}%`);
+
+  // The provision is what flags a client to reprice at renewal rather than
+  // quietly subsidise out of the others.
+  assert.equal(quiet.overProvision, false, "a quiet year cannot be over provision");
+  assert.equal(
+    normal.overProvision,
+    false,
+    "a NORMAL year must sit inside the provision - a flag that fires on normal teaches you to ignore flags",
+  );
+  assert.ok(bad.overProvision, "a bad year must be flagged as over provision");
+
+  // Every rupee paid out is a gig, so the platform earns its fee on it.
+  assert.ok(normal.platformRevenue > 0);
+  assert.equal(normal.margin, normal.revenue - normal.paidToStudents);
+  assert.equal(amcYear({ monthly: 0 }).revenue, 0);
 });
 
 /* -------------------------------------------------------------------------- */
-/* The book, and what it costs to run                                         */
+/* The book, and the one cost that does not go away                           */
 /* -------------------------------------------------------------------------- */
 
-test("a book reports its cost in people, not only its revenue", () => {
+test("a book reports its provision and its PM load, not just revenue", () => {
+  // There is no standing maintainer headcount any more - that was the point.
+  // What remains is PM time, which is the binding constraint on everything.
   const values = [2_500, 2_500, 1_700, 1_000];
   const book = amcBook(values);
   assert.equal(book.plans, 4);
   assert.equal(book.mrr, 7_700);
   assert.equal(book.arr, 7_700 * 12);
-  assert.equal(book.hours, values.reduce((a, v) => a + amcLoadHours(v), 0));
-  assert.equal(book.maintainersNeeded, Math.ceil(book.hours / MAINTAINER_HOURS_PER_MONTH));
-  assert.ok(book.maintainersNeeded >= 1, "a book with revenue and no maintainers is a fiction");
+  assert.equal(book.provision, values.reduce((a, v) => a + amcMonth(v).provision, 0));
+  assert.equal(book.marginIfSpent, book.mrr - book.provision);
+  assert.ok(book.marginIfSpent > book.provision, "most of an AMC must be margin, not provision");
   assert.equal(book.pmHours, 4 * PM_HOURS_PER_PLAN);
 });
 
-test("an empty book is zero everywhere and needs nobody", () => {
+test("an empty book is zero everywhere", () => {
   const book = amcBook([]);
   assert.equal(book.plans, 0);
   assert.equal(book.mrr, 0);
-  assert.equal(book.maintainersNeeded, 0);
+  assert.equal(book.provision, 0);
   assert.equal(book.pmOverloaded, false);
   assert.equal(amcBook([0, -500]).plans, 0, "junk must not invent revenue");
 });
 
 test("the book eventually overloads one PM, and says so", () => {
-  // The assertion that stops the forecast being read as a hiring plan: plans
-  // consume the same PM hours that deliver new projects.
+  // Triage is not fixing, but it is still the PM's minutes, and at thirty plans
+  // that is real. Free while the owner is the PM; the day one is hired they
+  // need a share of the book or maintenance is what they deprioritise.
   const threshold = Math.floor(PM_SPARE_HOURS_PER_MONTH / PM_HOURS_PER_PLAN);
   assert.equal(amcBook(Array(threshold).fill(1_700)).pmOverloaded, false);
   assert.equal(amcBook(Array(threshold + 1).fill(1_700)).pmOverloaded, true);
@@ -380,7 +431,7 @@ test("a handful of plans covers the whole fixed cost base", () => {
   // The PM's own seat runs every month whether or not anything is in flight, so
   // it is a fixed cost and not project overhead.
   assert.ok(FIXED_COSTS.some((c) => c.monthly === AI_SEAT_MONTHLY), "the PM's seat is not in fixed costs");
-  assert.ok(plansToCoverFixedCosts(2_500) <= 12);
+  assert.ok(plansToCoverFixedCosts(2_500) <= 6);
   assert.ok(
     plansToCoverFixedCosts(2_500) < plansToCoverFixedCosts(1_000),
     "a bigger plan must cover the costs faster",
@@ -405,7 +456,7 @@ test("the planning assumptions are present and sane", () => {
   assert.ok(AMC_ATTACH_TARGET > 0 && AMC_ATTACH_TARGET <= 1);
   // Support for clients WITHOUT a plan must be billable, or twenty live
   // projects become twenty free interruptions paid for out of new work.
-  assert.ok(SUPPORT_HOURLY_RATE > 0);
+  assert.ok(SUPPORT_HOURLY_RATE > FIX_DAY_RATE / 8, "no-plan support must cost more than plan work");
 });
 
 /* -------------------------------------------------------------------------- */

@@ -55,7 +55,7 @@
  * truth for prices before there is a single international client.
  */
 
-import { platformFeeFor, type FeeAudience } from "./fees";
+import { platformFeeFor, PLATFORM_FEES, type FeeAudience } from "./fees";
 
 /* -------------------------------------------------------------------------- */
 /* How a deal divides                                                         */
@@ -657,6 +657,16 @@ export type Amc = {
   renewalMonthly: number;
   /** 'monthly' once the monthly figure clears the floor, else one annual bill. */
   billing: "monthly" | "annual";
+  /**
+   * Whether a small change every month is included.
+   *
+   * It cannot be, below AMC_CHANGE_INCLUDED_FLOOR. A 12,000 landing page's AMC
+   * is 200 a month - 2,400 a year - and one half-day fix is 500 of that.
+   * Promising a monthly change on it would mean promising 6,000 of work for
+   * 2,400. The cheaper plans are monitoring, patching and bug fixes, with
+   * changes quoted at SUPPORT_HOURLY_RATE.
+   */
+  includesMonthlyChange: boolean;
 };
 
 /**
@@ -678,73 +688,198 @@ export function amcFor(service: Service | ServiceKey, dealValueOverride?: number
     renewalAnnual: renewalMonthly * 12,
     renewalMonthly,
     billing: yearOneMonthly >= AMC_MONTHLY_FLOOR ? "monthly" : "annual",
+    includesMonthlyChange: yearOneMonthly >= AMC_CHANGE_INCLUDED_FLOOR,
   };
 }
 
 /**
- * How an AMC payment divides.
+ * HOW AN AMC PAYMENT DIVIDES: IT MOSTLY DOES NOT.
  *
- * DELIBERATELY NOT the build split. Most of an AMC is one person doing small
- * jobs: there is nothing to coordinate, so the PM share is small, and nobody is
- * selling it again every month, so the commission is capped at
- * RETAINER_COMMISSION_MONTHS. Running an AMC on the build split would pay a
- * recruiter and a manager in perpetuity for a sale and a handover that happened
- * once.
+ * The first version paid a standing maintainer share of 40% every month,
+ * whether or not anything needed doing. Measured against what a year of
+ * maintenance actually is, that was indefensible:
+ *
+ *   standing 40% share          Almmatix keeps 32% of the AMC
+ *   on demand, quiet year       98%   (2 incidents, 6 hours)
+ *   on demand, normal year      84%   (5 incidents + 12 small changes, 39 hours)
+ *   on demand, bad year         65%   (12 incidents + 12 changes, 84 hours)
+ *
+ * An AMC is not a salary for somebody to stand by. It is an insurance premium
+ * plus a promise to respond, and most months nothing happens. So the revenue is
+ * Almmatix's, a provision is set aside against the work that does arrive, and
+ * anybody needed is hired for that specific job - posted as a normal gig, which
+ * means escrow, a real fee, and DoItForMe's platform fee on it like any other.
+ *
+ * TWO CONDITIONS, AND THEY ARE NOT OPTIONAL.
+ *
+ * 1. THE ORIGINAL BUILDER GETS FIRST REFUSAL on fixes to their own work. A
+ *    fresh student reading unfamiliar code takes three times as long, which is
+ *    how a 65% margin becomes a 30% one. It is also the cheapest retention
+ *    offer available: small paid work arriving months after the project, for
+ *    somebody who already knows the codebase.
+ *
+ * 2. SOMEBODY STILL HAS TO ANSWER WITHIN A DAY. Triage is not fixing - reading
+ *    the alert and deciding is minutes - but it is the PM's minutes, and at
+ *    thirty plans that is real. Free while the owner is the PM. The day a PM is
+ *    hired they need a share of the AMC book or maintenance becomes the thing
+ *    they deprioritise, every time, because nothing pays them for it.
  */
-export const RECURRING_SPLIT = {
-  /** The maintainer off the tech bench. 1,000 of a 2,500 plan is ~8 hours. */
-  maintainer: 0.4,
-  pm: 0.1,
-  /** Only for the first RETAINER_COMMISSION_MONTHS. */
-  commission: 0.1,
-  overhead: 0.05,
-} as const;
-
-export const RECURRING_MARGIN_SHARE =
-  1 - RECURRING_SPLIT.maintainer - RECURRING_SPLIT.pm - RECURRING_SPLIT.commission - RECURRING_SPLIT.overhead;
 
 /**
- * Outreach keeps earning on an AMC, but not for ever.
+ * Share of AMC revenue budgeted for the work that actually arrives.
  *
- * A commission that never ends makes the first year's sales an annuity nobody
- * is still working for. Twelve months is long enough that selling the plan is
- * clearly worth doing, short enough that the book stays Almmatix's.
+ * A provision, not a split: unspent, it is margin. Consistently overspent on
+ * one client, that client is repriced at renewal rather than quietly subsidised
+ * out of the others.
+ *
+ * 30%, not 20%, and the included monthly change is why. Twelve changes a year
+ * at the half-day minimum is 6,000 on a 30,000 AMC before a single thing has
+ * broken - so a 20% provision flagged a perfectly NORMAL year as over budget,
+ * which is a flag that teaches you to ignore flags. The promise of a change
+ * every month is the expensive part of this product, not the bugs.
  */
-export const RETAINER_COMMISSION_MONTHS = 12;
+export const AMC_WORK_PROVISION = 0.3;
 
-export type AmcBreakdown = {
+/** Gross day rate for a fix gig. Nets the student the usual ~900. */
+export const FIX_DAY_RATE = 1_000;
+
+/**
+ * Nothing is posted for less than half a day.
+ *
+ * A one-hour fix still costs a brief, a gig, a review and a payout. Paying for
+ * the hour and absorbing the rest of that as unpaid overhead is how small jobs
+ * become jobs nobody wants.
+ */
+export const FIX_MINIMUM_HOURS = 4;
+
+/** What a fix gig pays, rounded up to the half day. */
+export function fixFeeFor(hours: number): number {
+  const h = Math.max(FIX_MINIMUM_HOURS, Math.ceil(hours));
+  const halfDays = Math.ceil(h / 4);
+  return halfDays * (FIX_DAY_RATE / 2);
+}
+
+/**
+ * The monthly AMC at which a change every month becomes affordable.
+ *
+ * DERIVED, not picked. Twelve changes a year at the half-day minimum must fit
+ * inside the work provision, so the floor is that annual cost divided by the
+ * provision rate, divided by twelve. At today's numbers that is about 1,700 a
+ * month, which is an AMC on a build of roughly a lakh - and the test that
+ * caught this was the online store, whose 1,200 plan was promising 6,000 of
+ * changes against a 4,300 provision.
+ *
+ * Only the larger builds get the promise, which is also where it belongs: a
+ * three-page site does not evolve every month, and a platform does.
+ */
+export const AMC_CHANGE_INCLUDED_FLOOR = Math.ceil(
+  (12 * fixFeeFor(2)) / AMC_WORK_PROVISION / 12 / 100,
+) * 100;
+
+
+
+export type AmcMonth = {
   monthly: number;
-  maintainer: Pay;
-  projectManager: Pay;
-  outreach: Pay;
-  overhead: number;
-  margin: number;
-  platformRevenue: number;
+  /** Set aside for fixes and the included change. Unspent, it is margin. */
+  provision: number;
+  /** What Almmatix keeps if the provision is fully spent. */
+  marginIfSpent: number;
+  /** What Almmatix keeps in a month where nothing happens. */
+  marginIfQuiet: number;
+  /** Roughly how many hours of student time the provision buys per month. */
+  hoursCovered: number;
 };
 
-/** One month of an AMC, broken out. `withCommission` is false after year one. */
-export function amcBreakdown(monthly: number, withCommission = true): AmcBreakdown {
+/** One month of an AMC under the on-demand model. */
+export function amcMonth(monthly: number): AmcMonth {
   const m = Math.max(0, Math.round(monthly));
-  const pay = (gross: number): Pay => {
-    const platformFee = platformFeeFor(gross, AGENCY_FEE_AUDIENCE);
-    return { gross, platformFee, net: gross - platformFee };
-  };
-
-  const maintainer = pay(roundFee(m * RECURRING_SPLIT.maintainer));
-  const projectManager = pay(roundFee(m * RECURRING_SPLIT.pm));
-  const outreach = pay(withCommission ? roundFee(m * RECURRING_SPLIT.commission) : 0);
-  const overhead = roundFee(m * RECURRING_SPLIT.overhead);
-  const paidOut = maintainer.gross + projectManager.gross + outreach.gross + overhead;
-
+  const provision = roundFee(m * AMC_WORK_PROVISION);
   return {
     monthly: m,
-    maintainer,
-    projectManager,
-    outreach,
-    overhead,
-    // The margin absorbs the rounding, so the lines always sum back to `monthly`.
-    margin: m - paidOut,
-    platformRevenue: maintainer.platformFee + projectManager.platformFee + outreach.platformFee,
+    provision,
+    marginIfSpent: m - provision,
+    marginIfQuiet: m,
+    hoursCovered: Math.round((provision / FIX_DAY_RATE) * 8),
+  };
+}
+
+/**
+ * A year of an AMC against a given amount of work, so a client can be checked
+ * rather than assumed profitable.
+ *
+ * `incidents` and `changes` are counts; the hours are what each typically
+ * takes. Returns the real margin, and flags a client who is costing more than
+ * they pay - the one fact that should drive a renewal conversation.
+ */
+export function amcYear(args: {
+  monthly: number;
+  incidents?: number;
+  incidentHours?: number;
+  changes?: number;
+  changeHours?: number;
+}) {
+  const revenue = Math.max(0, Math.round(args.monthly)) * 12;
+  const incidents = Math.max(0, args.incidents ?? 5);
+  const changes = Math.max(0, args.changes ?? 12);
+  const hours = incidents * (args.incidentHours ?? 3) + changes * (args.changeHours ?? 2);
+
+  // Each job is posted separately, so each is rounded to the half day. Billing
+  // the year as one lump would understate the real cost.
+  const paidToStudents =
+    incidents * fixFeeFor(args.incidentHours ?? 3) + changes * fixFeeFor(args.changeHours ?? 2);
+  const platformRevenue = Math.ceil(paidToStudents * PLATFORM_FEES[AGENCY_FEE_AUDIENCE]);
+
+  return {
+    revenue,
+    hours,
+    paidToStudents,
+    platformRevenue,
+    margin: revenue - paidToStudents,
+    marginPct: revenue ? Math.round((100 * (revenue - paidToStudents)) / revenue) : 0,
+    provision: roundFee(revenue * AMC_WORK_PROVISION),
+    /** True when the work exceeded what was budgeted - reprice at renewal. */
+    overProvision: paidToStudents > roundFee(revenue * AMC_WORK_PROVISION),
+  };
+}
+
+/** Client-relationship and triage time per plan that lands on the PM. */
+export const PM_HOURS_PER_PLAN = 0.5;
+
+/** A PM's own realistic monthly hours, after delivery work. */
+export const PM_SPARE_HOURS_PER_MONTH = 12;
+
+/** What share of delivered projects should end up on a plan. */
+export const AMC_ATTACH_TARGET = 0.6;
+
+/** Assumed annual churn, for planning. Zero churn is not a plan. */
+export const AMC_ASSUMED_CHURN = 0.2;
+
+/** Standard in an AMC: the price rises on renewal. Belongs in the contract. */
+export const AMC_ANNUAL_ESCALATION = 0.1;
+
+/**
+ * A book of plans: the money, and the one cost that does not go away.
+ *
+ * There is no standing maintainer headcount any more - that was the whole
+ * point. What remains is PM time, which is the binding constraint on
+ * everything, so the book still reports it and still says when it has outgrown
+ * one person.
+ */
+export function amcBook(monthlyValues: number[]) {
+  const plans = monthlyValues.filter((v) => v > 0);
+  const mrr = plans.reduce((a, v) => a + v, 0);
+  const provision = plans.reduce((a, v) => a + amcMonth(v).provision, 0);
+
+  return {
+    plans: plans.length,
+    mrr,
+    arr: mrr * 12,
+    /** Budgeted for work each month across the whole book. */
+    provision,
+    /** Kept if the whole provision is spent - the pessimistic reading. */
+    marginIfSpent: mrr - provision,
+    pmHours: Number((plans.length * PM_HOURS_PER_PLAN).toFixed(1)),
+    pmOverloaded: plans.length * PM_HOURS_PER_PLAN > PM_SPARE_HOURS_PER_MONTH,
   };
 }
 
@@ -975,62 +1110,6 @@ export function discountCost(service: Service | ServiceKey) {
  * revenue on its own is the number that makes a book look free.
  */
 
-/** Roughly how much work one plan is per month, by its monthly value. */
-export function amcLoadHours(monthly: number): number {
-  // The maintainer's share divided by the student day rate, in hours. A 2,500
-  // plan pays 1,000, which is about a day: updates, monitoring, one small
-  // change. Derived rather than tabulated so it cannot drift from the split.
-  const toMaintainer = monthly * RECURRING_SPLIT.maintainer;
-  return Math.max(1, Math.round((toMaintainer / TARGET_STUDENT_DAY_RATE_NET) * 8));
-}
-
-/**
- * Hours a month one maintainer covers.
- *
- * 40, not 20: maintenance is somebody's main gig rather than a side task, and
- * at 20 the forecast demanded six maintainers for nineteen plans - each
- * earning about 2,100 a month, which is too little to hold anyone. Fewer
- * people with more plans each is both cheaper to run and a better job.
- */
-export const MAINTAINER_HOURS_PER_MONTH = 40;
-
-/** Client-relationship time per plan that lands on the PM whatever the tier. */
-export const PM_HOURS_PER_PLAN = 0.5;
-
-/** A PM's own realistic monthly hours, after delivery work. */
-export const PM_SPARE_HOURS_PER_MONTH = 12;
-
-/** What share of delivered projects should end up on a plan. */
-export const AMC_ATTACH_TARGET = 0.6;
-
-/** Assumed annual churn, for planning. Zero churn is not a plan. */
-export const AMC_ASSUMED_CHURN = 0.2;
-
-/** Standard in an AMC: the price rises on renewal. Belongs in the contract. */
-export const AMC_ANNUAL_ESCALATION = 0.1;
-
-/**
- * A book of plans: the money, and what servicing it costs in people.
- *
- * Takes monthly values rather than plan names, because the AMC is derived from
- * each build and no two clients need pay the same.
- */
-export function amcBook(monthlyValues: number[]) {
-  const plans = monthlyValues.filter((v) => v > 0);
-  const mrr = plans.reduce((a, v) => a + v, 0);
-  const hours = plans.reduce((a, v) => a + amcLoadHours(v), 0);
-
-  return {
-    plans: plans.length,
-    mrr,
-    arr: mrr * 12,
-    hours,
-    maintainersNeeded: Math.ceil(hours / MAINTAINER_HOURS_PER_MONTH),
-    pmHours: Number((plans.length * PM_HOURS_PER_PLAN).toFixed(1)),
-    pmOverloaded: plans.length * PM_HOURS_PER_PLAN > PM_SPARE_HOURS_PER_MONTH,
-  };
-}
-
 /**
  * What it costs to keep the lights on, monthly, independent of any project.
  *
@@ -1049,9 +1128,15 @@ export const FIXED_COSTS = [
 
 export const FIXED_COSTS_MONTHLY = FIXED_COSTS.reduce((a, c) => a + c.monthly, 0);
 
-/** How many plans at a given monthly value cover the fixed costs. */
+/**
+ * How many plans at a given monthly value cover the fixed costs.
+ *
+ * Uses marginIfSpent - the pessimistic reading, where every rupee of the work
+ * provision is actually spent. A cover figure computed on a quiet month would
+ * be the number that looks best rather than the one to plan on.
+ */
 export function plansToCoverFixedCosts(monthly: number): number {
-  const perPlan = amcBreakdown(monthly).margin;
+  const perPlan = amcMonth(monthly).marginIfSpent;
   if (perPlan <= 0) return Number.POSITIVE_INFINITY;
   return Math.ceil(FIXED_COSTS_MONTHLY / perPlan);
 }
