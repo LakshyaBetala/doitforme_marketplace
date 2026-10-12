@@ -84,22 +84,45 @@ export const SPLIT_TIERS: Array<{ upTo: number; label: string; split: DealSplit 
   {
     upTo: 50_000,
     label: "small",
-    // Almost all build, almost no management. 46% margin.
-    split: { commission: 0.1, delivery: 0.3, pm: 0.1, overhead: 0.04 },
+    // Almost all build, almost no management. 44% margin.
+    split: { commission: 0.1, delivery: 0.3, pm: 0.12, overhead: 0.04 },
   },
   {
     upTo: 100_000,
     label: "mid",
-    // 50% margin.
-    split: { commission: 0.1, delivery: 0.24, pm: 0.12, overhead: 0.04 },
+    // 47% margin.
+    split: { commission: 0.1, delivery: 0.24, pm: 0.15, overhead: 0.04 },
   },
   {
     upTo: Number.POSITIVE_INFINITY,
     label: "large",
-    // Real coordination, real QA, real client management. 53% margin.
-    split: { commission: 0.1, delivery: 0.2, pm: 0.13, overhead: 0.04 },
+    // Three builders, integration, store submission, a client who expects
+    // weekly answers. 48% margin.
+    split: { commission: 0.1, delivery: 0.2, pm: 0.18, overhead: 0.04 },
   },
 ];
+
+/**
+ * WHY THE PM SHARE WENT UP AND THE MARGIN CAME DOWN.
+ *
+ * At a 13% large-tier share the PM earned 27,300 a month at full capacity —
+ * two concurrent projects, every slot filled. That is a junior project
+ * manager's salary for a job that is project manager, senior developer, QA,
+ * integrator and account manager at once. Fine while the owner IS the PM, since
+ * the fee and the margin both land in the same pocket; impossible the moment a
+ * second PM has to be paid, which is the thing that caps the whole business.
+ *
+ * The five points came out of the MARGIN, not out of the builders. Two reasons.
+ * A 53% margin exists to cover fixed salaries, an office and a bench that sits
+ * idle between projects — and this company has none of those, so it was
+ * over-collecting for costs it does not bear. And the builders at 12,240 net on
+ * a mobile app are the hardest group to replace; funding the PM out of their
+ * fees would pay for the bottleneck by shrinking the bench that feeds it.
+ *
+ * 44-48% is still well above the 25-35% a staffed agency runs on, and the
+ * client still pays 3-5x less than market. That gap is the whole arbitrage:
+ * variable costs instead of fixed ones.
+ */
 
 export function tierFor(dealValue: number) {
   return SPLIT_TIERS.find((t) => dealValue < t.upTo) ?? SPLIT_TIERS[SPLIT_TIERS.length - 1];

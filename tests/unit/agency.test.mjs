@@ -100,6 +100,24 @@ test("the delivery pool share FALLS as the price rises, and margin rises", () =>
   assert.ok(splitFor(30_000).pm < splitFor(150_000).pm);
   assert.ok(marginShareFor(30_000) < marginShareFor(150_000));
   assert.ok(marginShareFor(30_000) > 0.3, "even the thinnest tier must be worth doing");
+  // And every tier stays above what a STAFFED agency runs on (25-35%), because
+  // there is no payroll, no office and no idle bench behind these numbers.
+  for (const t of SPLIT_TIERS) {
+    const m = 1 - t.split.commission - t.split.delivery - t.split.pm - t.split.overhead;
+    assert.ok(m > 0.35, `${t.label}: ${(m * 100).toFixed(0)}% margin is at staffed-agency level`);
+    assert.ok(m < 0.55, `${t.label}: ${(m * 100).toFixed(0)}% over-collects for costs we do not bear`);
+  }
+});
+
+test("the PM share rises with project size, and a PM can live on it", () => {
+  // The PM is the binding constraint on the whole business, and the share has
+  // to clear a promoted-student's alternative or the only PM pipeline closes.
+  assert.ok(splitFor(150_000).pm > splitFor(30_000).pm, "a 3-builder app needs more PM than a one-pager");
+  // Two concurrent slots, 21 working days a month: the monthly figure is what
+  // actually decides whether a second PM is hirable.
+  const q = quoteFor("WEB_PLATFORM");
+  const perMonth = (2 / (q.service.days / 21)) * q.projectManager.gross;
+  assert.ok(perMonth >= 35_000, `a PM at capacity earns only ${Math.round(perMonth)}/month`);
 });
 
 test("the commission share is identical at every tier", () => {
@@ -223,9 +241,9 @@ test("the two ceiling services produce the numbers the plan was decided on", () 
   assert.equal(app.tier, "large");
   assert.equal(app.outreach.gross, 15_000);
   assert.equal(app.outreach.net, 13_500);
-  assert.equal(app.projectManager.gross, 19_500);
+  assert.equal(app.projectManager.gross, 27_000);
   assert.equal(app.overhead, 6_000);
-  assert.equal(app.margin, 79_500);
+  assert.equal(app.margin, 72_000);
 
   const site = quoteFor("MARKETING_SITE");
   assert.equal(site.dealValue, 30_000);
@@ -234,7 +252,7 @@ test("the two ceiling services produce the numbers the plan was decided on", () 
   assert.equal(site.slots.length, 1);
   assert.equal(site.slots[0].gross, 9_000);
   assert.equal(site.slots[0].net, 8_100);
-  assert.equal(site.margin, 13_800);
+  assert.equal(site.margin, 13_200);
 });
 
 test("the delivery pool is split by weight, not evenly", () => {
