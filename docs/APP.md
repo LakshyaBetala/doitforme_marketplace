@@ -13,13 +13,37 @@ wraps `https://www.doitforme.in` rather than bundling a static export.
 |---|---|
 | PWA (installable, offline shell, home-screen icon) | **done** — manifest, icon set, safe areas, status bar |
 | Capacitor config | **done** — `capacitor.config.ts` |
-| Native projects (`android/`, `ios/`) | **not generated** — needs Android Studio / Xcode, see below |
+| `android/` native project | **generated and committed** (Capacitor 7) |
+| Debug APK | **builds** — 21.8 MB, verified 2026-10-13 |
+| `ios/` native project | **not generated** — needs Xcode on macOS, impossible on Windows |
 | Store listings, signing keys, review | **not started** |
 
-Nothing here runs in CI and none of it affects the Cloudflare build. The
-Capacitor dependencies are deliberately **not** in `package.json` yet, so the
-Worker bundle does not carry them — add them on the machine doing the native
-build.
+### Building the APK: it needs JDK 21, not 17
+
+**`./gradlew assembleDebug` fails with `invalid source release: 21` under JDK
+17.** Capacitor 7 targets Java 21, and the error names the version it wanted
+rather than the one it found, which makes it read like a Gradle misconfiguration.
+A JDK 21 is already on this machine inside Android Studio, so no separate
+install is needed:
+
+```bash
+cd android
+JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" \
+ANDROID_HOME="$LOCALAPPDATA/Android/Sdk" \
+  ./gradlew assembleDebug --no-daemon
+# -> android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Run `npx cap sync android` first whenever a Capacitor plugin is added, or the
+native project will not register it.
+
+The Capacitor dependencies **are** now in `package.json`. That is safe for the
+Worker because every import in
+[components/NativeShell.tsx](../components/NativeShell.tsx) is dynamic and
+behind a native-platform check — measured at **+5.24 KiB gzipped**, with the
+library itself absent from `.open-next/worker.js`. Keep it that way: the Worker
+had **33 KiB** of headroom at the time of writing, so a static Capacitor import
+would be a deploy failure rather than a build one.
 
 ## What the PWA already does
 

@@ -205,18 +205,33 @@ export default function WorkerSetupPage() {
         ? decodeURIComponent(existingResumeUrl.split('/').pop()?.split('?')[0] || 'resume')
         : null;
 
-    const inputStyle = "w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base placeholder:text-white/50 focus:outline-none focus:border-[#8825F5] focus:ring-1 focus:ring-[#8825F5] transition appearance-none";
-    const labelStyle = "block text-sm font-bold text-white/80 mb-2";
-    const sectionCardStyle = "bg-[#121217]/80 border border-white/[0.06] rounded-2xl p-5 md:p-6";
+    /*
+     * PALETTE NOTE — this screen was dark inside the cream shell.
+     *
+     * It renders under app/profile/layout.tsx, which is WorkspaceLayout plus
+     * workspace-theme.css, so the surrounding rail and topbar are cream. These
+     * three constants hardcoded the DARK palette (`#0B0B11` fields, `#121217`
+     * cards, `text-white` labels), which made the whole payout form a black
+     * panel inside a cream frame. It is the screen where a student enters the
+     * UPI ID they get paid into, so it is a poor place to look broken.
+     *
+     * Written as token roles instead of colours: the same class now resolves
+     * dark on public routes and cream here. See the token contract in
+     * CLAUDE.md — `--accent` is the palette-correct focus colour, where
+     * `#8825F5` is the dark-theme value of it.
+     */
+    const inputStyle = "w-full p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--fg)] text-base placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition appearance-none";
+    const labelStyle = "block text-sm font-bold text-[var(--fg)] mb-2";
+    const sectionCardStyle = "bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 md:p-6";
 
-    if (fetching) return <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[#8825F5]" /></div>;
+    if (fetching) return <div className="min-h-[50vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" /></div>;
 
     return (
-        <div className="min-h-[100dvh] bg-[#0B0B11] text-white p-4 md:p-8 pb-24">
+        <div className="p-4 md:p-8 pb-24 text-[var(--fg)]">
             <div className="max-w-2xl mx-auto">
                 <button
                     onClick={() => router.back()}
-                    className="flex items-center gap-2 text-white/60 hover:text-white mb-6 transition-colors"
+                    className="flex items-center gap-2 min-h-11 text-[var(--fg-muted)] hover:text-[var(--fg)] mb-6 transition-colors"
                 >
                     <ArrowLeft size={20} /> Back
                 </button>
@@ -225,11 +240,11 @@ export default function WorkerSetupPage() {
                 <div className="mb-8">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8825F5] to-[#C9A9FF] flex items-center justify-center shadow-lg shadow-[#8825F5]/20">
-                            <Briefcase className="text-white" size={22} />
+                            <Briefcase className="text-[var(--on-accent)]" size={22} aria-hidden="true" />
                         </div>
                         <div>
                             <h1 className="text-2xl md:text-3xl font-black tracking-tight">Worker Profile</h1>
-                            <p className="text-white/40 text-sm">Stand out to companies & posters</p>
+                            <p className="text-[var(--fg-faint)] text-sm">Stand out to companies & posters</p>
                         </div>
                     </div>
                 </div>
@@ -237,14 +252,14 @@ export default function WorkerSetupPage() {
                 {/* Apply Required Banner — only when something's still missing */}
                 {fromApply && !requiredMet && (
                     <div className="mb-8 relative overflow-hidden bg-gradient-to-r from-red-500/10 via-[#8825F5]/10 to-blue-500/10 border-2 border-red-500/30 rounded-3xl p-6 shadow-[0_0_40px_rgba(255,0,0,0.1)] animate-in fade-in slide-in-from-top-4">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--chip)] rounded-full blur-3xl" />
                         <div className="flex items-start md:items-center gap-5 relative z-10">
                             <div className="p-3 bg-red-500/20 rounded-2xl shrink-0 shadow-inner">
                                 <AlertTriangle size={28} className="text-red-400" />
                             </div>
                             <div>
-                                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight mb-2 uppercase text-red-100">Action Required to Apply</h2>
-                                <p className="text-sm md:text-base text-white/90 leading-relaxed font-medium">
+                                <h2 className="text-xl md:text-2xl font-black tracking-tight mb-2 uppercase text-[var(--bad)]">Action Required to Apply</h2>
+                                <p className="text-sm md:text-base text-[var(--fg)] leading-relaxed font-medium">
                                     You cannot apply for tasks until you provide the following details below: <br className="hidden md:block"/>
                                     <span className="text-amber-400 font-bold">1. Phone Number</span> (for Direct Connect) &nbsp;•&nbsp;
                                     <span className="text-amber-400 font-bold">2. UPI ID</span> (for Escrow Payouts) &nbsp;•&nbsp;
@@ -263,8 +278,8 @@ export default function WorkerSetupPage() {
                                 <CheckCircle size={28} className="text-green-400" />
                             </div>
                             <div>
-                                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight mb-1">You're all set to apply</h2>
-                                <p className="text-sm md:text-base text-white/80 leading-relaxed">
+                                <h2 className="text-xl md:text-2xl font-black tracking-tight mb-1 text-[var(--fg)]">You're all set to apply</h2>
+                                <p className="text-sm md:text-base text-[var(--fg-muted)] leading-relaxed">
                                     Your required details are filled in. Tap <span className="font-bold text-green-400">Save Profile</span> below and we'll take you straight back to the task.
                                 </p>
                             </div>
@@ -277,13 +292,13 @@ export default function WorkerSetupPage() {
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
                             <Sparkles size={14} className={completionPct === 100 ? "text-green-400" : "text-[#C9A9FF]"} />
-                            <span className="text-xs font-bold uppercase tracking-widest text-white/60">Profile Strength</span>
+                            <span className="text-xs font-bold uppercase tracking-widest text-[var(--fg-muted)]">Profile Strength</span>
                         </div>
                         <span className={`text-sm font-black ${completionPct === 100 ? 'text-green-400' : completionPct >= 50 ? 'text-[#C9A9FF]' : 'text-amber-400'}`}>
                             {completionPct}%
                         </span>
                     </div>
-                    <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
+                    <div className="w-full h-2 bg-[var(--chip)] rounded-full overflow-hidden mb-3">
                         <div 
                             className={`h-full rounded-full transition duration-700 ${completionPct === 100 ? 'bg-green-500' : completionPct >= 50 ? 'bg-[#8825F5]' : 'bg-amber-500'}`}
                             style={{ width: `${completionPct}%` }}
@@ -291,7 +306,7 @@ export default function WorkerSetupPage() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {completionItems.map(item => (
-                            <span key={item.label} className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${item.done ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                            <span key={item.label} className={`flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full border ${item.done ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-[var(--chip)] border-[var(--line)] text-[var(--fg-faint)]'}`}>
                                 {item.done ? <CheckCircle size={10} /> : <div className="w-2.5 h-2.5 rounded-full border border-current" />}
                                 {item.label}
                             </span>
@@ -335,9 +350,9 @@ export default function WorkerSetupPage() {
                     {/* Skills */}
                     <div className={sectionCardStyle}>
                         <label className={labelStyle}>
-                            Top Skills <span className="text-white/40 font-normal">(Max 3)</span>
+                            Top Skills <span className="text-[var(--fg-faint)] font-normal">(Max 3)</span>
                         </label>
-                        <p className="text-xs text-white/40 mb-3">Highlight your best skills to increase your chances of getting hired.</p>
+                        <p className="text-xs text-[var(--fg-faint)] mb-3">Highlight your best skills to increase your chances of getting hired.</p>
                         <div className="flex gap-2 mb-2">
                             <input
                                 type="text"
@@ -357,7 +372,7 @@ export default function WorkerSetupPage() {
                                 type="button"
                                 onClick={handleAddSkill}
                                 disabled={skills.length >= 3 || !skillInput.trim()}
-                                className="px-6 rounded-xl bg-[#8825F5] text-white font-bold hover:bg-[#7D5FFF] disabled:opacity-50 transition-colors shrink-0"
+                                className="px-6 rounded-xl bg-[var(--accent)] text-[var(--on-accent)] font-bold hover:bg-[#7D5FFF] disabled:opacity-50 transition-colors shrink-0"
                             >
                                 <Plus size={20} />
                             </button>
@@ -366,13 +381,13 @@ export default function WorkerSetupPage() {
                             {skills.map((skill, index) => (
                                 <div key={index} className="flex items-center gap-2 bg-[#8825F5]/20 text-[#C9A9FF] px-3 py-1.5 rounded-full text-sm font-medium border border-[#8825F5]/30">
                                     {skill}
-                                    <button type="button" onClick={() => handleRemoveSkill(index)} className="hover:text-white transition-colors">
+                                    <button type="button" onClick={() => handleRemoveSkill(index)} className="hover:text-[var(--fg)] transition-colors">
                                         <X size={14} />
                                     </button>
                                 </div>
                             ))}
                             {skills.length === 0 && (
-                                <span className="text-xs text-white/30 italic">No skills added yet</span>
+                                <span className="text-xs text-[var(--fg-faint)] italic">No skills added yet</span>
                             )}
                         </div>
                     </div>
@@ -380,9 +395,9 @@ export default function WorkerSetupPage() {
                     {/* Portfolio Links */}
                     <div className={sectionCardStyle}>
                         <label className={labelStyle}>
-                            Portfolio / Project Links <span className="text-white/40 font-normal">(Max 3)</span>
+                            Portfolio / Project Links <span className="text-[var(--fg-faint)] font-normal">(Max 3)</span>
                         </label>
-                        <p className="text-xs text-white/40 mb-3">GitHub, Behance, Dribbble, personal websites — anything that showcases your work.</p>
+                        <p className="text-xs text-[var(--fg-faint)] mb-3">GitHub, Behance, Dribbble, personal websites — anything that showcases your work.</p>
                         <div className="flex gap-2 mb-2">
                             <input
                                 type="url"
@@ -402,26 +417,26 @@ export default function WorkerSetupPage() {
                                 type="button"
                                 onClick={handleAddLink}
                                 disabled={portfolioLinks.length >= 3 || !linkInput.trim()}
-                                className="px-6 rounded-xl bg-[#0097FF] text-white font-bold hover:bg-[#007FCC] disabled:opacity-50 transition-colors shrink-0"
+                                className="px-6 rounded-xl bg-[var(--brand-blue)] text-[var(--on-accent)] font-bold hover:bg-[#007FCC] disabled:opacity-50 transition-colors shrink-0"
                             >
                                 <Plus size={20} />
                             </button>
                         </div>
                         <div className="flex flex-col gap-2 mt-3">
                             {portfolioLinks.map((link, index) => (
-                                <div key={index} className="flex items-center justify-between bg-[#1A1A24] p-3 rounded-xl border border-white/5 group hover:border-[#0097FF]/30 transition-colors">
+                                <div key={index} className="flex items-center justify-between bg-[var(--surface-2)] p-3 rounded-xl border border-[var(--line)] group hover:border-[#0097FF]/30 transition-colors">
                                     <a href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noreferrer" className="flex items-center gap-3 truncate flex-1 min-w-0">
                                         <LinkIcon size={16} className="text-[#0097FF] shrink-0" />
-                                        <span className="text-sm text-white/80 truncate group-hover:text-[#0097FF] transition-colors">{link}</span>
-                                        <ExternalLink size={12} className="text-white/30 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <span className="text-sm text-[var(--fg-muted)] truncate group-hover:text-[#0097FF] transition-colors">{link}</span>
+                                        <ExternalLink size={12} className="text-[var(--fg-faint)] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </a>
-                                    <button type="button" onClick={() => handleRemoveLink(index)} className="text-white/40 hover:text-red-400 p-1 ml-2 shrink-0">
+                                    <button type="button" onClick={() => handleRemoveLink(index)} className="text-[var(--fg-faint)] hover:text-red-400 p-1 ml-2 shrink-0">
                                         <X size={16} />
                                     </button>
                                 </div>
                             ))}
                             {portfolioLinks.length === 0 && (
-                                <span className="text-xs text-white/30 italic">No portfolio links added yet</span>
+                                <span className="text-xs text-[var(--fg-faint)] italic">No portfolio links added yet</span>
                             )}
                         </div>
                     </div>
@@ -469,15 +484,15 @@ export default function WorkerSetupPage() {
                         
                         <div 
                             onClick={() => fileInputRef.current?.click()}
-                            className="w-full border-2 border-dashed border-white/20 hover:border-[#8825F5]/50 bg-[#0B0B11] rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition group"
+                            className="w-full border-2 border-dashed border-[var(--line-strong)] hover:border-[#8825F5]/50 bg-[var(--surface-2)] rounded-2xl p-6 flex flex-col items-center justify-center cursor-pointer transition group"
                         >
-                            <div className="w-12 h-12 rounded-full bg-white/5 group-hover:bg-[#8825F5]/10 flex items-center justify-center mb-3 transition-colors">
-                                <Upload className="text-white/50 group-hover:text-[#8825F5]" size={24} />
+                            <div className="w-12 h-12 rounded-full bg-[var(--chip)] group-hover:bg-[#8825F5]/10 flex items-center justify-center mb-3 transition-colors">
+                                <Upload className="text-[var(--fg-faint)] group-hover:text-[#8825F5]" size={24} />
                             </div>
-                            <p className="text-white/80 font-medium mb-1">
+                            <p className="text-[var(--fg-muted)] font-medium mb-1">
                                 {resumeFile ? resumeFile.name : (existingResumeUrl ? "Upload a new resume" : "Click to upload resume")}
                             </p>
-                            <p className="text-white/40 text-xs">
+                            <p className="text-[var(--fg-faint)] text-xs">
                                 {resumeFile ? "Click to change file" : "Max 2MB (PDF or Image)"}
                             </p>
                             <input
@@ -497,7 +512,7 @@ export default function WorkerSetupPage() {
                             <div className="mt-3 flex items-center gap-3 bg-[#8825F5]/10 border border-[#8825F5]/20 rounded-xl p-3 animate-in fade-in duration-300">
                                 <FileText size={16} className="text-[#C9A9FF] shrink-0" />
                                 <span className="text-sm text-[#C9A9FF] truncate flex-1">{resumeFile.name}</span>
-                                <button type="button" onClick={() => { setResumeFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="text-white/40 hover:text-red-400 p-1">
+                                <button type="button" onClick={() => { setResumeFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }} className="text-[var(--fg-faint)] hover:text-red-400 p-1">
                                     <X size={14} />
                                 </button>
                             </div>
@@ -507,7 +522,7 @@ export default function WorkerSetupPage() {
                     {/* Info Card */}
                     <div className="bg-[#8825F5]/5 border border-[#8825F5]/10 rounded-2xl p-4 flex items-start gap-3">
                         <Shield size={16} className="text-[#C9A9FF] shrink-0 mt-0.5" />
-                        <p className="text-xs text-white/50 leading-relaxed">
+                        <p className="text-xs text-[var(--fg-faint)] leading-relaxed">
                             <span className="text-[#C9A9FF] font-bold">Companies see your profile.</span> Your skills, portfolio, and resume are visible to companies when you apply. A complete profile significantly increases your chances.
                         </p>
                     </div>
@@ -528,7 +543,7 @@ export default function WorkerSetupPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] hover:opacity-90 text-white p-4 rounded-xl disabled:opacity-50 font-bold shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center gap-2"
+                        className="w-full bg-gradient-to-r from-[#8825F5] to-[#7D5FFF] hover:opacity-90 text-[var(--on-accent)] p-4 rounded-xl disabled:opacity-50 font-bold shadow-[0_0_20px_rgba(136,37,245,0.3)] flex items-center justify-center gap-2"
                     >
                         {loading ? <Loader2 className="animate-spin w-5 h-5" /> : "Save Profile"}
                     </button>
