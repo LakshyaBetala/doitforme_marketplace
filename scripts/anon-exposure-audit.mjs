@@ -152,6 +152,12 @@ for (const t of [
   // anyone has told them. Added here in the same change that created them,
   // rather than after an audit pass found them missing.
   "program_term_acceptances", "outreach_commissions", "program_probation_tasks",
+  // The PM desk. `projects` holds a third party's contact details and what
+  // they paid; `project_tasks` holds what each builder is paid. Together they
+  // are the whole arbitrage, which is why they are two tables with different
+  // policies rather than one — and why neither may be reachable by a stranger
+  // holding the anon key that ships in every page load.
+  "projects", "project_tasks",
 ]) await mustBeEmpty(t);
 
 // The role registry is the one Inner Circle table that IS anon-readable, on
@@ -174,6 +180,11 @@ await mustDenyRpc("is_kyc_approved", {});
 // check that proves it took, since a revoke from PUBLIC alone reads as complete
 // while changing nothing.
 await mustDenyRpc("has_accepted_terms", { p_version: "x", p_role: "TECH" });
+// SECURITY DEFINER, so an anonymous caller reaching it would be running it as
+// the owner. Supabase grants EXECUTE to anon DIRECTLY as well as via PUBLIC,
+// so this is the assertion that proves the REVOKE in the migration actually
+// took — remember that a 400 carrying the function's own error means it RAN.
+await mustDenyRpc("is_project_pm", { p_project_id: Z });
 
 console.log("\nprivate storage");
 for (const b of ["resumes", "kyc-ids", "verification-docs"]) await mustNotList(b);

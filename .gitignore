@@ -88,3 +88,9 @@ screenshots/regions/
 screenshots/states/
 screenshots/crop-*.png
 screenshots/real/
+
+# Android upload key. The one secret here that cannot be rotated:
+# Play Store pins the app id to its signature.
+android/keystore.properties
+*.jks
+*.keystore

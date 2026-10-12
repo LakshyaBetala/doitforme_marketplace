@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- The grape from the workspace rail, matching the PWA maskable and
+         apple-touch icons (see scripts/make-app-icons.mjs). Was #FFFFFF, the
+         Capacitor default, which put the brand mark on a white tile. -->
+    <color name="ic_launcher_background">#341044</color>
 </resources>
