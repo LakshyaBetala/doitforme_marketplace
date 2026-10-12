@@ -3,6 +3,24 @@ import LogoutButton from "@/components/app/LogoutButton";
 import { isAdminEmail } from "@/lib/admins";
 import { appRoleFor, ROLE_TITLE, ROLE_BLURB } from "@/lib/appShell";
 import { SectionTitle, Card, Pill } from "@/components/app/ui";
+import { stepsFor, type Owner } from "@/lib/operations";
+import type { AppRole } from "@/lib/appShell";
+
+/**
+ * The app's role names map onto the pipeline's OWNER names.
+ *
+ * They are deliberately different vocabularies: `Owner` is who is accountable
+ * for a step in the operating model, `AppRole` is which surface somebody sees.
+ * A builder is a BUILDER in the pipeline and TECH in the database, and
+ * collapsing the two would mean renaming one of them every time the other
+ * changed.
+ */
+const OWNER_FOR: Record<AppRole, Owner> = {
+  TECH: "BUILDER",
+  OUTREACH: "OUTREACH",
+  PM: "PM",
+  ADMIN: "ADMIN",
+};
 
 export const metadata = { title: "Me" };
 
@@ -86,6 +104,39 @@ export default async function Me() {
           </p>
         </Card>
       ) : null}
+
+      {/*
+        YOUR STEPS — the operating model, filtered to this person.
+        PIPELINE in lib/operations.ts is the single source of truth for who owns
+        what and how long they have. Rendering the owner's slice here means
+        nobody has to be told the process verbally, which is the only version
+        that was ever available before.
+      */}
+      <SectionTitle>What you own</SectionTitle>
+      <div className="space-y-2.5">
+        {stepsFor(OWNER_FOR[role]).map((s, i) => (
+          <Card key={s.key}>
+            <div className="flex items-start justify-between gap-3">
+              <p className="min-w-0 flex-1 text-[14.5px] font-semibold leading-snug">
+                {i + 1}. {s.title}
+              </p>
+              {s.clock === null ? (
+                <Pill tone="neutral">no clock</Pill>
+              ) : (
+                <Pill tone="warn">
+                  {s.clock}d
+                </Pill>
+              )}
+            </div>
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-[var(--a-fg-muted)]">{s.exit}</p>
+            {s.clock !== null ? (
+              <p className="mt-1 text-[11.5px] text-[var(--a-fg-faint)]">
+                {s.clock} working day{s.clock === 1 ? "" : "s"} from {s.from}
+              </p>
+            ) : null}
+          </Card>
+        ))}
+      </div>
 
       <SectionTitle>Settings</SectionTitle>
       <div className="space-y-2.5">

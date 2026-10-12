@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServer } from "@/lib/supabaseServer";
 import { isAdminEmail } from "@/lib/admins";
 import { appRoleFor, canUseApp, ROLE_TITLE, ROLE_BLURB } from "@/lib/appShell";
 import BottomTabs from "@/components/app/BottomTabs";
+import JoinScreen from "@/components/app/JoinScreen";
 import "./app-theme.css";
 
 export const metadata: Metadata = {
@@ -66,9 +66,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const role = appRoleFor(identity);
 
   if (!canUseApp(identity) || !role) {
+    // NOT a locked door. The app is listed publicly and anyone can install it,
+    // so the most common first run is somebody with no membership — and
+    // "invite only, goodbye" wastes that install. JoinScreen runs the same
+    // application funnel the website does, or shows where their existing
+    // application stands. See the note at the top of that file.
     return (
       <div className="icapp">
-        <LockedOut />
+        <JoinScreen userId={user.id} />
       </div>
     );
   }
@@ -113,51 +118,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </main>
       </div>
       <BottomTabs role={role} />
-    </div>
-  );
-}
-
-/**
- * What a non-member sees. It explains rather than 404s.
- *
- * A bare "not authorised" on an invite-only surface reads as a bug and
- * generates a support message. Saying what the tier is and how someone joins
- * turns a dead end into the only honest recruitment pitch the app can make —
- * and it is the same screen that makes membership feel worth having.
- */
-function LockedOut() {
-  return (
-    <div className="mx-auto flex min-h-[100dvh] w-full max-w-[520px] flex-col justify-center px-6 py-16">
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--a-accent-ink)]">
-        Inner Circle
-      </p>
-      <h1
-        className="mt-3 text-[30px] font-semibold leading-[1.1] tracking-tight"
-        style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.02em" }}
-      >
-        This one is invite&nbsp;only
-      </h1>
-      <p className="mt-4 text-[14.5px] leading-relaxed text-[var(--a-fg-muted)]">
-        The app is for Inner Circle members — the builders who deliver client
-        projects and the partners who bring them in. Members are chosen after two
-        paid trial tasks, so the work you do during those is the whole
-        application.
-      </p>
-
-      <div className="mt-8 space-y-3">
-        <Link
-          href="/inner-circle"
-          className="icapp-press flex min-h-[52px] w-full items-center justify-center rounded-[var(--a-r-ctl)] bg-[var(--a-accent)] px-5 text-[15px] font-semibold text-[var(--a-on-accent)]"
-        >
-          See what the Inner Circle is
-        </Link>
-        <Link
-          href="/dashboard"
-          className="icapp-press flex min-h-[52px] w-full items-center justify-center rounded-[var(--a-r-ctl)] border border-[var(--a-line-strong)] bg-[var(--a-surface)] px-5 text-[15px] font-semibold text-[var(--a-fg)]"
-        >
-          Find work on DoItForMe
-        </Link>
-      </div>
     </div>
   );
 }
