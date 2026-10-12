@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, isGuardError } from "@/lib/adminGuard";
-import { DEAL_SPLIT } from "@/lib/agency";
+import { splitFor } from "@/lib/agency";
 
 /**
  * Raising an outreach member's commission on a closed deal.
@@ -147,7 +147,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const total = Math.round(dealValue * DEAL_SPLIT.OUTREACH_COMMISSION);
+    // The share comes from the deal's own tier. It is 10% at every tier today,
+    // on purpose — an outreach member must never have a reason to steer a client
+    // toward the service that pays them best rather than the one they need — but
+    // reading it from splitFor() means a future tier change cannot leave this
+    // route quietly paying the old rate.
+    const total = Math.round(dealValue * splitFor(dealValue).commission);
     const first = Math.round(total * FIRST_SHARE);
     // The final tranche takes the remainder so the two always sum to `total`
     // exactly. Rounding both independently loses or invents a rupee.
