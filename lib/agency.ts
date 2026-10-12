@@ -68,75 +68,79 @@ export type DealSplit = {
   delivery: number;
   /** The project manager: client contact, integration, QA, second developer. */
   pm: number;
-  /** Tooling, payment charges, our own licences. NOT servers — see PASS_THROUGH. */
+  /** Payment charges, our own tooling and licences. NOT servers - see PASS_THROUGH. */
   overhead: number;
 };
 
 /**
- * The split by deal size, cheapest tier first.
+ * THE SPLIT, DERIVED FROM A REAL QUOTE RATHER THAN INVENTED.
  *
- * `upTo` is exclusive. The commission share is constant at 10% across all three
- * on purpose: an outreach member should never have a reason to prefer one
- * service over another beyond its price, or they will steer every client toward
- * whichever one pays them best rather than whichever one the client needs.
+ * The owner priced one job end to end - a 1,50,000 mobile app at frontend
+ * 7,000, backend and testing 13,000, PM 15,000, commission 10% - and these are
+ * the shares that fall out of it. Keeping them as percentages rather than as
+ * that job's rupee figures is what lets every other service in the catalogue be
+ * priced the same way instead of guessed at.
+ *
+ *   delivery   20,000 / 1,50,000 = 13.33%  (2/15 exactly)
+ *   PM         15,000 / 1,50,000 = 10%
+ *   commission 15,000 / 1,50,000 = 10%
+ *   overhead   12,000 / 1,50,000 = 8%   (raised from 4% - see OVERHEAD_BUDGET)
+ *   Almmatix   88,000 / 1,50,000 = 58.67%
+ *
+ * WHY THE SPLIT IS FLAT AGAIN. An earlier version tiered it, on the grounds
+ * that a flat pool share pays too little on cheap work. That reasoning was
+ * wrong, and the implied STUDENT DAY RATE is what shows it: 13.33% of any price
+ * buys the same roughly 900-a-day net, because the day count scales with the
+ * price. A 1.5L app is 20 person-days and a 30,000 website is 4. Tiering the
+ * share was quietly paying a different hourly rate for the same work depending
+ * on which job it was attached to.
+ *
+ * WHAT THAT DOES MEAN is that a cheap service's SCOPE has to match its budget.
+ * 4 person-days is a three-page site, not a six-page one. The fix for thin
+ * small work is honest scope, not a bent split - see the `includes` on each
+ * service.
+ *
+ * WHY A 62.67% MARGIN IS NOT GREED. It is high against the 25-35% a staffed
+ * agency runs on, and the difference is exactly the cost base: no payroll, no
+ * office, no bench sitting idle between projects, no recruiter. The client
+ * still pays well under market. The one real risk is a student working out the
+ * ratio - which is why the number that matters to them is the day rate, and why
+ * the LADDER exists.
  */
-export const SPLIT_TIERS: Array<{ upTo: number; label: string; split: DealSplit }> = [
-  {
-    upTo: 50_000,
-    label: "small",
-    // Almost all build, almost no management. 44% margin.
-    split: { commission: 0.1, delivery: 0.3, pm: 0.12, overhead: 0.04 },
-  },
-  {
-    upTo: 100_000,
-    label: "mid",
-    // 47% margin.
-    split: { commission: 0.1, delivery: 0.24, pm: 0.15, overhead: 0.04 },
-  },
-  {
-    upTo: Number.POSITIVE_INFINITY,
-    label: "large",
-    // Three builders, integration, store submission, a client who expects
-    // weekly answers. 48% margin.
-    split: { commission: 0.1, delivery: 0.2, pm: 0.18, overhead: 0.04 },
-  },
-];
+export const DEAL_SPLIT: DealSplit = {
+  commission: 0.1,
+  // 2/15. Written as a fraction because 0.1333 would drift the app's frontend
+  // fee off the 7,000 it was quoted at.
+  delivery: 2 / 15,
+  pm: 0.1,
+  // Raised from 4% to fund the AI tooling the builders are given. See
+  // OVERHEAD_BUDGET: the single most defensible thing this company does for a
+  // student is hand them a Claude seat, and that has to be paid for somewhere
+  // that is not the student's fee.
+  overhead: 0.08,
+};
 
-/**
- * WHY THE PM SHARE WENT UP AND THE MARGIN CAME DOWN.
- *
- * At a 13% large-tier share the PM earned 27,300 a month at full capacity —
- * two concurrent projects, every slot filled. That is a junior project
- * manager's salary for a job that is project manager, senior developer, QA,
- * integrator and account manager at once. Fine while the owner IS the PM, since
- * the fee and the margin both land in the same pocket; impossible the moment a
- * second PM has to be paid, which is the thing that caps the whole business.
- *
- * The five points came out of the MARGIN, not out of the builders. Two reasons.
- * A 53% margin exists to cover fixed salaries, an office and a bench that sits
- * idle between projects — and this company has none of those, so it was
- * over-collecting for costs it does not bear. And the builders at 12,240 net on
- * a mobile app are the hardest group to replace; funding the PM out of their
- * fees would pay for the bottleneck by shrinking the bench that feeds it.
- *
- * 44-48% is still well above the 25-35% a staffed agency runs on, and the
- * client still pays 3-5x less than market. That gap is the whole arbitrage:
- * variable costs instead of fixed ones.
- */
-
-export function tierFor(dealValue: number) {
-  return SPLIT_TIERS.find((t) => dealValue < t.upTo) ?? SPLIT_TIERS[SPLIT_TIERS.length - 1];
-}
-
-export function splitFor(dealValue: number): DealSplit {
-  return tierFor(dealValue).split;
+export function splitFor(_dealValue?: number): DealSplit {
+  return DEAL_SPLIT;
 }
 
 /** Almmatix's share, by subtraction. Never written down twice. */
-export function marginShareFor(dealValue: number): number {
-  const s = splitFor(dealValue);
-  return 1 - s.commission - s.delivery - s.pm - s.overhead;
+export const MARGIN_SHARE =
+  1 - DEAL_SPLIT.commission - DEAL_SPLIT.delivery - DEAL_SPLIT.pm - DEAL_SPLIT.overhead;
+
+export function marginShareFor(_dealValue?: number): number {
+  return MARGIN_SHARE;
 }
+
+/**
+ * The net day rate every fee in the catalogue is really built on.
+ *
+ * Not used in the arithmetic - the split produces the fees - but asserted in
+ * the tests, because it is the number a student actually experiences. A fee
+ * that looks small next to the deal value can still be a good day's pay, and
+ * this is the figure that tells you which it is.
+ */
+export const TARGET_STUDENT_DAY_RATE_NET = 900;
 
 /**
  * Billed to the client at cost, on their own account wherever possible.
@@ -200,10 +204,7 @@ export type ServiceKey =
   | "AI_WORKFLOW"
   | "AI_ASSISTANT"
   | "AI_DOCUMENTS"
-  | "AUDIT"
-  | "CARE_ESSENTIAL"
-  | "CARE_STANDARD"
-  | "CARE_PRIORITY";
+  | "AUDIT";
 
 export type Service = {
   key: ServiceKey;
@@ -228,9 +229,7 @@ export type Service = {
    * promised, it is about what the client assumed was obviously included.
    */
   excludes: string[];
-  /** True for recurring revenue, where `price` is per month. */
-  recurring?: boolean;
-  family: "Websites" | "Apps & platforms" | "AI automation" | "Advisory" | "Care plans";
+  family: "Websites" | "Apps & platforms" | "AI automation" | "Advisory";
 };
 
 /**
@@ -243,8 +242,8 @@ export const SERVICES: Service[] = [
     key: "LANDING_PAGE",
     name: "Landing page",
     pitch: "One page that explains what you do and collects enquiries.",
-    price: 18_000,
-    days: 3,
+    price: 12_000,
+    days: 5,
     family: "Websites",
     slots: [{ role: "FRONTEND", weight: 1 }],
     includes: [
@@ -259,13 +258,13 @@ export const SERVICES: Service[] = [
   {
     key: "MARKETING_SITE",
     name: "Business website",
-    pitch: "A fast, well-built site of up to six pages that people can find.",
-    price: 45_000,
+    pitch: "A fast, well-built three-page site that people can actually find.",
+    price: 30_000,
     days: 10,
     family: "Websites",
     slots: [{ role: "FRONTEND", weight: 1 }],
     includes: [
-      "Up to six pages",
+      "Up to three pages",
       "Contact and enquiry forms",
       "Basic on-page SEO and a sitemap",
       "Works on phones, tablets and desktop",
@@ -283,7 +282,7 @@ export const SERVICES: Service[] = [
     key: "ECOMMERCE",
     name: "Online store",
     pitch: "A store that takes payments, tracks stock and prints invoices.",
-    price: 110_000,
+    price: 70_000,
     days: 18,
     family: "Websites",
     slots: [
@@ -308,8 +307,8 @@ export const SERVICES: Service[] = [
     key: "INTERNAL_TOOL",
     name: "Internal tool",
     pitch: "The dashboard that replaces the spreadsheet your team fights over.",
-    price: 85_000,
-    days: 14,
+    price: 55_000,
+    days: 12,
     family: "Apps & platforms",
     slots: [
       { role: "FRONTEND", weight: 3 },
@@ -332,16 +331,16 @@ export const SERVICES: Service[] = [
     key: "WEB_PLATFORM",
     name: "Web platform",
     pitch: "A full web application with accounts, a database and an admin panel.",
-    price: 150_000,
-    days: 21,
+    price: 100_000,
+    days: 25,
     family: "Apps & platforms",
     slots: [
-      { role: "FRONTEND", weight: 4 },
-      { role: "BACKEND", weight: 5 },
+      { role: "FRONTEND", weight: 7 },
+      { role: "BACKEND", weight: 13 },
     ],
     includes: [
       "Customer accounts and sign-in",
-      "Up to twelve screens",
+      "Up to eight screens",
       "An admin panel for your team",
       "One payment gateway if you need it",
       "Transactional emails",
@@ -358,17 +357,18 @@ export const SERVICES: Service[] = [
     key: "MOBILE_APP",
     name: "Mobile app",
     pitch: "One focused Android and iOS app from a single codebase, on both stores.",
-    price: 225_000,
-    days: 35,
+    price: 150_000,
+    days: 40,
     family: "Apps & platforms",
+    // 7:13 so the pool pays exactly 7,000 and 13,000 at a 1.5L price - the
+    // quote the whole split was derived from. Backend carries testing.
     slots: [
-      { role: "MOBILE", weight: 5 },
-      { role: "BACKEND", weight: 4 },
-      { role: "QA", weight: 2 },
+      { role: "MOBILE", weight: 7 },
+      { role: "BACKEND", weight: 13 },
     ],
     includes: [
       "Android and iOS from one codebase",
-      "Up to ten screens and one core workflow",
+      "Up to eight screens and one core workflow",
       "Accounts, sign-in and push notifications",
       "An admin panel to manage content",
       "Submitted to both stores on your developer accounts",
@@ -385,8 +385,8 @@ export const SERVICES: Service[] = [
     key: "AI_WORKFLOW",
     name: "Workflow automation",
     pitch: "Your tools talk to each other, so nobody retypes anything.",
-    price: 60_000,
-    days: 10,
+    price: 40_000,
+    days: 14,
     family: "AI automation",
     slots: [{ role: "AI", weight: 1 }],
     includes: [
@@ -405,8 +405,8 @@ export const SERVICES: Service[] = [
     key: "AI_ASSISTANT",
     name: "AI support assistant",
     pitch: "An assistant trained on your own documents that answers customers.",
-    price: 75_000,
-    days: 12,
+    price: 50_000,
+    days: 14,
     family: "AI automation",
     slots: [
       { role: "AI", weight: 4 },
@@ -429,8 +429,8 @@ export const SERVICES: Service[] = [
     key: "AI_DOCUMENTS",
     name: "Document AI pipeline",
     pitch: "Invoices, bills and forms read automatically into your system.",
-    price: 90_000,
-    days: 14,
+    price: 60_000,
+    days: 15,
     family: "AI automation",
     slots: [
       { role: "AI", weight: 5 },
@@ -453,8 +453,8 @@ export const SERVICES: Service[] = [
     key: "AUDIT",
     name: "Technical audit",
     pitch: "A week reading your system, then a written plan you own.",
-    price: 20_000,
-    days: 7,
+    price: 15_000,
+    days: 6,
     family: "Advisory",
     slots: [{ role: "BACKEND", weight: 1 }],
     includes: [
@@ -464,73 +464,6 @@ export const SERVICES: Service[] = [
       "The report is yours to take to anyone",
     ],
     excludes: ["Doing any of the fixes", "Penetration testing", "Legal or compliance certification"],
-  },
-  {
-    key: "CARE_ESSENTIAL",
-    name: "Care plan — Essential",
-    pitch: "It stays up, stays patched, and someone answers. Monthly.",
-    price: 3_500,
-    days: 30,
-    recurring: true,
-    family: "Care plans",
-    slots: [{ role: "QA", weight: 1 }],
-    includes: [
-      "Security and dependency updates",
-      "Uptime monitoring with alerts",
-      "Bug fixes on what we built",
-      "A reply within two working days",
-    ],
-    excludes: [
-      "Hosting bills (billed at cost)",
-      "Any change to how it works",
-      "New screens, features or content",
-    ],
-  },
-  {
-    key: "CARE_STANDARD",
-    name: "Care plan — Standard",
-    pitch: "Everything in Essential, plus two hours of changes a month.",
-    price: 9_000,
-    days: 30,
-    recurring: true,
-    family: "Care plans",
-    slots: [{ role: "QA", weight: 1 }],
-    includes: [
-      "Everything in Essential",
-      "Two hours of small changes a month",
-      "A reply within one working day",
-      "A quarterly call on what to do next",
-    ],
-    excludes: [
-      "Hosting bills (billed at cost)",
-      "Unused hours carrying over",
-      "New screens or features beyond the two hours",
-    ],
-  },
-  {
-    key: "CARE_PRIORITY",
-    name: "Care plan — Priority",
-    pitch: "A development partner on retainer, not just a safety net.",
-    price: 18_000,
-    days: 30,
-    recurring: true,
-    family: "Care plans",
-    slots: [
-      { role: "QA", weight: 2 },
-      { role: "BACKEND", weight: 1 },
-    ],
-    includes: [
-      "Everything in Standard",
-      "Three hours of changes a month",
-      "A reply within four working hours",
-      "First in the queue when something breaks",
-      "A named builder who already knows your system",
-    ],
-    excludes: [
-      "Hosting bills (billed at cost)",
-      "Unused hours carrying over",
-      "A full new module (that is a project)",
-    ],
   },
 ];
 
@@ -542,17 +475,9 @@ export function isServiceKey(v: unknown): v is ServiceKey {
   return typeof v === "string" && v in SERVICE_BY_KEY;
 }
 
-/** The most expensive thing we sell, and the ceiling the owner set. */
+/** The most expensive thing we sell, and the quote the split was derived from. */
 export const ANCHOR_SERVICE = SERVICE_BY_KEY.MOBILE_APP;
 
-/**
- * Outreach keeps earning on a retainer, but not for ever.
- *
- * A commission that never ends makes the first year's sales an annuity nobody
- * is still working for; twelve months is long enough that selling a care plan
- * is clearly worth doing, and short enough that the book stays Almmatix's.
- */
-export const RETAINER_COMMISSION_MONTHS = 12;
 
 /* -------------------------------------------------------------------------- */
 /* Quoting                                                                    */
@@ -580,8 +505,6 @@ export type Quote = {
   service: Service;
   /** Client price, excluding GST and PASS_THROUGH items. */
   dealValue: number;
-  /** Which split tier this landed in, for showing our work. */
-  tier: string;
   /** The outreach member's commission for finding the client. */
   outreach: Pay;
   projectManager: Pay;
@@ -633,7 +556,6 @@ export function quoteFor(service: Service | ServiceKey, dealValueOverride?: numb
   return {
     service: svc,
     dealValue,
-    tier: tierFor(dealValue).label,
     outreach,
     projectManager,
     slots,
@@ -658,6 +580,293 @@ export function grossUpFor(net: number, audience: FeeAudience = AGENCY_FEE_AUDIE
   let gross = target;
   while (gross - platformFeeFor(gross, audience) < target) gross += 1;
   return gross;
+}
+
+/* -------------------------------------------------------------------------- */
+/* The AMC - derived from the build, not a fixed tier                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * WHY THE AMC IS A PERCENTAGE OF THE BUILD AND NOT A PRICE LIST.
+ *
+ * The previous version had three fixed plans - 3,500, 9,000 and 18,000 a month
+ * - and attaching them to builds produced annual maintenance worth 70% to 233%
+ * of the thing being maintained. Nobody who paid 18,000 for a landing page pays
+ * 42,000 a year to keep it alive. A fixed plan cannot work because what there
+ * is to maintain scales with what was built.
+ *
+ * Industry AMC on software is 15-25% of build cost a year. The owner's own
+ * figure - 2,500 a month on a 1,50,000 app - is 20%, and 1,500 a month from
+ * year two is 12%. So those are the rates, and every service's AMC falls out of
+ * its price.
+ *
+ * THE RENEWAL RATE IS LOWER ON PURPOSE. Year one carries the settling-in: the
+ * bugs that only appear under real use, the client still learning the system,
+ * and one small change a month while they decide what they actually wanted.
+ * After that a stable system genuinely costs less to keep alive, and a client
+ * who sees the price go DOWN at renewal renews.
+ *
+ * THE FLOOR IS WHY SMALL BUILDS ARE BILLED ANNUALLY. A 30,000 website's AMC is
+ * 500 a month. Invoicing, chasing and reconciling 500 costs more than 500, so
+ * anything under AMC_MONTHLY_FLOOR is sold as one annual payment instead. Same
+ * money, a twelfth of the admin.
+ *
+ * WHAT "ONE NEW FEATURE A MONTH" HAS TO MEAN. At 2,500 a month the maintainer's
+ * share is 1,000, which buys about eight hours. That is comfortably enough for
+ * updates, monitoring and one SMALL change - a field, a column, a report, a
+ * copy change. It is not a new screen and it is not a new module. If "feature"
+ * is left undefined the plan loses money on its third month, so the scope is
+ * written into AMC_INCLUDES and anything larger is quoted at
+ * SUPPORT_HOURLY_RATE.
+ */
+
+/** Year one, as a share of what the build cost. The owner's 2,500 on 1.5L. */
+export const AMC_YEAR_ONE_RATE = 0.2;
+
+/** Year two onward. A settled system costs less, and a falling price renews. */
+export const AMC_RENEWAL_RATE = 0.12;
+
+/** Below this a month, invoicing costs more than the invoice. Bill annually. */
+export const AMC_MONTHLY_FLOOR = 1_000;
+
+/** Charged for anything beyond the included change. Quote before doing it. */
+export const SUPPORT_HOURLY_RATE = 1_500;
+export const SUPPORT_MINIMUM_HOURS = 1;
+
+export const AMC_INCLUDES = [
+  "Security patches and dependency updates",
+  "Uptime monitoring, with alerts to us not to you",
+  "Bug fixes on anything we built",
+  "One small change a month - a field, a column, a report, wording",
+  "A reply within one working day",
+] as const;
+
+export const AMC_EXCLUDES = [
+  "Hosting, domains and API usage (billed at cost)",
+  "A new screen, module or integration - quoted separately",
+  "Unused change-allowance carrying over to next month",
+  "Work on anything we did not build",
+] as const;
+
+export type Amc = {
+  /** The build this maintains. */
+  buildPrice: number;
+  yearOneAnnual: number;
+  yearOneMonthly: number;
+  renewalAnnual: number;
+  renewalMonthly: number;
+  /** 'monthly' once the monthly figure clears the floor, else one annual bill. */
+  billing: "monthly" | "annual";
+};
+
+/**
+ * The AMC that follows a build. Rounded to hundreds so it is quotable.
+ */
+export function amcFor(service: Service | ServiceKey, dealValueOverride?: number): Amc {
+  const svc = typeof service === "string" ? SERVICE_BY_KEY[service] : service;
+  const buildPrice = Math.max(0, Math.round(dealValueOverride ?? svc.price));
+
+  const yearOneMonthly = roundFee((buildPrice * AMC_YEAR_ONE_RATE) / 12);
+  const renewalMonthly = roundFee((buildPrice * AMC_RENEWAL_RATE) / 12);
+
+  return {
+    buildPrice,
+    // The annual figure is twelve times the rounded monthly one, so the two
+    // cannot disagree on an invoice.
+    yearOneAnnual: yearOneMonthly * 12,
+    yearOneMonthly,
+    renewalAnnual: renewalMonthly * 12,
+    renewalMonthly,
+    billing: yearOneMonthly >= AMC_MONTHLY_FLOOR ? "monthly" : "annual",
+  };
+}
+
+/**
+ * How an AMC payment divides.
+ *
+ * DELIBERATELY NOT the build split. Most of an AMC is one person doing small
+ * jobs: there is nothing to coordinate, so the PM share is small, and nobody is
+ * selling it again every month, so the commission is capped at
+ * RETAINER_COMMISSION_MONTHS. Running an AMC on the build split would pay a
+ * recruiter and a manager in perpetuity for a sale and a handover that happened
+ * once.
+ */
+export const RECURRING_SPLIT = {
+  /** The maintainer off the tech bench. 1,000 of a 2,500 plan is ~8 hours. */
+  maintainer: 0.4,
+  pm: 0.1,
+  /** Only for the first RETAINER_COMMISSION_MONTHS. */
+  commission: 0.1,
+  overhead: 0.05,
+} as const;
+
+export const RECURRING_MARGIN_SHARE =
+  1 - RECURRING_SPLIT.maintainer - RECURRING_SPLIT.pm - RECURRING_SPLIT.commission - RECURRING_SPLIT.overhead;
+
+/**
+ * Outreach keeps earning on an AMC, but not for ever.
+ *
+ * A commission that never ends makes the first year's sales an annuity nobody
+ * is still working for. Twelve months is long enough that selling the plan is
+ * clearly worth doing, short enough that the book stays Almmatix's.
+ */
+export const RETAINER_COMMISSION_MONTHS = 12;
+
+export type AmcBreakdown = {
+  monthly: number;
+  maintainer: Pay;
+  projectManager: Pay;
+  outreach: Pay;
+  overhead: number;
+  margin: number;
+  platformRevenue: number;
+};
+
+/** One month of an AMC, broken out. `withCommission` is false after year one. */
+export function amcBreakdown(monthly: number, withCommission = true): AmcBreakdown {
+  const m = Math.max(0, Math.round(monthly));
+  const pay = (gross: number): Pay => {
+    const platformFee = platformFeeFor(gross, AGENCY_FEE_AUDIENCE);
+    return { gross, platformFee, net: gross - platformFee };
+  };
+
+  const maintainer = pay(roundFee(m * RECURRING_SPLIT.maintainer));
+  const projectManager = pay(roundFee(m * RECURRING_SPLIT.pm));
+  const outreach = pay(withCommission ? roundFee(m * RECURRING_SPLIT.commission) : 0);
+  const overhead = roundFee(m * RECURRING_SPLIT.overhead);
+  const paidOut = maintainer.gross + projectManager.gross + outreach.gross + overhead;
+
+  return {
+    monthly: m,
+    maintainer,
+    projectManager,
+    outreach,
+    overhead,
+    // The margin absorbs the rounding, so the lines always sum back to `monthly`.
+    margin: m - paidOut,
+    platformRevenue: maintainer.platformFee + projectManager.platformFee + outreach.platformFee,
+  };
+}
+
+/* -------------------------------------------------------------------------- */
+/* What the overhead actually buys                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ONE AI SEAT PER PROJECT, AND WHY IT IS THE BEST ARGUMENT WE HAVE.
+ *
+ * A student asked to accept a 10% platform fee is entitled to ask what it is
+ * for. The honest answer used to be "escrow", which is real but abstract. Now
+ * it is arithmetic: a frontend builder on a 7,000 fee pays a 700 fee and is
+ * handed an AI seat worth 1,800 a month. They are AHEAD, before counting
+ * escrow, the PM who absorbs the client, or the verified work record. That is a
+ * recruiting line that happens to be true, which is the only kind worth having.
+ *
+ * The cost sits in OVERHEAD rather than being deducted from anyone's fee. A
+ * tool taken out of a student's pay is a pay cut with extra steps.
+ *
+ * ONE CAVEAT WORTH KEEPING WRITTEN DOWN. A consumer Pro plan is a single-person
+ * account and its usage limits are sized for one developer; three people on one
+ * login will throttle, which costs exactly the speed the seat was bought for,
+ * and credential sharing is not permitted on consumer plans. The per-seat team
+ * plan is the product built for this. AI_SEAT_MONTHLY is therefore priced PER
+ * SEAT, and SEATS_PER_PROJECT is the dial - set it to 1 to share and accept the
+ * throttling, or to 3 to give the builders and the PM their own.
+ */
+
+/** Rupees per AI seat per month. Roughly USD 20 at the time of writing. */
+export const AI_SEAT_MONTHLY = 1_800;
+
+/**
+ * Seats bought. One, shared, as the owner specified - with the throttling
+ * caveat above.
+ */
+export const SEATS = 1;
+
+/**
+ * How many open projects one seat serves at a time.
+ *
+ * The seat is a MONTHLY SUBSCRIPTION, not a per-project purchase, so charging
+ * a whole seat-month to a five-day landing page sent its overhead line
+ * NEGATIVE - the 8% of a 12,000 job is 1,000 and a seat is 1,800. A PM carries
+ * two projects (PROJECTS_PER_PM), and the same login serves both plus the PM,
+ * so each project carries its share.
+ */
+export const PROJECTS_PER_SEAT = 2;
+
+/** Working days in a month, for turning a project's length into seat-months. */
+export const WORKING_DAYS_PER_MONTH = 21;
+
+/**
+ * What the overhead on one project is spent on.
+ *
+ * Written out because 8% is the line most likely to be quietly treated as
+ * margin, and because the AI seats are the part that has to survive a cash
+ * squeeze: cutting them makes every project slower, which costs more than the
+ * seats did. Note that the Razorpay charge is NOT here - GATEWAY_FEE_RATE is
+ * added on top of the invoice and paid by the client.
+ */
+export function overheadBudgetFor(service: Service | ServiceKey, dealValueOverride?: number) {
+  const svc = typeof service === "string" ? SERVICE_BY_KEY[service] : service;
+  const dealValue = Math.max(0, Math.round(dealValueOverride ?? svc.price));
+  const total = roundFee(dealValue * DEAL_SPLIT.overhead);
+
+  // Seat-months are billed against CALENDAR length, not effort: the
+  // subscription runs while the project is open, whether or not anyone codes
+  // that week. A two-month app is two seat-months.
+  const months = Math.max(1, Math.ceil(svc.days / WORKING_DAYS_PER_MONTH));
+  const aiSeats = roundFee((SEATS * months * AI_SEAT_MONTHLY) / PROJECTS_PER_SEAT);
+
+  // Dev and staging hosting while it is being built. The client's own
+  // production hosting is PASS_THROUGH and never ours.
+  const staging = roundFee(Math.min(1_500, dealValue * 0.005));
+  const rest = total - aiSeats - staging;
+
+  return {
+    total,
+    months,
+    aiSeats,
+    staging,
+    /** Design tools, licences, accounting share, and the buffer. */
+    toolingAndAdmin: rest,
+    /** Negative means the overhead share does not cover the seats. */
+    coversSeats: rest >= 0,
+  };
+}
+
+/**
+ * What the platform fee costs a builder, against what they are handed.
+ *
+ * Exists so the recruiting claim is computed rather than asserted, and so a
+ * test fails the day it stops being true rather than a student noticing first.
+ *
+ * SEAT VALUE IS REPLACEMENT COST, NOT OUR COST SHARE. An earlier version
+ * credited each builder only their slice of what we pay - a shared seat over
+ * two projects and two builders came to 450 - and on that basis a builder on a
+ * 5,800 fee was 130 WORSE off. That measure is wrong. What the builder gets is
+ * ACCESS for the length of the project, and the price of replacing that access
+ * themselves is a full seat: AI_SEAT_MONTHLY a month, whoever else is also
+ * logged in. Sharing degrades the access through throttling - that is the real
+ * cost of SEATS being 1, and it is an argument for buying more seats, not for
+ * valuing the benefit at a fraction.
+ */
+export function feeVersusToolingFor(service: Service | ServiceKey, dealValueOverride?: number) {
+  const q = quoteFor(service, dealValueOverride);
+  const budget = overheadBudgetFor(service, dealValueOverride);
+  // What it would cost this builder to have the same access for as long as the
+  // project runs.
+  const seatValue = budget.months * AI_SEAT_MONTHLY;
+
+  return q.slots.map((s) => ({
+    role: s.role,
+    fee: s.gross,
+    platformFee: s.platformFee,
+    seatValue,
+    /** Positive means the access is worth more than the fee we take. */
+    netBenefit: seatValue - s.platformFee,
+    /** What WE pay for it, which is less because the seat is shared. */
+    ourCost: budget.aiSeats,
+  }));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -739,195 +948,137 @@ export function discountCost(service: Service | ServiceKey) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* The long game: the care book, and what it costs to run                     */
+/* The long game: the AMC book, and what it costs to run                      */
 /* -------------------------------------------------------------------------- */
 
 /**
- * WHY THE RETAINER BOOK IS THE ACTUAL BUSINESS.
+ * WHY THE AMC BOOK IS THE ACTUAL BUSINESS.
  *
- * A project is revenue once. A care plan is revenue every month for years, and
- * it is sold to somebody who already trusts us — no outreach, no quote, no
- * commission after the first year. Fifteen Standard plans is 90,000 a month
- * that nobody has to go and win again, which is more than the margin on a
- * mobile app, arriving whether or not anyone sold anything that month.
+ * A project is revenue once. An AMC is revenue every month for years, sold to
+ * somebody who already trusts us - no outreach, no quote, and no commission
+ * after the first year. Thirty plans averaging 2,000 is 60,000 a month that
+ * nobody has to go and win again, arriving whether or not anything sold.
  *
- * That is also what makes the cheap end of the catalogue rational. A 30,000
- * website is thin on its own; a 30,000 website that becomes a 6,000/month plan
- * is 1,02,000 in the first year and 72,000 a year after that. The small tier is
- * customer acquisition. The care book is the return.
- *
- * THE TRAP, AND IT IS A BIG ONE.
- *
- * Every project delivered is a permanent support liability whether or not the
- * client pays for support. They will ring regardless — it broke, it is yours,
- * they do not care what the contract says. Twenty live projects generating one
+ * THE TRAP. Every delivered project is a permanent support liability whether or
+ * not the client pays for support. They ring regardless - it broke, it is
+ * yours, they do not care what the contract says. Twenty live projects at one
  * problem each a month is twenty interruptions, and if they are free they are
- * paid for out of the margin on new work, by the one person who is also
- * delivering it. So: no plan means support is billed at
- * SUPPORT_HOURLY_RATE, quoted before the work and with a minimum charge. That
- * has to be enforced from the first client, because a precedent of free fixes
- * cannot be withdrawn later.
+ * paid for out of the margin on new work by the one person also delivering it.
+ * So no plan means support billed at SUPPORT_HOURLY_RATE, quoted first, and
+ * enforced from the very first client - a precedent of free fixes cannot be
+ * withdrawn later.
  *
- * THE OTHER TRAP: A CARE BOOK EATS THE PM.
- *
- * Care plans are not passive income — they consume the same PM hours that
- * deliver new projects, which is the binding constraint on everything (see
- * monthlyCapacity). At 30 plans on PM_HOURS_PER_PLAN, the PM has lost most of a
- * working week before a single new project starts. The answer is that plans are
- * staffed by a MAINTAINER off the tech bench, not by the PM, and that
- * maintainer capacity is planned with the same seriousness as delivery
- * capacity. careCapacity() exists so the book cannot silently outgrow the
- * people servicing it.
+ * THE OTHER TRAP: THE BOOK EATS THE PM. Plans consume the same PM hours that
+ * deliver new projects, which is the binding constraint on everything. Plans
+ * are therefore staffed by a maintainer off the tech bench, and amcBook()
+ * reports the headcount and the PM hours alongside the revenue - because
+ * revenue on its own is the number that makes a book look free.
  */
 
-/** Charged when a client without a care plan asks for work. Quote before doing it. */
-export const SUPPORT_HOURLY_RATE = 1_500;
-
-/** Nothing is billed below this, because the admin alone costs more. */
-export const SUPPORT_MINIMUM_HOURS = 1;
+/** Roughly how much work one plan is per month, by its monthly value. */
+export function amcLoadHours(monthly: number): number {
+  // The maintainer's share divided by the student day rate, in hours. A 2,500
+  // plan pays 1,000, which is about a day: updates, monitoring, one small
+  // change. Derived rather than tabulated so it cannot drift from the split.
+  const toMaintainer = monthly * RECURRING_SPLIT.maintainer;
+  return Math.max(1, Math.round((toMaintainer / TARGET_STUDENT_DAY_RATE_NET) * 8));
+}
 
 /**
- * Standard in an AMC: the price rises each year on renewal.
+ * Hours a month one maintainer covers.
  *
- * Written down because the alternative is a plan sold in year one at a price
- * that is still being honoured in year four while every cost behind it has
- * risen. It belongs in the contract, not in a later awkward conversation.
+ * 40, not 20: maintenance is somebody's main gig rather than a side task, and
+ * at 20 the forecast demanded six maintainers for nineteen plans - each
+ * earning about 2,100 a month, which is too little to hold anyone. Fewer
+ * people with more plans each is both cheaper to run and a better job.
  */
-export const CARE_ANNUAL_ESCALATION = 0.1;
+export const MAINTAINER_HOURS_PER_MONTH = 40;
 
-/**
- * Assumed annual churn on the care book, for planning only.
- *
- * Businesses close, get acquired, or decide their nephew can do it. Planning on
- * zero churn is how a revenue forecast becomes fiction; 20% is a cautious
- * industry-typical figure and should be replaced with the real number as soon
- * as there are twelve months of history.
- */
-export const CARE_ASSUMED_CHURN = 0.2;
-
-/**
- * What share of delivered projects should end up on a plan.
- *
- * The offer has to be made within a week of handover — see the `care` stage of
- * the PLAYBOOK. Asking a month later is asking a stranger, and the attach rate
- * collapses.
- */
-export const CARE_ATTACH_TARGET = 0.6;
-
-/** Roughly how much work one plan is, per month. */
-export const CARE_LOAD_HOURS: Record<"CARE_ESSENTIAL" | "CARE_STANDARD" | "CARE_PRIORITY", number> = {
-  CARE_ESSENTIAL: 1,
-  CARE_STANDARD: 3,
-  CARE_PRIORITY: 5,
-};
-
-/** A student on maintenance alongside their studies. Deliberately not 40. */
-export const MAINTAINER_HOURS_PER_MONTH = 20;
-
-/** Client relationship time per plan that lands on the PM regardless of tier. */
+/** Client-relationship time per plan that lands on the PM whatever the tier. */
 export const PM_HOURS_PER_PLAN = 0.5;
 
 /** A PM's own realistic monthly hours, after delivery work. */
 export const PM_SPARE_HOURS_PER_MONTH = 12;
 
-export type CareKey = keyof typeof CARE_LOAD_HOURS;
-export type CareBook = Partial<Record<CareKey, number>>;
+/** What share of delivered projects should end up on a plan. */
+export const AMC_ATTACH_TARGET = 0.6;
+
+/** Assumed annual churn, for planning. Zero churn is not a plan. */
+export const AMC_ASSUMED_CHURN = 0.2;
+
+/** Standard in an AMC: the price rises on renewal. Belongs in the contract. */
+export const AMC_ANNUAL_ESCALATION = 0.1;
 
 /**
- * Monthly recurring revenue from a book of plans, and what servicing it costs
- * in people.
+ * A book of plans: the money, and what servicing it costs in people.
  *
- * Returns the constraint as well as the money, because the money on its own is
- * the number that makes a care book look free. `maintainersNeeded` is the real
- * hiring signal and `pmHours` is the one that quietly runs out first.
+ * Takes monthly values rather than plan names, because the AMC is derived from
+ * each build and no two clients need pay the same.
  */
-export function careBook(book: CareBook) {
-  let mrr = 0;
-  let hours = 0;
-  let plans = 0;
-
-  for (const key of Object.keys(CARE_LOAD_HOURS) as CareKey[]) {
-    const n = Math.max(0, Math.floor(book[key] ?? 0));
-    if (!n) continue;
-    plans += n;
-    mrr += n * SERVICE_BY_KEY[key].price;
-    hours += n * CARE_LOAD_HOURS[key];
-  }
+export function amcBook(monthlyValues: number[]) {
+  const plans = monthlyValues.filter((v) => v > 0);
+  const mrr = plans.reduce((a, v) => a + v, 0);
+  const hours = plans.reduce((a, v) => a + amcLoadHours(v), 0);
 
   return {
-    plans,
+    plans: plans.length,
     mrr,
     arr: mrr * 12,
-    /** Maintenance hours a month across the whole book. */
     hours,
     maintainersNeeded: Math.ceil(hours / MAINTAINER_HOURS_PER_MONTH),
-    /** PM hours the book consumes before any new project is touched. */
-    pmHours: Number((plans * PM_HOURS_PER_PLAN).toFixed(1)),
-    /** True when the book alone has outgrown one PM's spare capacity. */
-    pmOverloaded: plans * PM_HOURS_PER_PLAN > PM_SPARE_HOURS_PER_MONTH,
+    pmHours: Number((plans.length * PM_HOURS_PER_PLAN).toFixed(1)),
+    pmOverloaded: plans.length * PM_HOURS_PER_PLAN > PM_SPARE_HOURS_PER_MONTH,
   };
 }
 
 /**
  * What it costs to keep the lights on, monthly, independent of any project.
  *
- * Kept here rather than in a spreadsheet because it is the number the care book
- * is measured against: once recurring revenue clears this, every project is
- * upside rather than survival. These are estimates and should be replaced with
- * actuals — the point is that the comparison exists at all.
+ * The number the AMC book is measured against: once recurring revenue clears
+ * this, every project is upside rather than survival. Estimates, to be replaced
+ * with actuals - the point is that the comparison exists at all.
  */
 export const FIXED_COSTS = [
   { key: "supabase", label: "Supabase (database, auth, storage)", monthly: 2_100 },
   { key: "cloudflare", label: "Cloudflare Workers and R2", monthly: 900 },
-  { key: "ai", label: "AI model credits (KYC, assistants)", monthly: 1_500 },
+  { key: "ai_platform", label: "AI credits for the platform itself (KYC, moderation)", monthly: 1_500 },
+  { key: "pm_seat", label: "The PM's own AI seat, which runs every month", monthly: AI_SEAT_MONTHLY },
   { key: "email", label: "Transactional email", monthly: 700 },
   { key: "domains", label: "Domains, SSL, misc tooling", monthly: 800 },
 ] as const;
 
 export const FIXED_COSTS_MONTHLY = FIXED_COSTS.reduce((a, c) => a + c.monthly, 0);
 
-/**
- * How many plans of one tier it takes to cover the fixed costs.
- *
- * The answer for Standard is small enough to be motivating, which is the
- * reason to compute it rather than guess: the first handful of care plans is
- * the moment the company stops being funded by whatever landed that month.
- */
-export function plansToCoverFixedCosts(tier: CareKey): number {
-  const q = quoteFor(tier);
-  // Only the margin covers overheads. The commission, the maintainer's fee and
-  // the PM fee are all real money going out the door.
-  const perPlan = q.margin;
+/** How many plans at a given monthly value cover the fixed costs. */
+export function plansToCoverFixedCosts(monthly: number): number {
+  const perPlan = amcBreakdown(monthly).margin;
   if (perPlan <= 0) return Number.POSITIVE_INFINITY;
   return Math.ceil(FIXED_COSTS_MONTHLY / perPlan);
 }
 
 /**
- * Where the care book gets to, given a delivery rate and the attach target.
+ * Where the book gets to, given a delivery rate and the attach target.
  *
- * Churn is applied before the year's additions rather than after, so the
- * forecast is the pessimistic reading. A model that flatters itself about
- * retention is worse than no model, because it is used to make hiring
- * decisions.
+ * Churn is applied before each month's additions, so the forecast reads
+ * pessimistically. A model that flatters itself about retention is worse than
+ * none, because it gets used to make hiring decisions.
  */
-export function careBookForecast(args: {
+export function amcBookForecast(args: {
   projectsPerMonth: number;
   months: number;
   attachRate?: number;
-  tier?: CareKey;
+  monthlyValue?: number;
 }) {
-  const attach = args.attachRate ?? CARE_ATTACH_TARGET;
-  const tier = args.tier ?? "CARE_STANDARD";
-  const monthlyChurn = CARE_ASSUMED_CHURN / 12;
+  const attach = args.attachRate ?? AMC_ATTACH_TARGET;
+  const value = args.monthlyValue ?? amcFor("WEB_PLATFORM").yearOneMonthly;
+  const monthlyChurn = AMC_ASSUMED_CHURN / 12;
 
   let plans = 0;
   for (let m = 0; m < Math.max(0, Math.floor(args.months)); m++) {
     plans = plans * (1 - monthlyChurn) + args.projectsPerMonth * attach;
   }
   const settled = Math.floor(plans);
-  // careBook already reports `plans`, so it is not restated here — spreading it
-  // over an explicit field silently wins and the two could disagree.
-  return careBook({ [tier]: settled });
+  return amcBook(Array.from({ length: settled }, () => value));
 }
 
 /* -------------------------------------------------------------------------- */

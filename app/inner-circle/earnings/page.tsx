@@ -312,7 +312,6 @@ export default function EarningsPage() {
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-[14px] tabular-nums text-[var(--w-ink)]">
                       {inr(s.price)}
-                      {s.recurring && <span className="text-[var(--w-faint)]">/mo</span>}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right text-[14px] font-bold tabular-nums text-[var(--w-ink-strong)]">
                       {inr(q.outreach.net)}
