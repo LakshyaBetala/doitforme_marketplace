@@ -12,11 +12,45 @@
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
+        <!--
+          Was `android:background @null`, which leaves the window transparent and
+          lets the system's default (WHITE on most devices) show through in the
+          gap between the splash dismissing and the remote site's first paint.
+          This app loads over the network, so that gap is a real fraction of a
+          second on a cold start, and a white flash in the middle of launching a
+          dark app is the single clearest "this is a browser" tell.
+
+          brandInk is the `background` custom property from globals.css, so the
+          window underneath is
+          already the colour the site is about to paint.
+        -->
         <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/brandInk</item>
     </style>
 
 
+    <!--
+      THE LAUNCH THEME HAS TO SATISFY TWO DIFFERENT ANDROIDS.
+
+      Below API 31, `android:background` on a Theme.SplashScreen is what gets
+      drawn, and that is the bitmap in drawable-port-*/splash.png.
+
+      From API 31 (Android 12) the system OWNS the splash: it ignores that
+      drawable entirely and composites `windowSplashScreenAnimatedIcon` on
+      `windowSplashScreenBackground`. With neither set — which is how Capacitor
+      scaffolds it — a modern phone shows the launcher icon on the system
+      default background, so the carefully branded bitmap below was dead code on
+      the majority of devices actually in use.
+
+      Both paths are therefore specified, and both resolve to the same grape.
+    -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">@color/brandGrape</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <!-- Where the system hands control after the splash. Without this the
+             activity keeps the splash theme and the WebView can inherit the
+             splash background instead of the app's. -->
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

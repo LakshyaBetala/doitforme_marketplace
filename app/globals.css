@@ -299,6 +299,41 @@ select {
   }
 }
 
+/* ---------------------------------------
+    INSIDE THE NATIVE APP
+    `.native` is set on <html> by components/NativeShell.tsx, which is a no-op
+    on the web. Everything here is for the Capacitor builds, where the product
+    is the same remote site but a few web affordances stop making sense.
+--------------------------------------- */
+
+/* "Install app" and "Add to Home Screen" inside the installed app.
+   InstallAppButton hides itself only when display-mode is `standalone`, and a
+   Capacitor WebView is NOT standalone — so the account menu offered to install
+   an app that the person was already using. Marked with a data attribute
+   rather than a class so a Tailwind sweep cannot quietly rename it. */
+.native [data-pwa-install] {
+  display: none !important;
+}
+
+/* A WebView has no URL bar to reveal, so a drag at the edge of a horizontal
+   scroller just shows grey. Chaining is already blocked vertically on html
+   (see the long note below); this is the horizontal half, and only in the app
+   — on the web, back/forward swipe navigation is a feature. */
+.native {
+  overscroll-behavior-x: none;
+}
+
+/* Native apps do not hand you a drag-and-drop ghost of an image when you hold
+   it, and they do not show the browser's "open image in new tab" callout.
+   Deliberately NOT applied to text: people copy UPI IDs and gig details, and
+   the controls-only rule below already covers button labels. */
+.native img {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* Tap targets: removes the 300ms delay and the grey flash on Android/iOS.
    The site is mobile-first and this is felt on every single tap. */
 a,

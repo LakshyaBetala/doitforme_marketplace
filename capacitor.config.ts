@@ -66,10 +66,41 @@ const config: CapacitorConfig = {
   android: {
     // Razorpay's checkout and Google OAuth both need a real browser session.
     allowMixedContent: false,
+    // What the WebView itself paints before the remote site's first byte.
+    // Defaults to white, which is a flash in a dark app; this is --background
+    // from globals.css, so there is nothing to see at the handoff.
+    backgroundColor: "#0B0B11",
   },
 
   ios: {
     contentInset: "always",
+    backgroundColor: "#0B0B11",
+  },
+
+  plugins: {
+    SplashScreen: {
+      /*
+       * launchAutoHide FALSE is the important line.
+       *
+       * Left true, the splash dismisses on a fixed timer with no knowledge of
+       * the app — and this app loads the live site over the network, so on
+       * anything slower than office wifi the timer wins and the user watches an
+       * empty WebView finish loading. That is precisely the "it's just a
+       * website" feeling: a native app does not show you its own blank canvas.
+       *
+       * Instead NativeShell.tsx hides it once React has mounted, so the splash
+       * covers the ENTIRE network wait and the first thing seen after it is
+       * real content. A 4s hard ceiling in that same file guarantees the app
+       * can never hang on the splash if the site is unreachable.
+       */
+      launchAutoHide: false,
+      backgroundColor: "#341044",
+      androidScaleType: "CENTER_CROP",
+      // The system Android-12+ splash already draws the icon; a second spinner
+      // on top of it reads as two loading states for one wait.
+      showSpinner: false,
+      androidSpinnerStyle: "small",
+    },
   },
 };
 

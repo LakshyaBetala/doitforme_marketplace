@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Brand colours for the native chrome. New names only — colorPrimary,
+      colorPrimaryDark and colorAccent are referenced by AppTheme and resolve
+      from the capacitor-android library, so they are deliberately not
+      redefined here.
+    -->
+
+    <!-- The grape from the workspace rail. Same value as the launcher icon
+         background and the PWA maskable icon, so the splash, the home-screen
+         icon and the browser icon are one identity. -->
+    <color name="brandGrape">#341044</color>
+
+    <!-- The `background` custom property from app/globals.css. (XML forbids a
+         double hyphen inside a comment, so the CSS variable cannot be written
+         here in its real form.) This is what the WebView shows
+         BEFORE the first paint of the remote site, so it has to match the
+         site's own background or the handoff from splash to content flashes. -->
+    <color name="brandInk">#0B0B11</color>
+</resources>

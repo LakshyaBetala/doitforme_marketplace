@@ -84,3 +84,48 @@ for (const [density, scale] of DENSITIES) {
 
   console.log(`${density.padEnd(8)} foreground ${fg}px  legacy ${lg}px`);
 }
+
+// ---------------------------------------------------------------------------
+// SPLASH SCREENS.
+//
+// This is the difference between "an app" and "a browser pointed at a site".
+// The app loads the live site over the network (capacitor.config.ts), so there
+// is a real wait on launch, and Capacitor's placeholder splash is a white image
+// with its own logo — so cold-starting the app flashed WHITE, showed someone
+// else's branding, and only then faded into a dark product. That single second
+// is most of why it reads as a web page in a frame.
+//
+// Capacitor's convention: a portrait and a landscape bitmap per density, plus
+// drawable/splash.png as the fallback.
+// ---------------------------------------------------------------------------
+const SPLASH = [
+  ["port-mdpi", 320, 480],
+  ["port-hdpi", 480, 800],
+  ["port-xhdpi", 720, 1280],
+  ["port-xxhdpi", 960, 1600],
+  ["port-xxxhdpi", 1280, 1920],
+  ["land-mdpi", 480, 320],
+  ["land-hdpi", 800, 480],
+  ["land-xhdpi", 1280, 720],
+  ["land-xxhdpi", 1600, 960],
+  ["land-xxxhdpi", 1920, 1280],
+];
+
+for (const [dir, w, h] of SPLASH) {
+  const out = path.join(RES, `drawable-${dir}`);
+  mkdirSync(out, { recursive: true });
+  // Mark sized off the SHORT edge so it is identical in portrait and landscape
+  // and never crops; 28% leaves it comfortably inside a notch or a punch-hole.
+  const art = Math.round(Math.min(w, h) * 0.28);
+  await sharp({ create: { width: w, height: h, channels: 4, background: GRAPE } })
+    .composite([{ input: await sharp(SRC).resize(art, art, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer(), gravity: "centre" }])
+    .png({ compressionLevel: 9 })
+    .toFile(path.join(out, "splash.png"));
+}
+// The fallback, used when no density matches.
+await sharp({ create: { width: 480, height: 320, channels: 4, background: GRAPE } })
+  .composite([{ input: await sharp(SRC).resize(90, 90, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } }).toBuffer(), gravity: "centre" }])
+  .png({ compressionLevel: 9 })
+  .toFile(path.join(RES, "drawable", "splash.png"));
+
+console.log(`splash   ${SPLASH.length} densities + fallback, on grape`);

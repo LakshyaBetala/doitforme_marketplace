@@ -64,6 +64,11 @@ export default function InstallAppButton() {
   return (
     <button
       onClick={handleInstallClick}
+      /* Hidden inside the Capacitor builds by a `.native` rule in globals.css.
+         `isStandalone` above does not catch them — a WebView does not report
+         display-mode: standalone — so without this the installed app offered
+         to install itself. */
+      data-pwa-install=""
       className="flex min-h-[44px] w-full items-center gap-3 rounded-[9px] px-3 text-left text-[13px] font-semibold text-[var(--fg)] hover:bg-[var(--chip)] transition-colors"
     >
       {isIOS ? (
