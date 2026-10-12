@@ -1,0 +1,144 @@
+/* =============================================================================
+   THE INNER CIRCLE APP PALETTE
+   Scoped to `.icapp`, which app/app/layout.tsx puts on its own wrapper. It does
+   not leak into the website and the website's tokens do not leak in here.
+
+   WHY A THIRD PALETTE, when globals.css (dark) and workspace-theme.css (cream)
+   already exist. Those two are a WEBSITE's palettes: the cream workspace is
+   built for a 1400px desktop rail with a topbar, and the public dark theme is
+   built for a marketing page. Rendering either one inside a phone-sized WebView
+   is exactly what makes the app feel like a site in a frame — the proportions,
+   the contrast and the density are all aimed at a cursor and a wide viewport.
+
+   THE DECISIONS, so they are arguable rather than vibes:
+
+   1. BASE IS NEARLY TRUE BLACK (#07070B), deeper than the site's #0B0B11.
+      Phone screens are OLED and an almost-black base costs no battery, gives
+      genuinely infinite contrast against the surfaces above it, and is what
+      every app the audience already uses at night looks like. On a desktop LCD
+      the same value looks flat and cheap, which is why the website should NOT
+      adopt it.
+
+   2. ONE ACCENT, AND IT IS THE BRAND PURPLE. No second hue for decoration.
+      CLAUDE.md's design system allows brand blue "sparingly" and the honest
+      reading of sparingly, on a four-tab phone app, is "not at all".
+
+   3. MONEY GETS ITS OWN COLOUR, and it is the only exception to rule 2.
+      `--m-gold` is used for amounts earned and nothing else — never a border,
+      never a button, never a heading. Money is the one number in this product
+      people open the app to check, it is the thing that proves the platform is
+      real, and giving it a dedicated colour means an amount is never confused
+      with a status chip. Gold also carries the "earned" connotation that the
+      tier is trying to signal, which purple does not.
+
+   4. SUCCESS / WARNING / DANGER ARE DESATURATED. Phone UI puts status chips
+      close together and saturated green-amber-red at small sizes reads as a
+      toy. These are muted enough to sit beside gold without fighting it.
+
+   5. EXACTLY ONE GRADIENT IN THE WHOLE APP: the header wash, built from the
+      brand grape. Gradients are the fastest route to generic-AI-slop, so there
+      is a single, shallow, brand-coloured one and everything else is flat.
+
+   Radii are generous and consistent (CLAUDE.md: pick one scale and keep it):
+   14px for controls, 20px for cards, full for pills.
+============================================================================= */
+
+.icapp {
+  /* Base and elevation. Four steps, no more — a fifth surface is how a card
+     ends up inside a card inside a card. */
+  --a-bg: #07070b;
+  --a-surface: #101016;
+  --a-surface-2: #17171f;
+  --a-surface-3: #1f1f29;
+
+  /* The grape from the launcher icon and the splash, so opening the app is
+     continuous with its own icon. */
+  --a-grape: #341044;
+
+  /* Hairlines. Two weights: one for dividing, one for containing. */
+  --a-line: rgba(255, 255, 255, 0.07);
+  --a-line-strong: rgba(255, 255, 255, 0.13);
+
+  /* Type. Slightly warm white — pure #fff on near-black vibrates at small
+     sizes and is the most common reason dark UI feels harsh. */
+  --a-fg: #f3f3f6;
+  --a-fg-muted: rgba(243, 243, 246, 0.62);
+  --a-fg-faint: rgba(243, 243, 246, 0.4);
+
+  /* The one accent. */
+  --a-accent: #8825f5;
+  --a-accent-ink: #c9a9ff;
+  --a-accent-soft: rgba(136, 37, 245, 0.14);
+  --a-accent-line: rgba(136, 37, 245, 0.32);
+  --a-on-accent: #ffffff;
+
+  /* Money. Rule 3 above: amounts only. */
+  --a-gold: #e0b050;
+  --a-gold-soft: rgba(224, 176, 80, 0.12);
+  --a-gold-line: rgba(224, 176, 80, 0.28);
+
+  /* Status, desaturated on purpose. */
+  --a-ok: #4ec08a;
+  --a-ok-soft: rgba(78, 192, 138, 0.12);
+  --a-warn: #e0a23c;
+  --a-warn-soft: rgba(224, 162, 60, 0.12);
+  --a-bad: #e2685f;
+  --a-bad-soft: rgba(226, 104, 95, 0.12);
+
+  --a-r-ctl: 14px;
+  --a-r-card: 20px;
+
+  /* The safe areas. `viewportFit: "cover"` in app/layout.tsx is what makes
+     these resolve to anything other than 0px — see CLAUDE.md; it is
+     load-bearing and was once missing, which put the bottom bar under the
+     iPhone home indicator. */
+  --a-safe-top: env(safe-area-inset-top, 0px);
+  --a-safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Height of the tab bar, excluding the safe area. Declared once so content
+     padding and the bar itself cannot drift apart and clip the last row. */
+  --a-tabbar: 60px;
+
+  background: var(--a-bg);
+  color: var(--a-fg);
+  color-scheme: dark;
+  /* The app is one column at phone width. Centred with a max width so it is not
+     grotesque if someone opens it on a tablet or in a desktop browser, which
+     they will, because it is a URL. */
+  min-height: 100dvh;
+}
+
+/* The single gradient. A shallow grape wash behind the header that fades into
+   the base, so the top of the app belongs to the brand and the rest is quiet. */
+.icapp-wash {
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(52, 16, 68, 0.95) 0%, rgba(52, 16, 68, 0.35) 45%, rgba(7, 7, 11, 0) 100%);
+}
+
+/* Tabular figures for money and counts. A column of amounts where the digits
+   do not line up looks broken, and it is one CSS property. */
+.icapp-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Momentum scrolling inside the content column, with the chain broken so a
+   flick at the end of a list does not move the page behind it. */
+.icapp-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* A pressed state that feels physical. 40ms is below the threshold where a tap
+   feels laggy, and scale rather than colour means it reads on every surface. */
+.icapp-press {
+  transition: transform 40ms ease-out, background-color 120ms ease-out;
+}
+.icapp-press:active {
+  transform: scale(0.975);
+}
+@media (prefers-reduced-motion: reduce) {
+  .icapp-press:active {
+    transform: none;
+  }
+}

@@ -25,6 +25,10 @@ const PROTECTED_ROUTES = [
   // login. WorkspaceLayout gates them too; this is the cheaper first layer.
   '/inner-circle',
   '/program',
+  // The app surface. Its own layout gates on membership, but keeping it in
+  // this list means an unauthenticated request never reaches the layout at
+  // all and lands on /login with a next= back to the app.
+  '/app',
 ]
 
 // MAINTENANCE MODE.
@@ -70,6 +74,15 @@ const MAINTENANCE_PUBLIC = [
   // it with a maintenance page would consume those retries and silently drop
   // payments that were actually captured.
   '/api/webhooks',
+  // THE INNER CIRCLE APP RUNS WHILE THE PUBLIC SITE IS HELD.
+  //
+  // This is the one surface where the hold page is actively wrong. /app is the
+  // Android app's entire content: it is invite-only, every route under it is
+  // gated by app/app/layout.tsx and then again by RLS, and the people using it
+  // are the team delivering client work — holding them out while the public
+  // marketplace is paused stops the actual business rather than protecting it.
+  // A non-member who finds the URL gets the invite-only screen, not the site.
+  '/app',
 ]
 
 const isMaintenancePublic = (pathname: string) =>

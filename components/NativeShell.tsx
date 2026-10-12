@@ -73,7 +73,12 @@ export default function NativeShell() {
      * deliberate navigation and is left alone.
      */
     if (window.location.pathname === "/") {
-      window.location.replace("/dashboard");
+      // /app is the Inner Circle surface — bottom tabs, one column, its own
+      // palette — and it is what this app IS. A member lands on Today; anyone
+      // else gets the invite-only screen, which is the honest answer rather
+      // than a marketing page. proxy.ts sends a signed-out visitor to /login
+      // with next=/app, so they come back here after signing in.
+      window.location.replace("/app");
       return;
     }
 
