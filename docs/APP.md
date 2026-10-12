@@ -18,6 +18,59 @@ wraps `https://www.doitforme.in` rather than bundling a static export.
 | `ios/` native project | **not generated** — needs Xcode on macOS, impossible on Windows |
 | Store listings, signing keys, review | **not started** |
 
+### What the app actually is: `/app`, the Inner Circle surface
+
+The app does **not** open the marketplace. It opens
+[app/app/](../app/app/) — bottom tabs, one column, its own palette
+([app-theme.css](../app/app/app-theme.css)), gated on membership by
+[app/app/layout.tsx](../app/app/layout.tsx) and then again by RLS.
+[lib/appShell.ts](../lib/appShell.ts) decides the role (admin > pm > member,
+all derived) and the four tabs per role. `NativeShell` sends `/` to `/app` on
+launch.
+
+`/app` is in `MAINTENANCE_PUBLIC` in [proxy.ts](../proxy.ts), so **the app
+works while the public site is still behind the hold page.** That is
+deliberate: it is invite-only and double-gated, and the people using it are the
+team delivering client work.
+
+Why not Flutter or React Native: neither reaches iOS without Xcode, because
+Xcode is the only iOS compiler Apple ships and it is macOS-only. A cloud macOS
+runner (Codemagic, GitHub Actions) removes the need to *own* a Mac, and that
+applies to this Capacitor project unchanged. A rewrite would cost 46 screens,
+two palettes, auth, escrow, KYC and chat for zero iOS gain.
+
+### Play Store: what is done and what is left
+
+Done: app id `in.doitforme.app`, name "DoItForMe", branded adaptive launcher
+icon and splash at every density, release signing wired to a gitignored
+properties file, `bundleRelease` producing an AAB, INTERNET as the only
+permission.
+
+Left, and none of it is code:
+
+1. **Create the upload key.** Deliberately not generated here — Google pins the
+   app id to its signature, so losing it means the listing can never be updated
+   and must be republished under a new id. Keep the file and both passwords in
+   a password manager.
+   ```bash
+   keytool -genkeypair -v -keystore doitforme-upload.jks \
+     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+   Then write `android/keystore.properties` (gitignored) as documented in
+   [android/app/build.gradle](../android/app/build.gradle), and re-run
+   `bundleRelease` — the AAB comes out signed.
+2. Play Console account (one-off $25) and a new app entry.
+3. Listing: short and full description, feature graphic, at least two phone
+   screenshots, and the privacy-policy URL — `/privacy-policy` already exists.
+4. The Data safety form. The app collects email, phone, a student ID document
+   and a UPI id; answer it from that list honestly.
+5. Internal testing track first. Upload the AAB, add yourself as a tester,
+   install from Play, and check sign-in, a brief and a payout screen on a real
+   phone before any wider release.
+
+`MAINTENANCE_MODE` does not block the app, but the website is still held — so
+decide whether the public site should be live before the listing goes public.
+
 ### Building the APK: it needs JDK 21, not 17
 
 **`./gradlew assembleDebug` fails with `invalid source release: 21` under JDK
