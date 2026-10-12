@@ -322,7 +322,8 @@ and `proxy.ts` defaults it ON so a missing value cannot expose a broken site.
   to the next field, and the value silently counts down under the cursor — reaching
   negative numbers if they scroll far enough. It presents as "the amount changes to a
   random value". Every number input must carry `onWheel={blurOnWheel}` from
-  [lib/inputs.ts](lib/inputs.ts); there are 8 of them.
+  [lib/inputs.ts](lib/inputs.ts); there are **10** of them (was 8; re-counted
+  2026-10-13 and all ten carry the handler).
 
 - **`REVOKE ... FROM anon` does nothing; the grant comes from `PUBLIC`.** Postgres
   grants `EXECUTE` on every new function to `PUBLIC`, and `anon`/`authenticated`
@@ -411,6 +412,17 @@ and `proxy.ts` defaults it ON so a missing value cannot expose a broken site.
   Next's handlers never see the request and the package leaves the graph. Paired
   with `outputFileTracingExcludes`, this is what took the Worker from "fails to
   build" to **2.84 MB gzipped** against a 3 MB free ceiling.
+  **That figure is historical and the margin is now almost gone.** Measured
+  2026-10-13 with `npm run cf:size`: **3038.66 KiB gzipped against the 3072 KiB
+  (3 MiB) ceiling — 33 KiB of headroom, 98.9% full.** Assets are uploaded
+  separately and do not count; this is the Worker script. Two consequences:
+  check `npm run cf:size` *before* adding any dependency the server graph can
+  reach, and remember this fails at **deploy** time, so a green `npm run build`
+  proves nothing. The dominant contributor is `next` itself (27.7 MB unzipped
+  under `.open-next/server-functions/default/node_modules/`), so the realistic
+  levers are `outputFileTracingExcludes` and keeping new packages out of the
+  server graph — a client-only dependency belongs behind a dynamic import, as
+  [components/NativeShell.tsx](components/NativeShell.tsx) does for Capacitor.
 
 - **`next/og` throws if any `<div>` with two children lacks an explicit `display`.**
   Satori — which renders `ImageResponse` — requires it, and
