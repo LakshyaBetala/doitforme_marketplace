@@ -136,14 +136,15 @@ async function OutreachToday({ userId }: { userId: string }) {
 
   const { data: commissions } = await supabase
     .from("outreach_commissions")
-    .select("amount, paid_at")
+    // No `paid_at` column exists; a tranche's state is its gig's state.
+    .select("amount, gig:gig_id(status)")
     .limit(200);
 
   const leads = leadRows ?? [];
   const open = leads.filter((l) => OPEN_STAGES.includes(l.stage as never));
   const due = leads.filter((l) => isOverdue(l as { stage: string; next_action_at?: string | null }));
   const owed = (commissions ?? [])
-    .filter((c) => !c.paid_at)
+    .filter((c) => (c.gig as { status?: string } | null)?.status !== "completed")
     .reduce((a, c) => a + (Number(c.amount) || 0), 0);
 
   return (

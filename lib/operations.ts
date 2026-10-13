@@ -235,8 +235,22 @@ export const MAX_PROJECTS_PER_PM = 2;
 
 /** Commission tranches, and the gate each one waits for. */
 export const COMMISSION_GATES = [
-  { tranche: 1, share: 0.4, gate: "projects.first_payment_at", why: "The client's money actually arrived." },
-  { tranche: 2, share: 0.6, gate: "projects.accepted_at", why: "The client was happy with what they got." },
+  {
+    // 'first' and 'final', not 1 and 2: these are the exact values the CHECK
+    // constraint on outreach_commissions.tranche allows. Naming them anything
+    // else here would be a second vocabulary for one concept, and the insert
+    // would fail at runtime rather than at review.
+    tranche: "first",
+    share: 0.4,
+    gate: "projects.first_payment_at",
+    why: "The client's money actually arrived.",
+  },
+  {
+    tranche: "final",
+    share: 0.6,
+    gate: "projects.accepted_at",
+    why: "The client was happy with what they got.",
+  },
 ] as const;
 
 /**

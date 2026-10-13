@@ -140,7 +140,10 @@ test("commission is gated on facts, and weighted toward a good outcome", () => {
   // The larger half waits for acceptance. One payment on signature pays
   // identically for a dream client and a nightmare one.
   const [first, second] = COMMISSION_GATES;
-  assert.equal(first.tranche, 1);
+  // The DB CHECK allows exactly these two strings; drifting from them here
+  // would make every insert fail at runtime instead of at review.
+  assert.equal(first.tranche, "first");
+  assert.equal(second.tranche, "final");
   assert.ok(second.share > first.share, "the finder is paid before the client is happy");
   assert.match(first.gate, /first_payment_at/);
   assert.match(second.gate, /accepted_at/);

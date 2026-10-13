@@ -34,7 +34,16 @@ export default async function Earnings() {
       .limit(200),
     // RLS already restricts these to the owner; earnings are deliberately not
     // team-readable (20261012_agency_program.sql).
-    supabase.from("outreach_commissions").select("id, amount, tranche, paid_at, lead_id").limit(200),
+    // THERE IS NO `paid_at` COLUMN. Asking for one makes PostgREST return an
+    // error, which surfaces here as a null result — so this screen would have
+    // shown zeros rather than failing visibly. A tranche's paid state is its
+    // GIG's state, derived at read time, for the same reason these tables
+    // carry no status column: a second state machine beside the money goes
+    // stale, and it is always the one the UI reads.
+    supabase
+      .from("outreach_commissions")
+      .select("id, amount, tranche, lead_id, gig:gig_id(status, payment_status)")
+      .limit(200),
   ]);
 
   const net = (p: number) => p - platformFeeFor(p, AGENCY_FEE_AUDIENCE);
@@ -46,8 +55,11 @@ export default async function Earnings() {
   const pending = pendingGigs.reduce((a, g) => a + net(Number(g.price) || 0), 0);
 
   const comms = commissions ?? [];
-  const commPaid = comms.filter((c) => c.paid_at).reduce((a, c) => a + (Number(c.amount) || 0), 0);
-  const commOwed = comms.filter((c) => !c.paid_at).reduce((a, c) => a + (Number(c.amount) || 0), 0);
+  // Released means the gig that pays the tranche actually completed.
+  const isPaid = (c: { gig?: unknown }) =>
+    (c.gig as { status?: string } | null)?.status === "completed";
+  const commPaid = comms.filter(isPaid).reduce((a, c) => a + (Number(c.amount) || 0), 0);
+  const commOwed = comms.filter((c) => !isPaid(c)).reduce((a, c) => a + (Number(c.amount) || 0), 0);
 
   const totalPaid = paid + commPaid;
   const totalOwed = pending + commOwed;
@@ -74,17 +86,17 @@ export default async function Earnings() {
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[14.5px] font-semibold">
-                      {c.tranche === 1 ? "On first payment" : "On client acceptance"}
+                      {c.tranche === "first" ? "On first payment" : "On client acceptance"}
                     </p>
                     <p className="mt-0.5 text-[12px] text-[var(--a-fg-faint)]">
-                      {c.tranche === 1 ? "40% tranche" : "60% tranche"}
+                      {c.tranche === "first" ? "40% tranche" : "60% tranche"}
                     </p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="icapp-num text-[15px] font-semibold text-[var(--a-gold)]">
                       {inr(Number(c.amount) || 0)}
                     </p>
-                    {c.paid_at ? <Pill tone="ok">Paid</Pill> : <Pill tone="warn">Owed</Pill>}
+                    {isPaid(c) ? <Pill tone="ok">Paid</Pill> : <Pill tone="warn">Owed</Pill>}
                   </div>
                 </div>
               </Card>
