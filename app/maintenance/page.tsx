@@ -450,10 +450,10 @@ export default function MaintenancePage() {
           <p className="mt-1">
             Anything urgent:{" "}
             <a
-              href="mailto:doitforme.in@gmail.com"
+              href="mailto:support@doitforme.in"
               className="text-[#C9A9FF] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8825F5]/50 rounded"
             >
-              doitforme.in@gmail.com
+              support@doitforme.in
             </a>
           </p>
         </footer>

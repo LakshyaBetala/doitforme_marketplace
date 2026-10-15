@@ -138,7 +138,7 @@ export default function ShippingContent() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">5. Questions about a delivery</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  Email <a href="mailto:doitforme.in@gmail.com" className="text-[#C9A9FF] hover:underline">doitforme.in@gmail.com</a>{" "}
+                  Email <a href="mailto:support@doitforme.in" className="text-[#C9A9FF] hover:underline">support@doitforme.in</a>{" "}
                   or <a href="mailto:gandhimouriyan1234@gmail.com" className="text-[#C9A9FF] hover:underline">gandhimouriyan1234@gmail.com</a> for
                   escalations, Monday to Saturday, 10:00 to 19:00 IST. We reply to delivery queries within one working day.
                 </p>

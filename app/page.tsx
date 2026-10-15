@@ -104,7 +104,7 @@ export default function Home() {
       contactPoint: {
         "@type": "ContactPoint",
         contactType: "customer support",
-        email: "doitforme.in@gmail.com",
+        email: "support@doitforme.in",
         areaServed: "IN",
         availableLanguage: ["English", "Hindi"],
       },

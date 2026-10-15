@@ -126,7 +126,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {
         "@type": "ContactPoint",
         "contactType": "customer support",
-        "email": "doitforme.in@gmail.com",
+        "email": "support@doitforme.in",
         "availableLanguage": ["en", "ta", "hi"],
         "areaServed": "IN"
       },

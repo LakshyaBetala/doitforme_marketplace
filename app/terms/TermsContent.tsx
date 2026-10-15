@@ -155,7 +155,7 @@ export default function TermsContent() {
                 <p className="text-zinc-400 leading-relaxed">
                   If you have any questions or concerns regarding these Terms of Service, please contact us at:
                   <br /><br />
-                  <strong>Email:</strong> <a href="mailto:doitforme.in@gmail.com" className="text-white hover:text-[#C084FC] transition-colors">doitforme.in@gmail.com</a>
+                  <strong>Email:</strong> <a href="mailto:support@doitforme.in" className="text-white hover:text-[#C084FC] transition-colors">support@doitforme.in</a>
                   <br />
                   <strong>Payments &amp; escalations:</strong> <a href="mailto:gandhimouriyan1234@gmail.com" className="text-white hover:text-[#C084FC] transition-colors">gandhimouriyan1234@gmail.com</a>
                 </p>

@@ -114,7 +114,7 @@ export default function PricingContent() {
             <div className="mt-12 bg-white/5 border border-[var(--card-border)] rounded-2xl p-6 text-center max-w-2xl mx-auto">
                <p className="text-white/80 text-base mb-1">Have a question about pricing?</p>
                <p className="text-white/50 text-sm">
-                  Email <a href="mailto:doitforme.in@gmail.com" className="text-[#C9A9FF] hover:underline">doitforme.in@gmail.com</a> · billing <a href="mailto:gandhimouriyan1234@gmail.com" className="text-[#C9A9FF] hover:underline">gandhimouriyan1234@gmail.com</a>
+                  Email <a href="mailto:support@doitforme.in" className="text-[#C9A9FF] hover:underline">support@doitforme.in</a> · billing <a href="mailto:gandhimouriyan1234@gmail.com" className="text-[#C9A9FF] hover:underline">gandhimouriyan1234@gmail.com</a>
                </p>
             </div>
 

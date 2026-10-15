@@ -92,8 +92,8 @@ export default function AccountSettingsPage() {
           <Download size={15} className="mt-0.5 shrink-0" />
           <span>
             Want a copy of everything we hold on you before you go? Email{" "}
-            <a href="mailto:doitforme.in@gmail.com" className="font-semibold text-[var(--accent-ink)]">
-              doitforme.in@gmail.com
+            <a href="mailto:support@doitforme.in" className="font-semibold text-[var(--accent-ink)]">
+              support@doitforme.in
             </a>{" "}
             and we will send it.
           </span>

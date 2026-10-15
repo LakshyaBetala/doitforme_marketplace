@@ -20,7 +20,7 @@
 const FROM_EMAIL = "noreply@doitforme.in";
 const FROM_NAME = "doitforme";
 const FROM = `${FROM_NAME} <${FROM_EMAIL}>`;
-const REPLY_TO = "doitforme.in@gmail.com";
+const REPLY_TO = "support@doitforme.in"; // replies to notifications land in the monitored support inbox, not the founder Gmail
 const SITE = "https://doitforme.in";
 
 type EmailKind =

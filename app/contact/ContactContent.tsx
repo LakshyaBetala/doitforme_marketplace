@@ -28,7 +28,7 @@ export default function ContactContent() {
             <div>
               <h3 className="font-bold text-white text-lg">Email Support</h3>
               <p className="text-white/60 text-sm mb-1">For general queries, bug reports, and disputes:</p>
-              <a href="mailto:doitforme.in@gmail.com" className="text-[#8825F5] font-medium hover:underline">doitforme.in@gmail.com</a>
+              <a href="mailto:support@doitforme.in" className="text-[#8825F5] font-medium hover:underline">support@doitforme.in</a>
               <p className="text-white/40 text-xs mt-1">We reply within one working day.</p>
             </div>
           </div>

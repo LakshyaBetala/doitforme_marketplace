@@ -110,7 +110,7 @@ export default function RefundContent() {
               <div className="space-y-3">
                 <h3 className="text-xl font-bold text-white">3. Dispute Resolution</h3>
                 <p className="text-zinc-400 leading-relaxed">
-                  If a disagreement arises, DoItForMe acts as the arbitrator. Email evidence (chat logs) to <a href="mailto:doitforme.in@gmail.com" className="text-white hover:underline">doitforme.in@gmail.com</a>, or escalate to <a href="mailto:gandhimouriyan1234@gmail.com" className="text-white hover:underline">gandhimouriyan1234@gmail.com</a>. We resolve disputes within 48 hours.
+                  If a disagreement arises, DoItForMe acts as the arbitrator. Email evidence (chat logs) to <a href="mailto:support@doitforme.in" className="text-white hover:underline">support@doitforme.in</a>, or escalate to <a href="mailto:gandhimouriyan1234@gmail.com" className="text-white hover:underline">gandhimouriyan1234@gmail.com</a>. We resolve disputes within 48 hours.
                 </p>
               </div>
             </div>
