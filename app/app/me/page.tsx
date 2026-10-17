@@ -1,7 +1,7 @@
 import { createServer } from "@/lib/supabaseServer";
+import { resolveApp, PREVIEWABLE } from "@/lib/appIdentity.server";
 import LogoutButton from "@/components/app/LogoutButton";
-import { isAdminEmail } from "@/lib/admins";
-import { appRoleFor, ROLE_TITLE, ROLE_BLURB } from "@/lib/appShell";
+import { ROLE_TITLE, ROLE_BLURB } from "@/lib/appShell";
 import { SectionTitle, Card, Pill } from "@/components/app/ui";
 import { stepsFor, type Owner } from "@/lib/operations";
 import type { AppRole } from "@/lib/appShell";
@@ -34,28 +34,18 @@ export const metadata = { title: "Me" };
  * person was let in, when, and what that entitles them to.
  */
 export default async function Me() {
+  const { userId, role, identity, previewing } = await resolveApp();
+  if (!userId || !role) return null;
+
+  // Me still needs the profile itself — standing, rating, UPI. The role and
+  // identity come from the shared resolver so this screen cannot disagree with
+  // the tab bar about who you are.
   const supabase = await createServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const [{ data: profile }, { data: pmRows }] = await Promise.all([
-    supabase
-      .from("users")
-      .select("name, email, is_elite, inner_circle_role, kyc_status, rating, jobs_completed, upi_id")
-      .eq("id", user.id)
-      .maybeSingle(),
-    supabase.from("projects").select("id").eq("pm_id", user.id).limit(1),
-  ]);
-
-  const role = appRoleFor({
-    isAdmin: isAdminEmail(user.email),
-    isPm: Boolean(pmRows && pmRows.length > 0),
-    isElite: profile?.is_elite,
-    innerCircleRole: profile?.inner_circle_role,
-  });
-  if (!role) return null;
+  const { data: profile } = await supabase
+    .from("users")
+    .select("name, email, is_elite, inner_circle_role, kyc_status, rating, jobs_completed, upi_id")
+    .eq("id", userId)
+    .maybeSingle();
 
   return (
     <>
@@ -137,6 +127,44 @@ export default async function Me() {
           </Card>
         ))}
       </div>
+
+      {/*
+        ROLE PREVIEW — admin only.
+        Precedence makes an admin always resolve to ADMIN, so without this the
+        owner can never see what a builder or a partner actually sees, and the
+        two surfaces they most need to judge are the two they cannot open. It
+        swaps the SCREENS only: queries still run under the admin's own RLS, so
+        it is not an escalation and not a test of what a real member can read
+        (that is what `npm run db:access-audit` proves).
+      */}
+      {identity.isAdmin ? (
+        <>
+          <SectionTitle>Preview a surface</SectionTitle>
+          <div className="grid grid-cols-2 gap-2.5">
+            {PREVIEWABLE.map((r) => (
+              <a
+                key={r}
+                href={`/api/app/preview?as=${r}`}
+                className="icapp-press flex min-h-[48px] items-center justify-center rounded-[var(--a-r-ctl)] border border-[var(--a-line-strong)] bg-[var(--a-surface)] px-3 text-[13.5px] font-semibold"
+              >
+                {ROLE_TITLE[r]}
+              </a>
+            ))}
+            {previewing ? (
+              <a
+                href="/api/app/preview?as=self"
+                className="icapp-press col-span-2 flex min-h-[48px] items-center justify-center rounded-[var(--a-r-ctl)] border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft)] px-3 text-[13.5px] font-semibold text-[var(--a-warn)]"
+              >
+                Back to my own surface
+              </a>
+            ) : null}
+          </div>
+          <p className="mt-2 text-[11.5px] leading-relaxed text-[var(--a-fg-faint)]">
+            Changes which tabs and screens render. Your data and permissions are
+            unchanged.
+          </p>
+        </>
+      ) : null}
 
       <SectionTitle>Settings</SectionTitle>
       <div className="space-y-2.5">

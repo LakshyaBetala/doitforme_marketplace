@@ -1,6 +1,6 @@
 import { createServer } from "@/lib/supabaseServer";
-import { isAdminEmail } from "@/lib/admins";
-import { appRoleFor, type AppRole } from "@/lib/appShell";
+import { resolveApp } from "@/lib/appIdentity.server";
+import { type AppRole } from "@/lib/appShell";
 import { isOverdue, stageLabel, OPEN_STAGES } from "@/lib/innerCircle";
 import { platformFeeFor } from "@/lib/fees";
 import { AGENCY_FEE_AUDIENCE } from "@/lib/agency";
@@ -21,28 +21,14 @@ import { SectionTitle, Card, Stat, Pill, Empty, inr } from "@/components/app/ui"
  * conversation that decides whether they believe anything else here.
  */
 export default async function Today() {
-  const supabase = await createServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  // Same resolver as the layout, so the tabs and the screen can never disagree
+  // about which surface this is.
+  const { userId, role } = await resolveApp();
+  if (!userId || !role) return null;
 
-  const [{ data: profile }, { data: pmRows }] = await Promise.all([
-    supabase.from("users").select("is_elite, inner_circle_role").eq("id", user.id).maybeSingle(),
-    supabase.from("projects").select("id").eq("pm_id", user.id).limit(1),
-  ]);
-
-  const role = appRoleFor({
-    isAdmin: isAdminEmail(user.email),
-    isPm: Boolean(pmRows && pmRows.length > 0),
-    isElite: profile?.is_elite,
-    innerCircleRole: profile?.inner_circle_role,
-  });
-  if (!role) return null;
-
-  if (role === "TECH") return <TechToday userId={user.id} />;
-  if (role === "OUTREACH") return <OutreachToday userId={user.id} />;
-  return <LeadToday role={role} userId={user.id} />;
+  if (role === "TECH") return <TechToday userId={userId} />;
+  if (role === "OUTREACH") return <OutreachToday userId={userId} />;
+  return <LeadToday role={role} userId={userId} />;
 }
 
 /* -------------------------------------------------------------------------- */

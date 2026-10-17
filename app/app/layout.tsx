@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { redirect } from "next/navigation";
-import { createServer } from "@/lib/supabaseServer";
-import { isAdminEmail } from "@/lib/admins";
-import { appRoleFor, canUseApp, ROLE_TITLE, ROLE_BLURB } from "@/lib/appShell";
+import { resolveApp } from "@/lib/appIdentity.server";
+import { ROLE_TITLE, ROLE_BLURB } from "@/lib/appShell";
 import BottomTabs from "@/components/app/BottomTabs";
 import JoinScreen from "@/components/app/JoinScreen";
 import "./app-theme.css";
@@ -41,31 +40,14 @@ export const viewport: Viewport = {
  * the policies are the boundary.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // One resolver for the layout and both screens that need a role. See
+  // lib/appIdentity.server.ts — including why an admin may preview another
+  // surface and why that previews the SCREENS, never the permissions.
+  const { userId, firstName, role, realRole, previewing, allowed } = await resolveApp();
 
-  if (!user) redirect("/login?next=/app");
+  if (!userId) redirect("/login?next=/app");
 
-  const [{ data: profile }, { data: pmRows }] = await Promise.all([
-    supabase.from("users").select("is_elite, inner_circle_role, name").eq("id", user.id).maybeSingle(),
-    // One row is all that is being asked: "is this person a PM at all". The
-    // limit keeps it a cheap existence check rather than loading a book of
-    // projects to compute a boolean.
-    supabase.from("projects").select("id").eq("pm_id", user.id).limit(1),
-  ]);
-
-  const identity = {
-    isAdmin: isAdminEmail(user.email),
-    isPm: Boolean(pmRows && pmRows.length > 0),
-    isElite: profile?.is_elite,
-    innerCircleRole: profile?.inner_circle_role,
-  };
-
-  const role = appRoleFor(identity);
-
-  if (!canUseApp(identity) || !role) {
+  if (!allowed || !role) {
     // NOT a locked door. The app is listed publicly and anyone can install it,
     // so the most common first run is somebody with no membership — and
     // "invite only, goodbye" wastes that install. JoinScreen runs the same
@@ -73,12 +55,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // application stands. See the note at the top of that file.
     return (
       <div className="icapp">
-        <JoinScreen userId={user.id} />
+        <JoinScreen userId={userId} />
       </div>
     );
   }
-
-  const name = (profile?.name as string | null)?.split(" ")[0] || "there";
 
   return (
     <div className="icapp">
@@ -94,7 +74,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 className="mt-1 truncate text-[26px] font-semibold leading-tight tracking-tight"
                 style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.02em" }}
               >
-                {name}
+                {firstName}
               </h1>
               <p className="mt-0.5 text-[12.5px] text-[var(--a-fg-muted)]">{ROLE_BLURB[role]}</p>
             </div>
@@ -109,6 +89,26 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </span>
           </div>
         </header>
+
+        {/*
+          Previewing someone else's surface is a state you must not be able to
+          forget you are in — a wrong-looking number is otherwise blamed on the
+          product rather than on the cookie. Hence a permanent bar, not a toast.
+        */}
+        {previewing ? (
+          <div className="mx-5 -mt-1 mb-3 flex items-center justify-between gap-3 rounded-[var(--a-r-ctl)] border border-[var(--a-warn)]/35 bg-[var(--a-warn-soft)] px-3.5 py-2.5">
+            <p className="text-[12px] leading-snug text-[var(--a-warn)]">
+              Previewing the <strong>{ROLE_TITLE[role]}</strong> surface. Data is
+              still yours{realRole ? ` (${ROLE_TITLE[realRole]})` : ""}.
+            </p>
+            <a
+              href="/api/app/preview?as=self"
+              className="shrink-0 text-[12px] font-bold text-[var(--a-warn)] underline underline-offset-2"
+            >
+              Exit
+            </a>
+          </div>
+        ) : null}
 
         <main
           className="icapp-scroll px-5"
