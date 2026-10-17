@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ backup/transfer rules. Paired with allowBackup="false" and
+  fullBackupContent="false", which cover API 30 and below.
+
+  WHY BACKUP IS OFF. This app is a WebView around the live site, so the
+  session that proves who you are lives in WebView cookies and localStorage
+  inside the app's data directory. Android auto-backup copies that directory
+  to the user's Google Drive and restores it onto any device they sign into.
+  For an app that approves escrow payouts, a restored session is an auth
+  token travelling to a device nobody authenticated on. There is also nothing
+  worth keeping: every byte of state is server-side, so a fresh install loses
+  only the need to log in again.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>
