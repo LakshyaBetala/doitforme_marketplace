@@ -117,7 +117,8 @@ left in place. Rolling back is repointing DNS.
 - Middleware auth gate: 5 protected paths → 307
 - API authorization: unauthenticated → 401, cron without secret → 401,
   unsigned Razorpay webhook → 401
-- `next/og` profile image → 200, `image/png`, 1200×630
+- `/og-card.png` → 200, `image/png`, 1200×630 (static; the dynamic `next/og`
+  route was removed to stay under the Worker size ceiling)
 - `web-push` → sent a real notification under `workerd` (`{"ok":true,"sent":1}`)
 - 53 unit tests, 20 escrow checks, 37 anonymous-exposure checks
 - Bundle: **2.84 MB gzipped** (free limit 3 MB, paid 10 MB)
