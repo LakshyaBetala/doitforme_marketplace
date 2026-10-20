@@ -41,9 +41,9 @@ const VARIANTS: Record<Variant, string> = {
 const SIZES: Record<Size, string> = {
   // Heights are >= 44px from md up: that is the minimum reliable touch target,
   // and these are the sizes used on phones.
-  sm: "h-9 px-3 text-xs gap-1.5 rounded-lg",
-  md: "h-11 px-4 text-sm gap-2 rounded-xl",
-  lg: "h-12 px-6 text-[15px] gap-2 rounded-xl",
+  sm: "h-10 px-3.5 text-[13px] gap-1.5 rounded-[10px]",
+  md: "h-12 px-5 text-[15px] gap-2 rounded-xl",
+  lg: "h-14 px-7 text-[16px] gap-2.5 rounded-[14px]",
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -66,7 +66,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`inline-flex items-center justify-center font-medium tracking-tight transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed active:translate-y-[1px] ${
+        className={`inline-flex items-center justify-center font-bold tracking-tight transition-[background-color,filter,transform,box-shadow,border-color] duration-150 ease-[var(--ease-out)] outline-none disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.97] ${
           fullWidth ? "w-full" : ""
         } ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
         {...props}

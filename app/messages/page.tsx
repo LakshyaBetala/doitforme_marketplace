@@ -19,7 +19,7 @@ import { blurOnWheel } from "@/lib/inputs";
 export default function ChatPage() {
     return (
         <Suspense fallback={
-            <div className="flex h-[100dvh] bg-[var(--w-page)] text-[var(--fg)] items-center justify-center">
+            <div className="flex h-full min-h-[60vh] bg-[var(--w-page)] text-[var(--fg)] items-center justify-center">
                 <Loader2 className="animate-spin text-[var(--fg-muted)]" />
             </div>
         }>
@@ -734,12 +734,15 @@ function MessagesContent() {
     }, [messages, user?.id]);
 
     return (
-        <div className="flex h-[100dvh] bg-[var(--w-page)] text-[var(--fg)] overflow-hidden font-sans ">
+        <div className="flex h-full bg-[var(--w-page)] text-[var(--fg)] overflow-hidden font-sans">
 
             {/* SIDEBAR */}
-            <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] flex-col border-r border-[var(--line)] bg-[var(--w-page)] shrink-0`}>
-                <div className="flex items-center gap-2 border-b border-[var(--line)] bg-[var(--card)] p-3">
-                    <h2 className="text-base font-bold tracking-tight">Conversations</h2>
+            <div className={`${activeChat ? 'hidden md:flex' : 'flex'} w-full md:w-[320px] flex-col border-r border-[var(--line)] bg-[var(--surface)] shrink-0`}>
+                <div className="flex h-[72px] shrink-0 items-center justify-between border-b border-[var(--line)] px-5">
+                    <h2 className="text-[20px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>Messages</h2>
+                    {conversations.length > 0 && (
+                        <span className="rounded-full bg-[var(--chip-strong)] px-2.5 py-1 text-[12px] font-bold text-[var(--fg-muted)]">{conversations.length}</span>
+                    )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
@@ -762,24 +765,24 @@ function MessagesContent() {
                                 <div
                                     key={chat.conversationKey}
                                     onClick={() => setActiveChat(chat.conversationKey)}
-                                    className={`p-3 mx-2 my-1 rounded-xl cursor-pointer flex gap-3 transition hover:bg-[var(--chip)] ${activeChat === chat.conversationKey ? 'bg-[var(--chip-strong)]' : ''}`}
+                                    className={`mx-2.5 my-1 flex cursor-pointer gap-3.5 rounded-[14px] p-3.5 transition-colors hover:bg-[var(--chip)] ${activeChat === chat.conversationKey ? 'bg-[var(--accent-soft)] ring-1 ring-inset ring-[var(--accent-line)]' : ''}`}
                                 >
                                     <div className="relative shrink-0">
                                         <Avatar
                                             src={chat.otherUser.avatar_url}
                                             fallback={chat.otherUser.name || "?"}
-                                            className="w-10 h-10"
-                                            textClassName="text-sm"
+                                            className="w-12 h-12"
+                                            textClassName="text-base"
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex justify-between items-baseline mb-0.5">
-                                            <h3 className="font-semibold text-[var(--fg)] text-sm truncate">{chat.otherUser.name}</h3>
-                                            <span className="text-[10px] text-[var(--fg-faint)] ml-2 shrink-0">
+                                            <h3 className="truncate text-[15px] font-bold text-[var(--w-ink-strong)]">{chat.otherUser.name}</h3>
+                                            <span className="ml-2 shrink-0 text-[11.5px] text-[var(--fg-faint)]">
                                                 {formatSmartDate(chat.lastMessage.created_at)}
                                             </span>
                                         </div>
-                                        <p className="text-xs text-[var(--fg-muted)] truncate">{chat.lastMessage.content}</p>
+                                        <p className="truncate text-[13.5px] text-[var(--fg-muted)]">{chat.lastMessage.content}</p>
                                         {gigStatus && gigStatus !== 'open' && (
                                             <span className="mt-0.5 inline-block">
                                                 <StatusBadge tone={statusToTone(gigStatus)}>
@@ -804,7 +807,7 @@ function MessagesContent() {
                 {activeChat ? (
                     <>
                         {/* Header */}
-                        <div className="p-3 border-b border-[var(--line)] bg-[var(--card)] flex items-center gap-3 z-20 shadow-sm">
+                        <div className="flex h-[72px] shrink-0 items-center gap-3 border-b border-[var(--line)] bg-[var(--surface)] px-4 z-20">
                             <button onClick={() => setActiveChat(null)} className="-ml-1 shrink-0 rounded-full p-2 hover:bg-[var(--chip-strong)] md:hidden" aria-label="Back to conversations">
                                 <ArrowLeft size={18} />
                             </button>
@@ -1076,7 +1079,7 @@ function MessagesContent() {
                         </div>
                         <h2 className="text-xl font-bold text-[var(--fg)] mb-2 relative z-10">Your Messages</h2>
                         <p className="text-[var(--fg-muted)] text-sm mb-10 max-w-sm text-center relative z-10 leading-relaxed">
-                            Select a conversation from the sidebar or post a new Hustle to begin chatting.
+                            Pick a conversation on the left to start chatting, or post a task to meet someone new.
                         </p>
 
                         {!hasTelegramLinked && hasTelegramLinked !== null && (

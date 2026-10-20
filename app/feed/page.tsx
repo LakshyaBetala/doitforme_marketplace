@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import Image from "next/image";
-import { MapPin, Globe2 } from "lucide-react";
+import { MapPin, Globe2, Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import GigCard from "@/components/ui/GigCard";
 import { GigCardCompactSkeleton } from "@/components/ui/Skeleton";
@@ -31,6 +31,9 @@ export default function FeedPage() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [campusFilter, setCampusFilter] = useState<"ALL" | "MY_CAMPUS">("ALL");
+  // Filters the tasks already loaded; a shopkeeper looking for "logo" should not
+  // have to scroll through twelve unrelated cards to find it.
+  const [query, setQuery] = useState("");
 
   const ITEMS_PER_PAGE = 12;
 
@@ -194,18 +197,27 @@ export default function FeedPage() {
     setTimeout(() => fetchGigs(0, true), 0);
   };
 
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? gigs.filter((g) =>
+        `${g.title ?? ""} ${g.location ?? ""} ${g.users?.college ?? ""} ${g.companies?.name ?? ""}`
+          .toLowerCase()
+          .includes(q)
+      )
+    : gigs;
+
   return (
     <div className="pb-2">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[13px] font-bold text-[var(--w-faint)]">THE TASK BOARD</p>
           <h1
-            className="mt-1.5 text-[30px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[var(--w-ink-strong)] sm:text-[34px]"
+            className="mt-1.5 text-[34px] font-extrabold leading-[1.08] tracking-[-0.03em] text-[var(--w-ink-strong)] sm:text-[42px]"
             style={{ fontFamily: "var(--font-display), sans-serif" }}
           >
             Explore work
           </h1>
-          <p className="mt-2 max-w-[52ch] text-[14.5px] leading-[1.6] text-[var(--w-muted)]">
+          <p className="mt-2.5 max-w-[52ch] text-[16px] leading-[1.6] text-[var(--w-muted)]">
             Open tasks from students and companies. Apply, get picked, get paid through escrow.
           </p>
         </div>
@@ -215,7 +227,7 @@ export default function FeedPage() {
         <div
           role="group"
           aria-label="Filter by campus"
-          className="inline-flex rounded-[11px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-1"
+          className="inline-flex rounded-[14px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-1.5"
         >
           {([
             ["ALL", "All campuses", Globe2],
@@ -227,7 +239,7 @@ export default function FeedPage() {
                 key={value}
                 onClick={() => applyFilter(value)}
                 aria-pressed={on}
-                className={`inline-flex min-h-[40px] items-center gap-1.5 rounded-[8px] px-3.5 text-[13.5px] font-bold transition-colors ${
+                className={`inline-flex min-h-[44px] items-center gap-2 rounded-[10px] px-4 text-[14.5px] font-bold transition-colors ${
                   on
                     ? "bg-[var(--w-orange)] text-[#371448]"
                     : "text-[var(--w-muted)] hover:bg-[var(--chip)]"
@@ -241,15 +253,50 @@ export default function FeedPage() {
         </div>
       </header>
 
+      {/* Search sits right under the heading: the first thing a new visitor
+          reaches for, and a big labelled field is easier to find than a filter. */}
+      <div className="relative mt-7">
+        <Search size={20} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--w-faint)]" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search tasks, e.g. logo, poster, data entry"
+          aria-label="Search tasks"
+          className="h-[56px] w-full rounded-[16px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] pl-12 pr-12 text-[16px] font-medium text-[var(--w-ink)] outline-none transition-[border-color,box-shadow] focus:border-[var(--w-violet)] focus:shadow-[0_0_0_4px_var(--w-violet-soft)]"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full text-[var(--w-muted)] hover:bg-[var(--chip)]"
+          >
+            <X size={18} />
+          </button>
+        )}
+      </div>
+
       {/* A real responsive grid. This was `columns-2 md:columns-3 lg:columns-4`
           inside a `max-w-xl` wrapper — four masonry columns sharing 36rem, so
           every card rendered about 9rem wide no matter the size of the screen. */}
-      <div className="mt-8">
+      <div className="mt-7">
         {loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <GigCardCompactSkeleton key={i} />
             ))}
+          </div>
+        ) : shown.length === 0 && q ? (
+          <div className="rounded-[20px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] px-6 py-14 text-center">
+            <h2 className="text-[22px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]" style={{ fontFamily: "var(--font-display), sans-serif" }}>
+              No tasks match &ldquo;{query.trim()}&rdquo;
+            </h2>
+            <p className="mx-auto mt-2 max-w-[42ch] text-[15px] leading-[1.6] text-[var(--w-muted)]">Try a shorter word, or post it yourself and let students come to you.</p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <button onClick={() => setQuery("")} className="min-h-[48px] rounded-[12px] border border-[var(--w-line-strong)] px-5 text-[15px] font-bold text-[var(--w-ink)] hover:bg-[var(--chip)]">Clear search</button>
+              <button onClick={() => router.push("/post")} className="min-h-[48px] rounded-[12px] bg-[var(--w-orange)] px-5 text-[15px] font-bold text-[#371448] hover:opacity-90">Post a task</button>
+            </div>
           </div>
         ) : gigs.length === 0 ? (
           <div className="rounded-[16px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] px-6 py-14 text-center">
@@ -277,14 +324,14 @@ export default function FeedPage() {
               {campusFilter === "MY_CAMPUS" && (
                 <button
                   onClick={() => applyFilter("ALL")}
-                  className="min-h-[44px] rounded-[11px] border border-[var(--w-line-strong)] px-5 text-[14px] font-bold text-[var(--w-ink)] transition-colors hover:bg-[var(--chip)]"
+                  className="min-h-[48px] rounded-[12px] border border-[var(--w-line-strong)] px-5 text-[15px] font-bold text-[var(--w-ink)] transition-colors hover:bg-[var(--chip)]"
                 >
                   Show all campuses
                 </button>
               )}
               <button
                 onClick={() => router.push("/post")}
-                className="min-h-[44px] rounded-[11px] bg-[var(--w-orange)] px-5 text-[14px] font-bold text-[#371448] transition-opacity hover:opacity-90"
+                className="min-h-[48px] rounded-[12px] bg-[var(--w-orange)] px-5 text-[15px] font-bold text-[#371448] transition-opacity hover:opacity-90"
               >
                 Post a task
               </button>
@@ -294,7 +341,7 @@ export default function FeedPage() {
           <>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               <AnimatePresence mode="popLayout">
-                {gigs.map((gig, index) => {
+                {shown.map((gig, index) => {
                   const imageUrl = gig.images && gig.images[0]
                     ? supabase.storage.from("gig-images").getPublicUrl(gig.images[0]).data.publicUrl
                     : null;
@@ -319,7 +366,7 @@ export default function FeedPage() {
                 <button
                   onClick={loadMore}
                   disabled={loadingMore}
-                  className="min-h-[44px] rounded-[11px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] px-6 text-[14px] font-bold text-[var(--w-ink)] transition-colors hover:bg-[var(--chip)] disabled:opacity-50"
+                  className="min-h-[50px] rounded-[13px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] px-7 text-[15px] font-bold text-[var(--w-ink)] transition-colors hover:bg-[var(--chip)] disabled:opacity-50"
                 >
                   {loadingMore ? "Loading" : "Show more work"}
                 </button>

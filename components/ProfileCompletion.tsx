@@ -65,13 +65,13 @@ export default function ProfileCompletion({ user }: Props) {
   };
 
   return (
-    <section className="bg-[var(--card)] border border-[var(--line)] rounded-3xl p-5 md:p-6 mb-4">
+    <section className="bg-[var(--card)] border border-[var(--line)] rounded-[22px] p-6 md:p-7">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
-          <h2 className="text-base md:text-lg font-semibold tracking-tight">
+          <h2 className="text-[19px] md:text-[20px] font-extrabold tracking-[-0.02em] text-[var(--fg)]">
             {profileUrl ? "Your page is live" : "Claim your page"}
           </h2>
-          <p className="text-xs md:text-[13px] text-[var(--fg-muted)] mt-1 leading-relaxed">
+          <p className="text-[14.5px] text-[var(--fg-muted)] mt-1 leading-relaxed">
             {profileUrl
               ? "Share it anywhere — it works as your portfolio."
               : "A public profile you can send to anyone, instead of a resume PDF."}
@@ -79,7 +79,7 @@ export default function ProfileCompletion({ user }: Props) {
         </div>
         <button
           onClick={() => setDismissed(true)}
-          className="text-[11px] text-[var(--fg-faint)] hover:text-[var(--fg-muted)] transition-colors shrink-0"
+          className="min-h-[44px] px-2 text-[13px] font-semibold text-[var(--fg-faint)] hover:text-[var(--fg-muted)] transition-colors shrink-0"
           aria-label="Dismiss"
         >
           Hide
@@ -88,13 +88,13 @@ export default function ProfileCompletion({ user }: Props) {
 
       {/* Progress */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="h-1.5 flex-1 rounded-full bg-[var(--chip)] overflow-hidden">
+        <div className="h-2.5 flex-1 rounded-full bg-[var(--chip-strong)] overflow-hidden">
           <div
-            className="h-full bg-[var(--brand-purple)] rounded-full transition duration-500"
+            className="h-full bg-[var(--accent)] rounded-full transition-[width] duration-700 ease-[var(--ease-out)]"
             style={{ width: `${pct}%` }}
           />
         </div>
-        <span className="text-[11px] font-semibold text-[var(--fg-muted)] tabular-nums shrink-0">
+        <span className="text-[13px] font-bold text-[var(--fg-muted)] tabular-nums shrink-0">
           {doneCount}/{steps.length}
         </span>
       </div>
@@ -103,13 +103,13 @@ export default function ProfileCompletion({ user }: Props) {
         {steps.map((s) => (
           <span
             key={s.key}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold border ${
               s.done
                 ? "bg-[var(--chip)] border-[var(--line)] text-[var(--fg-faint)]"
                 : "bg-[var(--chip)] border-[var(--line-strong)] text-[var(--fg-muted)]"
             }`}
           >
-            {s.done && <Check size={11} className="text-[var(--accent-ink)]" />}
+            {s.done && <Check size={13} className="text-[var(--ok)]" />}
             {s.label}
           </span>
         ))}
@@ -118,14 +118,14 @@ export default function ProfileCompletion({ user }: Props) {
       <div className="flex flex-col sm:flex-row gap-2">
         <Link
           href={next.href}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--brand-purple)] hover:opacity-90 text-[var(--fg)] text-sm font-semibold transition active:scale-[0.99] min-h-[44px]"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-[14px] bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] text-[15px] font-bold transition active:scale-[0.98] min-h-[52px]"
         >
           {next.label} <ArrowRight size={16} />
         </Link>
         {profileUrl && (
           <button
             onClick={share}
-            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] border border-[var(--line)] text-[var(--fg)] text-sm font-semibold transition active:scale-[0.99] min-h-[44px]"
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-[14px] bg-[var(--chip)] hover:bg-[var(--chip-strong)] border border-[var(--line)] text-[var(--fg)] text-[15px] font-bold transition active:scale-[0.98] min-h-[52px]"
           >
             <Share2 size={15} /> Share
           </button>

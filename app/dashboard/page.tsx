@@ -12,6 +12,7 @@ import {
 import GigCard from "@/components/ui/GigCard";
 import Skeleton, { GigCardSkeleton } from "@/components/ui/Skeleton";
 import ProfileCompletion from "@/components/ProfileCompletion";
+import { Reveal, Stagger, StaggerItem, CountUp } from "@/components/motion";
 
 /**
  * Overview — what needs you, and what you are owed.
@@ -193,203 +194,233 @@ export default function Overview() {
   const kycDone = Boolean(meta.kyc_verified);
   const needsAction = actions.filter((a) => a.tone === "act").length;
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
   return (
     <div className="pb-2">
-      <p className="text-[13px] font-bold text-[var(--w-faint)]">YOUR WORKSPACE</p>
-      <h1
-        className="mt-1.5 text-[30px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[var(--w-ink-strong)] sm:text-[34px]"
-        style={{ fontFamily: "var(--font-display), sans-serif" }}
-      >
-        Hey, {firstName}
-      </h1>
-      <p className="mt-2 text-[14.5px] leading-[1.6] text-[var(--w-muted)]">
-        {needsAction > 0
-          ? `${needsAction} ${needsAction === 1 ? "thing needs" : "things need"} you today.`
-          : actions.length > 0
-          ? "Nothing needs you right now — a couple of things are with other people."
-          : "Nothing waiting on you. Good time to find work."}
-      </p>
+      {/* ---- greeting ---------------------------------------------------- */}
+      <Reveal immediate>
+        <p className="text-[14px] font-bold text-[var(--w-faint)]">
+          {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+        </p>
+        <h1
+          className="mt-1.5 text-[34px] font-extrabold leading-[1.08] tracking-[-0.03em] text-[var(--w-ink-strong)] sm:text-[42px]"
+          style={{ fontFamily: "var(--font-display), sans-serif" }}
+        >
+          {greeting}, {firstName}
+        </h1>
+        <p className="mt-2.5 text-[16px] leading-[1.6] text-[var(--w-muted)]">
+          {needsAction > 0
+            ? `${needsAction} ${needsAction === 1 ? "thing needs" : "things need"} you today.`
+            : actions.length > 0
+            ? "Nothing needs you right now — a couple of things are with other people."
+            : "Nothing waiting on you. Good time to find work."}
+        </p>
+      </Reveal>
+
+      {/* ---- the two things you can start -------------------------------- */}
+      <Stagger immediate delay={0.1} className="mt-8 grid gap-4 sm:grid-cols-2">
+        <StaggerItem>
+          <Link
+            href="/post"
+            className="card-lift group relative flex h-full items-center gap-5 overflow-hidden rounded-[22px] bg-[linear-gradient(115deg,#351144_0%,#5b1479_63%,#8324af_100%)] p-7"
+          >
+            <span aria-hidden className="absolute -right-10 -top-12 h-44 w-44 rounded-full bg-white/[0.07]" />
+            <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-[var(--w-orange)] text-[#371448] transition-transform duration-300 group-hover:rotate-90">
+              <Plus size={30} strokeWidth={2.8} />
+            </span>
+            <span className="relative min-w-0">
+              <span
+                className="block text-[22px] font-extrabold tracking-[-0.02em] text-white"
+                style={{ fontFamily: "var(--font-display), sans-serif" }}
+              >
+                Post a task
+              </span>
+              <span className="mt-1 block text-[15px] leading-[1.5] text-white/80">
+                Need something done? Get offers in minutes.
+              </span>
+            </span>
+          </Link>
+        </StaggerItem>
+        <StaggerItem>
+          <Link
+            href="/feed"
+            className="card-lift group flex h-full items-center gap-5 rounded-[22px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-7"
+          >
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[18px] bg-[var(--w-violet-soft)] text-[var(--w-violet)] transition-transform duration-300 group-hover:scale-110">
+              <Sparkles size={28} />
+            </span>
+            <span className="min-w-0">
+              <span
+                className="block text-[22px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]"
+                style={{ fontFamily: "var(--font-display), sans-serif" }}
+              >
+                Find work
+              </span>
+              <span className="mt-1 block text-[15px] leading-[1.5] text-[var(--w-muted)]">
+                Open tasks from students and companies.
+              </span>
+            </span>
+          </Link>
+        </StaggerItem>
+      </Stagger>
 
       {/* ---- needs you --------------------------------------------------- */}
       {actions.length > 0 && (
-        <section className="mt-7">
-          <h2 className="text-[15px] font-extrabold tracking-[-0.01em] text-[var(--w-ink-strong)]">
-            Needs you
-          </h2>
-          <ul className="mt-3 grid gap-2.5">
+        <section className="mt-11">
+          <div className="flex items-center gap-3">
+            <h2 className="text-[20px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]">
+              Needs you
+            </h2>
+            {needsAction > 0 && (
+              <span className="soft-ping flex h-7 min-w-7 items-center justify-center rounded-full bg-[var(--w-orange)] px-2 text-[13px] font-extrabold text-[#371448]">
+                {needsAction}
+              </span>
+            )}
+          </div>
+          <Stagger as="ul" className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-3" gap={0.07}>
             {actions.map((a) => {
               const Icon = a.icon;
               const act = a.tone === "act";
               return (
-                <li key={a.id}>
+                <StaggerItem as="li" key={a.id}>
                   <Link
                     href={a.href}
-                    className="group flex items-center gap-3.5 rounded-[13px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-4 transition-colors hover:border-[var(--w-violet)]"
+                    className="card-lift group flex items-center gap-4 rounded-[18px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-5"
                   >
                     <span
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] ${
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] ${
                         act
                           ? "bg-[var(--w-orange-soft)] text-[var(--w-orange-ink)]"
                           : "bg-[var(--w-violet-soft)] text-[var(--w-violet)]"
                       }`}
                     >
-                      <Icon size={18} />
+                      <Icon size={22} />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[14.5px] font-bold text-[var(--w-ink-strong)]">
+                      <span className="block truncate text-[16.5px] font-bold text-[var(--w-ink-strong)]">
                         {a.label}
                       </span>
-                      <span className="block truncate text-[13px] text-[var(--w-muted)]">{a.detail}</span>
+                      <span className="block truncate text-[14.5px] text-[var(--w-muted)]">{a.detail}</span>
+                    </span>
+                    <span
+                      className={`hidden shrink-0 rounded-full px-3 py-1 text-[12.5px] font-bold sm:block ${
+                        act ? "bg-[var(--w-orange-soft)] text-[var(--w-orange-ink)]" : "bg-[var(--chip)] text-[var(--w-muted)]"
+                      }`}
+                    >
+                      {act ? "Your turn" : "Waiting"}
                     </span>
                     <ArrowRight
-                      size={17}
-                      className="shrink-0 text-[var(--w-faint)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--w-violet)]"
+                      size={20}
+                      className="shrink-0 text-[var(--w-faint)] transition-transform group-hover:translate-x-1 group-hover:text-[var(--w-violet)]"
                     />
                   </Link>
-                </li>
+                </StaggerItem>
               );
             })}
-          </ul>
+          </Stagger>
         </section>
       )}
-
-      {/* ---- the two things you can start ------------------------------- */}
-      <section className="mt-8 grid gap-4 sm:grid-cols-2">
-        <Link
-          href="/post"
-          className="flex items-center gap-4 rounded-[16px] bg-[linear-gradient(115deg,#351144_0%,#5b1479_63%,#8324af_100%)] p-6"
-        >
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[13px] bg-[var(--w-orange)] text-[#371448]">
-            <Plus size={23} strokeWidth={2.6} />
-          </span>
-          <span className="min-w-0">
-            <span
-              className="block text-[17px] font-extrabold tracking-[-0.02em] text-white"
-              style={{ fontFamily: "var(--font-display), sans-serif" }}
-            >
-              Post a task
-            </span>
-            <span className="mt-0.5 block text-[13px] leading-[1.5] text-white/80">
-              Need something done? Get offers in minutes.
-            </span>
-          </span>
-        </Link>
-        <Link
-          href="/feed"
-          className="flex items-center gap-4 rounded-[16px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-6 transition-colors hover:border-[var(--w-violet)]"
-        >
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[13px] bg-[var(--w-violet-soft)] text-[var(--w-violet)]">
-            <Sparkles size={22} />
-          </span>
-          <span className="min-w-0">
-            <span
-              className="block text-[17px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]"
-              style={{ fontFamily: "var(--font-display), sans-serif" }}
-            >
-              Find work
-            </span>
-            <span className="mt-0.5 block text-[13px] leading-[1.5] text-[var(--w-muted)]">
-              Open tasks from students and companies.
-            </span>
-          </span>
-        </Link>
-      </section>
 
       {/* ---- earnings, folded in from /payouts --------------------------- */}
       {(owed > 0 || paid > 0) && (
-        <section className="mt-8 rounded-[16px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-[11px] bg-[var(--w-violet-soft)] text-[var(--w-violet)]">
-                <Wallet2 size={18} />
-              </span>
-              <div>
-                <h2 className="text-[15px] font-extrabold tracking-[-0.01em] text-[var(--w-ink-strong)]">
-                  Your earnings
-                </h2>
-                {/* Honest about the mechanism. Calling this a balance would imply
-                    a withdraw button, and there isn't one — a person pays these. */}
-                <p className="text-[13px] text-[var(--w-muted)]">
-                  Paid out by hand, usually within a day of release.
-                </p>
-              </div>
+        <Reveal as="section" className="mt-11">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-[20px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]">
+                Your earnings
+              </h2>
+              {/* Honest about the mechanism. Calling this a balance would imply
+                  a withdraw button, and there isn't one — a person pays these. */}
+              <p className="mt-0.5 text-[14.5px] text-[var(--w-muted)]">
+                Paid out by hand, usually within a day of release.
+              </p>
             </div>
             <Link
               href="/payouts"
-              className="inline-flex min-h-[40px] items-center gap-1.5 rounded-[10px] px-3 text-[13px] font-bold text-[var(--w-violet)] hover:bg-[var(--w-violet-soft)]"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-[11px] px-3.5 text-[14px] font-bold text-[var(--w-violet)] hover:bg-[var(--w-violet-soft)]"
             >
-              See all <ArrowRight size={14} />
+              See all <ArrowRight size={15} />
             </Link>
           </div>
-          <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-[13px] bg-[var(--w-orange-soft)] p-4">
-              <dt className="text-[12.5px] font-bold text-[var(--w-orange-ink)]">Owed to you</dt>
+          <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-[20px] bg-[var(--w-orange-soft)] p-6">
+              <dt className="flex items-center gap-2 text-[14px] font-bold text-[var(--w-orange-ink)]">
+                <Wallet2 size={17} /> Owed to you
+              </dt>
               <dd
-                className="mt-1 flex items-center text-[26px] font-extrabold tracking-[-0.02em] text-[#5c3407]"
+                className="mt-2 flex items-center text-[38px] font-extrabold tracking-[-0.03em] text-[#5c3407]"
                 style={{ fontFamily: "var(--font-display), sans-serif" }}
               >
-                <IndianRupee size={20} strokeWidth={2.6} />
-                {owed.toLocaleString("en-IN")}
+                <IndianRupee size={30} strokeWidth={2.6} />
+                <CountUp to={owed} />
               </dd>
             </div>
-            <div className="rounded-[13px] bg-[var(--chip)] p-4">
-              <dt className="text-[12.5px] font-bold text-[var(--w-muted)]">Paid so far</dt>
+            <div className="rounded-[20px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-6">
+              <dt className="flex items-center gap-2 text-[14px] font-bold text-[var(--w-muted)]">
+                <CheckCircle2 size={17} /> Paid so far
+              </dt>
               <dd
-                className="mt-1 flex items-center text-[26px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]"
+                className="mt-2 flex items-center text-[38px] font-extrabold tracking-[-0.03em] text-[var(--w-ink-strong)]"
                 style={{ fontFamily: "var(--font-display), sans-serif" }}
               >
-                <IndianRupee size={20} strokeWidth={2.6} />
-                {paid.toLocaleString("en-IN")}
+                <IndianRupee size={30} strokeWidth={2.6} />
+                <CountUp to={paid} />
               </dd>
             </div>
           </dl>
-        </section>
+        </Reveal>
       )}
 
       {/* ---- nudges ------------------------------------------------------ */}
-      <div className="mt-8 grid gap-4">
+      <Reveal className="mt-11 grid gap-4 empty:hidden">
         <ProfileCompletion user={user?.user_metadata} />
 
         {!kycDone && (
           <Link
             href="/verify-id"
-            className="flex items-center gap-3.5 rounded-[13px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-4 transition-colors hover:border-[var(--w-violet)]"
+            className="card-lift flex items-center gap-4 rounded-[18px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-5"
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] bg-[var(--w-violet-soft)] text-[var(--w-violet)]">
-              <ShieldCheck size={18} />
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-[var(--w-violet-soft)] text-[var(--w-violet)]">
+              <ShieldCheck size={22} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[14.5px] font-bold text-[var(--w-ink-strong)]">
+              <span className="block text-[16.5px] font-bold text-[var(--w-ink-strong)]">
                 Verify your student ID
               </span>
-              <span className="block text-[13px] text-[var(--w-muted)]">
+              <span className="block text-[14.5px] text-[var(--w-muted)]">
                 Any student ID works — school, college or graduate. Takes a minute.
               </span>
             </span>
-            <ArrowRight size={17} className="shrink-0 text-[var(--w-faint)]" />
+            <ArrowRight size={20} className="shrink-0 text-[var(--w-faint)]" />
           </Link>
         )}
-      </div>
+      </Reveal>
 
       {/* ---- a glance at the board --------------------------------------- */}
       {fresh.length > 0 && (
-        <section className="mt-9">
-          <div className="flex items-end justify-between gap-4">
-            <h2 className="text-[15px] font-extrabold tracking-[-0.01em] text-[var(--w-ink-strong)]">
-              Fresh on the board
-            </h2>
-            <Link
-              href="/feed"
-              className="inline-flex items-center gap-1.5 text-[13px] font-bold text-[var(--w-violet)] hover:underline"
-            >
-              Explore all work <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <section className="mt-12">
+          <Reveal>
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="text-[20px] font-extrabold tracking-[-0.02em] text-[var(--w-ink-strong)]">
+                Fresh on the board
+              </h2>
+              <Link
+                href="/feed"
+                className="inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-bold text-[var(--w-violet)] hover:underline"
+              >
+                Explore all work <ArrowRight size={15} />
+              </Link>
+            </div>
+          </Reveal>
+          <Stagger className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {fresh.map((gig) => (
-              <GigCard key={gig.id} gig={gig} variant="detailed" />
+              <StaggerItem key={gig.id} className="h-full">
+                <GigCard gig={gig} variant="detailed" className="h-full" />
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         </section>
       )}
 

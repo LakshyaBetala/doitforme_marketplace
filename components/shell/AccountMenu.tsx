@@ -27,10 +27,13 @@ export default function AccountMenu({
   name,
   role,
   variant = "rail",
+  compact = false,
 }: {
   name?: string | null;
   role?: string | null;
   variant?: "rail" | "sheet";
+  /** Avatar only — the menu then opens beside the rail instead of above it. */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const supabase = supabaseBrowser();
@@ -121,7 +124,8 @@ export default function AccountMenu({
         aria-expanded={open}
         aria-haspopup="menu"
         className={[
-          "flex w-full items-center gap-3 rounded-[11px] p-3 text-left transition-colors",
+          "flex w-full items-center rounded-[11px] text-left transition-colors",
+          compact ? "justify-center p-2" : "gap-3 p-3",
           onRail
             ? "bg-[#421750] hover:bg-[#4d1d5e]"
             : "border border-[var(--w-line-strong)] bg-[var(--w-raised)]",
@@ -135,7 +139,7 @@ export default function AccountMenu({
         >
           {initial}
         </span>
-        <span className="min-w-0 flex-1">
+        <span className={compact ? "sr-only" : "min-w-0 flex-1"}>
           <span
             className={`block truncate text-[13px] font-bold ${
               onRail ? "text-white" : "text-[var(--w-ink-strong)]"
@@ -154,7 +158,7 @@ export default function AccountMenu({
         <ChevronUp
           size={15}
           className={[
-            "shrink-0 transition-transform",
+            compact ? "hidden" : "shrink-0 transition-transform",
             onRail ? "text-[#b99bc5]" : "text-[var(--w-faint)]",
             open ? "" : "rotate-180",
           ].join(" ")}
@@ -170,7 +174,9 @@ export default function AccountMenu({
           aria-hidden={!open}
           inert={!open ? true : undefined}
           className={[
-            "absolute bottom-[calc(100%+8px)] left-0 w-full origin-bottom rounded-[13px]",
+            compact
+              ? "absolute bottom-0 left-[calc(100%+14px)] w-[240px] origin-bottom-left rounded-[13px]"
+              : "absolute bottom-[calc(100%+8px)] left-0 w-full origin-bottom rounded-[13px]",
             "border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-1.5",
             "shadow-[0_18px_44px_-14px_rgba(28,9,37,0.45)]",
             "transition-[opacity,transform,visibility] duration-[var(--dur-pop)] ease-[var(--ease-out)]",

@@ -2,6 +2,7 @@ import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
 import Topbar from "./Topbar";
 import WorkspaceThemeColor from "./WorkspaceThemeColor";
+import ShellMain from "./ShellMain";
 
 /**
  * The frame every signed-in page renders inside.
@@ -41,10 +42,7 @@ export default function AppShell({
         <MobileNav name={name} role={role} isElite={isElite} innerCircleRole={innerCircleRole} />
         <Topbar action={action} />
 
-        {/* Bottom padding clears the mobile bar; lg drops it since the bar is gone. */}
-        <main className="min-w-0 flex-1 px-4 pb-[calc(84px+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:px-8 lg:pb-12 lg:pt-8">
-          <div className="mx-auto w-full max-w-[1180px]">{children}</div>
-        </main>
+        <ShellMain>{children}</ShellMain>
       </div>
     </div>
   );

@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ArrowUpRight, ChevronDown, Linkedin, Instagram, Mail } from "lucide-react";
+import {
+  ArrowRight, ArrowUpRight, ChevronDown, Linkedin, Instagram, Mail,
+  ClipboardList, UserCheck, ShieldCheck, ThumbsUp, Clock, BadgeCheck, IndianRupee, Users,
+} from "lucide-react";
+import { Reveal, Stagger, StaggerItem, CountUp } from "@/components/motion";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 
 // -------------------------------------------------------
@@ -91,10 +95,17 @@ const CATEGORIES = [
 ];
 
 const STEPS = [
-  ["Post a task", "Describe what you need and set a budget. Posting is free."],
-  ["Match a student", "Pick a verified student yourself, or let us assign one."],
-  ["Approve and pay", "We hold the payment. You release it only when the work is right."],
-];
+  [ClipboardList, "Tell us what you need", "Write it in your own words and set a budget. Posting is free."],
+  [UserCheck, "Pick a student", "Choose a verified student yourself, or let us choose one for you."],
+  [ThumbsUp, "Pay only when happy", "We hold your money safely. You release it once the work is right."],
+] as const;
+
+const PROMISES = [
+  [BadgeCheck, "Every student is ID-verified"],
+  [ShieldCheck, "Your money is held until you approve"],
+  [Clock, "24 hours to review the work"],
+  [IndianRupee, "Posting a task is free"],
+] as const;
 
 const FAQS = [
   ["How does it work?", "Post a task for free. Pick a verified student yourself, or let DoItForMe assign one for you. We hold your payment and release it only once you approve the delivered work."],
@@ -166,12 +177,12 @@ export default function LandingPage() {
 
       {/* ============ NAV ============ */}
       <header className={`sticky top-0 z-50 transition-colors duration-300 ${scrolled ? "bg-[var(--background)]/80 backdrop-blur-xl border-b border-white/[0.06]" : ""}`}>
-        <div className="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 h-[72px] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="relative w-7 h-7"><Image src="/logo.png" alt="DoItForMe" fill className="object-contain" /></div>
-            <span className="font-semibold text-base tracking-tight" style={display}>DoItForMe</span>
+            <div className="relative w-9 h-9"><Image src="/logo.png" alt="DoItForMe" fill className="object-contain" priority /></div>
+            <span className="font-bold text-xl tracking-tight" style={display}>DoItForMe</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-white/50">
+          <nav className="hidden md:flex items-center gap-8 text-[15px] font-medium text-white/65">
             <button onClick={() => scrollToSection("work")} className="hover:text-white transition-colors">Work</button>
             <button onClick={() => scrollToSection("how")} className="hover:text-white transition-colors">How it works</button>
             <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors">Pricing</button>
@@ -179,31 +190,32 @@ export default function LandingPage() {
             {isAdmin && <Link href="/admin" className="hover:text-white transition-colors">Admin</Link>}
           </nav>
           <div className="flex items-center gap-1">
-            <button onClick={goEarn} className="text-[13px] font-medium text-white/70 hover:text-white px-3 py-2 transition-colors">{userEmail ? "Dashboard" : "Log in"}</button>
-            <button onClick={goHire} className="text-[13px] font-medium text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 px-4 py-2 rounded-full transition">Get work done</button>
+            <button onClick={goEarn} className="text-[15px] font-semibold text-white/80 hover:text-white px-4 py-2.5 transition-colors">{userEmail ? "Dashboard" : "Log in"}</button>
+            <button onClick={goHire} className="hidden sm:inline-flex text-[15px] font-semibold text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/10 px-5 py-2.5 rounded-full transition active:scale-[0.97]">Get work done</button>
           </div>
         </div>
       </header>
 
       {/* ============ HERO ============ */}
-      <section className="relative max-w-6xl mx-auto px-5 md:px-8 pt-16 md:pt-24 pb-20">
-        <div className="grid lg:grid-cols-[1fr_400px] gap-10 items-center">
+      <section className="relative max-w-6xl mx-auto px-5 md:px-8 pt-12 md:pt-20 pb-16">
+        <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[var(--brand-purple)]/[0.14] blur-[120px]" />
+        <div className="relative grid lg:grid-cols-[1fr_400px] gap-10 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={loadingComplete ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] mb-7">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-purple-soft)]" />
-              <span className="text-[11px] font-medium tracking-[0.1em] text-white/60 uppercase">India&apos;s verified student workforce</span>
+              <span className="text-[12px] font-semibold tracking-[0.08em] text-white/70 uppercase">India&apos;s verified student workforce</span>
             </div>
-            <h1 className="font-bold tracking-tight leading-[1.05] text-[clamp(2.4rem,5.5vw,4rem)]" style={display}>
-              Get real work done by<br className="hidden sm:block" /> India&apos;s <span className="text-[var(--brand-purple-soft)]">top students.</span>
+            <h1 className="font-bold tracking-tight leading-[1.04] text-[clamp(2.5rem,5.6vw,4.2rem)]" style={display}>
+              Get any task done by<br className="hidden sm:block" /> <span className="text-[var(--brand-purple-soft)]">trusted students.</span>
             </h1>
-            <p className="mt-6 text-[17px] text-white/60 leading-relaxed max-w-xl">
-              Post a task, match with a verified student, and pay only when the work is approved. Design, research, decks, data and more, every payment protected by escrow.
+            <p className="mt-6 text-[19px] text-white/70 leading-relaxed max-w-xl">
+              Need a logo, a poster, a price list or some data typed up? Tell us what you need. A verified student does it, and you pay only when you are happy.
             </p>
-            <div className="mt-9 flex flex-col sm:flex-row gap-3 max-w-md">
-              <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition flex items-center justify-center gap-2">
-                I need work done <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+            <div className="mt-9 flex flex-col sm:flex-row gap-3.5 max-w-lg">
+              <button onClick={goHire} className="group px-8 py-4 rounded-full text-[17px] font-bold text-white bg-[var(--brand-purple)] hover:brightness-110 active:scale-[0.97] transition flex items-center justify-center gap-2.5 shadow-[0_12px_32px_-12px_rgba(136,37,245,0.9)]">
+                I need work done <ArrowRight size={19} className="transition-transform group-hover:translate-x-1" />
               </button>
-              <button onClick={goEarn} className="px-6 py-3.5 rounded-full text-[15px] font-semibold text-white/90 border border-white/12 hover:bg-white/[0.04] transition">
+              <button onClick={goEarn} className="px-8 py-4 rounded-full text-[17px] font-bold text-white/90 border border-white/15 hover:bg-white/[0.06] active:scale-[0.97] transition">
                 I want to earn
               </button>
             </div>
@@ -218,68 +230,80 @@ export default function LandingPage() {
           </motion.div>
         </div>
 
-        {/* Trust strip */}
-        <div className="mt-14 pt-7 border-t border-white/[0.06] flex flex-wrap items-center gap-x-10 gap-y-3">
-          {["Identity-verified students", "Payment held on every task", "24-hour review window", "Flat 5 to 10% fee"].map((t) => (
-            <span key={t} className="text-[13px] text-white/45">{t}</span>
+        {/* Promises, as things you can see rather than a line of grey text. */}
+        <Stagger immediate delay={0.35} className="relative mt-14 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {PROMISES.map(([Icon, text]) => (
+            <StaggerItem key={text} className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-purple)]/15 text-[var(--brand-purple-soft)]">
+                <Icon size={21} />
+              </span>
+              <span className="text-[14.5px] font-semibold leading-snug text-white/85">{text}</span>
+            </StaggerItem>
           ))}
-        </div>
+        </Stagger>
+      </section>
+
+      {/* ============ HOW IT WORKS ============ */}
+      <section id="how" className="relative max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
+        <Reveal className="max-w-xl mb-12">
+          <p className="text-[var(--brand-purple-soft)] text-[13px] font-semibold tracking-[0.12em] uppercase mb-4">How it works</p>
+          <h2 className="font-bold tracking-tight leading-[1.05] text-[clamp(2rem,3.6vw,2.9rem)]" style={display}>Three easy steps. No risk.</h2>
+        </Reveal>
+        <Stagger className="grid md:grid-cols-3 gap-5" gap={0.12}>
+          {STEPS.map(([Icon, t, d], i) => (
+            <StaggerItem key={t} className="card-lift relative rounded-3xl border border-white/[0.08] bg-[var(--card)] p-8">
+              <span className="absolute right-6 top-5 text-[64px] font-bold leading-none text-white/[0.05]" style={display}>{i + 1}</span>
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--brand-purple)]/15 text-[var(--brand-purple-soft)]">
+                <Icon size={26} />
+              </span>
+              <h3 className="font-bold text-[21px] mt-6" style={display}>{t}</h3>
+              <p className="text-white/60 text-[16px] mt-2.5 leading-relaxed">{d}</p>
+            </StaggerItem>
+          ))}
+        </Stagger>
       </section>
 
       {/* ============ WORK (editorial list) ============ */}
       <section id="work" className="relative max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
         <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-12 lg:gap-20">
-          <div className="lg:sticky lg:top-28 lg:self-start">
-            <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">Real deliverables</p>
+          <Reveal className="lg:sticky lg:top-28 lg:self-start">
+            <p className="text-[var(--brand-purple-soft)] text-[13px] font-semibold tracking-[0.12em] uppercase mb-4">Real deliverables</p>
             <h2 className="font-bold tracking-tight leading-[1.05] text-[clamp(1.9rem,3.5vw,2.8rem)]" style={display}>
               Not errands.<br />Actual work.
             </h2>
-            <p className="text-white/55 mt-5 max-w-sm leading-relaxed text-[15px]">From a logo by tonight to a clean dataset by Friday. These are just the popular ones. If you can describe it, a verified student can probably do it.</p>
-          </div>
+            <p className="text-white/65 mt-5 max-w-sm leading-relaxed text-[17px]">From a logo by tonight to a clean price list by Friday. These are just the popular ones. If you can describe it, a verified student can probably do it.</p>
+          </Reveal>
 
-          <div>
+          <Stagger gap={0.05}>
             {CATEGORIES.map(([num, title, desc], i) => (
-              <button key={num} onClick={goHire} className={`group w-full text-left flex items-center gap-6 py-6 ${i === 0 ? "border-t" : ""} border-b border-white/[0.07] hover:px-3 transition`}>
-                <span className="text-[12px] font-mono text-white/25 tabular-nums">{num}</span>
+              <StaggerItem key={num}>
+              <button onClick={goHire} className={`group w-full text-left flex items-center gap-6 py-6 ${i === 0 ? "border-t" : ""} border-b border-white/[0.07] transition-[padding] duration-300 hover:pl-3`}>
+                <span className="text-[13px] font-mono text-white/30 tabular-nums">{num}</span>
                 <div className="flex-1">
-                  <h3 className="text-lg md:text-xl font-semibold tracking-tight group-hover:text-[var(--brand-purple-soft)] transition-colors" style={display}>{title}</h3>
-                  <p className="text-white/40 text-[14px] mt-0.5">{desc}</p>
+                  <h3 className="text-xl md:text-[22px] font-semibold tracking-tight group-hover:text-[var(--brand-purple-soft)] transition-colors" style={display}>{title}</h3>
+                  <p className="text-white/55 text-[15.5px] mt-1">{desc}</p>
                 </div>
-                <ArrowUpRight size={20} className="text-white/15 group-hover:text-white/70 transition-colors shrink-0" />
+                <ArrowUpRight size={22} className="text-white/25 group-hover:text-white/80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
               </button>
+              </StaggerItem>
             ))}
             {/* Open-ended capstone: signals the list is examples, not a closed menu */}
-            <button onClick={goHire} className="group w-full text-left flex items-center gap-6 py-6 border-b border-white/[0.07] hover:px-3 transition">
-              <span className="text-[12px] font-mono text-[var(--brand-purple-soft)]/50 tabular-nums">08</span>
+            <StaggerItem>
+            <button onClick={goHire} className="group w-full text-left flex items-center gap-6 py-6 border-b border-white/[0.07] transition-[padding] duration-300 hover:pl-3">
+              <span className="text-[13px] font-mono text-[var(--brand-purple-soft)]/60 tabular-nums">08</span>
               <div className="flex-1">
-                <h3 className="text-lg md:text-xl font-semibold tracking-tight text-[var(--brand-purple-soft)]" style={display}>Anything else</h3>
-                <p className="text-white/40 text-[14px] mt-0.5">Describe your task, name a budget, and the right student finds it.</p>
+                <h3 className="text-xl md:text-[22px] font-semibold tracking-tight text-[var(--brand-purple-soft)]" style={display}>Anything else</h3>
+                <p className="text-white/55 text-[15.5px] mt-1">Describe your task, name a budget, and the right student finds it.</p>
               </div>
-              <ArrowUpRight size={20} className="text-[var(--brand-purple-soft)]/60 group-hover:text-[var(--brand-purple-soft)] transition-colors shrink-0" />
+              <ArrowUpRight size={22} className="text-[var(--brand-purple-soft)]/70 group-hover:text-[var(--brand-purple-soft)] transition-colors shrink-0" />
             </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ============ HOW IT WORKS ============ */}
-      <section id="how" className="relative max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
-        <div className="max-w-xl mb-14">
-          <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">How it works</p>
-          <h2 className="font-bold tracking-tight leading-[1.05] text-[clamp(1.9rem,3.5vw,2.8rem)]" style={display}>Three steps, fully protected.</h2>
-        </div>
-        <div className="grid md:grid-cols-3 gap-px bg-white/[0.06] rounded-2xl overflow-hidden border border-white/[0.06]">
-          {STEPS.map(([t, d], i) => (
-            <div key={t} className="bg-[var(--card)] p-7 md:p-9">
-              <span className="text-[13px] font-mono text-[var(--brand-purple-soft)]/70">0{i + 1}</span>
-              <h3 className="font-semibold text-lg mt-4" style={display}>{t}</h3>
-              <p className="text-white/50 text-[14px] mt-2 leading-relaxed">{d}</p>
-            </div>
-          ))}
+            </StaggerItem>
+          </Stagger>
         </div>
       </section>
 
       {/* ============ MANAGED (subtle tinted card) ============ */}
-      <section className="relative max-w-6xl mx-auto px-5 md:px-8 py-10">
+      <Reveal as="section" className="relative max-w-6xl mx-auto px-5 md:px-8 py-10">
         <div className="relative rounded-3xl border border-white/[0.08] bg-[var(--card)] overflow-hidden grid md:grid-cols-[1.4fr_0.6fr] items-center">
           <div className="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-[var(--brand-purple)]/[0.12] blur-[100px] pointer-events-none" />
           <div className="relative p-8 md:p-12">
@@ -287,10 +311,10 @@ export default function LandingPage() {
             <h2 className="font-bold tracking-tight leading-[1.06] text-[clamp(1.8rem,3.2vw,2.6rem)]" style={display}>
               Prefer not to manage it? We will.
             </h2>
-            <p className="text-white/55 mt-4 max-w-md leading-relaxed text-[15px]">
+            <p className="text-white/65 mt-4 max-w-md leading-relaxed text-[17px]">
               One click and DoItForMe assigns a vetted student, runs the timeline, and reviews the work before it reaches you. You deal with us, never a stranger. The fee stays a flat 10%.
             </p>
-            <button onClick={goHire} className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition">
+            <button onClick={goHire} className="mt-7 inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[16px] font-bold active:scale-[0.97] transition text-white bg-[var(--brand-purple)] hover:brightness-110 transition">
               Let us handle it <ArrowRight size={15} />
             </button>
           </div>
@@ -300,10 +324,10 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* ============ EARN (subtle card) ============ */}
-      <section className="relative max-w-6xl mx-auto px-5 md:px-8 py-10">
+      <Reveal as="section" className="relative max-w-6xl mx-auto px-5 md:px-8 py-10">
         <div className="rounded-3xl border border-white/[0.08] bg-[var(--card)] grid md:grid-cols-[0.55fr_1.45fr] items-center overflow-hidden">
           <div className="relative h-48 md:h-64 flex items-center justify-center order-2 md:order-1">
             <div className="relative w-40 h-40 md:w-48 md:h-48 animate-[float_8s_ease-in-out_infinite]">
@@ -315,15 +339,15 @@ export default function LandingPage() {
             <h2 className="font-bold tracking-tight leading-[1.06] text-[clamp(1.8rem,3.2vw,2.6rem)]" style={display}>
               Turn your skills into income.
             </h2>
-            <p className="text-white/55 mt-4 max-w-md leading-relaxed text-[15px]">
+            <p className="text-white/65 mt-4 max-w-md leading-relaxed text-[17px]">
               Get verified once, then take on tasks that match what you are good at. Deliver, get approved, and the payout lands in your UPI. A flat 5 to 10% fee, nothing hidden.
             </p>
-            <button onClick={goEarn} className="mt-7 inline-flex items-center gap-2 px-5 py-3 rounded-full text-[14px] font-semibold text-white border border-white/12 hover:bg-white/[0.04] transition">
+            <button onClick={goEarn} className="mt-7 inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[16px] font-bold active:scale-[0.97] transition text-white border border-white/12 hover:bg-white/[0.04] transition">
               Start earning <ArrowRight size={15} />
             </button>
           </div>
         </div>
-      </section>
+      </Reveal>
 
       {/* ============ PRICING ============ */}
       <section id="pricing" className="relative max-w-6xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
@@ -381,15 +405,27 @@ export default function LandingPage() {
 
       {/* ============ FAQ ============ */}
       <section id="faq" className="relative max-w-3xl mx-auto px-5 md:px-8 py-20 md:py-24 scroll-mt-20">
-        <h2 className="font-bold tracking-tight text-center text-[clamp(1.9rem,3.5vw,2.6rem)] mb-12" style={display}>Questions, answered</h2>
+        <Reveal><h2 className="font-bold tracking-tight text-center text-[clamp(2rem,3.6vw,2.7rem)] mb-12" style={display}>Questions? Answered.</h2></Reveal>
         <div className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
           {FAQS.map(([q, a], i) => (
             <div key={q}>
-              <button onClick={() => setOpenFaq(openFaq === i ? null : i)} className="w-full flex items-center justify-between gap-4 py-5 text-left">
-                <span className="font-medium text-[16px]" style={display}>{q}</span>
-                <ChevronDown size={18} className={`shrink-0 text-white/35 transition-transform ${openFaq === i ? "rotate-180" : ""}`} />
+              <button onClick={() => setOpenFaq(openFaq === i ? null : i)} aria-expanded={openFaq === i} className="w-full flex items-center justify-between gap-4 py-6 text-left">
+                <span className="font-semibold text-[18px]" style={display}>{q}</span>
+                <ChevronDown size={22} className={`shrink-0 text-white/50 transition-transform duration-300 ${openFaq === i ? "rotate-180 text-[var(--brand-purple-soft)]" : ""}`} />
               </button>
-              {openFaq === i && <p className="pb-6 -mt-1 text-white/50 leading-relaxed text-[15px] max-w-2xl">{a}</p>}
+              <AnimatePresence initial={false}>
+                {openFaq === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.28, ease: [0.23, 1, 0.32, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <p className="pb-7 text-white/65 leading-relaxed text-[16.5px] max-w-2xl">{a}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>
@@ -406,10 +442,10 @@ export default function LandingPage() {
             </h2>
             <p className="text-white/55 mt-4 max-w-sm text-[15px] leading-relaxed">Post your first task in minutes, or start earning from your skills today. Every payment protected until you approve.</p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 max-w-md">
-              <button onClick={goHire} className="group px-6 py-3.5 rounded-full text-[15px] font-semibold text-white bg-[var(--brand-purple)] hover:brightness-110 transition flex items-center justify-center gap-2">
+              <button onClick={goHire} className="group px-8 py-4 rounded-full text-[17px] font-bold text-white bg-[var(--brand-purple)] hover:brightness-110 active:scale-[0.97] transition flex items-center justify-center gap-2.5">
                 I need work done <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
               </button>
-              <button onClick={goEarn} className="px-6 py-3.5 rounded-full text-[15px] font-semibold text-white/90 border border-white/12 hover:bg-white/[0.04] transition">I want to earn</button>
+              <button onClick={goEarn} className="px-8 py-4 rounded-full text-[17px] font-bold text-white/90 border border-white/15 hover:bg-white/[0.06] active:scale-[0.97] transition">I want to earn</button>
             </div>
           </div>
           <div className="relative h-56 md:h-[340px] flex items-end justify-center order-1 md:order-2">

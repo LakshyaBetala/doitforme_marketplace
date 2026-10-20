@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { ALL_NAV_ITEMS } from "./nav";
+import { isImmersive } from "./ShellMain";
 
 const TITLES: Record<string, string> = Object.fromEntries(
   ALL_NAV_ITEMS.map((n) => [n.href, n.label])
@@ -50,6 +51,8 @@ function titleFor(pathname: string): string {
 export default function Topbar({ action }: { action?: React.ReactNode }) {
   const pathname = usePathname();
   const title = titleFor(pathname);
+  // The chat has its own header; a second bar above it is just noise.
+  if (isImmersive(pathname)) return null;
 
   return (
     <header className="sticky top-0 z-20 hidden h-[72px] items-center justify-between border-b border-[var(--w-line)] bg-[var(--w-surface)] px-8 lg:flex">

@@ -9,7 +9,7 @@ type SkeletonProps = HTMLAttributes<HTMLDivElement>;
 export default function Skeleton({ className = "", ...props }: SkeletonProps) {
   return (
     <div
-      className={`animate-pulse bg-[var(--chip)] rounded-md ${className}`}
+      className={`skeleton rounded-md ${className}`}
       {...props}
     />
   );

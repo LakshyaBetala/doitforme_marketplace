@@ -442,3 +442,59 @@ html {
   --dur-pop: 170ms;
   --dur-sheet: 280ms;
 }
+
+/* ---------------------------------------
+    REDESIGN — SHARED MOTION UTILITIES
+   ---------------------------------------
+   Small, reusable, transform/opacity only. Anything a person taps often stays
+   fast; anything that appears once can take a little longer. */
+
+/* Cards that respond to a pointer: a 2px rise and a soft shadow. On touch
+   devices hover never applies (see hoverOnlyWhenSupported in tailwind.config),
+   so this costs phones nothing and the :active press below still lands. */
+.card-lift {
+  transition: transform var(--dur-pop) var(--ease-out), box-shadow 220ms var(--ease-out),
+    border-color 160ms ease;
+}
+@media (hover: hover) {
+  .card-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 34px -16px rgba(52, 16, 68, 0.28);
+  }
+}
+.card-lift:active {
+  transform: scale(0.985);
+}
+
+/* Loading placeholder: a light sweep reads as "working", a pulse as "stuck". */
+.skeleton {
+  background: linear-gradient(
+    100deg,
+    var(--chip) 30%,
+    var(--chip-strong) 50%,
+    var(--chip) 70%
+  );
+  background-size: 220% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-sweep {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+
+/* A gentle attention pulse for the one thing that needs doing (used sparingly). */
+@keyframes soft-ping {
+  0% { box-shadow: 0 0 0 0 rgba(255, 165, 30, 0.45); }
+  70% { box-shadow: 0 0 0 12px rgba(255, 165, 30, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 165, 30, 0); }
+}
+.soft-ping {
+  animation: soft-ping 2.4s var(--ease-out) infinite;
+}
+
+/* Page-level text and focus polish for the workspace, sized for people who are
+   reading a phone one-handed in a shop, not a developer at a desk. */
+.workspace button,
+.workspace a {
+  -webkit-tap-highlight-color: transparent;
+}
