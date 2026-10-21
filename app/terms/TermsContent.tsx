@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { ArrowLeft, ScrollText, UserCheck, DollarSign, Ban, AlertTriangle } from "lucide-react";
 
+import PublicHeader from "@/components/home/PublicHeader";
 export default function TermsContent() {
   return (
-    <div className="min-h-screen bg-[#020202] text-white selection:bg-[#8825F5] selection:text-white relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--background)] text-white selection:bg-[#8825F5] selection:text-white relative overflow-x-clip">
+      <PublicHeader />
 
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">

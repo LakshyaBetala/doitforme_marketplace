@@ -452,11 +452,11 @@ function ChatRoomContent() {
   const magicChips = ["I'm interested!", "My Portfolio", "Can do in 1 day", "Let's discuss!"];
 
   // --- RENDER ---
-  if (loading) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center"><Loader2 className="animate-spin text-[#C9A9FF]" /></div>;
-  if (error || !gig) return <div className="h-screen bg-[#0B0B11] flex items-center justify-center text-white">{error}</div>;
+  if (loading) return <div className="h-[100dvh] [.workspace_&]:h-full bg-[var(--background)] flex items-center justify-center"><Loader2 className="animate-spin text-[var(--accent-ink)]" /></div>;
+  if (error || !gig) return <div className="h-[100dvh] [.workspace_&]:h-full bg-[var(--background)] flex items-center justify-center text-[var(--fg)]">{error}</div>;
 
   return (
-    <div className="flex h-screen bg-[#0B0B11] text-white font-sans selection:bg-[#C9A9FF] selection:text-black overflow-hidden">
+    <div className="flex h-[100dvh] [.workspace_&]:h-full bg-[var(--background)] text-[var(--fg)] font-sans overflow-hidden">
 
       {/* POSTER SIDEBAR (Desktop: Visible, Mobile: Drawer) */}
       {isPoster && (
@@ -466,14 +466,14 @@ function ChatRoomContent() {
             <div className="fixed inset-0 z-40 bg-black/80 md:hidden" onClick={() => setSidebarOpen(false)} />
           )}
 
-          <aside className={`fixed md:relative z-40 w-72 h-full bg-[#121217] border-r border-white/10 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-            <div className="p-4 border-b border-white/10 flex justify-between items-center">
-              <h2 className="font-bold text-sm tracking-wider uppercase text-white/60">Applicants</h2>
-              <button onClick={() => setSidebarOpen(false)} className="md:hidden text-white/60"><X size={20} /></button>
+          <aside className={`fixed md:relative z-40 w-72 h-full bg-[var(--surface)] border-r border-[var(--line)] transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+            <div className="p-4 border-b border-[var(--line)] flex justify-between items-center">
+              <h2 className="font-bold text-sm text-[var(--fg-muted)]">Applicants</h2>
+              <button onClick={() => setSidebarOpen(false)} className="md:hidden text-[var(--fg-muted)]"><X size={20} /></button>
             </div>
             <div className="overflow-y-auto h-full pb-20">
               {applicants.length === 0 ? (
-                <div className="p-8 text-center text-white/50 text-xs">No applicants yet.</div>
+                <div className="p-8 text-center text-[var(--fg-muted)] text-xs">No applicants yet.</div>
               ) : (
                 applicants.map(app => {
                   const lastMsg = [...messages]
@@ -487,26 +487,26 @@ function ChatRoomContent() {
                     <button
                       key={app.id}
                       onClick={() => { setSelectedApplicantId(app.id); setSidebarOpen(false); }}
-                      className={`w-full p-4 flex items-center gap-3 hover:bg-white/10 transition-colors border-b border-white/5 ${selectedApplicantId === app.id ? 'bg-[#C9A9FF]/10 border-l-2 border-l-[#C9A9FF]' : ''}`}
+                      className={`w-full p-4 flex items-center gap-3 hover:bg-[var(--chip-strong)] transition-colors border-b border-[var(--line)] ${selectedApplicantId === app.id ? 'bg-[#C9A9FF]/10 border-l-2 border-l-[#C9A9FF]' : ''}`}
                     >
                       <div className="w-10 h-10 rounded-full bg-zinc-800 relative overflow-hidden shrink-0">
                         <Avatar src={app.avatar_url} fallback={app.name || "U"} className="w-full h-full rounded-none" textClassName="text-xs font-bold" />
                       </div>
                       <div className="text-left overflow-hidden flex-1 min-w-0">
                         <div className="flex justify-between items-baseline mb-0.5 mt-1">
-                          <p className={`font-medium truncate text-sm flex items-center gap-2 ${selectedApplicantId === app.id ? 'text-white' : 'text-white/80'}`}>
+                          <p className={`font-medium truncate text-sm flex items-center gap-2 ${selectedApplicantId === app.id ? 'text-[var(--fg)]' : 'text-[var(--fg-muted)]'}`}>
                             {app.name}
                           </p>
-                          {lastMsg && <span className="text-[9px] text-white/50 whitespace-nowrap ml-2">{new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+                          {lastMsg && <span className="text-[9px] text-[var(--fg-muted)] whitespace-nowrap ml-2">{new Date(lastMsg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
                         </div>
 
                         {lastMsg ? (
-                          <p className="text-xs text-white/60 truncate flex items-center gap-1">
-                            {lastMsg.sender_id === currentUser.id && <span className="text-[#C9A9FF]">You:</span>}
+                          <p className="text-xs text-[var(--fg-muted)] truncate flex items-center gap-1">
+                            {lastMsg.sender_id === currentUser.id && <span className="text-[var(--accent-ink)]">You:</span>}
                             {lastMsg.content}
                           </p>
                         ) : (
-                          <p className="text-[10px] text-white/50 flex items-center gap-1"><Star size={10} className="text-yellow-500 fill-current" /> {(!app.rating || app.rating_count === 0) ? "NA" : Number(app.rating).toFixed(1)} Rating</p>
+                          <p className="text-[10px] text-[var(--fg-muted)] flex items-center gap-1"><Star size={10} className="text-[var(--warn)] fill-current" /> {(!app.rating || app.rating_count === 0) ? "NA" : Number(app.rating).toFixed(1)} Rating</p>
                         )}
                       </div>
                     </button>
@@ -522,21 +522,21 @@ function ChatRoomContent() {
       <div className="flex-1 flex flex-col relative w-full h-full">
 
         {/* HEADER */}
-        <header className="px-4 py-3 border-b border-white/10 bg-[#121217] flex items-center gap-4 shadow-lg z-20 shrink-0">
+        <header className="px-4 py-3 border-b border-[var(--line)] bg-[var(--surface)] flex items-center gap-4 z-20 shrink-0">
           <div className="flex items-center gap-3">
-            {isPoster && <button onClick={() => setSidebarOpen(true)} className="md:hidden text-white/70"><Menu size={24} /></button>}
-            <button onClick={() => router.back()} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
-              <ArrowLeft size={20} className="text-white/70" />
+            {isPoster && <button onClick={() => setSidebarOpen(true)} className="md:hidden text-[var(--fg-muted)]"><Menu size={24} /></button>}
+            <button onClick={() => router.back()} className="p-2 rounded-full bg-[var(--chip-strong)] hover:bg-[var(--chip-strong)] transition-colors">
+              <ArrowLeft size={20} className="text-[var(--fg-muted)]" />
             </button>
 
             <div>
               <h1 className="font-bold text-sm md:text-base leading-tight">
                 {isPoster ? (applicantProfile?.name || "Select Applicant") : gig.title}
               </h1>
-              <div className="flex items-center gap-2 text-[10px] text-zinc-500">
-                {isPoster ? <span className="text-[#C9A9FF]">Hustler</span> : <span>Posted by Client</span>}
+              <div className="flex items-center gap-2 text-[10px] text-[var(--fg-muted)]">
+                {isPoster ? <span className="text-[var(--accent-ink)]">Hustler</span> : <span>Posted by Client</span>}
                 <span className="w-1 h-1 rounded-full bg-zinc-600"></span>
-                <span className="flex items-center gap-1"><Shield size={10} className="text-green-500" /> Trust Verified</span>
+                <span className="flex items-center gap-1"><Shield size={10} className="text-[var(--ok)]" /> Trust Verified</span>
               </div>
             </div>
           </div>
@@ -544,13 +544,13 @@ function ChatRoomContent() {
  
         {/* PHONE REVEAL BANNER */}
         {['assigned', 'AWAITING_FUNDS', 'SUBMITTED', 'completed'].includes(gig.status) && (
-           <div className="bg-[#C9A9FF]/20 border-b border-[#C9A9FF]/30 p-3 flex flex-col items-center justify-center gap-1 text-center shadow-lg relative z-10 px-4">
-             <p className="text-xs font-bold text-white/80 uppercase tracking-widest flex items-center gap-2">
-               <Shield size={12} className="text-[#C9A9FF]"/> Connection Established
+           <div className="bg-[var(--accent-soft)] border-b border-[var(--accent-line)] p-3 flex flex-col items-center justify-center gap-1 text-center relative z-10 px-4">
+             <p className="text-xs font-bold text-[var(--fg-muted)] flex items-center gap-2">
+               <Shield size={12} className="text-[var(--accent-ink)]"/> Connection Established
              </p>
              <p className="text-sm">
                 You can now contact <span className="font-bold">{isPoster ? applicantProfile?.name : (gig as any).users?.name}</span> directly via WhatsApp/Phone: 
-                <span className="font-black text-[#C9A9FF] tracking-widest ml-2 bg-black/40 px-3 py-1 rounded-lg border border-[#C9A9FF]/20 selection:bg-[#C9A9FF]/40">
+                <span className="font-black text-[var(--accent-ink)] ml-2 bg-[var(--surface)] px-3 py-1 rounded-lg border border-[var(--accent-line)]">
                   {(() => {
                     const p = isPoster ? (applicantProfile as any)?.phone : (gig as any).users?.phone;
                     return p ? displayIndianPhone(p) : 'No phone provided';
@@ -561,29 +561,29 @@ function ChatRoomContent() {
         )}
 
         {/* TRANSACTION CARD (Sticky) */}
-        <div className="bg-[#1A1A24] border-b border-white/5 p-3 flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 rounded-lg bg-zinc-800 relative overflow-hidden shrink-0 border border-white/10">
+        <div className="bg-[var(--surface)] border-b border-[var(--line)] p-3 flex items-center gap-3 shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-zinc-800 relative overflow-hidden shrink-0 border border-[var(--line)]">
             {(() => {
               // images[] can also hold non-image attachments (e.g. a COMPANY_TASK
               // requirements PDF) — only render an actual image, else the icon.
               const firstImage = gig?.images?.find((img) => /\.(jpe?g|png|webp|gif|avif)$/i.test(img));
               return firstImage
                 ? <Image src={supabase.storage.from("gig-images").getPublicUrl(firstImage).data.publicUrl} alt="Gig" fill className="object-cover" />
-                : <Briefcase className="p-2 w-full h-full text-white/50" />;
+                : <Briefcase className="p-2 w-full h-full text-[var(--fg-muted)]" />;
             })()}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-xs font-bold text-white/90 truncate">{gig.title}</h3>
-            <p className="text-[10px] text-white/50 flex items-center font-mono">
+            <h3 className="text-xs font-bold text-[var(--fg-muted)] truncate">{gig.title}</h3>
+            <p className="text-[10px] text-[var(--fg-muted)] flex items-center font-mono">
               <IndianRupee size={10} /> {gig.price} • {gig.listing_type}
             </p>
           </div>
           {gig.status === 'open' ? (
-            <span className="px-2 py-1 rounded bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">
+            <span className="px-2 py-1 rounded bg-[var(--warn-soft)] border border-[var(--warn-line)] text-[var(--warn)] text-[10px] font-bold whitespace-nowrap">
               Discussion
             </span>
           ) : (
-            <span className="px-2 py-1 rounded bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">
+            <span className="px-2 py-1 rounded bg-[var(--ok-soft)] border border-[var(--ok-line)] text-[var(--ok)] text-[10px] font-bold whitespace-nowrap">
               Locked
             </span>
           )}
@@ -598,15 +598,15 @@ function ChatRoomContent() {
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             >
-              <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative">
+              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-3xl p-6 w-full max-w-sm relative">
                 <button
                   onClick={() => setIsOfferModalOpen(false)}
-                  className="absolute top-4 right-4 text-white/60 hover:text-white"
+                  className="absolute top-4 right-4 text-[var(--fg-muted)] hover:text-[var(--fg)]"
                 >
                   <X size={20} />
                 </button>
                 <h3 className="text-xl font-bold mb-1">Make an Offer</h3>
-                <p className="text-white/50 text-xs mb-6">Propose a new price for this item.</p>
+                <p className="text-[var(--fg-muted)] text-xs mb-6">Propose a new price for this item.</p>
 
                 <div className="space-y-4">
                   <input
@@ -614,7 +614,7 @@ function ChatRoomContent() {
                     value={offerAmount}
                     onChange={(e) => setOfferAmount(e.target.value)}
                     placeholder="Enter amount (₹)"
-                    className="w-full bg-black/20 text-white p-4 rounded-xl border border-white/10 focus:border-[#C9A9FF] outline-none text-lg font-bold"
+                    className="w-full bg-[var(--surface)] text-[var(--fg)] p-4 rounded-xl border border-[var(--line-strong)] focus:border-[var(--accent)] outline-none text-lg font-bold"
                   />
                   {!isPoster && gig.listing_type === 'HUSTLE' && (() => {
                     // The rate quoted here has to be the rate actually charged.
@@ -626,16 +626,16 @@ function ChatRoomContent() {
                     const fee = platformFeeFor(offer, audience);
                     const ratePct = Math.round(PLATFORM_FEES[audience] * 100);
                     return (
-                      <div className="bg-white/10 rounded-lg p-3 text-xs space-y-1 my-4">
-                        <div className="flex justify-between text-white/50">
+                      <div className="bg-[var(--chip-strong)] rounded-lg p-3 text-xs space-y-1 my-4">
+                        <div className="flex justify-between text-[var(--fg-muted)]">
                           <span>Gig Budget:</span>
                           <span>₹{offer}</span>
                         </div>
-                        <div className="flex justify-between text-white/50">
+                        <div className="flex justify-between text-[var(--fg-muted)]">
                           <span>Platform fee ({ratePct}%):</span>
-                          <span className="text-red-400">- ₹{fee}</span>
+                          <span className="text-[var(--bad)]">- ₹{fee}</span>
                         </div>
-                        <div className="border-t border-white/10 pt-2 flex justify-between font-bold text-green-400">
+                        <div className="border-t border-[var(--line)] pt-2 flex justify-between font-bold text-[var(--ok)]">
                           <span>Your Take-home:</span>
                           <span>₹{Math.max(0, offer - fee)}</span>
                         </div>
@@ -646,7 +646,7 @@ function ChatRoomContent() {
                   <button
                     onClick={sendOffer}
                     disabled={!offerAmount || Number(offerAmount) <= 0}
-                    className="w-full py-3 bg-[#C9A9FF] text-black font-bold rounded-xl active:scale-95 transition shadow-lg shadow-[#C9A9FF]/20 touch-manipulation"
+                    className="w-full py-3 bg-[var(--accent)] text-[var(--on-accent)] font-bold rounded-xl active:scale-95 transition touch-manipulation"
                   >
                     Send Offer
                   </button>
@@ -665,21 +665,21 @@ function ChatRoomContent() {
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
             >
-              <div className="bg-[#1A1A24] border border-white/10 rounded-3xl p-6 w-full max-w-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#C9A9FF] to-[#8825F5]"></div>
+              <div className="bg-[var(--surface)] border border-[var(--line)] rounded-3xl p-6 w-full max-w-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--accent-line)] to-[var(--accent)]"></div>
 
                 <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-                  <CheckCircle className="text-green-500" size={24} /> Accept Offer?
+                  <CheckCircle className="text-[var(--ok)]" size={24} /> Accept Offer?
                 </h3>
 
                 <div className="py-6 flex flex-col items-center">
-                  <div className="text-4xl font-black text-white tracking-tighter mb-1">
+                  <div className="text-4xl font-black text-[var(--fg)] tracking-tighter mb-1">
                     ₹{offerToAccept.offer_amount}
                   </div>
-                  <p className="text-xs text-white/60 uppercase tracking-widest font-bold">New Agreed Price</p>
+                  <p className="text-xs text-[var(--fg-muted)] font-bold">New Agreed Price</p>
                 </div>
 
-                  <div className="bg-white/10 rounded-xl p-4 mb-6 text-xs text-white/70 leading-relaxed border border-white/5">
+                  <div className="bg-[var(--chip-strong)] rounded-xl p-4 mb-6 text-xs text-[var(--fg-muted)] leading-relaxed border border-[var(--line)]">
                     <p>
                       You are accepting this budget. The hustler will receive this amount minus platform fees.
                     </p>
@@ -688,14 +688,14 @@ function ChatRoomContent() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setIsAcceptModalOpen(false)}
-                    className="py-3 bg-white/10 hover:bg-white/10 rounded-xl text-white font-bold text-sm transition-colors touch-manipulation"
+                    className="py-3 bg-[var(--chip-strong)] hover:bg-[var(--chip-strong)] rounded-xl text-[var(--fg)] font-bold text-sm transition-colors touch-manipulation"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmAcceptOffer}
                     disabled={isAccepting}
-                    className="py-3 bg-green-500 hover:bg-green-600 rounded-xl text-white font-bold text-sm transition-colors shadow-lg shadow-green-500/20 disabled:opacity-50 flex items-center justify-center gap-2 touch-manipulation"
+                    className="py-3 bg-[var(--ok-solid)] hover:bg-[var(--ok-solid)] rounded-xl text-[var(--fg)] font-bold text-sm transition-colors shadow-green-500/20 disabled:opacity-50 flex items-center justify-center gap-2 touch-manipulation"
                   >
                     {isAccepting ? <Loader2 className="animate-spin" size={16} /> : "Confirm Acceptance"}
                   </button>
@@ -706,17 +706,17 @@ function ChatRoomContent() {
         </AnimatePresence>
 
         {/* MESSAGES — CSS fade-in instead of Framer Motion per message (much lighter on mobile) */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 relative bg-[#0B0B11]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 relative bg-[var(--background)]">
           {/* Subtle dot grid wallpaper */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, var(--fg) 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
 
           {(isPoster && !selectedApplicantId) ? (
-            <div className="flex h-full items-center justify-center text-white/50 text-sm flex-col gap-2">
+            <div className="flex h-full items-center justify-center text-[var(--fg-muted)] text-sm flex-col gap-2">
               <User size={32} />
               Select an applicant to start chatting.
             </div>
           ) : activeMessages.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-white/50 text-sm flex-col gap-2">
+            <div className="flex h-full items-center justify-center text-[var(--fg-muted)] text-sm flex-col gap-2">
               <Sparkles size={32} />
               No messages yet. Say hi!
             </div>
@@ -729,18 +729,18 @@ function ChatRoomContent() {
               return (
                 <div key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"} relative z-10 animate-in fade-in duration-150`}>
                   {isOffer ? (
-                    <div className={`max-w-[85%] md:max-w-[300px] w-full rounded-2xl overflow-hidden border ${isMe ? 'border-brand-purple/50 bg-brand-purple/5' : 'border-white/10 bg-[#1A1A24]'}`}>
-                      <div className="p-4 bg-white/10 border-b border-white/5 flex justify-between items-center">
-                        <span className="text-xs font-bold uppercase tracking-wider text-white/60">
+                    <div className={`max-w-[85%] md:max-w-[300px] w-full rounded-2xl overflow-hidden border ${isMe ? 'border-[var(--accent-line)] bg-[var(--accent-soft)]' : 'border-[var(--line)] bg-[var(--surface)]'}`}>
+                      <div className="p-4 bg-[var(--chip-strong)] border-b border-[var(--line)] flex justify-between items-center">
+                        <span className="text-xs font-bold text-[var(--fg-muted)]">
                           {isMe ? "You sent an offer" : "Received Offer"}
                         </span>
-                        <IndianRupee size={14} className="text-brand-purple" />
+                        <IndianRupee size={14} className="text-[var(--accent-ink)]" />
                       </div>
                       <div className="p-6 flex flex-col items-center gap-2">
-                        <div className="text-3xl font-black text-white tracking-tighter">
+                        <div className="text-3xl font-black text-[var(--fg)] tracking-tighter">
                           ₹{m.offer_amount}
                         </div>
-                        <p className="text-[10px] text-white/60">
+                        <p className="text-[10px] text-[var(--fg-muted)]">
                           {isMe ? "Waiting for response..." : "Proposed Price"}
                         </p>
                       </div>
@@ -748,24 +748,24 @@ function ChatRoomContent() {
                         <div className="p-2 grid grid-cols-2 gap-2 bg-black/20">
                           <button
                             onClick={() => declineOffer(m)}
-                            className="py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-bold hover:bg-red-500/20 touch-manipulation"
+                            className="py-2 rounded-lg bg-[var(--bad-soft)] text-[var(--bad)] text-xs font-bold hover:bg-[var(--bad-soft)] touch-manipulation"
                           >
                             Decline
                           </button>
                           <button
                             onClick={() => acceptOffer(m)}
-                            className="py-2 rounded-lg bg-green-500/10 text-green-400 text-xs font-bold hover:bg-green-500/20 touch-manipulation"
+                            className="py-2 rounded-lg bg-[var(--ok-soft)] text-[var(--ok)] text-xs font-bold hover:bg-[var(--ok-soft)] touch-manipulation"
                           >
                             Accept
                           </button>
                         </div>
                       )}
                       {gig.negotiated_price === m.offer_amount && (
-                        <div className="px-4 py-2 bg-green-500/20 text-green-400 text-[10px] font-bold text-center uppercase tracking-widest flex items-center justify-center gap-1">
+                        <div className="px-4 py-2 bg-[var(--ok-soft)] text-[var(--ok)] text-[10px] font-bold text-center flex items-center justify-center gap-1">
                           <CheckCircle size={12} /> Offer Accepted
                         </div>
                       )}
-                      <div className="px-4 pb-1 flex items-center justify-center gap-1 text-[10px] text-red-400/80 font-bold tracking-wide">
+                      <div className="px-4 pb-1 flex items-center justify-center gap-1 text-[10px] text-red-400/80 font-bold ">
                         <Clock size={10} /> Offer expires in 24h
                       </div>
                       <div className="px-4 py-2 text-[9px] text-right opacity-30 font-mono">
@@ -773,7 +773,7 @@ function ChatRoomContent() {
                       </div>
                     </div>
                   ) : isImage ? (
-                    <div className={`max-w-[85%] md:max-w-[300px] rounded-2xl overflow-hidden border cursor-zoom-in ${isMe ? 'border-[#C9A9FF]/50' : 'border-white/10'}`} onClick={() => setSelectedImage(m.content)}>
+                    <div className={`max-w-[85%] md:max-w-[300px] rounded-2xl overflow-hidden border cursor-zoom-in ${isMe ? 'border-[var(--accent-line)]' : 'border-[var(--line)]'}`} onClick={() => setSelectedImage(m.content)}>
                       <div className="relative aspect-video bg-black/50">
                         <Image
                           src={m.content}
@@ -783,12 +783,12 @@ function ChatRoomContent() {
                           onClick={() => window.open(m.content, '_blank')}
                         />
                       </div>
-                      <div className="px-2 py-1 bg-[#1A1A24] text-[9px] text-right text-white/50 font-mono">
+                      <div className="px-2 py-1 bg-[var(--surface)] text-[9px] text-right text-[var(--fg-muted)] font-mono">
                         {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     </div>
                   ) : (
-                    <div className={`max-w-[85%] md:max-w-[60%] px-4 py-2 rounded-2xl text-sm shadow-sm break-words ${isMe ? "bg-[#C9A9FF] text-black rounded-tr-none" : "bg-[#1A1A24] border border-white/5 text-white/90 rounded-tl-none"}`}>
+                    <div className={`max-w-[85%] md:max-w-[60%] px-4 py-2 rounded-2xl text-sm shadow-sm break-words ${isMe ? "bg-[var(--accent)] text-[var(--on-accent)] rounded-tr-none" : "bg-[var(--surface)] border border-[var(--line)] text-[var(--fg)] rounded-tl-none"}`}>
                       {m.content}
                       <div className="text-[9px] mt-1 text-right opacity-50 font-mono">
                         {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -803,20 +803,20 @@ function ChatRoomContent() {
         </div>
 
         {/* INPUT AREA */}
-        <div className="bg-[#121217] border-t border-white/10 shrink-0 pb-safe">
+        <div className="bg-[var(--surface)] border-t border-[var(--line)] shrink-0 pb-safe">
 
           {/* Chat Closed Banner */}
           {gig.status === 'completed' && (
-            <div className="px-4 py-3 flex items-center justify-center gap-3 text-sm bg-[var(--brand-purple)]/10 border-b border-[var(--brand-purple)]/20">
+            <div className="px-4 py-3 flex items-center justify-center gap-3 text-sm bg-[var(--accent-soft)] border-b border-[var(--accent-line)]">
               <div className="relative w-8 h-8 shrink-0">
                 <Image src="/moneysloth.png" alt="" fill className="object-contain" sizes="32px" />
               </div>
-              <span className="text-white/80 font-medium">Deal done. Money&apos;s on its way, and the sloth salutes you.</span>
+              <span className="text-[var(--fg-muted)] font-medium">Deal done. Money&apos;s on its way, and the sloth salutes you.</span>
             </div>
           )}
           {gig.status === 'cancelled' && (
-            <div className="px-4 py-3 flex items-center justify-center gap-2 text-sm text-white/50 bg-white/5 border-b border-white/10">
-              <CheckCircle className="w-4 h-4 text-white/40 shrink-0" />
+            <div className="px-4 py-3 flex items-center justify-center gap-2 text-sm text-[var(--fg-muted)] bg-[var(--chip)] border-b border-[var(--line)]">
+              <CheckCircle className="w-4 h-4 text-[var(--fg-faint)] shrink-0" />
               <span>This gig was cancelled. Chat is closed.</span>
             </div>
           )}
@@ -828,7 +828,7 @@ function ChatRoomContent() {
             <div
               role="status"
               aria-live="polite"
-              className="px-4 py-2 flex items-center justify-center gap-2 text-xs text-amber-300/90 bg-amber-500/10 border-b border-amber-500/20"
+              className="px-4 py-2 flex items-center justify-center gap-2 text-xs text-amber-300/90 bg-[var(--warn-soft)] border-b border-[var(--warn-line)]"
             >
               <Loader2 size={12} className="animate-spin shrink-0" />
               Reconnecting — new messages will appear once you&apos;re back online.
@@ -850,7 +850,7 @@ function ChatRoomContent() {
                 key={i}
                 onClick={() => sendMessage(chip)}
                 disabled={isSending}
-                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/10 border border-white/10 text-xs text-white/80 hover:text-white transition-colors disabled:opacity-50 touch-manipulation"
+                className="whitespace-nowrap px-3 py-1.5 rounded-full bg-[var(--chip-strong)] hover:bg-[var(--chip-strong)] border border-[var(--line)] text-xs text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors disabled:opacity-50 touch-manipulation"
               >
                 {chip}
               </button>
@@ -872,7 +872,7 @@ function ChatRoomContent() {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="p-3 bg-white/10 hover:bg-white/10 rounded-full text-white/70 border border-white/5 transition shrink-0 disabled:opacity-50 touch-manipulation"
+              className="p-3 bg-[var(--chip-strong)] hover:bg-[var(--chip-strong)] rounded-full text-[var(--fg-muted)] border border-[var(--line)] transition shrink-0 disabled:opacity-50 touch-manipulation"
               title="Attach Image"
             >
               {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
@@ -886,13 +886,13 @@ function ChatRoomContent() {
               onFocus={loadModel}
               placeholder={isUploading ? "Uploading image..." : "Type a message..."}
               disabled={isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="flex-1 bg-[#1A1A24] border border-white/10 rounded-full px-6 py-3.5 text-sm text-white placeholder-white/30 focus:outline-none focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/50 transition disabled:opacity-50"
+              className="flex-1 bg-[var(--surface)] border border-[var(--line)] rounded-full px-6 py-3.5 text-sm text-[var(--fg)] placeholder-white/30 focus:outline-none focus:border-[var(--accent-line)] focus:ring-1 focus:ring-[var(--accent-line)] transition disabled:opacity-50"
             />
 
             <button
               onClick={() => sendMessage()}
               disabled={!input.trim() || isSending || isUploading || ['completed', 'cancelled'].includes(gig.status)}
-              className="w-12 h-12 rounded-full bg-brand-purple hover:bg-brand-purple/90 text-white flex items-center justify-center transition disabled:opacity-50 disabled:hover:bg-brand-purple shrink-0 shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation"
+              className="w-12 h-12 rounded-full bg-[var(--accent)] hover:bg-[var(--accent-soft)] text-[var(--on-accent)] flex items-center justify-center transition disabled:opacity-50 disabled:hover:bg-[var(--accent)] shrink-0 shadow-[0_0_20px_rgba(136,37,245,0.3)] touch-manipulation"
             >
               <Send size={18} className="ml-1" />
             </button>
@@ -903,7 +903,7 @@ function ChatRoomContent() {
       {/* Lightbox */}
       {selectedImage && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setSelectedImage(null)}>
-          <button className="absolute top-6 right-6 p-4 bg-white/10 rounded-full text-white hover:bg-white/20 transition"><X className="w-8 h-8" /></button>
+          <button className="absolute top-6 right-6 p-4 bg-[var(--chip-strong)] rounded-full text-[var(--fg)] hover:bg-[var(--chip-strong)] transition"><X className="w-8 h-8" /></button>
           <div className="relative w-full max-w-6xl h-full max-h-[85vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()} >
             <Image src={selectedImage || ""} alt="Fullscreen Attachment" fill className="object-contain" quality={100} />
           </div>
@@ -916,8 +916,8 @@ function ChatRoomContent() {
 export default function ChatRoomPage() {
   return (
     <Suspense fallback={
-      <div className="h-screen bg-[#0B0B11] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#C9A9FF]" />
+      <div className="h-[100dvh] [.workspace_&]:h-full bg-[var(--background)] flex items-center justify-center">
+        <Loader2 className="animate-spin text-[var(--accent-ink)]" />
       </div>
     }>
       <ChatRoomContent />

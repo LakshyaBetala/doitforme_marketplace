@@ -132,18 +132,18 @@ export default function ApplicantsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-[var(--background)] flex items-center justify-center">
-        <Loader2 className="animate-spin text-white/40" size={28} />
+      <div className="flex min-h-[50dvh] items-center justify-center">
+        <Loader2 className="animate-spin text-[var(--fg-faint)]" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--background)] text-white">
+    <div className="text-[var(--fg)]">
       <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-10">
         <Link
           href="/activity"
-          className="inline-flex items-center gap-2 text-white/70 hover:text-white transition px-3 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] mb-8"
+          className="inline-flex items-center gap-2 text-[var(--fg-muted)] hover:text-[var(--fg)] transition px-3 h-10 rounded-xl bg-[var(--chip)] border border-[var(--line)] mb-8"
         >
           <ChevronLeft size={18} />
           <span className="text-xs font-semibold">Activity</span>
@@ -157,7 +157,7 @@ export default function ApplicantsPage() {
             ? "Your request"
             : `${applicants.length} ${responderNoun(gig || {}, applicants.length)}`}
         </h1>
-        <p className="text-sm text-white/55 mb-8 truncate">
+        <p className="text-sm text-[var(--fg-muted)] mb-8 truncate">
           {gig?.title} · <span className="tabular-nums">₹{gig?.price}</span>
         </p>
 
@@ -167,8 +167,8 @@ export default function ApplicantsPage() {
             Anyone still listed here enquired before hiring worked; reply and
             they can send a proper request. See lib/gigRoles.ts. */}
         {isDirectRequest && applicants.length > 0 && (
-          <div className="mb-6 rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--brand-purple)]/[0.06] p-4">
-            <p className="text-[13px] text-white/80 leading-relaxed">
+          <div className="mb-6 rounded-2xl border border-[var(--accent-line)] bg-[var(--accent-soft)] p-4">
+            <p className="text-[13px] text-[var(--fg-muted)] leading-relaxed">
               You asked this person to do this work. Agree the details with them first — then pay,
               and we hold the money in escrow until you approve what they deliver.
             </p>
@@ -176,8 +176,8 @@ export default function ApplicantsPage() {
         )}
 
         {isAdvert && applicants.length > 0 && (
-          <div className="mb-6 rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--brand-purple)]/[0.06] p-4">
-            <p className="text-[13px] text-white/80 leading-relaxed">
+          <div className="mb-6 rounded-2xl border border-[var(--accent-line)] bg-[var(--accent-soft)] p-4">
+            <p className="text-[13px] text-[var(--fg-muted)] leading-relaxed">
               These are people who want to <strong>hire you</strong> — not people applying for work.
               Reply to them and they can send you a paid request; the money is held in escrow before
               you start.
@@ -209,8 +209,8 @@ export default function ApplicantsPage() {
                   key={app.id}
                   className={`rounded-2xl border p-5 ${
                     isHired
-                      ? "bg-[var(--brand-purple)]/[0.06] border-[var(--brand-purple)]/30"
-                      : "bg-[var(--card)] border-white/[0.08]"
+                      ? "bg-[var(--accent-soft)] border-[var(--accent-line)]"
+                      : "bg-[var(--card)] border-[var(--line)]"
                   }`}
                 >
                   <div className="flex items-start gap-3 mb-4">
@@ -219,13 +219,13 @@ export default function ApplicantsPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-[15px] truncate">{w?.name || "Unnamed"}</p>
                         {isHired && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--brand-purple-soft)]">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--brand-purple-soft)]">
                             <BadgeCheck size={11} /> Hired
                           </span>
                         )}
                       </div>
                       {w?.college && (
-                        <p className="text-xs text-white/50 mt-0.5 flex items-center gap-1.5 truncate">
+                        <p className="text-xs text-[var(--fg-muted)] mt-0.5 flex items-center gap-1.5 truncate">
                           <GraduationCap size={11} className="shrink-0" /> {w.college}
                         </p>
                       )}
@@ -247,7 +247,7 @@ export default function ApplicantsPage() {
                   )}
 
                   {app.pitch && (
-                    <p className="text-[13px] text-white/70 leading-relaxed mb-4 whitespace-pre-line">
+                    <p className="text-[13px] text-[var(--fg-muted)] leading-relaxed mb-4 whitespace-pre-line">
                       {app.pitch}
                     </p>
                   )}
@@ -257,7 +257,7 @@ export default function ApplicantsPage() {
                       {w.skills.slice(0, 8).map((s) => (
                         <span
                           key={s}
-                          className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-[11px] text-white/65"
+                          className="px-2 py-0.5 rounded-full bg-[var(--chip)] border border-[var(--line)] text-[11px] text-[var(--fg-muted)]"
                         >
                           {s}
                         </span>
@@ -270,7 +270,7 @@ export default function ApplicantsPage() {
                       {w?.username && (
                         <Link
                           href={`/u/${w.username}`}
-                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/70 hover:text-white bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 transition"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--fg-muted)] hover:text-[var(--fg)] bg-[var(--chip)] border border-[var(--line)] rounded-lg px-2.5 py-1.5 transition"
                         >
                           <ExternalLink size={11} /> Profile
                         </Link>
@@ -280,7 +280,7 @@ export default function ApplicantsPage() {
                           href={`/api/profile/resume?userId=${w.id}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/70 hover:text-white bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 transition"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--fg-muted)] hover:text-[var(--fg)] bg-[var(--chip)] border border-[var(--line)] rounded-lg px-2.5 py-1.5 transition"
                         >
                           <FileText size={11} /> Resume
                         </a>
@@ -291,7 +291,7 @@ export default function ApplicantsPage() {
                           href={l}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-white/70 hover:text-white bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 transition"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--fg-muted)] hover:text-[var(--fg)] bg-[var(--chip)] border border-[var(--line)] rounded-lg px-2.5 py-1.5 transition"
                         >
                           <ExternalLink size={11} /> Work {i + 1}
                         </a>
@@ -299,10 +299,10 @@ export default function ApplicantsPage() {
                     </div>
                   )}
 
-                  <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-white/[0.06]">
+                  <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-[var(--line)]">
                     <button
                       onClick={() => router.push(`/chat/${gigId}?chat=${gigId}_${app.worker_id}`)}
-                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-sm font-semibold min-h-[44px] transition"
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] border border-[var(--line)] text-sm font-semibold min-h-[44px] transition"
                     >
                       <MessageSquare size={15} /> Message
                     </button>
@@ -310,7 +310,7 @@ export default function ApplicantsPage() {
                       <button
                         onClick={() => hire(app.worker_id, w?.name || "them")}
                         disabled={hiring === app.worker_id}
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--brand-purple)] hover:opacity-90 text-white text-sm font-semibold min-h-[44px] transition disabled:opacity-50"
+                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--accent)] hover:opacity-90 text-[var(--on-accent)] text-sm font-semibold min-h-[44px] transition disabled:opacity-50"
                       >
                         {hiring === app.worker_id ? (
                           <Loader2 size={15} className="animate-spin" />

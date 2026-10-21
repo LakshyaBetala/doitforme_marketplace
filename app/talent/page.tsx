@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import GigCard from "@/components/ui/GigCard";
 import EmptyState from "@/components/ui/EmptyState";
-import { Loader2, ChevronLeft, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import PublicHeader from "@/components/home/PublicHeader";
 
 /**
  * Talent directory — the home for SERVICE listings (self-promotion).
@@ -47,23 +47,16 @@ export default function TalentPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[var(--background)] text-white">
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors px-3 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.16] mb-8"
-        >
-          <ChevronLeft size={18} />
-          <span className="text-xs font-semibold">Back</span>
-        </Link>
-
+      <PublicHeader />
+      <div className="max-w-6xl mx-auto px-5 md:px-8 py-8 md:py-12">
         <div className="mb-8">
           <h1
-            className="text-3xl md:text-4xl font-semibold tracking-tight mb-2"
+            className="text-4xl md:text-5xl font-bold tracking-tight mb-3"
             style={{ fontFamily: "'Space Grotesk', sans-serif", letterSpacing: "-0.02em" }}
           >
             Talent
           </h1>
-          <p className="text-sm text-white/60 max-w-xl leading-relaxed">
+          <p className="text-[16px] text-white/65 max-w-xl leading-relaxed">
             Students offering their skills. Browse, then message someone to hire them —
             we hold the payment once you agree on the work.
           </p>

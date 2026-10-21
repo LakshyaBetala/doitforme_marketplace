@@ -122,7 +122,7 @@ export default function NotificationBell() {
                   </span>
                   <span className="flex-1 min-w-0">
                     <span className="block text-xs text-[var(--fg-muted)] leading-snug">{n.content}</span>
-                    <span className="block text-[10px] text-[var(--fg)]/35 mt-1">{timeAgo(n.created_at)}</span>
+                    <span className="block text-[10px] text-[var(--fg-faint)] mt-1">{timeAgo(n.created_at)}</span>
                   </span>
                   {!n.is_read && <span className="mt-1.5 w-2 h-2 rounded-full bg-[var(--accent)] shrink-0" />}
                 </button>

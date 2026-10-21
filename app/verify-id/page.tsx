@@ -148,17 +148,17 @@ export default function VerifyIDPage() {
 
   if (status === "approved") {
     return (
-      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
+      <div className="min-h-[70dvh] flex items-center justify-center p-6">
         <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500 max-w-md">
-          <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20 shadow-[0_0_50px_rgba(16,185,129,0.2)]">
-            <ShieldCheck className="w-12 h-12 text-emerald-400" />
+          <div className="w-24 h-24 bg-[var(--ok-soft)] rounded-full flex items-center justify-center mx-auto border border-[var(--ok-line)] shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+            <ShieldCheck className="w-12 h-12 text-[var(--ok)]" />
           </div>
-          <h1 className="text-3xl font-bold text-white">You&apos;re verified ✓</h1>
-          <div className="space-y-2 text-white/60">
-            <p>Your student ID was <strong className="text-emerald-400">approved instantly</strong>.</p>
+          <h1 className="text-3xl font-bold text-[var(--fg)]">You&apos;re verified ✓</h1>
+          <div className="space-y-2 text-[var(--fg-muted)]">
+            <p>Your student ID was <strong className="text-[var(--ok)]">approved instantly</strong>.</p>
             <p className="text-sm">The verified badge is now live on your profile. Taking you there…</p>
           </div>
-          <Link href="/profile" className="inline-block text-brand-purple hover:text-white transition-colors font-bold mt-4">
+          <Link href="/profile" className="inline-block text-[var(--accent-ink)] hover:text-[var(--fg)] transition-colors font-bold mt-4">
             Go to Profile
           </Link>
         </div>
@@ -168,17 +168,17 @@ export default function VerifyIDPage() {
 
   if (status === "review") {
     return (
-      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
+      <div className="min-h-[70dvh] flex items-center justify-center p-6">
         <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500 max-w-md">
-          <div className="w-24 h-24 bg-brand-purple/10 rounded-full flex items-center justify-center mx-auto border border-brand-purple/20 shadow-[0_0_50px_rgba(136,37,245,0.2)]">
-            <Clock className="w-12 h-12 text-brand-purple animate-pulse" />
+          <div className="w-24 h-24 bg-[var(--accent-soft)] rounded-full flex items-center justify-center mx-auto border border-[var(--accent-line)] shadow-[0_0_50px_rgba(136,37,245,0.2)]">
+            <Clock className="w-12 h-12 text-[var(--accent-ink)] animate-pulse" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Quick review needed</h1>
-          <div className="space-y-2 text-white/60">
+          <h1 className="text-3xl font-bold text-[var(--fg)]">Quick review needed</h1>
+          <div className="space-y-2 text-[var(--fg-muted)]">
             <p>Thanks! Your ID needs a <strong>quick human check</strong>.</p>
             <p className="text-sm">This usually takes under a few hours — we&apos;ll email you the moment it&apos;s done.</p>
           </div>
-          <Link href="/profile" className="inline-block text-brand-purple hover:text-white transition-colors font-bold mt-4">
+          <Link href="/profile" className="inline-block text-[var(--accent-ink)] hover:text-[var(--fg)] transition-colors font-bold mt-4">
             Return to Profile
           </Link>
         </div>
@@ -188,17 +188,17 @@ export default function VerifyIDPage() {
 
   if (alreadySubmitted) {
     return (
-      <div className="min-h-screen bg-[#0B0B11] flex items-center justify-center p-6">
+      <div className="min-h-[70dvh] flex items-center justify-center p-6">
         <div className="text-center space-y-6 animate-in fade-in zoom-in duration-500 max-w-md">
-          <div className="w-24 h-24 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto border border-amber-500/20">
-            <Clock className="w-12 h-12 text-amber-400 animate-pulse" />
+          <div className="w-24 h-24 bg-[var(--warn-soft)] rounded-full flex items-center justify-center mx-auto border border-[var(--warn-line)]">
+            <Clock className="w-12 h-12 text-[var(--warn)] animate-pulse" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Under Review</h1>
-          <div className="space-y-2 text-white/60">
-            <p>Your Student ID has already been submitted and is <strong className="text-amber-400">pending review</strong>.</p>
+          <h1 className="text-3xl font-bold text-[var(--fg)]">Under Review</h1>
+          <div className="space-y-2 text-[var(--fg-muted)]">
+            <p>Your Student ID has already been submitted and is <strong className="text-[var(--warn)]">pending review</strong>.</p>
             <p className="text-sm">Our team will verify it shortly. Approvals typically take 1-12 hours.</p>
           </div>
-          <Link href="/profile" className="inline-block text-brand-purple hover:text-white transition-colors font-bold mt-4">
+          <Link href="/profile" className="inline-block text-[var(--accent-ink)] hover:text-[var(--fg)] transition-colors font-bold mt-4">
             Return to Profile
           </Link>
         </div>
@@ -207,32 +207,28 @@ export default function VerifyIDPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0B11] text-white p-6 flex flex-col items-center justify-center relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] left-[20%] w-[500px] h-[500px] bg-brand-purple/10 blur-[150px] rounded-full"></div>
-      </div>
-
-      <div className="w-full max-w-xl relative z-10">
-        <Link href="/profile" className="inline-flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors">
+    <div className="flex flex-col items-center text-[var(--fg)]">
+      <div className="w-full max-w-xl">
+        <Link href="/profile" className="inline-flex items-center gap-2 text-[var(--fg-muted)] hover:text-[var(--fg)] mb-8 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Profile
         </Link>
 
-        <div className="bg-[#121217] border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+        <div className="bg-[var(--surface)] border border-[var(--line)] rounded-3xl p-6 md:p-10 relative overflow-hidden">
           <div className="text-center mb-10">
-            <div className="w-16 h-16 bg-brand-purple/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-purple/20">
-              <ScanLine className="w-8 h-8 text-brand-purple" />
+            <div className="w-16 h-16 bg-[var(--accent-soft)] rounded-2xl flex items-center justify-center mx-auto mb-6 border border-[var(--accent-line)]">
+              <ScanLine className="w-8 h-8 text-[var(--accent-ink)]" />
             </div>
             <h1 className="text-3xl font-black mb-2">Verify you&apos;re a student</h1>
-            <p className="text-white/50">School, college or university — any student ID works.<br/>Most uploads are approved instantly. JPG or PNG.</p>
+            <p className="text-[var(--fg-muted)]">School, college or university — any student ID works.<br/>Most uploads are approved instantly. JPG or PNG.</p>
 
             {/* Not everyone has a card. Schools that never issue one, first-years
                 whose cards have not been printed, distance learners — students
                 wrote in asking what else they could send, and until the
                 verifier was broadened the answer was nothing. Saying so here is
                 the difference between that fix being usable and invisible. */}
-            <div className="mt-5 text-left rounded-2xl border border-white/[0.08] bg-[var(--card)] p-4">
-              <p className="text-[13px] font-semibold text-white mb-1.5">No student ID card?</p>
-              <p className="text-[12px] text-white/55 leading-relaxed">
+            <div className="mt-5 text-left rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
+              <p className="text-[13px] font-semibold text-[var(--fg)] mb-1.5">No student ID card?</p>
+              <p className="text-[12px] text-[var(--fg-muted)] leading-relaxed">
                 Any official document naming you and your institution works just as well — a
                 bonafide or study certificate, admission letter, fee receipt, recent marksheet,
                 or an exam hall ticket.
@@ -241,7 +237,7 @@ export default function VerifyIDPage() {
           </div>
 
           {reason && (
-            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-300 text-sm flex items-start gap-3">
+            <div className="mb-6 p-4 bg-[var(--warn-soft)] border border-[var(--warn-line)] rounded-2xl text-[var(--warn)] text-sm flex items-start gap-3">
               <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span><strong>Couldn&apos;t verify your last upload.</strong> {reason} Re-upload a clear, well-lit photo — the front of your ID, or one of the documents listed above.</span>
             </div>
@@ -259,10 +255,10 @@ export default function VerifyIDPage() {
             onClick={() => fileInputRef.current?.click()}
             className={`relative group cursor-pointer border-2 border-dashed rounded-3xl p-8 transition duration-300 min-h-[300px] flex flex-col items-center justify-center ${
               isDragging 
-                ? "border-brand-purple bg-brand-purple/10 scale-[1.02]" 
+                ? "border-[var(--accent)] bg-[var(--accent-soft)] scale-[1.02]" 
                 : preview 
-                  ? "border-brand-purple/50 bg-brand-purple/5" 
-                  : "border-white/10 hover:border-brand-purple/50 hover:bg-white/10"
+                  ? "border-[var(--accent-line)] bg-[var(--accent-soft)]" 
+                  : "border-[var(--line)] hover:border-[var(--accent-line)] hover:bg-[var(--chip-strong)]"
             }`}
           >
             <input 
@@ -285,30 +281,30 @@ export default function VerifyIDPage() {
             />
 
             {preview ? (
-              <div className="relative w-full h-full min-h-[250px] rounded-xl overflow-hidden shadow-lg">
+              <div className="relative w-full h-full min-h-[250px] rounded-xl overflow-hidden ">
                 <Image src={preview} alt="ID Preview" fill className="object-contain" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-brand-purple/20 to-transparent w-full h-[20%] animate-[scan_3s_linear_infinite] border-b border-brand-purple/50"></div>
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--accent-soft)] to-transparent w-full h-[20%] animate-[scan_3s_linear_infinite] border-b border-[var(--accent-line)]"></div>
                 <div className="absolute bottom-4 left-0 w-full text-center">
-                   <span className="bg-black/70 px-4 py-2 rounded-full text-xs font-bold text-white border border-white/10">Click to change</span>
+                   <span className="bg-black/70 px-4 py-2 rounded-full text-xs font-bold text-white border border-white/20">Click to change</span>
                 </div>
               </div>
             ) : (
               <div className="text-center space-y-4 pointer-events-none">
-                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-transform duration-300 ${isDragging ? "bg-brand-purple scale-110" : "bg-white/10 group-hover:scale-110"}`}>
-                  <UploadCloud className={`w-8 h-8 transition-colors ${isDragging ? "text-white" : "text-white/60 group-hover:text-brand-purple"}`} />
+                <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto transition-transform duration-300 ${isDragging ? "bg-[var(--accent)] scale-110" : "bg-[var(--chip-strong)] group-hover:scale-110"}`}>
+                  <UploadCloud className={`w-8 h-8 transition-colors ${isDragging ? "text-[var(--on-accent)]" : "text-[var(--fg-muted)] group-hover:text-[var(--accent-ink)]"}`} />
                 </div>
                 <div>
-                  <p className="text-lg font-bold text-white">
+                  <p className="text-lg font-bold text-[var(--fg)]">
                     {isDragging ? "Drop it here!" : "Click or Drag to Upload"}
                   </p>
-                  <p className="text-sm text-white/60 mt-1">Clear photo of front side (Max 5MB)</p>
+                  <p className="text-sm text-[var(--fg-muted)] mt-1">Clear photo of front side (Max 5MB)</p>
                 </div>
               </div>
             )}
           </div>
 
           {error && (
-             <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-medium flex items-center gap-2 justify-center">
+             <div className="mt-6 p-4 bg-[var(--bad-soft)] border border-[var(--bad-line)] rounded-xl text-[var(--bad)] text-sm font-medium flex items-center gap-2 justify-center">
                <AlertCircle className="w-4 h-4" /> {error}
              </div>
           )}
@@ -319,17 +315,17 @@ export default function VerifyIDPage() {
               disabled={!file || uploading}
               className="w-full relative group overflow-hidden rounded-xl p-[1px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-purple via-brand-pink to-brand-blue opacity-100 transition-opacity"></div>
-              <div className="relative bg-[#1a1a24] group-hover:bg-transparent transition-colors rounded-[10px] p-4 flex items-center justify-center gap-3">
+              <div className="absolute inset-0 bg-[var(--accent)] transition-[filter] group-hover:brightness-110"></div>
+              <div className="relative rounded-[10px] p-4 flex items-center justify-center gap-3">
                 {uploading ? (
                   <>
-                    <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    <span className="font-bold text-white">Uploading...</span>
+                    <Loader2 className="w-5 h-5 text-[var(--on-accent)] animate-spin" />
+                    <span className="font-bold text-[var(--on-accent)]">Uploading...</span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="w-5 h-5 text-white" />
-                    <span className="font-bold text-white">Submit for Review</span>
+                    <ShieldCheck className="w-5 h-5 text-[var(--on-accent)]" />
+                    <span className="font-bold text-[var(--on-accent)]">Submit for Review</span>
                   </>
                 )}
               </div>

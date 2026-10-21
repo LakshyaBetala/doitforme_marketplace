@@ -13,7 +13,7 @@ import {
   User, Mail, ShieldCheck, ShieldAlert, Star, Briefcase,
   Loader2, Wallet, Calendar, CheckCircle2,
   Phone, GraduationCap, Edit2, Check, X,
-  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock, Send, Camera, AtSign, XCircle
+  Zap, Save, AlertTriangle, Lock, Gift, Copy, Clock, Send, Camera, AtSign, XCircle, ArrowRight
 } from "lucide-react";
 import UniversitySelect, { COLLEGES } from "@/components/UniversitySelect";
 import TelegramLinkButton from "@/components/TelegramLinkButton";
@@ -570,7 +570,7 @@ export default function ProfilePage() {
               <AlertTriangle size={18} className="text-[var(--warn)] shrink-0 mt-0.5 md:mt-0" />
               <div>
                 <p className="text-sm font-bold text-[var(--warn)]">Profile incomplete</p>
-                <p className="text-xs text-[var(--warn)]/70 mt-0.5">Missing: {missingFields.join(", ")}. Complete your profile to post and apply.</p>
+                <p className="text-xs text-[var(--warn)] mt-0.5">Missing: {missingFields.join(", ")}. Complete your profile to post and apply.</p>
               </div>
             </div>
             <button onClick={startEditing} className="shrink-0 px-5 py-2 bg-[var(--warn-soft)] border border-[var(--warn-line)] text-[var(--warn)] hover:brightness-95 text-xs font-bold rounded-xl transition active:scale-95 whitespace-nowrap">
@@ -599,7 +599,7 @@ export default function ProfilePage() {
 
             {/* Cover Photo Area */}
             <div className="h-32 md:h-40 bg-[var(--card-elevated)] relative flex items-start justify-end p-5 md:p-6">
-              <div aria-hidden className="absolute -top-16 -left-10 w-64 h-64 rounded-full bg-[var(--brand-purple)]/[0.14] blur-[90px] pointer-events-none"></div>
+              <div aria-hidden className="absolute -top-16 -left-10 w-64 h-64 rounded-full bg-[var(--accent-soft)] blur-[90px] pointer-events-none"></div>
               
               {/* Edit Controls Top Right */}
               <div className="relative z-10 flex items-center gap-3">
@@ -665,11 +665,11 @@ export default function ProfilePage() {
                 {/* Badges */}
                 <div className="absolute bottom-2 right-2 z-20 flex gap-2">
                   {stats.isLightningResponder ? (
-                    <div className="bg-[var(--brand-purple)] text-[var(--fg)] p-2 rounded-full ring-2 ring-[var(--card)]" title="Lightning Responder">
+                    <div className="bg-[var(--accent)] text-[var(--on-accent)] p-2 rounded-full ring-2 ring-[var(--card)]" title="Lightning Responder">
                       <Zap className="w-4 h-4 fill-current" />
                     </div>
                   ) : profile.kyc_verified ? (
-                    <div className="bg-[var(--brand-purple)] text-[var(--fg)] p-2 rounded-full ring-2 ring-[var(--card)]" title="Verified student">
+                    <div className="bg-[var(--accent)] text-[var(--on-accent)] p-2 rounded-full ring-2 ring-[var(--card)]" title="Verified student">
                       <ShieldCheck className="w-4 h-4" />
                     </div>
                   ) : (
@@ -744,7 +744,7 @@ export default function ProfilePage() {
                     <h1 className="text-3xl md:text-4xl font-semibold text-[var(--fg)] tracking-tight leading-none flex items-center gap-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                       {displayName}
                       {stats.isLightningResponder && (
-                        <span className="px-2 py-0.5 bg-[var(--brand-purple)]/10 border border-[var(--brand-purple)]/25 text-[var(--brand-purple-soft)] text-[10px] font-medium tracking-wide rounded-md items-center gap-1 hidden md:flex">
+                        <span className="px-2 py-0.5 bg-[var(--accent-soft)] border border-[var(--accent-line)] text-[var(--brand-purple-soft)] text-[10px] font-medium tracking-wide rounded-md items-center gap-1 hidden md:flex">
                           <Zap size={10} fill="currentColor" /> Lightning
                         </span>
                       )}
@@ -935,19 +935,19 @@ export default function ProfilePage() {
             {/* Performance Stats */}
             <div className="rounded-[32px] border border-[var(--line)] bg-[var(--card)] p-6 md:p-8 flex items-center justify-between">
               <div className="space-y-1 flex-1">
-                <div className="text-[11px] uppercase tracking-[0.1em] text-[var(--fg)]/45 font-medium flex items-center gap-1.5 mb-2"><Briefcase size={12} className="text-[var(--fg)]/45"/> Total earned</div>
+                <div className="text-[11px] uppercase tracking-[0.1em] text-[var(--fg-faint)] font-medium flex items-center gap-1.5 mb-2"><Briefcase size={12} className="text-[var(--fg-faint)]"/> Total earned</div>
                 <div className="text-3xl font-semibold text-[var(--fg)] tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{stats.earnings}</div>
-                <div className="text-[11px] text-[var(--fg)]/45 mt-1">{stats.completed} {stats.completed === 1 ? "gig" : "gigs"} completed</div>
+                <div className="text-[11px] text-[var(--fg-faint)] mt-1">{stats.completed} {stats.completed === 1 ? "gig" : "gigs"} completed</div>
               </div>
 
               <div className="w-px h-16 bg-[var(--chip-strong)] mx-6"></div>
 
               <div className="space-y-1 flex-1">
-                <div className="text-[11px] uppercase tracking-[0.1em] text-[var(--fg)]/45 font-medium flex items-center gap-1.5 mb-2"><Star size={12} className="text-[var(--brand-purple-soft)]"/> Reputation</div>
+                <div className="text-[11px] uppercase tracking-[0.1em] text-[var(--fg-faint)] font-medium flex items-center gap-1.5 mb-2"><Star size={12} className="text-[var(--brand-purple-soft)]"/> Reputation</div>
                 <div className="flex items-baseline gap-2">
                   <div className="text-3xl font-semibold text-[var(--fg)] tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{(!profile.rating || profile.rating_count === 0) ? "NA" : Number(profile.rating).toFixed(1)}</div>
                 </div>
-                <div className="text-[11px] text-[var(--fg)]/45 mt-1">{profile.rating_count || 0} {profile.rating_count === 1 ? "review" : "reviews"}</div>
+                <div className="text-[11px] text-[var(--fg-faint)] mt-1">{profile.rating_count || 0} {profile.rating_count === 1 ? "review" : "reviews"}</div>
               </div>
             </div>
 
@@ -966,7 +966,7 @@ export default function ProfilePage() {
                           ? "Under review"
                           : "Verification pending"}
                     </h3>
-                    <p className="text-[var(--warn)]/60 text-xs mt-0.5">
+                    <p className="text-[var(--warn)] text-xs mt-0.5">
                       {profile.kyc_status === "rejected"
                         ? (profile.kyc_rejection_reason || "Please re-upload a clear photo of your student ID.")
                         : profile.kyc_status === "manual_review"
@@ -984,35 +984,36 @@ export default function ProfilePage() {
             )}
 
             {/* Worker Setup CTA */}
-            <div className="rounded-[32px] border border-[var(--line)] bg-[var(--card)] p-6 md:p-8 flex flex-col gap-6 shadow-xl relative overflow-hidden group">
+            <div className="card-lift rounded-[32px] border border-[var(--line)] bg-[var(--card)] p-6 md:p-8 flex flex-col gap-6 shadow-xl relative overflow-hidden group hover:border-[var(--accent-line)]">
               <div className="absolute top-0 right-0 w-40 h-40 bg-[var(--chip)] rounded-full blur-[50px] pointer-events-none transition"></div>
               
               <div className="flex items-start gap-4 relative z-10">
-                <div className="p-3 bg-[var(--chip)] rounded-xl shrink-0 border border-[var(--line)]">
-                  <Briefcase size={20} className="text-[var(--fg)]" />
+                <div className="p-3 bg-[var(--chip)] rounded-xl shrink-0 border border-[var(--line)] transition-all duration-300 group-hover:bg-[var(--accent-soft)] group-hover:border-[var(--accent-line)] group-hover:-rotate-6 group-hover:scale-110">
+                  <Briefcase size={20} className="text-[var(--fg)] transition-colors duration-300 group-hover:text-[var(--accent-ink)]" />
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-[var(--fg)] tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Worker profile</h3>
-                  <p className="text-[var(--fg)]/55 text-[13px] mt-1.5 leading-relaxed">Add specialized skills, portfolio links, and your resume to stand out to employers.</p>
+                  <p className="text-[var(--fg-muted)] text-[13px] mt-1.5 leading-relaxed">Add specialized skills, portfolio links, and your resume to stand out to employers.</p>
                 </div>
               </div>
               
-              <Link href="/profile/worker-setup" className="w-full py-3.5 bg-[var(--chip-strong)] border border-[var(--line)] text-[var(--fg)] font-bold rounded-xl text-center hover:bg-[var(--chip-strong)] active:scale-95 transition relative z-10 text-sm">
+              <Link href="/profile/worker-setup" className="group/cta w-full py-3.5 bg-[var(--chip-strong)] border border-[var(--line)] text-[var(--fg)] font-bold rounded-xl text-center inline-flex items-center justify-center gap-2 hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[var(--on-accent)] hover:shadow-[0_10px_24px_-10px_rgba(136,37,245,0.55)] active:scale-95 transition-all duration-200 relative z-10 text-sm">
                 {profile.skills && profile.skills.length > 0 ? "Edit Details" : "Setup Profile"}
+                <ArrowRight size={15} className="-ml-1 w-0 opacity-0 transition-all duration-200 group-hover/cta:ml-0 group-hover/cta:w-[15px] group-hover/cta:opacity-100" />
               </Link>
             </div>
 
             {/* Refer & Earn */}
             {referralCode && (
-              <div className="rounded-[32px] border border-[var(--line)] bg-[var(--card)] p-6 shadow-xl relative overflow-hidden group">
+              <div className="card-lift rounded-[32px] border border-[var(--line)] bg-[var(--card)] p-6 shadow-xl relative overflow-hidden group hover:border-[var(--accent-line)]">
                 <div className="flex items-center gap-3 mb-4 relative z-10">
-                  <div className="w-8 h-8 rounded-lg bg-[var(--brand-purple)]/10 flex items-center justify-center shrink-0 border border-[var(--brand-purple)]/20">
-                    <Gift size={14} className="text-[var(--brand-purple-soft)]" />
+                  <div className="w-8 h-8 rounded-lg bg-[var(--accent-soft)] flex items-center justify-center shrink-0 border border-[var(--accent-line)] transition-all duration-300 group-hover:bg-[var(--accent)] group-hover:scale-110 group-hover:-rotate-12">
+                    <Gift size={14} className="text-[var(--accent-ink)] transition-colors duration-300 group-hover:text-[var(--on-accent)]" />
                   </div>
                   <h3 className="text-sm font-semibold text-[var(--fg)] tracking-tight">Refer & earn</h3>
                 </div>
 
-                <p className="text-xs text-[var(--fg)]/55 mb-5 leading-relaxed relative z-10">Share your code with friends. You both get 25 reward points when they join.</p>
+                <p className="text-xs text-[var(--fg-muted)] mb-5 leading-relaxed relative z-10">Share your code with friends. You both get 25 reward points when they join.</p>
                 
                 <div className="flex flex-col sm:flex-row items-center gap-3 relative z-10">
                   <div className="flex-1 w-full flex items-center justify-between bg-[var(--chip)] border border-[var(--line)] rounded-xl px-4 py-3">
@@ -1039,7 +1040,7 @@ export default function ProfilePage() {
                         setTimeout(() => setCodeCopied(false), 2000);
                       }
                     }}
-                    className="w-full sm:w-auto px-6 py-3 bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-xs font-bold rounded-xl hover:bg-[var(--chip-strong)] transition active:scale-95 whitespace-nowrap"
+                    className="w-full sm:w-auto px-6 py-3 bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-xs font-bold rounded-xl hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:text-[var(--on-accent)] transition-all duration-200 active:scale-95 whitespace-nowrap"
                   >
                     Share
                   </button>
@@ -1048,17 +1049,11 @@ export default function ProfilePage() {
             )}
 
             {/* Telegram Notifications */}
-            <div className="rounded-[24px] border border-[#0088cc]/20 bg-[var(--card)] p-5 relative overflow-hidden shadow-xl">
-              <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full">
-                <div className="flex-1 w-full text-center sm:text-left">
-                  <h3 className="text-sm font-bold text-[var(--fg)] flex items-center justify-center sm:justify-start gap-2">
-                    <Send size={14} className="text-[#0088cc]" /> Telegram Sync
-                  </h3>
-                </div>
-                <div className="w-full sm:w-auto text-center sm:text-right">
-                  <TelegramLinkButton userId={profile.id} isLinked={!!profile.telegram_chat_id} />
-                </div>
-              </div>
+            <div className="rounded-[24px] border border-[var(--line)] bg-[var(--card)] p-5">
+              <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[var(--fg)]">
+                <Send size={14} className="text-[#0088cc]" /> Telegram alerts
+              </h3>
+              <TelegramLinkButton userId={profile.id} isLinked={!!profile.telegram_chat_id} />
             </div>
 
           </div>

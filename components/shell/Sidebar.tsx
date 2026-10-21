@@ -171,10 +171,10 @@ export default function Sidebar({
           aria-label={compact ? "Post a task" : undefined}
           className={[
             "mb-5 flex h-[50px] items-center justify-center gap-2 rounded-[13px] bg-white/[0.08] text-[14px] font-extrabold text-white",
-            "ring-1 ring-inset ring-white/15 transition hover:bg-white/[0.14] active:scale-[0.98]",
+            "group ring-1 ring-inset ring-white/15 transition hover:bg-white/[0.14] active:scale-[0.98]",
           ].join(" ")}
         >
-          <Plus size={19} strokeWidth={2.6} className="text-[var(--w-orange)]" />
+          <Plus size={19} strokeWidth={2.6} className="text-[var(--w-orange)] transition-transform duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:rotate-180 motion-reduce:transition-none" />
           {!compact && "Post a task"}
         </Link>
 

@@ -44,6 +44,13 @@ body {
 
   /* --- MOBILE OPTIMIZATION 1: OVERFLOW CONTROL --- */
   overflow-x: hidden;
+  /* `hidden` on one axis forces the other to `auto`, which turned html AND body
+     into scroll containers. Body never actually scrolls, so every `position:
+     sticky` descendant stuck to a container that does not move — the rail, both
+     top bars and the apply bar all scrolled away with the page. `clip` cuts the
+     overflow the same way without creating a scroll container. The `hidden`
+     line above stays as the fallback for browsers without `clip` (Safari < 16). */
+  overflow-x: clip;
   width: 100%;
   position: relative;
 
@@ -497,4 +504,72 @@ html {
 .workspace button,
 .workspace a {
   -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------------------------------------
+    SMOOTHNESS PASS
+   ---------------------------------------
+   Four small things that, together, are the difference between "a page that
+   changes" and "an app that responds": colour changes ease instead of snapping,
+   a pressed button gives a little, text fields settle into focus, and dialogs
+   arrive rather than appear.
+
+   Colour transitions go through :where() so they carry zero specificity and
+   any component that sets its own `transition-*` utility still wins. The press
+   uses the standalone `scale` property, not `transform`, so it cannot clobber
+   the translate/rotate a Tailwind utility already put on the same element. */
+/* :where(.workspace) keeps the whole selector at zero specificity */
+:where(.workspace) :where(a, button, [role="button"], summary) {
+  transition-property: background-color, border-color, color, box-shadow, opacity, filter;
+  transition-duration: 160ms;
+  transition-timing-function: var(--ease-out);
+}
+/* same zero-specificity trick */
+:where(.workspace) :where(input, textarea, select) {
+  transition: border-color 160ms var(--ease-out), box-shadow 200ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+.workspace button:not(:disabled):not([class*="active:scale"]):active,
+.workspace [role="button"]:not([class*="active:scale"]):active {
+  scale: 0.97;
+}
+.workspace ::selection {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
+/* Dialogs: the scrim fades, the panel rises a few pixels. Put .modal-overlay on
+   the fixed backdrop; its first child is the panel. */
+@keyframes modal-scrim { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.modal-overlay {
+  animation: modal-scrim 180ms var(--ease-out) backwards;
+}
+.modal-overlay > * {
+  animation: modal-rise 260ms var(--ease-out) backwards;
+}
+
+/* Rows that arrive in a list, one after another. Set --i on each row. */
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+.row-in {
+  animation: row-in 320ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-overlay > *,
+  .row-in {
+    animation: none !important;
+  }
+  .workspace button:not(:disabled):active,
+  .workspace [role="button"]:active {
+    scale: 1;
+  }
 }

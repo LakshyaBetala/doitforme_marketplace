@@ -176,7 +176,7 @@ export default function LandingPage() {
       </AnimatePresence>
 
       {/* ============ NAV ============ */}
-      <header className={`sticky top-0 z-50 transition-colors duration-300 ${scrolled ? "bg-[var(--background)]/80 backdrop-blur-xl border-b border-white/[0.06]" : ""}`}>
+      <header className={`sticky top-0 z-50 transition-colors duration-300 ${scrolled ? "bg-[var(--background)] backdrop-blur-xl border-b border-white/[0.06]" : ""}`}>
         <div className="max-w-6xl mx-auto px-5 md:px-8 h-[72px] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="relative w-9 h-9"><Image src="/logo.png" alt="DoItForMe" fill className="object-contain" priority /></div>
@@ -198,15 +198,15 @@ export default function LandingPage() {
 
       {/* ============ HERO ============ */}
       <section className="relative max-w-6xl mx-auto px-5 md:px-8 pt-12 md:pt-20 pb-16">
-        <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[var(--brand-purple)]/[0.14] blur-[120px]" />
+        <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-[420px] w-[720px] -translate-x-1/2 rounded-full bg-[var(--accent-soft)] blur-[120px]" />
         <div className="relative grid lg:grid-cols-[1fr_400px] gap-10 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={loadingComplete ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] mb-7">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand-purple-soft)]" />
               <span className="text-[12px] font-semibold tracking-[0.08em] text-white/70 uppercase">India&apos;s verified student workforce</span>
             </div>
-            <h1 className="font-bold tracking-tight leading-[1.04] text-[clamp(2.5rem,5.6vw,4.2rem)]" style={display}>
-              Get any task done by<br className="hidden sm:block" /> <span className="text-[var(--brand-purple-soft)]">trusted students.</span>
+            <h1 className="font-bold tracking-tight leading-[1.04] text-[clamp(2.5rem,5.2vw,4rem)]" style={{ ...display, textWrap: "balance" }}>
+              Get any task done by <span className="text-[var(--brand-purple-soft)]">trusted students.</span>
             </h1>
             <p className="mt-6 text-[19px] text-white/70 leading-relaxed max-w-xl">
               Need a logo, a poster, a price list or some data typed up? Tell us what you need. A verified student does it, and you pay only when you are happy.
@@ -222,19 +222,19 @@ export default function LandingPage() {
           </motion.div>
 
           {/* Sloth with a soft radial glow, no hard shape */}
-          <motion.div initial={{ opacity: 0 }} animate={loadingComplete ? { opacity: 1 } : {}} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:flex items-center justify-center h-[380px]">
-            <div className="absolute w-72 h-72 rounded-full bg-[var(--brand-purple)]/20 blur-[90px]" />
-            <div className="relative w-[260px] h-[340px] animate-[float_9s_ease-in-out_infinite]">
+          <motion.div initial={{ opacity: 0 }} animate={loadingComplete ? { opacity: 1 } : {}} transition={{ duration: 0.8, delay: 0.2 }} className="relative hidden lg:flex items-center justify-center h-[440px]">
+            <div className="absolute w-72 h-72 rounded-full bg-[var(--accent-soft)] blur-[90px]" />
+            <div className="relative w-[330px] h-[430px] animate-[float_9s_ease-in-out_infinite]">
               <Image src="/slohero.png" alt="DoItForMe sloth" fill className="object-contain" priority />
             </div>
           </motion.div>
         </div>
 
         {/* Promises, as things you can see rather than a line of grey text. */}
-        <Stagger immediate delay={0.35} className="relative mt-14 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stagger immediate delay={0.35} className="relative mt-14 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {PROMISES.map(([Icon, text]) => (
             <StaggerItem key={text} className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-purple)]/15 text-[var(--brand-purple-soft)]">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--brand-purple-soft)]">
                 <Icon size={21} />
               </span>
               <span className="text-[14.5px] font-semibold leading-snug text-white/85">{text}</span>
@@ -253,7 +253,7 @@ export default function LandingPage() {
           {STEPS.map(([Icon, t, d], i) => (
             <StaggerItem key={t} className="card-lift relative rounded-3xl border border-white/[0.08] bg-[var(--card)] p-8">
               <span className="absolute right-6 top-5 text-[64px] font-bold leading-none text-white/[0.05]" style={display}>{i + 1}</span>
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--brand-purple)]/15 text-[var(--brand-purple-soft)]">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-[var(--brand-purple-soft)]">
                 <Icon size={26} />
               </span>
               <h3 className="font-bold text-[21px] mt-6" style={display}>{t}</h3>
@@ -290,12 +290,12 @@ export default function LandingPage() {
             {/* Open-ended capstone: signals the list is examples, not a closed menu */}
             <StaggerItem>
             <button onClick={goHire} className="group w-full text-left flex items-center gap-6 py-6 border-b border-white/[0.07] transition-[padding] duration-300 hover:pl-3">
-              <span className="text-[13px] font-mono text-[var(--brand-purple-soft)]/60 tabular-nums">08</span>
+              <span className="text-[13px] font-mono text-[var(--accent-ink)] tabular-nums">08</span>
               <div className="flex-1">
                 <h3 className="text-xl md:text-[22px] font-semibold tracking-tight text-[var(--brand-purple-soft)]" style={display}>Anything else</h3>
                 <p className="text-white/55 text-[15.5px] mt-1">Describe your task, name a budget, and the right student finds it.</p>
               </div>
-              <ArrowUpRight size={22} className="text-[var(--brand-purple-soft)]/70 group-hover:text-[var(--brand-purple-soft)] transition-colors shrink-0" />
+              <ArrowUpRight size={22} className="text-[var(--accent-ink)] group-hover:text-[var(--brand-purple-soft)] transition-colors shrink-0" />
             </button>
             </StaggerItem>
           </Stagger>
@@ -305,7 +305,7 @@ export default function LandingPage() {
       {/* ============ MANAGED (subtle tinted card) ============ */}
       <Reveal as="section" className="relative max-w-6xl mx-auto px-5 md:px-8 py-10">
         <div className="relative rounded-3xl border border-white/[0.08] bg-[var(--card)] overflow-hidden grid md:grid-cols-[1.4fr_0.6fr] items-center">
-          <div className="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-[var(--brand-purple)]/[0.12] blur-[100px] pointer-events-none" />
+          <div className="absolute -left-20 -top-20 w-72 h-72 rounded-full bg-[var(--accent-soft)] blur-[100px] pointer-events-none" />
           <div className="relative p-8 md:p-12">
             <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">DoItForMe Managed</p>
             <h2 className="font-bold tracking-tight leading-[1.06] text-[clamp(1.8rem,3.2vw,2.6rem)]" style={display}>
@@ -364,7 +364,7 @@ export default function LandingPage() {
             </div>
             <p className="text-white/45 mt-4 leading-relaxed text-[14px]">Students helping students. Tutoring, decks, design, coding help. The lowest fee, payment protected end to end.</p>
           </div>
-          <div className="rounded-2xl border border-[var(--brand-purple)]/25 bg-[var(--card)] p-8">
+          <div className="rounded-2xl border border-[var(--accent-line)] bg-[var(--card)] p-8">
             <div className="flex items-baseline gap-3">
               <span className="text-4xl font-bold tracking-tight text-[var(--brand-purple-soft)]" style={display}>10%</span>
               <h3 className="text-[15px] font-medium text-white/70">Business work</h3>
@@ -391,7 +391,7 @@ export default function LandingPage() {
                 ["Money is released", "Only on your approval does the payout go out."],
               ].map(([t, d], i) => (
                 <div key={t} className="relative flex gap-5 pb-8 last:pb-0">
-                  <span className="relative z-10 shrink-0 w-8 h-8 rounded-full bg-[var(--card-elevated)] border border-[var(--brand-purple)]/40 flex items-center justify-center text-[12px] font-semibold text-[var(--brand-purple-soft)]">{i + 1}</span>
+                  <span className="relative z-10 shrink-0 w-8 h-8 rounded-full bg-[var(--card-elevated)] border border-[var(--accent-line)] flex items-center justify-center text-[12px] font-semibold text-[var(--brand-purple-soft)]">{i + 1}</span>
                   <div className="pt-1">
                     <h4 className="font-semibold text-[16px]" style={display}>{t}</h4>
                     <p className="text-white/45 text-[14px] mt-0.5 leading-relaxed">{d}</p>
@@ -434,7 +434,7 @@ export default function LandingPage() {
       {/* ============ FINAL CTA (asymmetric, mascot-forward) ============ */}
       <section className="relative max-w-6xl mx-auto px-5 md:px-8 pb-20">
         <div className="relative rounded-3xl border border-white/[0.08] bg-[var(--card)] overflow-hidden grid md:grid-cols-[1.25fr_0.75fr] items-center">
-          <div className="absolute -left-16 -bottom-24 w-80 h-80 rounded-full bg-[var(--brand-purple)]/[0.16] blur-[110px] pointer-events-none" />
+          <div className="absolute -left-16 -bottom-24 w-80 h-80 rounded-full bg-[var(--accent-soft)] blur-[110px] pointer-events-none" />
           <div className="relative p-9 md:p-14 order-2 md:order-1">
             <p className="text-[var(--brand-purple-soft)] text-[12px] font-semibold tracking-[0.12em] uppercase mb-4">Get started</p>
             <h2 className="font-bold tracking-tight leading-[1.04] text-[clamp(2rem,4vw,3.1rem)]" style={display}>
@@ -449,7 +449,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="relative h-56 md:h-[340px] flex items-end justify-center order-1 md:order-2">
-            <div className="absolute w-56 h-56 rounded-full bg-[var(--brand-purple)]/[0.10] blur-[80px]" />
+            <div className="absolute w-56 h-56 rounded-full bg-[var(--accent-soft)] blur-[80px]" />
             <div className="relative w-52 h-52 md:w-72 md:h-72 animate-[float_8s_ease-in-out_infinite] -mb-1">
               <Image src="/hisloth.png" alt="DoItForMe sloth waving" fill className="object-contain" sizes="(max-width:768px) 208px, 288px" />
             </div>

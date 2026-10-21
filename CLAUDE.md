@@ -35,6 +35,9 @@ Path alias: `@/*` → repo root (see [tsconfig.json](tsconfig.json)).
 - **Hosted on Cloudflare Workers** via [@opennextjs/cloudflare](https://opennext.js.org/cloudflare). [CLOUDFLARE.md](CLOUDFLARE.md) is the deploy runbook; [wrangler.jsonc](wrangler.jsonc) configures the app Worker and [workers/cron/](workers/cron/) is a second Worker holding the scheduled jobs. Wrangler needs **Node 22+** (developed on 24.20.0) — it hard-refuses on Node 20.
 - **Cross-domain redirects:** `/marketplace/*` and `/store/*` are permanently redirected to `marketforme.in` in [next.config.ts](next.config.ts). The marketplace lives on a sister domain; this repo only hosts the hustle/gig side.
 
+- **Tailwind opacity modifiers do nothing on `var()` colours.** `bg-[var(--accent)]/10`, `text-[var(--fg)]/50`, `border-[var(--brand-purple)]/25` compile to *no CSS at all* (Tailwind cannot split a `var()` into channels), so the element silently loses its tint, border or dimming. ~70 of them shipped this way. Use the matching token instead: `--accent-soft` / `--accent-line` / `--chip` / `--fg-muted` / `--fg-faint` / `--ok-soft` / `--warn-soft` / `--bad-soft` (see the surface contract at the end of [app/globals.css](app/globals.css)). Hex colours (`bg-[#2d1937]/55`) still take modifiers.
+- **Signed-in pages live inside the shell.** `/gig`, `/post`, `/chat` and `/verify-id` use `WorkspaceLayout` with `lenient` (frame, but no onboarding/company redirects, so a shared task link still opens for a half-registered student and a company account gets the page bare). Write their markup against the semantic tokens (`--fg`, `--surface`, `--line`, `--accent`…), never raw dark hex, so it is correct in cream and in the dark fallback.
+
 ## Architecture
 
 ### Supabase client hierarchy

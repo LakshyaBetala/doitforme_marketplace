@@ -17,7 +17,7 @@ import { test, expect } from "@playwright/test";
  * inside the real shell, which is where a layout break would show up anyway.
  */
 
-const PUBLIC_PAGES = ["/", "/login", "/pricing", "/terms", "/maintenance"];
+const PUBLIC_PAGES = ["/", "/login", "/pricing", "/terms", "/maintenance", "/talent", "/about", "/contact"];
 const SHELL_PAGES = ["/design-lab", "/shell-preview"];
 
 const WIDTHS = [

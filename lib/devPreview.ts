@@ -93,7 +93,7 @@ const FIXTURES: Record<string, any[]> = {
   gigs: [
     // Posted by me — four different things needing four different actions.
     {
-      id: "g-applicants", poster_id: ME, title: "Design a poster for our fest",
+      id: "g-applicants", description: "Poster for the annual fest, A3 print size, plus an Instagram square cut-down. Theme and copy supplied.", deadline: ahead(96), poster_id: ME, title: "Design a poster for our fest",
       price: 1200, status: "open", payment_status: null, listing_type: "HUSTLE",
       assigned_worker_id: null, source_service_id: null, is_physical: false,
       location: "Remote", created_at: ago(5), applications: [{ count: 4 }],
@@ -117,7 +117,7 @@ const FIXTURES: Record<string, any[]> = {
 
     // Assigned to me — one to deliver, one already waiting on the client.
     {
-      id: "g-deliver", poster_id: OTHER, title: "Build a React dashboard for internal analytics",
+      id: "g-deliver", description: "Internal analytics dashboard in React with role-based views. Spec and API docs shared after hiring.", deadline: ahead(96), poster_id: OTHER, title: "Build a React dashboard for internal analytics",
       price: 18000, status: "assigned", payment_status: "HELD", listing_type: "COMPANY_TASK",
       assigned_worker_id: ME, source_service_id: null, is_physical: true,
       location: "Bengaluru", created_at: ago(48), company_id: "c-nexa",
@@ -143,14 +143,14 @@ const FIXTURES: Record<string, any[]> = {
 
     // The open board — what /feed and the Overview glance render.
     {
-      id: "g-open-1", poster_id: OTHER, title: "Need a logo for a student startup",
+      id: "g-open-1", description: "Need a clean, modern logo for a campus startup that sells refurbished laptops to students.\n\nWhat I need:\n- 2 concepts, then one refined round\n- SVG + PNG exports\n- A one-page colour and font guide\n\nShare a few samples of previous logo work when you apply.", deadline: ahead(96), poster_id: OTHER, title: "Need a logo for a student startup",
       price: 1500, status: "open", payment_status: null, listing_type: "HUSTLE",
       assigned_worker_id: null, source_service_id: null, is_physical: false,
       location: "Remote", created_at: ago(2), applications: [{ count: 2 }],
       users: { college: "VIT Chennai" },
     },
     {
-      id: "g-open-2", poster_id: OTHER, title: "Flutter developer for a 2-week sprint",
+      id: "g-open-2", description: "Two-week sprint building the booking flow of our Flutter app: onboarding, slot picker and a payment screen wired to a stubbed API. Designs are ready in Figma.", deadline: ahead(96), poster_id: OTHER, title: "Flutter developer for a 2-week sprint",
       price: 25000, status: "open", payment_status: null, listing_type: "COMPANY_TASK",
       assigned_worker_id: null, source_service_id: null, is_physical: true,
       is_featured: true, location: "Chennai", created_at: ago(9), company_id: "c-nexa",

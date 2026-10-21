@@ -88,7 +88,7 @@ export default function PayoutsPage() {
 
                 {/* HERO CARD: SHADOW WALLET */}
                 <div className="bg-[var(--card)] border border-[var(--line)] rounded-3xl p-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--brand-purple)]/[0.12] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--accent-soft)] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
                     <div className="relative z-10">
                         <div className="flex items-center gap-2 text-[var(--brand-purple-soft)] mb-2">

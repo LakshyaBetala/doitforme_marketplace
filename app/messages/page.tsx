@@ -829,7 +829,7 @@ function MessagesContent() {
                                         const inReview = activeGigStatus === 'delivered' || activeGigStatus === 'SUBMITTED';
                                         const hired = activeGigStatus === 'assigned';
                                         const label = activeGigStatus === 'completed' ? 'Completed' : inReview ? 'In Review' : hired ? 'Hired' : activeGigStatus;
-                                        const tone = activeGigStatus === 'completed' ? 'text-[var(--brand-purple-soft)] bg-[var(--brand-purple)]/10'
+                                        const tone = activeGigStatus === 'completed' ? 'text-[var(--brand-purple-soft)] bg-[var(--accent-soft)]'
                                             : inReview ? 'text-[var(--accent-ink)] bg-[var(--accent-soft)]'
                                             : hired ? 'text-[var(--fg-muted)] bg-[var(--chip-strong)]'
                                             : 'text-[var(--fg-faint)]';
@@ -843,7 +843,7 @@ function MessagesContent() {
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => approveWork(activeConversation.gig_id)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--brand-purple)] hover:brightness-110 text-[var(--fg)] rounded-xl text-xs font-bold transition active:scale-95 whitespace-nowrap"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] rounded-xl text-xs font-bold transition active:scale-95 whitespace-nowrap"
                                     >
                                         <CheckCircle2 size={13} />
                                         Approve
@@ -893,7 +893,7 @@ function MessagesContent() {
 
                         {/* OFFER MODAL */}
                         {isOfferModalOpen && (
-                            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                            <div className="modal-overlay fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                                 <div className="bg-[var(--surface-2)] border border-[var(--line)] rounded-3xl p-6 w-full max-w-sm relative">
                                     <button
                                         onClick={() => setIsOfferModalOpen(false)}
@@ -961,7 +961,7 @@ function MessagesContent() {
                                                         </button>
                                                         <button
                                                             onClick={() => acceptOffer(msg)}
-                                                            className="py-2 rounded-lg bg-[var(--brand-purple)] text-[var(--fg)] text-xs font-semibold hover:brightness-110 transition"
+                                                            className="py-2 rounded-lg bg-[var(--accent)] text-[var(--on-accent)] text-xs font-semibold hover:brightness-110 transition"
                                                         >
                                                             Accept
                                                         </button>
@@ -977,7 +977,7 @@ function MessagesContent() {
                                                     <AlertTriangle size={16} className={isMe ? 'text-[var(--fg)]' : 'text-[var(--bad)]'} />
                                                     {isMe ? "You arrived at the location" : "User arrived at the location"}
                                                 </div>
-                                                <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-[var(--fg-muted)]' : 'text-[var(--bad)]/50'}`}>
+                                                <div className={`text-[9px] mt-1 text-right font-mono ${isMe ? 'text-[var(--fg-muted)]' : 'text-[var(--bad)]'}`}>
                                                     {formatSmartDate(msg.created_at)}
                                                 </div>
                                             </div>
@@ -1025,7 +1025,7 @@ function MessagesContent() {
                                         <div
                                             role="status"
                                             aria-live="polite"
-                                            className="mb-2 px-3 py-2 flex items-center justify-center gap-2 text-xs text-[var(--warn)]/90 bg-[var(--warn-soft)] border border-[var(--warn-line)] rounded-xl"
+                                            className="mb-2 px-3 py-2 flex items-center justify-center gap-2 text-xs text-[var(--warn)] bg-[var(--warn-soft)] border border-[var(--warn-line)] rounded-xl"
                                         >
                                             Reconnecting — new messages will appear once you&apos;re back online.
                                         </div>
@@ -1060,7 +1060,7 @@ function MessagesContent() {
                                             className="flex-1 bg-[var(--surface-2)] text-[var(--fg)] text-sm px-4 py-2.5 rounded-full border border-[var(--line)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-soft)] outline-none transition disabled:opacity-50 min-w-0"
                                         />
                                         <button type="submit" disabled={!newMessage.trim() || isLimitReached || isSending}
-                                            className="p-2.5 bg-[var(--brand-purple)] hover:brightness-110 transition disabled:opacity-50 text-[var(--fg)] rounded-full shrink-0"
+                                            className="p-2.5 bg-[var(--accent)] hover:brightness-110 transition disabled:opacity-50 text-[var(--on-accent)] rounded-full shrink-0"
                                         >
                                             <Send size={16} className="translate-x-0.5" />
                                         </button>
@@ -1119,7 +1119,7 @@ function MessagesContent() {
 
             {/* Dispute Modal — Poster only, for remote hustle gigs */}
             {showDisputeModal && activeConversation && (
-                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                <div className="modal-overlay fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-[var(--surface-2)] border border-[var(--bad-line)] rounded-3xl p-6 max-w-sm w-full animate-in zoom-in-95 relative shadow-[0_0_40px_rgba(239,68,68,0.15)]">
                         <button onClick={() => setShowDisputeModal(false)} className="absolute top-4 right-4 text-[var(--fg-muted)] hover:text-[var(--fg)]">
                             <X size={18} />
@@ -1149,12 +1149,12 @@ function MessagesContent() {
 
             {/* Request Changes Modal — Poster only, lightweight revision loop */}
             {showChangesModal && activeConversation && (
-                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+                <div className="modal-overlay fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
                     <div className="bg-[var(--surface-2)] border border-[var(--line)] rounded-3xl p-6 max-w-sm w-full animate-in zoom-in-95 relative">
                         <button onClick={() => setShowChangesModal(false)} className="absolute top-4 right-4 text-[var(--fg-muted)] hover:text-[var(--fg)]">
                             <X size={18} />
                         </button>
-                        <div className="w-10 h-10 bg-[var(--brand-purple)]/15 text-[var(--brand-purple-soft)] rounded-full flex items-center justify-center mx-auto mb-3">
+                        <div className="w-10 h-10 bg-[var(--accent-soft)] text-[var(--brand-purple-soft)] rounded-full flex items-center justify-center mx-auto mb-3">
                             <RotateCcw className="w-5 h-5" />
                         </div>
                         <h3 className="text-lg font-bold text-center mb-1">Request changes</h3>
@@ -1163,12 +1163,12 @@ function MessagesContent() {
                             value={changesFeedback}
                             onChange={(e) => setChangesFeedback(e.target.value)}
                             placeholder="What needs to change? Be specific so they can fix it fast…"
-                            className="w-full bg-[var(--chip)] text-[var(--fg)] text-sm p-4 rounded-xl border border-[var(--line)] focus:border-[var(--brand-purple)]/50 outline-none resize-none h-28 mb-4"
+                            className="w-full bg-[var(--chip)] text-[var(--fg)] text-sm p-4 rounded-xl border border-[var(--line)] focus:border-[var(--accent-line)] outline-none resize-none h-28 mb-4"
                         />
                         <button
                             onClick={() => requestChanges(activeConversation.gig_id)}
                             disabled={isRequestingChanges || !changesFeedback.trim()}
-                            className="w-full py-3 bg-[var(--brand-purple)] hover:brightness-110 text-[var(--fg)] font-bold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
+                            className="w-full py-3 bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] font-bold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
                         >
                             {isRequestingChanges ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
                             Send back for changes

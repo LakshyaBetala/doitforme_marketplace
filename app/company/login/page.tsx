@@ -63,7 +63,7 @@ export default function CompanyLoginPage() {
     setTimeout(() => router.push("/company/dashboard"), 1000);
   };
 
-  const inputClass = "w-full p-4 bg-[var(--card)] border border-white/[0.08] text-white focus:outline-none focus:border-[var(--brand-purple)] focus:ring-1 focus:ring-[var(--brand-purple)]/30 transition text-sm font-medium rounded-xl placeholder:text-white/30";
+  const inputClass = "w-full p-4 bg-[var(--card)] border border-white/[0.08] text-white focus:outline-none focus:border-[var(--brand-purple)] focus:ring-1 focus:ring-[var(--accent-line)] transition text-sm font-medium rounded-xl placeholder:text-white/30";
   const labelClass = "block text-[11px] font-medium text-white/55 uppercase tracking-[0.1em] mb-2";
 
   const FEATURES = [
@@ -77,7 +77,7 @@ export default function CompanyLoginPage() {
 
       {/* Left Side: Editorial Pitch */}
       <div className="hidden lg:flex w-1/2 flex-col justify-between p-16 border-r border-white/[0.08] bg-[var(--card)] relative overflow-hidden">
-        <div aria-hidden className="absolute -top-24 -left-16 w-96 h-96 rounded-full bg-[var(--brand-purple)]/[0.14] blur-[120px] pointer-events-none" />
+        <div aria-hidden className="absolute -top-24 -left-16 w-96 h-96 rounded-full bg-[var(--accent-soft)] blur-[120px] pointer-events-none" />
 
         <div className="z-10 relative">
             <div className="flex items-center gap-3 mb-12">
@@ -155,7 +155,7 @@ export default function CompanyLoginPage() {
             </div>
 
             {message && (
-              <div className={`p-4 rounded-xl border text-sm font-medium text-center ${messageType === "success" ? "bg-[var(--brand-purple)]/10 border-[var(--brand-purple)]/30 text-[var(--brand-purple-soft)]" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
+              <div className={`p-4 rounded-xl border text-sm font-medium text-center ${messageType === "success" ? "bg-[var(--accent-soft)] border-[var(--accent-line)] text-[var(--brand-purple-soft)]" : "bg-red-500/10 border-red-500/30 text-red-400"}`}>
                 {message}
               </div>
             )}

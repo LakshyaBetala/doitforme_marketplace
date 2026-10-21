@@ -1,16 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, Zap, Users, ShieldCheck } from "lucide-react";
+import { Zap, Users, ShieldCheck } from "lucide-react";
 
+import PublicHeader from "@/components/home/PublicHeader";
 export default function AboutContent() {
   return (
-    <div className="min-h-screen bg-[#0B0B11] text-white p-6 md:p-12 selection:bg-[#8825F5] selection:text-white">
-      <Link href="/" className="flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors w-fit group">
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Home
-      </Link>
+    <div className="min-h-screen bg-[var(--background)] text-white selection:bg-[#8825F5] selection:text-white">
+      <PublicHeader />
 
-      <div className="max-w-4xl mx-auto space-y-16">
+      <div className="max-w-4xl mx-auto space-y-16 px-6 py-10 md:py-14">
         
         {/* Hero Section */}
         <div className="text-center space-y-6">

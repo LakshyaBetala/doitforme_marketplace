@@ -299,10 +299,10 @@ export default function Overview() {
                       <Icon size={22} />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[16.5px] font-bold text-[var(--w-ink-strong)]">
+                      <span className="block sm:truncate text-[16.5px] font-bold text-[var(--w-ink-strong)]">
                         {a.label}
                       </span>
-                      <span className="block truncate text-[14.5px] text-[var(--w-muted)]">{a.detail}</span>
+                      <span className="block line-clamp-2 sm:line-clamp-1 text-[14.5px] text-[var(--w-muted)]">{a.detail}</span>
                     </span>
                     <span
                       className={`hidden shrink-0 rounded-full px-3 py-1 text-[12.5px] font-bold sm:block ${

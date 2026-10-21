@@ -25,13 +25,39 @@ const manrope = Manrope({
  * to their own portal, and a profile missing phone or college goes to
  * onboarding (which is what catches Google OAuth users who skipped the form).
  */
-export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+export default async function WorkspaceLayout({
+  children,
+  lenient = false,
+  barePadded = false,
+}: {
+  children: React.ReactNode;
+  /**
+   * For pages a person can legitimately open before they are fully set up — a
+   * shared /gig link, the post flow. They get the frame, but not the redirects:
+   * a half-registered student is not bounced to onboarding for looking at a
+   * task, and a company account is not thrown out of a page it was linked to.
+   * Companies get the page bare, because the student rail is not their nav.
+   */
+  lenient?: boolean;
+  /** Give the frameless fallback the page padding the shell would have supplied. */
+  barePadded?: boolean;
+}) {
+  const bare = (node: React.ReactNode) =>
+    barePadded ? (
+      <div className="mx-auto w-full max-w-[1180px] px-4 pb-24 pt-6 sm:px-6 lg:px-10">{node}</div>
+    ) : (
+      <>{node}</>
+    );
   const supabase = await createServer();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) {
+    // proxy.ts already gates /gig and /post with a ?next, so only /chat gets here.
+    if (lenient) return bare(children);
+    redirect("/login");
+  }
 
   const { data: profile } = await supabase
     .from("users")
@@ -39,8 +65,12 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
     .eq("id", user.id)
     .single();
 
-  if (profile?.role === "COMPANY") redirect("/company/dashboard");
-  if (!profile || !profile.phone || !profile.college) redirect("/onboarding");
+  if (lenient) {
+    if (!profile || profile.role === "COMPANY") return bare(children);
+  } else {
+    if (profile?.role === "COMPANY") redirect("/company/dashboard");
+    if (!profile || !profile.phone || !profile.college) redirect("/onboarding");
+  }
 
   return (
     <div className={`${dmSans.className} ${manrope.variable}`}>

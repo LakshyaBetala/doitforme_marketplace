@@ -214,9 +214,6 @@ export default function OnboardingPage() {
 
                     {/* College */}
                     <div className="relative">
-                        <label className="block text-[10px] font-bold text-white/60 mb-1 ml-1 uppercase tracking-wider">
-                            Select University
-                        </label>
                         <div className="relative z-50">
                             <UniversitySelect value={college} onChange={setCollege} />
                         </div>

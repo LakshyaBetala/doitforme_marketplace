@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { ArrowLeft, Package, Clock, CheckCircle2, AlertTriangle, Mail } from "lucide-react";
 
+import PublicHeader from "@/components/home/PublicHeader";
 // Razorpay's website review checks for a shipping/delivery policy on every
 // merchant site, including service businesses. DoItForMe ships no goods, so
 // this page states the service-delivery equivalent: what is delivered, when,
 // how it is handed over, and what happens when a deadline is missed.
 export default function ShippingContent() {
   return (
-    <div className="min-h-[100dvh] bg-[var(--background)] text-white selection:bg-[var(--brand-purple)] selection:text-white relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-[var(--background)] text-white selection:bg-[var(--brand-purple)] selection:text-white relative overflow-x-clip">
+      <PublicHeader />
 
       {/* Background Ambience */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-[var(--brand-purple)]/10 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-10%] right-[20%] w-[500px] h-[500px] bg-[var(--brand-blue)]/10 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] bg-[var(--accent-soft)] blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-10%] right-[20%] w-[500px] h-[500px] bg-[var(--chip)] blur-[120px] rounded-full"></div>
       </div>
 
       <div className="max-w-4xl mx-auto px-6 py-12 md:py-20 relative z-10">
@@ -43,7 +45,7 @@ export default function ShippingContent() {
           {/* 1. What is delivered */}
           <section className="p-8 rounded-3xl bg-white/[0.04] border border-[var(--card-border)] hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[var(--brand-purple)]/10 flex items-center justify-center text-[#C9A9FF] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-[var(--accent-soft)] flex items-center justify-center text-[#C9A9FF] shrink-0">
                 <Package size={20} />
               </div>
               <div className="space-y-3">
@@ -64,7 +66,7 @@ export default function ShippingContent() {
           {/* 2. Timelines */}
           <section className="p-8 rounded-3xl bg-white/[0.04] border border-[var(--card-border)] hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[var(--brand-blue)]/10 flex items-center justify-center text-[var(--brand-blue)] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-[var(--chip)] flex items-center justify-center text-[var(--brand-blue)] shrink-0">
                 <Clock size={20} />
               </div>
               <div className="space-y-3">
@@ -86,7 +88,7 @@ export default function ShippingContent() {
           {/* 3. Confirmation */}
           <section className="p-8 rounded-3xl bg-white/[0.04] border border-[var(--card-border)] hover:border-white/10 transition-colors">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-[var(--brand-purple)]/10 flex items-center justify-center text-[#C9A9FF] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-[var(--accent-soft)] flex items-center justify-center text-[#C9A9FF] shrink-0">
                 <CheckCircle2 size={20} />
               </div>
               <div className="space-y-3">

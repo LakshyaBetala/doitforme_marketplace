@@ -1,20 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Check, Shield, Building2, GraduationCap } from "lucide-react";
+import { Check, Shield, Building2, GraduationCap } from "lucide-react";
 
+import PublicHeader from "@/components/home/PublicHeader";
 // Every number on this page comes from lib/fees.ts (PLATFORM_FEES 5%/10%,
 // GATEWAY_FEE_RATE 2%). Publishing a rate we do not charge is both a chargeback
 // magnet and a payment-aggregator compliance problem, so when the dial in
 // lib/fees.ts moves, this page moves with it.
 export default function PricingContent() {
    return (
-      <div className="min-h-[100dvh] bg-[var(--background)] text-white p-6 md:p-12 selection:bg-[var(--brand-purple)] selection:text-white">
-         <Link href="/" className="flex items-center gap-2 text-white/50 hover:text-white mb-8 transition-colors w-fit group">
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Home
-         </Link>
+      <div className="min-h-[100dvh] bg-[var(--background)] text-white selection:bg-[var(--brand-purple)] selection:text-white">
+      <PublicHeader />
 
-         <div className="max-w-6xl mx-auto text-center space-y-12">
+         <div className="max-w-6xl mx-auto text-center space-y-12 px-6 py-10 md:py-14">
 
             <div>
                <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4" style={{ fontFamily: 'var(--font-space-grotesk), Inter, sans-serif', letterSpacing: '-0.02em' }}>Simple, transparent pricing</h1>
@@ -24,7 +23,7 @@ export default function PricingContent() {
             <div className="grid md:grid-cols-3 gap-6 text-left">
 
                {/* Student listings — the core product, so it carries the accent */}
-               <div className="relative bg-[var(--card-elevated)] rounded-2xl p-7 border border-[var(--brand-purple)]/30 flex flex-col">
+               <div className="relative bg-[var(--card-elevated)] rounded-2xl p-7 border border-[var(--accent-line)] flex flex-col">
                   <div className="absolute top-0 right-0 bg-[var(--brand-purple)] text-white text-[10px] font-semibold tracking-wider px-3 py-1 rounded-bl-xl rounded-tr-2xl">
                      STUDENTS
                   </div>

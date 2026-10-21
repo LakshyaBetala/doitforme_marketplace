@@ -268,8 +268,8 @@ export default function PostGigWizard() {
   // --- RENDERERS ---
   if (userLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B0B11]">
-        <Loader2 className="w-10 h-10 text-brand-purple animate-spin" />
+      <div className="flex min-h-[60dvh] items-center justify-center">
+        <Loader2 className="w-10 h-10 text-[var(--accent-ink)] animate-spin" />
       </div>
     );
   }
@@ -282,21 +282,15 @@ export default function PostGigWizard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B0B11] text-white pt-12 pb-24 px-4 selection:bg-brand-purple flex justify-center backdrop-blur-3xl relative overflow-hidden">
+    <div className="flex justify-center text-[var(--fg)]">
 
-      {/* BACKGROUND BLOBS */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-brand-purple/10 blur-[150px] rounded-full opacity-30 will-change-transform transform translate-z-0"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-brand-blue/10 blur-[150px] rounded-full opacity-30 will-change-transform transform translate-z-0"></div>
-      </div>
-
-      <div className="w-full max-w-2xl relative z-10 space-y-8 animate-in fade-in duration-500">
+      <div className="w-full max-w-2xl space-y-8">
 
         {/* PROGRESS HEADER */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={() => step > 1 ? prevStep() : router.back()}
-            className="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors px-3 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.16]"
+            className="inline-flex items-center gap-2 text-[var(--fg-muted)] hover:text-[var(--fg)] transition-colors px-3 h-10 rounded-xl bg-[var(--chip)] border border-[var(--line)] hover:border-[var(--line-strong)]"
             aria-label="Back"
           >
             <ChevronLeft size={18} />
@@ -306,23 +300,23 @@ export default function PostGigWizard() {
           <div className="flex flex-col items-center">
             <div className="flex gap-2">
               {[1, 2, 3].map(i => (
-                <div key={i} className={`h-1.5 w-14 rounded-full transition-colors duration-300 ${i === step ? 'bg-[#8825F5]' : i < step ? 'bg-white' : 'bg-white/10'}`} />
+                <div key={i} className={`h-1.5 w-14 rounded-full transition-colors duration-300 ${i === step ? 'bg-[var(--accent)]' : i < step ? 'bg-[var(--fg)]' : 'bg-[var(--chip-strong)]'}`} />
               ))}
             </div>
-            <span className="mt-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#C9A9FF]">
+            <span className="mt-2 text-[10px] font-bold text-[var(--accent-ink)]">
               {postKind === "SERVICE" ? "Offer a service" : "Post a hustle"}
             </span>
           </div>
 
           <div className="w-[72px] sm:w-[88px] flex items-center justify-end">
-            <span className="text-[10px] uppercase tracking-widest text-white/50">
+            <span className="text-[10px] text-[var(--fg-muted)]">
               {step === 3 ? "Final" : `Step ${step} / 3`}
             </span>
           </div>
         </div>
 
         {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-500 text-sm font-medium animate-in slide-in-from-top-4">
+          <div className="p-4 bg-[var(--bad-soft)] border border-[var(--bad-line)] rounded-2xl text-[var(--bad)] text-sm font-medium animate-in slide-in-from-top-4">
             {error}
           </div>
         )}
@@ -331,10 +325,10 @@ export default function PostGigWizard() {
         {step === 1 && (
           <div className="space-y-8 animate-in fade-in-50 slide-in-from-right-8 duration-300">
             <div className="space-y-2 mb-8">
-              <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <h1 className="text-[32px] font-extrabold leading-[1.1] tracking-[-0.03em]" style={{ fontFamily: "var(--font-display), 'Space Grotesk', sans-serif" }}>
                 What are you posting?
               </h1>
-              <p className="text-sm text-white/60">
+              <p className="text-sm text-[var(--fg-muted)]">
                 These go to two different places, so pick the one that fits.
               </p>
             </div>
@@ -362,16 +356,16 @@ export default function PostGigWizard() {
                     onClick={() => setPostKind(opt.kind)}
                     className={`text-left p-6 rounded-2xl border transition active:scale-[0.99] ${
                       active
-                        ? "bg-[var(--brand-purple)]/[0.12] border-[var(--brand-purple)]/50"
-                        : "bg-[var(--card)] border-white/[0.08] hover:border-white/20"
+                        ? "bg-[var(--accent-soft)] border-[var(--accent)]"
+                        : "bg-[var(--surface)] border-[var(--line)] hover:border-[var(--line-strong)]"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <h2 className="text-lg font-semibold">{opt.title}</h2>
-                      {active && <CheckCircle2 size={20} className="text-[#C9A9FF] shrink-0 mt-0.5" />}
+                      {active && <CheckCircle2 size={20} className="text-[var(--accent-ink)] shrink-0 mt-0.5" />}
                     </div>
-                    <p className="text-sm text-white/60 mt-2 leading-relaxed">{opt.blurb}</p>
-                    <p className="text-xs text-white/40 mt-3 italic">{opt.example}</p>
+                    <p className="text-sm text-[var(--fg-muted)] mt-2 leading-relaxed">{opt.blurb}</p>
+                    <p className="text-xs text-[var(--fg-faint)] mt-3 italic">{opt.example}</p>
                   </button>
                 );
               })}
@@ -384,8 +378,8 @@ export default function PostGigWizard() {
           step === 2 && (
             <div className="space-y-8 animate-in fade-in-50 slide-in-from-right-8 duration-300">
               <div className="space-y-2 mb-8">
-                <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>The details</h1>
-                <p className="text-white/50 text-sm">
+                <h1 className="text-[32px] font-extrabold leading-[1.1] tracking-[-0.03em]" style={{ fontFamily: "var(--font-display), 'Space Grotesk', sans-serif" }}>The details</h1>
+                <p className="text-[var(--fg-muted)] text-sm">
                   {listingType === 'HUSTLE'
                     ? 'Tell exactly what task you need done.'
                     : marketType === 'SELL' ? 'Describe the item you are selling.'
@@ -397,10 +391,10 @@ export default function PostGigWizard() {
 
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Category</label>
+                  <label className="block text-xs font-bold text-[var(--fg-muted)] ">Category</label>
                   <div className="flex flex-wrap gap-2">
                     {availableCategories.map((cat) => (
-                      <button key={cat} onClick={() => store.setField('category', cat)} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${category === cat ? "bg-white text-black shadow-lg" : "bg-[#1A1A24] border border-white/5 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                      <button key={cat} onClick={() => store.setField('category', cat)} className={`px-4 py-2 rounded-xl text-xs font-bold transition ${category === cat ? "bg-[var(--accent)] text-[var(--on-accent)] " : "bg-[var(--surface)] border border-[var(--line)] text-[var(--fg-muted)] hover:bg-[var(--chip-strong)] hover:text-[var(--fg)]"}`}>
                         {cat}
                       </button>
                     ))}
@@ -408,63 +402,63 @@ export default function PostGigWizard() {
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Title</label>
+                  <label className="block text-xs font-bold text-[var(--fg-muted)] ">Title</label>
                   <input value={title} onChange={(e) => store.setField('title', e.target.value)} maxLength={80} placeholder={
                     listingType === 'HUSTLE' ? "e.g. Need help with a lab report" :
                       marketType === 'SELL' ? "e.g. iPad Pro (M1) 128GB - Like New" :
                         marketType === 'RENT' ? "e.g. Scientific Calculator for Rent" :
                           marketType === 'REQUEST' ? "e.g. Looking to buy/borrow an umbrella" :
                             "e.g. Needed quickly"
-                  } className="w-full bg-[#1A1A24] border border-white/10 rounded-2xl p-5 text-lg text-white outline-none focus:border-brand-purple/50 transition shadow-inner" />
+                  } className="w-full bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 text-lg text-[var(--fg)] outline-none focus:border-[var(--accent-line)] transition " />
                 </div>
 
                 <div className="space-y-3">
-                  <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Description</label>
-                  <textarea value={description} onChange={(e) => store.setField('description', e.target.value)} maxLength={500} placeholder="Clear details…" className="w-full bg-[#1A1A24] border border-white/10 rounded-2xl p-5 text-base text-white outline-none focus:border-brand-purple/50 transition resize-none h-32 shadow-inner" />
+                  <label className="block text-xs font-bold text-[var(--fg-muted)] ">Description</label>
+                  <textarea value={description} onChange={(e) => store.setField('description', e.target.value)} maxLength={500} placeholder="Clear details…" className="w-full bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-5 text-base text-[var(--fg)] outline-none focus:border-[var(--accent-line)] transition resize-none h-32 " />
                 </div>
 
                 {listingType === "HUSTLE" && (category === "Tech & Engineering" || category === "Academics & Gigs") && (
                   <div className="space-y-3">
-                    <label className="text-xs font-bold text-white/60 uppercase tracking-widest flex items-center gap-2">GitHub <span className="text-[10px] text-white/60 normal-case">(Optional)</span></label>
-                    <input type="url" value={githubLink} onChange={(e) => store.setField('githubLink', e.target.value)} placeholder="https://github.com/…" className="w-full bg-[#1A1A24] border border-white/10 rounded-2xl p-4 text-sm text-white outline-none focus:border-brand-purple/50" />
+                    <label className="text-xs font-bold text-[var(--fg-muted)] flex items-center gap-2">GitHub <span className="text-[10px] text-[var(--fg-muted)] normal-case">(Optional)</span></label>
+                    <input type="url" value={githubLink} onChange={(e) => store.setField('githubLink', e.target.value)} placeholder="https://github.com/…" className="w-full bg-[var(--surface)] border border-[var(--line)] rounded-2xl p-4 text-sm text-[var(--fg)] outline-none focus:border-[var(--accent-line)]" />
                   </div>
                 )}
 
                 {/* Item Condition Removed */}
 
                 {/* IMAGES UPLOAD (In Step 2) */}
-                <div className="space-y-3 pt-6 border-t border-white/5">
-                  <label className="text-xs font-bold text-white/60 uppercase tracking-widest flex justify-between items-center">
+                <div className="space-y-3 pt-6 border-t border-[var(--line)]">
+                  <label className="text-xs font-bold text-[var(--fg-muted)] flex justify-between items-center">
                     <span>Media & Attachments</span>
-                    <span className="text-white/60 normal-case">{images.length}/5 max</span>
+                    <span className="text-[var(--fg-muted)] normal-case">{images.length}/5 max</span>
                   </label>
                   <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                     <input ref={fileInputRef} type="file" accept={listingType === 'HUSTLE' ? "image/*, .pdf, .doc, .docx" : "image/*"} multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
                     <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
 
-                    <button onClick={() => fileInputRef.current?.click()} className="w-24 h-24 rounded-2xl border-2 border-dashed border-white/10 hover:border-white/30 hover:bg-white/10 flex flex-col items-center justify-center shrink-0 transition group">
-                      <ImageIcon className="w-6 h-6 text-white/60 group-hover:text-white mb-2" />
-                      <span className="text-[10px] text-white/60 group-hover:text-white font-bold uppercase tracking-widest">Gallery</span>
+                    <button onClick={() => fileInputRef.current?.click()} className="w-24 h-24 rounded-2xl border-2 border-dashed border-[var(--line)] hover:border-[var(--line-strong)] hover:bg-[var(--chip-strong)] flex flex-col items-center justify-center shrink-0 transition group">
+                      <ImageIcon className="w-6 h-6 text-[var(--fg-muted)] group-hover:text-[var(--fg)] mb-2" />
+                      <span className="text-[10px] text-[var(--fg-muted)] group-hover:text-[var(--fg)] font-bold ">Gallery</span>
                     </button>
 
-                    <button onClick={() => cameraInputRef.current?.click()} className="w-24 h-24 rounded-2xl border-2 border-dashed border-white/10 hover:border-brand-purple/40 hover:bg-brand-purple/10 flex flex-col items-center justify-center shrink-0 transition group">
-                      <Camera className="w-6 h-6 text-white/60 group-hover:text-brand-purple mb-2" />
-                      <span className="text-[10px] text-white/60 group-hover:text-brand-purple font-bold uppercase tracking-widest">Camera</span>
+                    <button onClick={() => cameraInputRef.current?.click()} className="w-24 h-24 rounded-2xl border-2 border-dashed border-[var(--line)] hover:border-[var(--accent-line)] hover:bg-[var(--accent-soft)] flex flex-col items-center justify-center shrink-0 transition group">
+                      <Camera className="w-6 h-6 text-[var(--fg-muted)] group-hover:text-[var(--accent-ink)] mb-2" />
+                      <span className="text-[10px] text-[var(--fg-muted)] group-hover:text-[var(--accent-ink)] font-bold ">Camera</span>
                     </button>
 
                     {imagePreviews.map((src, i) => {
                       const isImage = images[i]?.type.startsWith("image/");
                       return (
-                        <div key={i} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-white/10 shrink-0 group bg-[#1A1A24]">
+                        <div key={i} className="relative w-24 h-24 rounded-2xl overflow-hidden border border-[var(--line)] shrink-0 group bg-[var(--surface)]">
                           {isImage ? (
                             <Image src={src} alt="Preview" fill className="object-cover" />
                           ) : (
-                            <div className="flex flex-col items-center justify-center h-full p-2 text-center text-brand-purple">
+                            <div className="flex flex-col items-center justify-center h-full p-2 text-center text-[var(--accent-ink)]">
                               <FileText size={24} className="mb-1 opacity-80" />
-                              <span className="text-[8px] text-white/50 leading-tight truncate w-full">{images[i]?.name}</span>
+                              <span className="text-[8px] text-[var(--fg-muted)] leading-tight truncate w-full">{images[i]?.name}</span>
                             </div>
                           )}
-                          <button onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/80 backdrop-blur-md p-1.5 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-black scale-75 border border-white/10"><X size={12} /></button>
+                          <button onClick={() => removeImage(i)} className="absolute top-1 right-1 bg-black/80 backdrop-blur-md p-1.5 rounded-full text-[var(--fg)] opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-black scale-75 border border-[var(--line)]"><X size={12} /></button>
                         </div>
                       );
                     })}
@@ -479,8 +473,8 @@ export default function PostGigWizard() {
           step === 3 && (
             <div className="space-y-8 animate-in fade-in-50 slide-in-from-right-8 duration-300">
               <div className="space-y-2 mb-8">
-                <h1 className="text-3xl font-semibold tracking-tight" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Logistics & price</h1>
-                <p className="text-white/50 text-sm">Where, when, and how much.</p>
+                <h1 className="text-[32px] font-extrabold leading-[1.1] tracking-[-0.03em]" style={{ fontFamily: "var(--font-display), 'Space Grotesk', sans-serif" }}>Logistics & price</h1>
+                <p className="text-[var(--fg-muted)] text-sm">Where, when, and how much.</p>
               </div>
 
               {/* What happens after you post.
@@ -489,8 +483,8 @@ export default function PostGigWizard() {
                   poster is about to go through. Stated before they commit,
                   because 85% of applicants never got a reply and much of that
                   is posters never being told they were expected to respond. */}
-              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-4 sm:p-5">
-                <p className="text-[13px] font-semibold text-white mb-4">
+              <div className="rounded-2xl border border-[var(--line)] bg-[var(--chip)] p-4 sm:p-5">
+                <p className="text-[13px] font-semibold text-[var(--fg)] mb-4">
                   {postKind === "SERVICE" ? "How you get paid" : "What happens next"}
                 </p>
                 <ol className="space-y-3.5">
@@ -507,37 +501,37 @@ export default function PostGigWizard() {
                       ]
                   ).map(([title, body], i) => (
                     <li key={title} className="flex items-start gap-3">
-                      <span className="w-5 h-5 shrink-0 rounded-full bg-white/[0.06] border border-white/[0.1] text-[10px] font-semibold text-white/70 flex items-center justify-center tabular-nums mt-0.5">
+                      <span className="w-5 h-5 shrink-0 rounded-full bg-[var(--chip)] border border-[var(--line)] text-[10px] font-semibold text-[var(--fg-muted)] flex items-center justify-center tabular-nums mt-0.5">
                         {i + 1}
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-[13px] font-medium text-white leading-snug">{title}</span>
-                        <span className="block text-[12px] text-white/55 leading-relaxed mt-0.5">{body}</span>
+                        <span className="block text-[13px] font-medium text-[var(--fg)] leading-snug">{title}</span>
+                        <span className="block text-[12px] text-[var(--fg-muted)] leading-relaxed mt-0.5">{body}</span>
                       </span>
                     </li>
                   ))}
                 </ol>
-                <p className="text-[11px] text-white/40 mt-4 pt-3 border-t border-white/[0.06] leading-relaxed">
+                <p className="text-[11px] text-[var(--fg-faint)] mt-4 pt-3 border-t border-[var(--line)] leading-relaxed">
                   Keep payment on doitforme. Paying outside means no protection if the work never arrives.
                 </p>
               </div>
 
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">
+                  <label className="block text-xs font-bold text-[var(--fg-muted)] ">
                     Budget
                   </label>
                   <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl text-white/60 font-mono">₹</span>
-                    <input type="number" onWheel={blurOnWheel} inputMode="decimal" value={price} onChange={(e) => store.setField('price', e.target.value)} placeholder="500" style={{ fontFamily: "'Space Grotesk', sans-serif" }} className="w-full bg-[var(--card-elevated)] border border-white/10 rounded-2xl py-5 pl-12 pr-5 text-4xl font-semibold text-white outline-none focus:border-[var(--brand-purple)]/50 transition tracking-tight" />
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-xl text-[var(--fg-muted)] font-mono">₹</span>
+                    <input type="number" onWheel={blurOnWheel} inputMode="decimal" value={price} onChange={(e) => store.setField('price', e.target.value)} placeholder="500" style={{ fontFamily: "var(--font-display), 'Space Grotesk', sans-serif" }} className="w-full bg-[var(--card-elevated)] border border-[var(--line)] rounded-2xl py-5 pl-12 pr-5 text-4xl font-semibold text-[var(--fg)] outline-none focus:border-[var(--accent-line)] transition tracking-tight" />
                   </div>
                 </div>
 
-                  <div className="space-y-3 border-t border-white/5 pt-6">
-                    <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Format</label>
+                  <div className="space-y-3 border-t border-[var(--line)] pt-6">
+                    <label className="block text-xs font-bold text-[var(--fg-muted)] ">Format</label>
                     <div className="flex flex-wrap gap-2">
                       {["Online", "Offline (Same Campus)", "Outside Campus"].map((m) => (
-                        <button key={m} onClick={() => store.setField('mode', m)} className={`px-4 py-3 rounded-xl text-sm font-bold transition ${mode === m ? "bg-white text-black shadow-lg" : "bg-[#1A1A24] border border-white/10 text-white/60 hover:bg-white/10 hover:text-white"}`}>
+                        <button key={m} onClick={() => store.setField('mode', m)} className={`px-4 py-3 rounded-xl text-sm font-bold transition ${mode === m ? "bg-[var(--accent)] text-[var(--on-accent)] " : "bg-[var(--surface)] border border-[var(--line)] text-[var(--fg-muted)] hover:bg-[var(--chip-strong)] hover:text-[var(--fg)]"}`}>
                           {m.includes("Offline") ? "On Campus" : m}
                         </button>
                       ))}
@@ -545,11 +539,11 @@ export default function PostGigWizard() {
                   </div>
 
                 <div className="space-y-3 pt-2">
-                  <label className="block text-xs font-bold text-white/60 uppercase tracking-widest">Location</label>
+                  <label className="block text-xs font-bold text-[var(--fg-muted)] ">Location</label>
                   <div className="relative">
-                    <MapPin size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 z-10" />
+                    <MapPin size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--fg-muted)] z-10" />
                     <input
-                      className={`w-full bg-[#1A1A24] border border-white/10 rounded-2xl py-5 pl-12 pr-12 text-lg text-white placeholder:text-white/60 focus:outline-none focus:border-brand-purple/50 transition shadow-inner ${mode === "Online" ? "opacity-30 cursor-not-allowed" : ""}`}
+                      className={`w-full bg-[var(--surface)] border border-[var(--line)] rounded-2xl py-5 pl-12 pr-12 text-lg text-[var(--fg)] placeholder:text-[var(--fg-muted)] focus:outline-none focus:border-[var(--accent-line)] transition ${mode === "Online" ? "opacity-30 cursor-not-allowed" : ""}`}
                       value={location}
                       onChange={(e) => {
                         store.setField('location', e.target.value);
@@ -594,7 +588,7 @@ export default function PostGigWizard() {
                             }
                           );
                         }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-brand-purple transition-colors z-10 p-1"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--fg-muted)] hover:text-[var(--accent-ink)] transition-colors z-10 p-1"
                         title="Pin My Location"
                       >
                         <MapPin className="w-5 h-5" />
@@ -603,7 +597,7 @@ export default function PostGigWizard() {
 
                     {/* Autocomplete Dropdown */}
                     {showLocationSuggestions && location.length > 0 && !(listingType === "HUSTLE" && mode === "Online") && (
-                      <div className="absolute top-[72px] left-0 w-full bg-[#1A1A24] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden max-h-48 overflow-y-auto">
+                      <div className="absolute top-[72px] left-0 w-full bg-[var(--surface)] border border-[var(--line)] rounded-xl z-50 overflow-hidden max-h-48 overflow-y-auto">
                         {[
                           "Tech Park Java", "Tech Park Main Entrance",
                           "Central Library Gate 1", "Central Library Reading Room",
@@ -617,12 +611,12 @@ export default function PostGigWizard() {
                               key={match}
                               type="button"
                               onClick={() => { store.setField('location', match); setShowLocationSuggestions(false); }}
-                              className="w-full text-left px-4 py-3 text-sm text-white/80 hover:bg-white/10 flex items-center gap-2"
+                              className="w-full text-left px-4 py-3 text-sm text-[var(--fg-muted)] hover:bg-[var(--chip-strong)] flex items-center gap-2"
                             >
-                              <MapPin size={14} className="text-white/60" /> {match}
+                              <MapPin size={14} className="text-[var(--fg-muted)]" /> {match}
                             </button>
                           ))}
-                        <div className="px-4 py-2 text-[10px] text-white/50 border-t border-white/5 bg-black/20">
+                        <div className="px-4 py-2 text-[10px] text-[var(--fg-muted)] border-t border-[var(--line)] bg-black/20">
                           Press Enter to use "{location}"
                         </div>
                       </div>
@@ -637,7 +631,7 @@ export default function PostGigWizard() {
                           key={spot}
                           type="button"
                           onClick={() => { store.setField('location', spot); setShowLocationSuggestions(false); }}
-                          className="px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs text-white/60 hover:bg-brand-purple/20 hover:border-brand-purple/50 hover:text-white transition"
+                          className="px-3 py-1 rounded-full bg-[var(--chip-strong)] border border-[var(--line)] text-xs text-[var(--fg-muted)] hover:bg-[var(--accent-soft)] hover:border-[var(--accent-line)] hover:text-[var(--fg)] transition"
                         >
                           {spot}
                         </button>
@@ -654,12 +648,12 @@ export default function PostGigWizard() {
                 {listingType === "HUSTLE" && (
                   <div className="pr-1 pt-4 grid grid-cols-2 gap-4">
                     <div className="space-y-3">
-                      <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest">Date</label>
-                      <input type="date" style={{ colorScheme: "dark" }} value={deadlineDate} min={minDate} onChange={(e) => store.setField('deadlineDate', e.target.value)} className="w-full bg-[#1A1A24] border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-white/40 transition" />
+                      <label className="block text-[10px] font-bold text-[var(--fg-muted)] ">Date</label>
+                      <input type="date" value={deadlineDate} min={minDate} onChange={(e) => store.setField('deadlineDate', e.target.value)} className="w-full bg-[var(--surface)] border border-[var(--line)] rounded-xl p-4 text-sm text-[var(--fg)] outline-none focus:border-[var(--line-strong)] transition" />
                     </div>
                     <div className="space-y-3">
-                      <label className="block text-[10px] font-bold text-white/60 uppercase tracking-widest">Time</label>
-                      <input type="time" style={{ colorScheme: "dark" }} value={deadlineTime} onChange={(e) => store.setField('deadlineTime', e.target.value)} className="w-full bg-[#1A1A24] border border-white/10 rounded-xl p-4 text-sm text-white outline-none focus:border-white/40 transition" />
+                      <label className="block text-[10px] font-bold text-[var(--fg-muted)] ">Time</label>
+                      <input type="time" value={deadlineTime} onChange={(e) => store.setField('deadlineTime', e.target.value)} className="w-full bg-[var(--surface)] border border-[var(--line)] rounded-xl p-4 text-sm text-[var(--fg)] outline-none focus:border-[var(--line-strong)] transition" />
                     </div>
                   </div>
                 )}
@@ -679,11 +673,11 @@ export default function PostGigWizard() {
         {/* BOTTOM ACTION BAR */}
         <div className="pt-8 flex justify-end">
           {step < 3 ? (
-            <button onClick={nextStep} className="w-full md:w-auto px-10 py-5 rounded-2xl bg-white hover:bg-zinc-200 text-black font-semibold text-lg transition flex justify-center items-center gap-2 active:scale-95 group">
+            <button onClick={nextStep} className="w-full md:w-auto px-10 py-5 rounded-2xl bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] font-semibold text-lg transition flex justify-center items-center gap-2 active:scale-95 group">
               Continue <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
             </button>
           ) : (
-            <button onClick={handleSubmit} disabled={loading} className={`w-full px-10 py-5 rounded-2xl font-semibold text-lg transition flex justify-center items-center gap-2 active:scale-95 ${loading ? 'bg-zinc-800 text-white/50' : 'bg-[var(--brand-purple)] hover:brightness-110 text-white group'}`}>
+            <button onClick={handleSubmit} disabled={loading} className={`w-full px-10 py-5 rounded-2xl font-semibold text-lg transition flex justify-center items-center gap-2 active:scale-95 ${loading ? 'bg-[var(--chip-strong)] text-[var(--fg-muted)]' : 'bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] group'}`}>
               {loading ? <Loader2 className="animate-spin w-6 h-6" /> : <><CheckCircle size={22} /> {
                 listingType === 'HUSTLE' ? 'Post Hustle' :
                   marketType === 'SELL' ? 'List Item for Sale' :

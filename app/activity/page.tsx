@@ -425,9 +425,9 @@ export default function ActivityHubPage() {
 
   return (
     <div className="pb-2">
-      <div className="max-w-[760px] space-y-6">
+      <div className="space-y-6">
 
-        <div className="flex items-center justify-between">
+        <div className="flex max-w-[760px] items-center justify-between">
           <div>
             <p className="text-[13px] font-bold text-[var(--w-faint)]">EVERYTHING IN FLIGHT</p>
             <h1
@@ -443,12 +443,12 @@ export default function ActivityHubPage() {
         </div>
 
         {/* TABS */}
-        <div className="flex bg-[var(--chip)] p-1.5 rounded-2xl relative border border-[var(--line)]">
-           <button onClick={() => setActiveTab("HIRING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${activeTab === 'HIRING' ? 'text-[var(--fg)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg)]'}`}>
+        <div className="relative flex max-w-[760px] rounded-2xl border border-[var(--line)] bg-[var(--chip)] p-1.5">
+           <button onClick={() => setActiveTab("HIRING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${activeTab === 'HIRING' ? 'text-[var(--on-accent)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg)]'}`}>
              {activeTab === 'HIRING' && <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--accent)] rounded-xl shadow-lg shadow-[var(--accent-soft)] -z-10" />}
              <Briefcase size={14} className="z-10" /> <span className="z-10">Outsourcing ({hiringGigs.length})</span>
            </button>
-           <button onClick={() => setActiveTab("WORKING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${activeTab === 'WORKING' ? 'text-[var(--fg)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg)]'}`}>
+           <button onClick={() => setActiveTab("WORKING")} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm relative z-10 transition-colors ${activeTab === 'WORKING' ? 'text-[var(--on-accent)]' : 'text-[var(--fg-muted)] hover:text-[var(--fg)]'}`}>
              {activeTab === 'WORKING' && <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--accent)] rounded-xl shadow-lg shadow-[var(--accent-soft)] -z-10" />}
              <Zap size={14} className="z-10" /> <span className="z-10">Hustling ({workingGigs.length})</span>
            </button>
@@ -457,14 +457,14 @@ export default function ActivityHubPage() {
         {/* Shown only once there's live, funded work — the one moment the ask is
             obviously in the user's own interest rather than a settings chore. */}
         {hasLiveWork && (
-          <StayReachable telegramLinked={telegramLinked} className="mb-4" />
+          <StayReachable telegramLinked={telegramLinked} className="mb-4 max-w-[760px]" />
         )}
 
-        {/* LIST */}
-        <div className="space-y-4">
+        {/* LIST — two columns on wide screens, so the page uses the width it is given. */}
+        <div className="grid max-w-[760px] gap-4">
            {activeTab === "HIRING" && hiringGigs.length === 0 && (
              <div className="rounded-3xl border border-[var(--line)] bg-[var(--card)] p-10 text-center">
-               <div className="mx-auto w-14 h-14 rounded-2xl bg-[var(--accent)]/15 border border-[var(--accent-line)] flex items-center justify-center mb-4">
+               <div className="mx-auto w-14 h-14 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent-line)] flex items-center justify-center mb-4">
                  <Briefcase size={22} className="text-[var(--accent-ink)]" />
                </div>
                <h3 className="text-base font-semibold text-[var(--fg)] mb-1">Nothing posted yet</h3>
@@ -474,7 +474,7 @@ export default function ActivityHubPage() {
            )}
            {activeTab === "WORKING" && workingGigs.length === 0 && (
              <div className="rounded-3xl border border-[var(--line)] bg-[var(--card)] p-10 text-center">
-               <div className="mx-auto w-14 h-14 rounded-2xl bg-[var(--accent)]/15 border border-[var(--accent-line)] flex items-center justify-center mb-4">
+               <div className="mx-auto w-14 h-14 rounded-2xl bg-[var(--accent-soft)] border border-[var(--accent-line)] flex items-center justify-center mb-4">
                  <Zap size={22} className="text-[var(--accent-ink)]" />
                </div>
                <h3 className="text-base font-semibold text-[var(--fg)] mb-1">No active hustles</h3>
@@ -483,8 +483,8 @@ export default function ActivityHubPage() {
              </div>
            )}
 
-           {activeTab === "HIRING" && hiringGigs.map(gig => (
-             <div key={gig.id} className="bg-[var(--surface-2)] border border-[var(--line)] rounded-2xl p-5 hover:border-[var(--accent-line)] transition group">
+           {activeTab === "HIRING" && hiringGigs.map((gig, idx) => (
+             <div key={gig.id} style={{ "--i": idx } as React.CSSProperties} className="row-in card-lift bg-[var(--surface-2)] border border-[var(--line)] rounded-2xl p-5 hover:border-[var(--accent-line)] group">
                 <div className="flex justify-between items-start mb-3">
                    <div className="flex-1 min-w-0">
                      <h3 className="font-bold text-[var(--fg)] text-lg truncate">{gig.title}</h3>
@@ -536,7 +536,7 @@ export default function ActivityHubPage() {
                       onClick={() => router.push(`/gig/${gig.id}/applicants`)}
                       className={`w-full mb-3 p-3 rounded-xl border text-left flex items-center justify-between gap-3 transition ${
                         applicantCount > 0
-                          ? "bg-[var(--brand-purple)]/[0.08] border-[var(--brand-purple)]/25 hover:bg-[var(--brand-purple)]/[0.14]"
+                          ? "bg-[var(--accent-soft)] border-[var(--accent-line)] hover:bg-[var(--accent-soft)]"
                           : "bg-[var(--chip)] border-[var(--line)] cursor-default"
                       }`}
                       disabled={applicantCount === 0}
@@ -553,7 +553,7 @@ export default function ActivityHubPage() {
                               ? "No applicants yet"
                               : `${applicantCount} ${applicantCount === 1 ? "person has" : "people have"} applied`}
                         </span>
-                        <span className="block text-xs text-[var(--fg)]/55 mt-0.5">
+                        <span className="block text-xs text-[var(--fg-muted)] mt-0.5">
                           {isDirectRequest
                             ? "Agree the details, then pay to start. Your money is held until you approve the work."
                             : applicantCount === 0
@@ -588,31 +588,31 @@ export default function ActivityHubPage() {
                   </div>
                 )}
 
-                <div className="flex flex-col md:flex-row gap-2 mt-3 border-t border-[var(--line)] pt-3">
-                   <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
+                <div className="flex flex-wrap gap-2 mt-3 border-t border-[var(--line)] pt-3">
+                   <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
                      <Briefcase size={14} /> View gig
                    </button>
-                   <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
+                   <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
                      <MessageSquare size={14} /> Chat
                    </button>
 
                    {!gig.assigned_worker_id && gig.status === 'open' && (
                      <button
                        onClick={() => handleDeleteGig(gig.id, gig.title)}
-                       className="py-2.5 px-4 rounded-xl bg-[var(--chip)] hover:bg-[var(--bad-soft)] text-[var(--fg-muted)] hover:text-[var(--bad)] font-bold text-sm transition border border-[var(--line)] flex items-center justify-center gap-2"
+                       className="whitespace-nowrap [&>svg]:shrink-0 py-2.5 px-4 rounded-xl bg-[var(--chip)] hover:bg-[var(--bad-soft)] text-[var(--fg-muted)] hover:text-[var(--bad)] font-bold text-sm transition border border-[var(--line)] flex items-center justify-center gap-2"
                      >
                        <X size={14} /> Take down
                      </button>
                    )}
 
                    {gig.status === 'AWAITING_FUNDS' && gig.payment_gateway !== 'DIRECT' && (
-                     <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 py-2.5 rounded-xl bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] font-bold text-sm transition shadow-lg shadow-[var(--accent-soft)] flex items-center gap-2 justify-center">
+                     <button onClick={() => handleFundEscrow(gig.id)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] font-bold text-sm transition shadow-lg shadow-[var(--accent-soft)] flex items-center gap-2 justify-center">
                        <ShieldCheck size={14} /> Pay &amp; start work
                      </button>
                    )}
 
                    {(gig.status === 'SUBMITTED' || gig.status === 'delivered' || (gig.status === 'assigned' && gig.payment_gateway === 'DIRECT')) && (
-                     <button onClick={() => handleApproveWork(gig.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-[var(--ok-solid)] hover:brightness-110 text-white font-bold text-sm transition shadow-lg shadow-[var(--ok-soft)] flex items-center gap-2 justify-center">
+                     <button onClick={() => handleApproveWork(gig.id, gig.payment_gateway === 'DIRECT')} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--ok-solid)] hover:brightness-110 text-white font-bold text-sm transition shadow-lg shadow-[var(--ok-soft)] flex items-center gap-2 justify-center">
                        <CheckCircle size={14} /> {gig.payment_gateway === 'DIRECT' ? 'Close Task' : 'Approve & Release'}
                      </button>
                    )}
@@ -622,7 +622,7 @@ export default function ActivityHubPage() {
                    {(gig.status === 'SUBMITTED' || gig.status === 'delivered') && gig.payment_gateway !== 'DIRECT' && (
                      <button
                        onClick={() => handleRaiseDispute(gig.id)}
-                       className="py-2.5 px-4 rounded-xl bg-[var(--chip)] hover:bg-[var(--bad-soft)] text-[var(--fg-muted)] hover:text-[var(--bad)] font-bold text-sm transition border border-[var(--line)] flex items-center justify-center gap-2"
+                       className="whitespace-nowrap [&>svg]:shrink-0 py-2.5 px-4 rounded-xl bg-[var(--chip)] hover:bg-[var(--bad-soft)] text-[var(--fg-muted)] hover:text-[var(--bad)] font-bold text-sm transition border border-[var(--line)] flex items-center justify-center gap-2"
                      >
                        <AlertTriangle size={14} /> Raise dispute
                      </button>
@@ -631,13 +631,13 @@ export default function ActivityHubPage() {
              </div>
            ))}
 
-           {activeTab === "WORKING" && workingGigs.map(app => {
+           {activeTab === "WORKING" && workingGigs.map((app, idx) => {
              const gig = app.gig;
              if(!gig) return null;
              const ws = workerState(app, gig);
 
              return (
-               <div key={app.id} className="bg-[var(--surface-2)] border border-[var(--line)] rounded-2xl p-5 hover:border-[var(--accent-line)] transition group">
+               <div key={app.id} style={{ "--i": idx } as React.CSSProperties} className="row-in card-lift bg-[var(--surface-2)] border border-[var(--line)] rounded-2xl p-5 hover:border-[var(--accent-line)] group">
                   <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                      <div className="flex-1 min-w-0">
                        <h3 className="font-bold text-[var(--fg)] text-lg truncate">{gig.title}</h3>
@@ -676,22 +676,22 @@ export default function ActivityHubPage() {
                     </div>
                   )}
 
-                  <div className="flex flex-col md:flex-row gap-2 mt-3 border-t border-[var(--line)] pt-3">
-                     <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
+                  <div className="flex flex-wrap gap-2 mt-3 border-t border-[var(--line)] pt-3">
+                     <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
                        <Briefcase size={14} /> View gig
                      </button>
-                     <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
+                     <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
                        <MessageSquare size={14} /> Chat
                      </button>
 
                      {app.status === 'accepted' && gig.status === 'AWAITING_FUNDS' && gig.payment_gateway !== 'DIRECT' && (
-                        <div className="flex-1 py-2.5 rounded-xl bg-[var(--warn-soft)] text-[var(--warn)] font-bold text-sm text-center border border-[var(--warn-line)] flex items-center justify-center gap-2">
+                        <div className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--warn-soft)] text-[var(--warn)] font-bold text-sm text-center border border-[var(--warn-line)] flex items-center justify-center gap-2">
                           <Clock size={14} /> Waiting for Escrow
                         </div>
                      )}
 
                      {app.status === 'accepted' && (gig.status === 'assigned') && (
-                       <button onClick={() => handleSubmitWork(gig.id, app.id, gig.payment_gateway === 'DIRECT')} className="flex-1 py-2.5 rounded-xl bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] font-bold text-sm transition shadow-lg shadow-[var(--accent-soft)] flex items-center gap-2 justify-center">
+                       <button onClick={() => handleSubmitWork(gig.id, app.id, gig.payment_gateway === 'DIRECT')} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] font-bold text-sm transition shadow-lg shadow-[var(--accent-soft)] flex items-center gap-2 justify-center">
                          <ArrowRight size={14} /> {gig.payment_gateway === 'DIRECT' ? 'Mark as Done' : 'Submit Work'}
                        </button>
                      )}
@@ -703,7 +703,7 @@ export default function ActivityHubPage() {
                      {gig.status === 'completed' && !ratedPosters.includes(gig.id) && (
                        <button
                          onClick={() => ratePoster(gig.id, gig.poster?.name)}
-                         className="flex-1 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition border border-[var(--line)] flex items-center justify-center gap-2"
+                         className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition border border-[var(--line)] flex items-center justify-center gap-2"
                        >
                          <Star size={14} /> Rate the poster
                        </button>
@@ -719,7 +719,7 @@ export default function ActivityHubPage() {
 
       {/* SUBMIT WORK MODAL — delivery note (required) + optional link */}
       {submitGigId && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="modal-overlay fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-[var(--surface-2)] border border-[var(--line)] rounded-3xl p-6 max-w-md w-full relative">
             <button onClick={() => setSubmitGigId(null)} className="absolute top-4 right-4 text-[var(--fg-muted)] hover:text-[var(--fg)]">
               <X size={18} />
@@ -730,14 +730,14 @@ export default function ActivityHubPage() {
               value={submitNote}
               onChange={(e) => setSubmitNote(e.target.value)}
               placeholder="What did you deliver? e.g. Final deck with 12 slides, sources cited, shared via the link below."
-              className="w-full bg-[var(--chip)] text-[var(--fg)] text-sm p-4 rounded-xl border border-[var(--line)] focus:border-[var(--brand-purple)]/50 outline-none resize-none h-28 mb-3"
+              className="w-full bg-[var(--chip)] text-[var(--fg)] text-sm p-4 rounded-xl border border-[var(--line)] focus:border-[var(--accent-line)] outline-none resize-none h-28 mb-3"
             />
             <input
               type="url"
               value={submitLink}
               onChange={(e) => setSubmitLink(e.target.value)}
               placeholder="Delivery link (optional): Drive, Figma, GitHub…"
-              className="w-full bg-[var(--chip)] text-[var(--fg)] text-sm p-3 rounded-xl border border-[var(--line)] focus:border-[var(--brand-purple)]/50 outline-none mb-4"
+              className="w-full bg-[var(--chip)] text-[var(--fg)] text-sm p-3 rounded-xl border border-[var(--line)] focus:border-[var(--accent-line)] outline-none mb-4"
             />
             {/* What lands in their account, stated before they hand the work
                 over — not discovered at payout. */}
@@ -762,7 +762,7 @@ export default function ActivityHubPage() {
             <button
               onClick={submitWork}
               disabled={isSubmitting || !submitNote.trim()}
-              className="w-full py-3 bg-[var(--brand-purple)] hover:brightness-110 text-[var(--fg)] font-bold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
+              className="w-full py-3 bg-[var(--accent)] hover:brightness-110 text-[var(--on-accent)] font-bold rounded-xl flex items-center justify-center gap-2 transition disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
               Submit for review

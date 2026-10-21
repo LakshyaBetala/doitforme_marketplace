@@ -93,7 +93,7 @@ export default function TrustSignals({
   return (
     <div className={`flex flex-wrap items-center gap-2 ${className}`}>
       {kycVerified && (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--brand-purple)]/10 border border-[var(--brand-purple)]/25 text-[11px] font-medium text-[var(--brand-purple-soft)]">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--accent-soft)] border border-[var(--accent-line)] text-[11px] font-medium text-[var(--brand-purple-soft)]">
           <BadgeCheck size={13} />
           Verified student
         </span>
