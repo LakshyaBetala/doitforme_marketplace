@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { DM_Sans, Manrope } from "next/font/google";
 import { createServer } from "@/lib/supabaseServer";
 import AppShell from "./AppShell";
+import { InShellProvider } from "./InShell";
 
 // The design's faces, self-hosted and preloaded by next/font — no
 // render-blocking request to fonts.googleapis.com the way the Figma export had.
@@ -80,7 +81,7 @@ export default async function WorkspaceLayout({
         isElite={profile.is_elite}
         innerCircleRole={profile.inner_circle_role}
       >
-        {children}
+        <InShellProvider>{children}</InShellProvider>
       </AppShell>
     </div>
   );

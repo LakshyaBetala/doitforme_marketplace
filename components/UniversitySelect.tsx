@@ -76,9 +76,16 @@ export const COLLEGES: string[] = [
 interface Props {
     value: string;
     onChange: (val: string) => void;
+    /** The caller already renders its own label above the field. */
+    hideLabel?: boolean;
+    /** Same height and type size as a plain text input in a dense form. */
+    compact?: boolean;
 }
 
-export default function UniversitySelect({ value, onChange }: Props) {
+// Colours come from the semantic tokens, not literals, so the one component
+// reads correctly on the dark sign-in pages and on the cream workspace. It had
+// near-black literals and rendered as a black slab inside the profile form.
+export default function UniversitySelect({ value, onChange, hideLabel = false, compact = false }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState("");
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -107,38 +114,40 @@ export default function UniversitySelect({ value, onChange }: Props) {
 
     return (
         <div className="relative w-full" ref={dropdownRef}>
-            <label className="block text-[10px] font-bold text-white/60 mb-2 ml-1 uppercase tracking-wider">
-                School / College / University
-            </label>
+            {!hideLabel && (
+                <label className="block text-[10px] font-bold text-[var(--fg-muted)] mb-2 ml-1 uppercase tracking-wider">
+                    School / College / University
+                </label>
+            )}
 
             {/* TRIGGER BUTTON */}
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full p-4 rounded-xl bg-[#0B0B11] border border-white/10 text-white text-base flex justify-between items-center cursor-pointer hover:border-[#8825F5]/50 focus:border-[#8825F5] focus:outline-none focus:ring-1 focus:ring-[#8825F5] transition group shadow-sm text-left"
+                className={`w-full ${compact ? "p-3 text-sm" : "p-4 text-base"} rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] flex justify-between items-center cursor-pointer hover:border-[var(--accent-line)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-soft)] transition group text-left`}
             >
                 <div className="flex items-center gap-3 pr-4 flex-1 overflow-hidden">
-                    <Building2 size={18} className="text-white/40 group-hover:text-brand-purple shrink-0 transition-colors" />
-                    <span className={`line-clamp-2 text-left leading-tight ${value ? "text-white font-medium" : "text-white/40"}`}>
+                    <Building2 size={18} className="text-[var(--fg-faint)] group-hover:text-[var(--accent)] shrink-0 transition-colors" />
+                    <span className={`line-clamp-2 text-left leading-tight ${value ? "text-[var(--fg)] font-medium" : "text-[var(--fg-faint)]"}`}>
                         {value || "Search your school, college or university…"}
                     </span>
                 </div>
-                <ChevronDown size={18} className={`text-white/40 transition-transform shrink-0 ${isOpen ? "rotate-180 text-brand-purple" : ""}`} />
+                <ChevronDown size={18} className={`text-[var(--fg-faint)] transition-transform shrink-0 ${isOpen ? "rotate-180 text-[var(--accent)]" : ""}`} />
             </button>
 
             {/* DROPDOWN MENU */}
             {isOpen && (
                 <div
-                    className="absolute z-[9999] w-full mt-2 bg-[#1A1A24] border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute z-[9999] w-full mt-2 bg-[var(--surface)] border border-[var(--line-strong)] rounded-2xl shadow-[0_18px_50px_-12px_rgba(30,10,50,0.45)] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
                     onKeyDown={handleKeyDown}
                 >
                     {/* SEARCH BOX */}
-                    <div className="p-3 border-b border-white/5 flex items-center gap-3 bg-black/20 sticky top-0 z-10 backdrop-blur-md">
-                        <Search size={18} className="text-white/40 ml-1" />
+                    <div className="p-3 border-b border-[var(--line)] flex items-center gap-3 bg-[var(--chip)] sticky top-0 z-10">
+                        <Search size={18} className="text-[var(--fg-faint)] ml-1" />
                         <input
                             type="text"
                             placeholder="Type to search…"
-                            className="bg-transparent border-none outline-none text-white text-base w-full font-sans placeholder:text-white/30"
+                            className="bg-transparent border-none outline-none text-[var(--fg)] text-base w-full font-sans placeholder:text-[var(--fg-faint)]"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             autoFocus
@@ -151,8 +160,8 @@ export default function UniversitySelect({ value, onChange }: Props) {
                             <div className="space-y-1">
                                 {/* Visual indicator for top/priority colleges if no search is active */}
                                 {!search && (
-                                    <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
-                                        <MapPin size={12} className="text-brand-purple" /> Top Campuses
+                                    <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-[var(--fg-faint)] uppercase tracking-widest flex items-center gap-2">
+                                        <MapPin size={12} className="text-[var(--accent)]" /> Top Campuses
                                     </div>
                                 )}
 
@@ -162,7 +171,7 @@ export default function UniversitySelect({ value, onChange }: Props) {
 
                                     return (
                                         <div key={col}>
-                                            {isOther && <div className="h-px bg-white/10 my-2 mx-2"></div>}
+                                            {isOther && <div className="h-px bg-[var(--line)] my-2 mx-2"></div>}
                                             <button
                                                 type="button"
                                                 onClick={() => {
@@ -171,14 +180,14 @@ export default function UniversitySelect({ value, onChange }: Props) {
                                                     setSearch("");
                                                 }}
                                                 className={`w-full text-left px-4 py-3 rounded-xl text-sm md:text-base cursor-pointer flex items-center justify-between transition group ${value === col
-                                                    ? 'bg-[#8825F5]/20 text-white font-bold border border-[#8825F5]/30'
-                                                    : 'text-white/70 hover:bg-white/5 hover:text-white border border-transparent'
+                                                    ? 'bg-[var(--accent-soft)] text-[var(--fg)] font-bold border border-[var(--accent-line)]'
+                                                    : 'text-[var(--fg-muted)] hover:bg-[var(--chip)] hover:text-[var(--fg)] border border-transparent'
                                                     }`}
                                             >
                                                 <span className="text-left break-words pr-4 leading-tight">{col}</span>
                                                 {value === col && (
-                                                    <div className="w-5 h-5 rounded-full bg-[#8825F5] flex items-center justify-center shrink-0">
-                                                        <Check size={12} className="text-white" strokeWidth={3} />
+                                                    <div className="w-5 h-5 rounded-full bg-[var(--accent)] flex items-center justify-center shrink-0">
+                                                        <Check size={12} className="text-[var(--on-accent)]" strokeWidth={3} />
                                                     </div>
                                                 )}
                                             </button>
@@ -196,22 +205,22 @@ export default function UniversitySelect({ value, onChange }: Props) {
                                             setIsOpen(false);
                                             setSearch("");
                                         }}
-                                        className="w-full text-left px-4 py-3 rounded-xl text-sm md:text-base bg-[#8825F5]/15 border border-[#8825F5]/30 text-white hover:bg-[#8825F5]/25 transition flex items-center gap-3"
+                                        className="w-full text-left px-4 py-3 rounded-xl text-sm md:text-base bg-[var(--accent-soft)] border border-[var(--accent-line)] text-[var(--fg)] hover:brightness-95 transition flex items-center gap-3"
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-[#8825F5]/20 flex items-center justify-center shrink-0">
-                                            <Check size={14} className="text-brand-purple" strokeWidth={3} />
+                                        <div className="w-8 h-8 rounded-full bg-[var(--accent-soft)] flex items-center justify-center shrink-0">
+                                            <Check size={14} className="text-[var(--accent)]" strokeWidth={3} />
                                         </div>
                                         <span className="break-words leading-tight">
                                             Use <strong>&ldquo;{search.trim()}&rdquo;</strong>
-                                            <span className="block text-white/40 text-xs mt-0.5">Your school, college or university</span>
+                                            <span className="block text-[var(--fg-faint)] text-xs mt-0.5">Your school, college or university</span>
                                         </span>
                                     </button>
                                 ) : (
                                     <div className="py-6 flex flex-col items-center space-y-3">
-                                        <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-                                            <Building2 size={24} className="text-white/20" />
+                                        <div className="w-12 h-12 rounded-full bg-[var(--chip)] flex items-center justify-center">
+                                            <Building2 size={24} className="text-[var(--fg-faint)]" />
                                         </div>
-                                        <p className="text-white/40 text-xs">Keep typing your institution&apos;s name…</p>
+                                        <p className="text-[var(--fg-faint)] text-xs">Keep typing your institution&apos;s name…</p>
                                     </div>
                                 )}
                             </div>

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useRouter, usePathname } from "next/navigation";
 import { humanizeStatus } from "@/components/ui/StatusBadge";
 
+import { openChatDock } from "@/lib/chatDock";
 export default function RealtimeListener() {
     const supabase = supabaseBrowser();
     const router = useRouter();
@@ -42,7 +43,9 @@ export default function RealtimeListener() {
                             description: newMsg.content || "You have a new message.",
                             action: {
                                 label: "View",
-                                onClick: () => router.push(`/messages?chat=${newMsg.gig_id}_${newMsg.sender_id}`)
+                                onClick: () => {
+                                    if (!openChatDock({ gigId: newMsg.gig_id, otherUserId: newMsg.sender_id })) router.push(`/messages?chat=${newMsg.gig_id}_${newMsg.sender_id}`);
+                                }
                             }
                         });
                     }

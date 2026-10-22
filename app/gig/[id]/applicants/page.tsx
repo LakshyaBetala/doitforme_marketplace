@@ -10,6 +10,7 @@ import TrustSignals from "@/components/TrustSignals";
 import EmptyState from "@/components/ui/EmptyState";
 import { isServiceAdvert, responderNoun } from "@/lib/gigRoles";
 import { toast } from "sonner";
+import { openChatDock } from "@/lib/chatDock";
 import {
   Loader2, ChevronLeft, MessageSquare, FileText, ExternalLink,
   GraduationCap, Users, BadgeCheck,
@@ -301,7 +302,7 @@ export default function ApplicantsPage() {
 
                   <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-[var(--line)]">
                     <button
-                      onClick={() => router.push(`/chat/${gigId}?chat=${gigId}_${app.worker_id}`)}
+                      onClick={() => { if (!openChatDock({ gigId: String(gigId), otherUserId: app.worker_id })) router.push(`/chat/${gigId}?chat=${gigId}_${app.worker_id}`); }}
                       className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] border border-[var(--line)] text-sm font-semibold min-h-[44px] transition"
                     >
                       <MessageSquare size={15} /> Message

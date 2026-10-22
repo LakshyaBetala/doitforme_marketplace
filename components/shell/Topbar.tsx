@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import { ALL_NAV_ITEMS } from "./nav";
 import { isImmersive } from "./ShellMain";
 
+import { openChatDock } from "@/lib/chatDock";
 const TITLES: Record<string, string> = Object.fromEntries(
   ALL_NAV_ITEMS.map((n) => [n.href, n.label])
 );
@@ -50,6 +51,7 @@ function titleFor(pathname: string): string {
  */
 export default function Topbar({ action }: { action?: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const title = titleFor(pathname);
   // The chat has its own header; a second bar above it is just noise.
   if (isImmersive(pathname)) return null;
@@ -72,13 +74,16 @@ export default function Topbar({ action }: { action?: React.ReactNode }) {
             owns "where can I go" — these are status, which is why they sit here
             and are not repeated as nav items. */}
         <NotificationBell />
-        <Link
-          href="/messages"
+        <button
+          type="button"
+          onClick={() => {
+            if (!openChatDock()) router.push("/messages");
+          }}
           aria-label="Messages"
           className="flex h-10 w-10 items-center justify-center rounded-[11px] text-[var(--w-muted)] transition-colors hover:bg-[var(--chip)] hover:text-[var(--w-ink)]"
         >
           <MessageCircle size={19} />
-        </Link>
+        </button>
       </div>
     </header>
   );

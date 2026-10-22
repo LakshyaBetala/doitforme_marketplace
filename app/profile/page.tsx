@@ -801,8 +801,8 @@ export default function ProfilePage() {
                   <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1 flex items-center gap-1">
                     Email <span className="normal-case opacity-50 font-normal">(Read Only)</span>
                   </label>
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border border-transparent text-sm text-[var(--fg-muted)]">
-                    <Mail size={16} className="text-[var(--fg-muted)] shrink-0" />
+                  <div className={`group flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border text-sm text-[var(--fg-muted)] transition ${isEditing ? "border-[var(--line)] hover:border-[var(--accent-line)]" : "border-transparent"}`}>
+                    <Mail size={16} className={`shrink-0 transition-colors text-[var(--fg-muted)] ${isEditing ? "group-hover:text-[var(--accent)]" : ""}`} />
                     <span className="truncate">{profile.email}</span>
                   </div>
                 </div>
@@ -811,16 +811,19 @@ export default function ProfilePage() {
                 <div>
                   <label className="text-[10px] uppercase tracking-widest text-[var(--fg-muted)] font-bold mb-1.5 block ml-1">Phone</label>
                   {isEditing ? (
-                    <input
-                      type="tel"
-                      value={editPhone}
-                      onChange={(e) => setEditPhone(e.target.value)}
-                      placeholder="Phone number"
-                      autoComplete="tel"
-                      inputMode="tel"
-                      disabled={identityLocked}
-                      className="w-full p-3 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
+                    <div className="group relative">
+                      <Phone size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--fg-muted)] transition-colors group-hover:text-[var(--accent)] group-focus-within:text-[var(--accent)]" />
+                      <input
+                        type="tel"
+                        value={editPhone}
+                        onChange={(e) => setEditPhone(e.target.value)}
+                        placeholder="Phone number"
+                        autoComplete="tel"
+                        inputMode="tel"
+                        disabled={identityLocked}
+                        className="w-full p-3 pl-10 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm placeholder:text-[var(--fg-faint)] hover:border-[var(--accent-line)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                    </div>
                   ) : (
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border border-transparent text-sm">
                       <Phone size={16} className="text-[var(--fg-muted)] shrink-0" />
@@ -835,19 +838,22 @@ export default function ProfilePage() {
                     UPI ID {profile.upi_id && <Lock size={10} className="text-[var(--fg-faint)]" />}
                   </label>
                   {isEditing && !profile.upi_id ? (
-                    <input
-                      type="text"
-                      value={editUpiId}
-                      autoComplete="off"
-                      spellCheck={false}
-                      autoCapitalize="off"
-                      onChange={(e) => setEditUpiId(e.target.value)}
-                      placeholder="name@oksbi"
-                      className="w-full p-3 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm placeholder:text-[var(--fg-faint)] focus:outline-none focus:border-[var(--accent)] transition"
-                    />
+                    <div className="group relative">
+                      <Wallet size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--fg-muted)] transition-colors group-hover:text-[var(--accent)] group-focus-within:text-[var(--accent)]" />
+                      <input
+                        type="text"
+                        value={editUpiId}
+                        autoComplete="off"
+                        spellCheck={false}
+                        autoCapitalize="off"
+                        onChange={(e) => setEditUpiId(e.target.value)}
+                        placeholder="name@oksbi"
+                        className="w-full p-3 pl-10 rounded-xl bg-[var(--chip)] border border-[var(--line)] text-[var(--fg)] text-sm placeholder:text-[var(--fg-faint)] hover:border-[var(--accent-line)] focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent-soft)] transition"
+                      />
+                    </div>
                   ) : (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border border-transparent text-sm">
-                      <Wallet size={16} className="text-[var(--fg-muted)] shrink-0" />
+                    <div className={`group flex items-center gap-3 p-3 rounded-xl bg-[var(--chip)] border text-sm transition ${isEditing ? "border-[var(--line)] hover:border-[var(--accent-line)]" : "border-transparent"}`}>
+                      <Wallet size={16} className={`shrink-0 transition-colors text-[var(--fg-muted)] ${isEditing ? "group-hover:text-[var(--accent)]" : ""}`} />
                       <span className={profile.upi_id ? "text-[var(--fg-muted)] truncate" : "text-[var(--fg-faint)] italic"}>{profile.upi_id || "Not set"}</span>
                     </div>
                   )}
@@ -860,7 +866,7 @@ export default function ProfilePage() {
                   </label>
                   {isEditing && !identityLocked ? (
                     <div className="relative z-[60]">
-                      <UniversitySelect value={editCollege} onChange={setEditCollege} />
+                      <UniversitySelect value={editCollege} onChange={setEditCollege} hideLabel compact />
                       {editCollege === "Other" && (
                         <div className="mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
                           <input

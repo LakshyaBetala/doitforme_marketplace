@@ -190,7 +190,12 @@ const FIXTURES: Record<string, any[]> = {
     { id: "n3", user_id: ME, type: "message", content: "Priya Nair sent you a message", link: "/messages", is_read: true, created_at: ago(20) },
   ],
 
-  messages: [],
+  // A few threads so the chat dock and inbox have something to show in preview.
+  messages: [
+    { id: "m1", gig_id: "g-open-2", sender_id: ME, receiver_id: OTHER, content: "Hi! I have built booking flows in Flutter before. Happy to share samples.", message_type: "text", created_at: ago(8) },
+    { id: "m2", gig_id: "g-open-2", sender_id: OTHER, receiver_id: ME, content: "Great, please send them over. Can you start this week?", message_type: "text", created_at: ago(7) },
+    { id: "m3", gig_id: "g-open-1", sender_id: OTHER, receiver_id: ME, content: "Do you have time to take on the logo before Friday?", message_type: "text", created_at: ago(3) },
+  ],
   companies: [
     { id: "c-nexa", name: "Nexa Labs", user_id: OTHER, pro_until: ahead(24 * 30) },
     { id: "c-vera", name: "Vera Goods", user_id: OTHER, pro_until: null },

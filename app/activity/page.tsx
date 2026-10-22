@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import StayReachable from "@/components/StayReachable";
 import CanonicalStatusBadge, { statusToTone, humanizeStatus } from "@/components/ui/StatusBadge";
 
+import { openChatDock } from "@/lib/chatDock";
 // In-review states read better with a custom label; everything else flows through the canonical mapper.
 const STATUS_LABEL_OVERRIDES: Record<string, string> = {
   assigned: "In progress",
@@ -592,7 +593,7 @@ export default function ActivityHubPage() {
                    <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
                      <Briefcase size={14} /> View gig
                    </button>
-                   <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
+                   <button onClick={() => { if (!openChatDock({ gigId: gig.id, otherUserId: gig.assigned_worker_id })) router.push(`/chat/${gig.id}`); }} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
                      <MessageSquare size={14} /> Chat
                    </button>
 
@@ -680,7 +681,7 @@ export default function ActivityHubPage() {
                      <button onClick={() => router.push(`/gig/${gig.id}`)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
                        <Briefcase size={14} /> View gig
                      </button>
-                     <button onClick={() => router.push(`/chat/${gig.id}`)} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
+                     <button onClick={() => { if (!openChatDock({ gigId: gig.id, otherUserId: gig.poster_id })) router.push(`/chat/${gig.id}`); }} className="flex-1 whitespace-nowrap [&>svg]:shrink-0 px-4 py-2.5 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] text-[var(--fg)] font-bold text-sm transition text-center flex items-center justify-center gap-2 border border-[var(--line)]">
                        <MessageSquare size={14} /> Chat
                      </button>
 

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { blurOnWheel } from "@/lib/inputs";
 
+import { openChatDock } from "@/lib/chatDock";
 export default function CompanyTaskHubPage() {
   const params = useParams();
   const router = useRouter();
@@ -559,7 +560,7 @@ export default function CompanyTaskHubPage() {
                                 </button>
                               )}
                               {!isDirect && (
-                                <button onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#8825F5] hover:text-white text-[9px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2 border-r border-[#222]">
+                                <button onClick={() => { if (!openChatDock({ gigId: gig.id, otherUserId: app.worker_id })) router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`); }} className="flex-1 p-4 bg-[#0a0a0a] hover:bg-[#8825F5] hover:text-white text-[9px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2 border-r border-[#222]">
                                   <MessageCircle size={12} /> Platform Chat
                                 </button>
                               )}
@@ -569,7 +570,7 @@ export default function CompanyTaskHubPage() {
                             </>
                           )}
                           {!isAccepted && (
-                            <button onClick={() => router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`)} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition flex items-center justify-center border-l border-[#222]">
+                            <button onClick={() => { if (!openChatDock({ gigId: gig.id, otherUserId: app.worker_id })) router.push(`/chat/${gig.id}?chat=${gig.id}_${app.worker_id}`); }} className="p-4 bg-[#0a0a0a] hover:bg-white hover:text-black transition flex items-center justify-center border-l border-[#222]">
                               <MessageCircle size={16} />
                             </button>
                           )}

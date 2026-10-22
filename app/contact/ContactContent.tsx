@@ -1,11 +1,13 @@
 "use client";
 
-import { ArrowUpRight, Clock, Mail, MapPin, ReceiptText } from "lucide-react";
+import { ArrowUpRight, Clock, Mail, ReceiptText } from "lucide-react";
 
 import PublicHeader from "@/components/home/PublicHeader";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { useInShell } from "@/components/shell/InShell";
 
-const DISPLAY = { fontFamily: "'Space Grotesk', sans-serif" } as const;
+const PUBLIC_DISPLAY = { fontFamily: "'Space Grotesk', sans-serif" } as const;
+const SHELL_DISPLAY = { fontFamily: "var(--font-display), sans-serif" } as const;
 
 type Channel = {
   icon: typeof Mail;
@@ -21,7 +23,7 @@ const CHANNELS: Channel[] = [
     icon: Mail,
     title: "Email support",
     blurb: "General queries, bug reports and disputes.",
-    email: "doitforme.in@gmail.com",
+    email: "support@doitforme.in",
     note: "We reply within one working day.",
     noteIcon: Clock,
   },
@@ -36,30 +38,50 @@ const CHANNELS: Channel[] = [
 ];
 
 export default function ContactContent() {
-  return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--fg)] selection:bg-[#8825F5] selection:text-white">
-      <PublicHeader />
+  // Signed in, this renders inside the workspace shell and takes its look from
+  // it (cream, the same page header as every other screen). Signed out it is the
+  // dark public page, header and all. Same content, same hover motion in both.
+  const inShell = useInShell();
+  const DISPLAY = inShell ? SHELL_DISPLAY : PUBLIC_DISPLAY;
 
-      <main className="mx-auto max-w-5xl px-5 pb-24 pt-14 md:px-8 md:pt-20">
+  return (
+    <div className={inShell ? "pb-2" : "min-h-screen bg-[var(--background)] text-[var(--fg)] selection:bg-[#8825F5] selection:text-white"}>
+      {!inShell && <PublicHeader />}
+
+      <main className={inShell ? "" : "mx-auto max-w-5xl px-5 pb-24 pt-14 md:px-8 md:pt-20"}>
         <Reveal as="header" immediate>
-          <p className="text-[13px] font-semibold tracking-[0.14em] text-[var(--accent-ink)]">SUPPORT</p>
-          <h1
-            className="mt-3 text-[34px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[44px] lg:whitespace-nowrap lg:text-[56px]"
-            style={{ ...DISPLAY, textWrap: "balance" }}
-          >
-            Contact DoItForMe Support
-          </h1>
-          <p className="mt-5 max-w-2xl text-[17px] leading-[1.65] text-[var(--fg-muted)]">
+          {inShell ? (
+            <>
+              <p className="text-[14px] font-bold text-[var(--w-faint)]">Support</p>
+              <h1
+                className="mt-1.5 text-[34px] font-extrabold leading-[1.08] tracking-[-0.03em] text-[var(--w-ink-strong)] sm:text-[42px]"
+                style={DISPLAY}
+              >
+                Help &amp; support
+              </h1>
+            </>
+          ) : (
+            <>
+              <p className="text-[13px] font-semibold tracking-[0.14em] text-[var(--accent-ink)]">SUPPORT</p>
+              <h1
+                className="mt-3 text-[34px] font-bold leading-[1.05] tracking-[-0.03em] md:text-[44px] lg:whitespace-nowrap lg:text-[56px]"
+                style={{ ...DISPLAY, textWrap: "balance" }}
+              >
+                Contact DoItForMe Support
+              </h1>
+            </>
+          )}
+          <p className={`max-w-2xl leading-[1.65] text-[var(--fg-muted)] ${inShell ? "mt-2.5 text-[16px]" : "mt-5 text-[17px]"}`}>
             Questions about the platform, a payment or a task? Write to us and a person will answer.
           </p>
         </Reveal>
 
-        <Stagger immediate delay={0.12} className="mt-12 grid gap-4 md:grid-cols-2">
+        <Stagger immediate delay={0.12} className={`grid gap-4 md:grid-cols-2 ${inShell ? "mt-8" : "mt-12"}`}>
           {CHANNELS.map(({ icon: Icon, title, blurb, email, note, noteIcon: NoteIcon }) => (
             <StaggerItem key={email}>
             <a
               href={`mailto:${email}`}
-              className="card-lift group flex h-full flex-col rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-7 hover:border-[var(--accent-line)]"
+              className="card-lift group flex h-full flex-col rounded-[22px] border border-[var(--line)] bg-[var(--surface)] p-7 hover:border-[var(--accent-line)]"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--accent-line)] bg-[var(--accent-soft)] text-[var(--accent-ink)] transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
                 <Icon className="h-[22px] w-[22px]" />
@@ -84,22 +106,6 @@ export default function ContactContent() {
             </StaggerItem>
           ))}
         </Stagger>
-
-        <Reveal immediate delay={0.3} className="mt-4 flex items-start gap-5 rounded-3xl border border-[var(--line)] bg-[var(--surface)] p-7">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[var(--line)] bg-[var(--chip)] text-[var(--fg-muted)]">
-            <MapPin className="h-[22px] w-[22px]" />
-          </span>
-          <div>
-            <h2 className="text-[20px] font-semibold tracking-[-0.01em]" style={DISPLAY}>
-              Operating address
-            </h2>
-            <p className="mt-1.5 text-[15px] leading-[1.7] text-[var(--fg-muted)]">
-              DoItForMe, Zinda Sahib Street
-              <br />
-              Chennai, Tamil Nadu 600001, India
-            </p>
-          </div>
-        </Reveal>
 
         {/* Business & compliance.
             Deliberately the quietest block on the page. Razorpay's merchant

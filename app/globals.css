@@ -573,3 +573,79 @@ html {
     scale: 1;
   }
 }
+
+/* ---- Landing page ------------------------------------------------------ */
+
+/* Soft drifting colour behind the hero. Three blurred blobs on slow, offset
+   loops; only transform animates, so it costs the compositor almost nothing. */
+@keyframes lp-drift-a { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(60px,40px,0) scale(1.15); } }
+@keyframes lp-drift-b { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(-70px,30px,0) scale(0.9); } }
+.lp-blob { position: absolute; border-radius: 9999px; filter: blur(110px); pointer-events: none; will-change: transform; }
+.lp-blob-a { animation: lp-drift-a 18s ease-in-out infinite; }
+.lp-blob-b { animation: lp-drift-b 22s ease-in-out infinite; }
+
+/* Faint engineering-paper grid that fades out toward the edges. */
+.lp-grid {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+}
+
+/* Headline accent: a slow light sweep across the purple words. */
+@keyframes lp-sheen { to { background-position: 200% center; } }
+.lp-gradient-text {
+  background: linear-gradient(100deg, #C9A9FF 0%, #E9DDFF 25%, #A66BFF 50%, #C9A9FF 75%, #E9DDFF 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: lp-sheen 7s linear infinite;
+}
+
+/* Cards that light up under the cursor. JS sets --mx / --my on mousemove. */
+.lp-spot { position: relative; overflow: hidden; isolation: isolate; transition: transform 300ms var(--ease-out), border-color 300ms; }
+.lp-spot::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; transition: opacity 300ms;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(136,37,245,0.22), transparent 60%);
+}
+.lp-spot:hover { transform: translateY(-4px); border-color: rgba(201,169,255,0.35); }
+.lp-spot:hover::before { opacity: 1; }
+
+/* Primary button: a light glint that crosses on hover. */
+.lp-shine { position: relative; overflow: hidden; }
+.lp-shine::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.35), transparent);
+  transform: skewX(-20deg); transition: left 600ms var(--ease-out);
+}
+.lp-shine:hover::after { left: 130%; }
+
+/* Endless row of work types. Content is duplicated in markup; -50% loops it. */
+@keyframes lp-marquee { to { transform: translateX(-50%); } }
+.lp-marquee-track { display: flex; width: max-content; animation: lp-marquee 38s linear infinite; }
+.lp-marquee:hover .lp-marquee-track { animation-play-state: paused; }
+.lp-marquee {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent);
+}
+
+/* Gentle bob for the floating hero cards. Offset with --d. */
+@keyframes lp-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.lp-bob { animation: lp-bob 6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-blob, .lp-gradient-text, .lp-marquee-track, .lp-bob { animation: none !important; }
+  .lp-gradient-text { background-position: 0 center; }
+  .lp-shine::after { display: none; }
+}
+
+/* Chat dock open on a wide screen: the page slides over to leave a column for it. */
+@media (min-width: 1280px) {
+  .workspace main { transition: padding-right 340ms var(--ease-out); }
+  html[data-dock="open"] .workspace main { padding-right: 440px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace main { transition: none; }
+}

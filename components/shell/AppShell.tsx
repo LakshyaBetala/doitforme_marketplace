@@ -3,6 +3,7 @@ import MobileNav from "./MobileNav";
 import Topbar from "./Topbar";
 import WorkspaceThemeColor from "./WorkspaceThemeColor";
 import ShellMain from "./ShellMain";
+import ChatDock from "@/components/chat/ChatDock";
 
 /**
  * The frame every signed-in page renders inside.
@@ -44,6 +45,8 @@ export default function AppShell({
 
         <ShellMain>{children}</ShellMain>
       </div>
+
+      <ChatDock />
     </div>
   );
 }

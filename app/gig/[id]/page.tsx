@@ -17,6 +17,7 @@ import { platformFeeFor, audienceForGig, PLATFORM_FEES } from "@/lib/fees";
 import { blurOnWheel } from "@/lib/inputs";
 import { isServiceAdvert, browserActionLabel, listingTypeLabel } from "@/lib/gigRoles";
 
+import { openChatDock } from "@/lib/chatDock";
 // Same display face the workspace headings use; falls back to the marketing
 // face when a company account sees this page outside the shell.
 const DISPLAY = { fontFamily: "var(--font-display), 'Space Grotesk', sans-serif" };
@@ -163,7 +164,7 @@ export default function GigDetailsPage() {
         }
 
         toast.success("Request sent — agree the details in chat, then pay to start.");
-        router.push(`/chat/${data.gigId}`);
+        openChat(data.gigId);
         return;
       }
 
@@ -184,7 +185,7 @@ export default function GigDetailsPage() {
       }
 
       toast.success("Application submitted successfully!");
-      router.push(`/chat/${gigId}`);
+      openChat(gigId);
     } catch (err: any) {
       toast.error(friendlyError(err));
     } finally {
@@ -192,9 +193,15 @@ export default function GigDetailsPage() {
     }
   };
 
+  // Opens the conversation in the chat panel beside the page; only navigates
+  // away if the panel is not on this screen.
+  const openChat = (chatGigId: string) => {
+    if (!openChatDock({ gigId: chatGigId, otherUserId: gig?.poster_id })) router.push(`/chat/${chatGigId}`);
+  };
+
   const handleMessagePoster = () => {
     if (!currentUser) return router.push(`/login?next=/gig/${gigId}`);
-    router.push(`/chat/${gigId}`);
+    openChat(gigId);
   };
 
   const handleReport = async () => {
