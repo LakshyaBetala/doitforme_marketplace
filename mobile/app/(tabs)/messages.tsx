@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { c } from '../../lib/theme';
 
 // Inbox only, grouped by gig + other person like components/chat/MessagesView.tsx.
-// Replying needs the chat API route (cookie auth), so a tap opens the task for now.
+// A tap opens the thread (app/chat/[gigId].tsx).
 export default function Messages() {
   const { session } = useSession();
   const [threads, setThreads] = useState<any[]>([]);
@@ -72,7 +72,7 @@ export default function Messages() {
           />
         }
         renderItem={({ item }) => (
-          <Card onPress={() => router.push(`/gig/${item.last.gig_id}`)} style={{ gap: 4 }}>
+          <Card onPress={() => router.push({ pathname: '/chat/[gigId]', params: { gigId: item.last.gig_id, other: item.other, name: item.name } })} style={{ gap: 4 }}>
             <View style={s.row}>
               <Text style={s.name}>{item.name}</Text>
               <Text style={s.meta}>{timeAgo(item.last.created_at)}</Text>

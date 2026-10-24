@@ -27,6 +27,7 @@ AppState.addEventListener('change', (s) => {
 });
 
 let demo = false;
+export const isDemo = () => demo;
 export const setDemo = (on: boolean) => {
   demo = on;
 };

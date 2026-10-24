@@ -17,8 +17,7 @@ export default function Login() {
 
   async function send() {
     setBusy(true); setErr('');
-    // shouldCreateUser:false — new accounts are created by the website signup flow.
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: false } });
+    const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
     setBusy(false);
     if (error) setErr(error.message); else setSent(true);
   }
@@ -66,7 +65,7 @@ export default function Login() {
         {err ? <Text style={s.err}>{err}</Text> : null}
       </View>
       {DEMO_ENABLED ? <Button label="Try demo (sample data)" variant="ghost" onPress={startDemo} /> : null}
-      <Text style={s.note}>New here? Create your account at doitforme.in first.</Text>
+      <Text style={s.note}>New here? Enter your email and we will create your account.</Text>
     </KeyboardAvoidingView>
   );
 }

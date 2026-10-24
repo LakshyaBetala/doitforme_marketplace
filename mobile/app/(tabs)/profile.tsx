@@ -1,5 +1,9 @@
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ErrorText, Field, Sheet } from '../../components/form';
 import { Button, Card, Pill } from '../../components/ui';
+import { api } from '../../lib/api';
 import { humanize } from '../../lib/format';
 import { useSession } from '../../lib/session';
 import { c } from '../../lib/theme';
@@ -8,6 +12,23 @@ const SITE = 'https://www.doitforme.in';
 
 export default function Profile() {
   const { profile, session, signOut } = useSession();
+  const [del, setDel] = useState(false);
+  const [word, setWord] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  // Irreversible, so it needs the typed word the API also demands (App Store 5.1.1(v)).
+  async function deleteAccount() {
+    setBusy(true);
+    setErr('');
+    const res = await api('/api/account/delete', { body: { confirm: word } });
+    setBusy(false);
+    if (!res.ok) return setErr(res.error ?? 'Could not delete the account.');
+    setDel(false);
+    Alert.alert('Account deleted', 'Your account has been removed.');
+    await signOut();
+  }
+
   const kyc = profile?.kyc_verified ? 'approved' : (profile?.kyc_status ?? 'none');
   const initial = (profile?.name ?? session?.user.email ?? '?').trim().charAt(0).toUpperCase();
 
@@ -31,13 +52,18 @@ export default function Profile() {
         </View>
       </Card>
 
-      <Button label="Edit profile on website" variant="ghost" onPress={() => Linking.openURL(`${SITE}/profile`)} />
-      {/* Required by App Store guideline 5.1.1(v); the flow lives on the site until it is built natively. */}
-      <Button label="Delete account" variant="ghost" onPress={() => Linking.openURL(`${SITE}/settings/account`)} />
+      {kyc !== 'approved' ? <Button label="Verify student ID" variant="ghost" onPress={() => router.push('/verify-id')} /> : null}
+      <Button label="Delete account" variant="ghost" onPress={() => setDel(true)} />
       <Button label="Sign out" onPress={signOut} />
       <Text style={s.legal} onPress={() => Linking.openURL(`${SITE}/privacy-policy`)}>
         Privacy policy
       </Text>
+      <Sheet visible={del} title="Delete your account" onClose={() => setDel(false)}>
+        <Text style={s.v}>This cannot be undone. Accounts with money in escrow or tasks in progress cannot be deleted until those finish.</Text>
+        <Field label="Type DELETE to confirm" value={word} onChangeText={setWord} autoCapitalize="characters" />
+        <ErrorText>{err}</ErrorText>
+        <Button label="Delete my account" loading={busy} onPress={deleteAccount} />
+      </Sheet>
     </ScrollView>
   );
 }

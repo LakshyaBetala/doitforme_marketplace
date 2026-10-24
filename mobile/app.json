@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#0B0B11",
+    "backgroundColor": "#341044",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "in.doitforme.app"
@@ -15,10 +15,9 @@
     "android": {
       "package": "in.doitforme.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0B11",
+        "backgroundColor": "#341044",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundImage": "./assets/android-icon-background.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -29,7 +28,14 @@
     },
     "owner": "infernalcentaur",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow DoItForMe to use the camera to photograph your student ID.",
+          "photosPermission": "Allow DoItForMe to pick a photo of your student ID."
+        }
+      ]
     ]
   }
 }

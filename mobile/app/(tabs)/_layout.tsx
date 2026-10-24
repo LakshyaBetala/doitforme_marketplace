@@ -19,6 +19,7 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Find tasks', tabBarIcon: icon('search') }} />
+      <Tabs.Screen name="post" options={{ title: 'Post', tabBarIcon: icon('add-circle-outline') }} />
       <Tabs.Screen name="activity" options={{ title: 'My work', tabBarIcon: icon('briefcase-outline') }} />
       <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: icon('chatbubble-outline') }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: icon('person-outline') }} />
