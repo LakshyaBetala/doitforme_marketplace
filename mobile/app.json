@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "DoItForMe",
+    "slug": "doitforme",
+    "scheme": "doitforme",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0B11",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "in.doitforme.app"
+    },
+    "android": {
+      "package": "in.doitforme.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B11",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "36bb047c-0be5-402c-9abf-ef280ee8a6a0"
+      }
+    },
+    "owner": "infernalcentaur",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}
