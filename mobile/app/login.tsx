@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '../components/ui';
+import { DEMO_ENABLED } from '../lib/demo';
+import { useSession } from '../lib/session';
 import { supabase } from '../lib/supabase';
 import { c, r } from '../lib/theme';
 
 // Email OTP only — magic links are disabled in Supabase (see CLAUDE.md).
 export default function Login() {
+  const { startDemo } = useSession();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
@@ -62,6 +65,7 @@ export default function Login() {
         )}
         {err ? <Text style={s.err}>{err}</Text> : null}
       </View>
+      {DEMO_ENABLED ? <Button label="Try demo (sample data)" variant="ghost" onPress={startDemo} /> : null}
       <Text style={s.note}>New here? Create your account at doitforme.in first.</Text>
     </KeyboardAvoidingView>
   );
