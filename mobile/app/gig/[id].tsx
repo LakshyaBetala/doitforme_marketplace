@@ -12,7 +12,7 @@ import { supabase } from '../../lib/supabase';
 import { c } from '../../lib/theme';
 import { canFundEscrow, isServiceAdvert } from '../../shared/gigRoles';
 
-type Form = null | 'apply' | 'deliver' | 'changes' | 'dispute' | 'upi' | 'approve' | 'rate' | 'request';
+type Form = null | 'apply' | 'deliver' | 'changes' | 'dispute' | 'upi' | 'approve' | 'rate' | 'request' | 'edit';
 
 // Queries ported from app/gig/[id]/page.tsx and app/activity/page.tsx. Every write goes
 // through the same API route the website uses, so server-side rules (moderation, caps,
@@ -39,6 +39,10 @@ export default function GigDetail() {
   const [upi, setUpi] = useState('');
   const [text, setText] = useState('');
   const [stars, setStars] = useState(5);
+  const [eTitle, setETitle] = useState('');
+  const [eDesc, setEDesc] = useState('');
+  const [eCat, setECat] = useState('');
+  const [ePrice, setEPrice] = useState('');
   const [order, setOrder] = useState<RazorpayOrder | null>(null);
   const paid = useRef(false);
 
@@ -147,6 +151,8 @@ export default function GigDetail() {
   const attachments: string[] = Array.isArray(gig.images) ? gig.images : [];
   const canApply = !isPoster && status === 'open' && !myApp && !advert;
   const delivered = status === 'delivered';
+  // Company tasks can be edited until someone is hired (app/company/task/[id]).
+  const canEdit = isPoster && gig.listing_type === 'COMPANY_TASK' && status === 'open' && !applicants.some((a) => a.status === 'accepted');
   const awaitingFunds = status === 'awaiting_funds' && gig.payment_gateway !== 'DIRECT' && canFundEscrow(gig);
   const chatWith = (other: string, name: string) =>
     router.push({ pathname: '/chat/[gigId]', params: { gigId: id, other, name } });
@@ -189,6 +195,7 @@ export default function GigDetail() {
             <Text style={[s.body, poster?.username && { color: c.violet }]}>{poster?.name ?? 'Unknown'}</Text>
           </Pressable>
           {poster?.college ? <Text style={s.meta}>{poster.college}</Text> : null}
+          {gig.company_id ? <Text style={s.link} onPress={() => router.push(`/c/${gig.company_id}`)}>View company page</Text> : null}
           {poster?.rating ? <Text style={s.meta}>Rating {Number(poster.rating).toFixed(1)}</Text> : null}
         </Card>
 
@@ -251,6 +258,19 @@ export default function GigDetail() {
               <Button label="Raise a dispute" variant="ghost" onPress={() => setForm('dispute')} />
             </>
           ) : null}
+          {canEdit ? (
+            <Button
+              label="Edit task"
+              variant="ghost"
+              onPress={() => {
+                setETitle(gig.title ?? '');
+                setEDesc(gig.description ?? '');
+                setECat(gig.category ?? '');
+                setEPrice(String(gig.price ?? ''));
+                setForm('edit');
+              }}
+            />
+          ) : null}
           {isPoster && status === 'open' && !gig.assigned_worker_id ? (
             <Button
               label="Take down this listing"
@@ -262,6 +282,19 @@ export default function GigDetail() {
       </ScrollView>
 
       <Checkout order={order} onResult={onCheckout} />
+
+      <Sheet visible={form === 'edit'} title="Edit task" onClose={close}>
+        <Field label="Title" value={eTitle} onChangeText={setETitle} maxLength={80} />
+        <Field label="Description" value={eDesc} onChangeText={setEDesc} maxLength={500} multiline />
+        <Field label="Category" value={eCat} onChangeText={setECat} />
+        <Field label="Budget per worker (₹)" value={ePrice} onChangeText={setEPrice} keyboardType="number-pad" />
+        <ErrorText>{formErr}</ErrorText>
+        <Button
+          label="Save changes"
+          loading={busy}
+          onPress={() => act('/api/company/edit-task', { gigId: id, title: eTitle.trim(), description: eDesc.trim(), category: eCat.trim(), price: ePrice, images: attachments }, 'Task updated.')}
+        />
+      </Sheet>
 
       <Sheet visible={form === 'apply'} title="Apply for this task" onClose={close}>
         <Field label="Why you? (optional)" value={pitch} onChangeText={setPitch} multiline placeholder="A line or two about your experience" />

@@ -1,0 +1,29 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+import { ColorValue } from 'react-native';
+import { c } from '../../lib/theme';
+
+const icon = (name: keyof typeof Ionicons.glyphMap) =>
+  ({ color, size }: { color: ColorValue; size: number }) => <Ionicons name={name} color={color as string} size={size} />;
+
+// The business side: a parallel funnel to the student tabs (see "Company vs. Student flows"
+// in CLAUDE.md). Gate in app/_layout.tsx sends COMPANY accounts here.
+export default function CompanyTabs() {
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: c.violet,
+        tabBarInactiveTintColor: c.faint,
+        tabBarStyle: { backgroundColor: c.raised, borderTopColor: c.line },
+        headerStyle: { backgroundColor: c.page },
+        headerTitleStyle: { color: c.inkStrong, fontWeight: '700' },
+        headerShadowVisible: false,
+      }}
+    >
+      <Tabs.Screen name="index" options={{ title: 'Dashboard', tabBarIcon: icon('grid-outline') }} />
+      <Tabs.Screen name="post" options={{ title: 'Post task', tabBarIcon: icon('add-circle-outline') }} />
+      <Tabs.Screen name="messages" options={{ title: 'Messages', tabBarIcon: icon('chatbubble-outline') }} />
+      <Tabs.Screen name="account" options={{ title: 'Company', tabBarIcon: icon('business-outline') }} />
+    </Tabs>
+  );
+}

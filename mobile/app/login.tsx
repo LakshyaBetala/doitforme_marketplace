@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { router } from 'expo-router';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '../components/ui';
 import { DEMO_ENABLED } from '../lib/demo';
@@ -12,6 +13,8 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
+  const [business, setBusiness] = useState(false);
+  const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -20,6 +23,14 @@ export default function Login() {
     const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
     setBusy(false);
     if (error) setErr(error.message); else setSent(true);
+  }
+
+  // Companies sign in with the password they set at registration (app/company/login).
+  async function passwordLogin() {
+    setBusy(true); setErr('');
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setBusy(false);
+    if (error) setErr(error.message);
   }
 
   async function verify() {
@@ -45,7 +56,20 @@ export default function Login() {
           value={email}
           onChangeText={setEmail}
         />
-        {sent ? (
+        {business ? (
+          <>
+            <TextInput
+              style={s.input}
+              placeholder="Password"
+              placeholderTextColor={c.darkMuted}
+              secureTextEntry
+              autoCapitalize="none"
+              value={password}
+              onChangeText={setPassword}
+            />
+            <Button label="Sign in" onPress={passwordLogin} loading={busy} />
+          </>
+        ) : sent ? (
           <>
             <TextInput
               style={s.input}
@@ -65,6 +89,10 @@ export default function Login() {
         {err ? <Text style={s.err}>{err}</Text> : null}
       </View>
       {DEMO_ENABLED ? <Button label="Try demo (sample data)" variant="ghost" onPress={startDemo} /> : null}
+      <Text style={s.note} onPress={() => { setBusiness(!business); setErr(''); setSent(false); }}>
+        {business ? 'Student? Sign in with an emailed code' : 'Business account? Sign in with password'}
+      </Text>
+      <Text style={s.note} onPress={() => router.push('/company-register')}>Registering a company? Create a business account</Text>
       <Text style={s.note}>New here? Enter your email and we will create your account.</Text>
     </KeyboardAvoidingView>
   );

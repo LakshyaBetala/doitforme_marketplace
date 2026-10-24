@@ -17,11 +17,20 @@ function Gate() {
       </View>
     );
   }
+  // Business sign-up runs while signed in but before a company profile exists.
+  if (seg === 'company-register' && profile?.role !== 'COMPANY') return <Shell />;
   if (!session) return seg === 'login' ? <Shell /> : <Redirect href="/login" />;
+
+  // Companies have their own tabs and no phone/college gate (that one is for students).
+  if (profile?.role === 'COMPANY') {
+    const away = seg === '(tabs)' || seg === 'login' || seg === 'finish-profile' || seg === 'company-register';
+    return away ? <Redirect href="/company" /> : <Shell />;
+  }
 
   const complete = Boolean(profile?.phone && profile?.college);
   if (!complete) return seg === 'finish-profile' ? <Shell /> : <Redirect href="/finish-profile" />;
   if (seg === 'login' || seg === 'finish-profile') return <Redirect href="/" />;
+  if (seg === 'company') return <Redirect href="/" />;
   return <Shell />;
 }
 
