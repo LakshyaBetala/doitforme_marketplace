@@ -1,6 +1,7 @@
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
+import { AlertsProvider } from '../lib/alerts';
 import { SessionProvider, useSession } from '../lib/session';
 import { c } from '../lib/theme';
 
@@ -46,7 +47,9 @@ export default function Root() {
   return (
     <SessionProvider>
       <StatusBar style="auto" />
-      <Gate />
+      <AlertsProvider>
+        <Gate />
+      </AlertsProvider>
     </SessionProvider>
   );
 }

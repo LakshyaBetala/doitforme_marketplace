@@ -37,26 +37,43 @@ locally (`react-dom` must stay pinned to `react`'s version).
 
 ## What exists
 
-Sign-up and login by emailed code, profile completion, task feed with campus filter, task
-detail, apply, chat (thread plus send via `/api/chat/send`), submit work with UPI prompt,
-approve and release, request changes, dispute, hire and pay (Razorpay in a WebView), post a
-task, student-ID upload with camera, account deletion, privacy policy link.
+Students: sign-up and login by emailed code, profile completion with the website's college
+list and referral code, Home (what needs you today), task feed with campus filter, task
+detail with photos and documents, apply, chat, submit work with UPI prompt, approve with a
+rating (releases escrow through /api/gig/complete), request changes, dispute, rate the poster,
+hire and pay (Razorpay in a WebView), post a task or a service advert (photos, documents,
+deadline), take a listing down, Talent (service adverts and request-service), public
+profiles, edit profile and avatar, worker profile and resume (private bucket), earnings,
+referrals, Telegram link, notifications (bell plus live in-app banners), student-ID upload
+with camera, account deletion.
+
+Businesses: registration (code, logo, password), password sign-in, dashboard with Company
+Pro checkout, post a company task (workers, managed delivery, attachments, free-tier limit),
+edit task, applicants and hiring (same task screen), company profile, public company page.
+
+Inner Circle: apply, TECH briefs workflow (computed by shared/innerCircle.ts), OUTREACH lead
+tracker. Legal and marketing pages open on the website.
+
+Reused from the website unchanged: `shared/` is copied from `lib/` by
+`node mobile/scripts/sync-shared.mjs` (fees, gig roles, attachments, UPI, phone, Inner
+Circle, college list). Run it with `--check` to fail on drift.
 
 ## Not done
 
 - **Push notifications.** Needs a Firebase project: add `google-services.json`, upload an FCM
-  key to EAS, then `expo-notifications` and a device-token table next to
-  `push_subscriptions`.
-- Task photos and documents, service adverts, company flows, ratings, referrals, Telegram
-  linking, payouts and the admin desk. These stay on the website.
+  key to EAS, then `expo-notifications` and a device-token table next to `push_subscriptions`.
+- The admin desk (disputes, payouts, KYC review, managed queue, company clearance).
 - Client-side AI moderation (the website runs a model in the browser). The app relies on the
   server's regex check, which is the same check the website's server runs.
 - Brand fonts (DM Sans, Manrope): the app uses the system font.
+- Web-push settings (replaced by the Telegram link and in-app alerts).
+- `/about` is not in proxy.ts's maintenance allow-list, so it shows the hold page until the
+  site is out of maintenance.
 
 ## Untested
 
 Everything that needs a signed-in user was checked only by type-check, bundling and the
-offline cookie test. Run through these on a device with a real account before shipping:
+offline cookie test (until someone has signed in on a device). Run through these on a device with a real account before shipping:
 sign-up, apply, chat send, deliver, approve, hire and pay (especially UPI inside the
 WebView), ID upload, account deletion.
 
