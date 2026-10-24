@@ -5,7 +5,7 @@ import { Attachments } from '../../components/Attachments';
 import { Checkout, CheckoutResult, RazorpayOrder } from '../../components/Checkout';
 import { ErrorText, Field, Sheet } from '../../components/form';
 import { Button, Card, Empty, Loading, Pill } from '../../components/ui';
-import { api } from '../../lib/api';
+import { api, signedUrlFrom } from '../../lib/api';
 import { humanize, rupees, timeAgo, toneFor } from '../../lib/format';
 import { useSession } from '../../lib/session';
 import { supabase } from '../../lib/supabase';
@@ -54,7 +54,7 @@ export default function GigDetail() {
     const [p, a, mine, rt] = await Promise.all([
       supabase.from('users').select('name, avatar_url, rating, college, username').eq('id', data.poster_id).single(),
       isPoster
-        ? supabase.from('applications').select('*, worker:users!worker_id(id, name, rating, college, username)').eq('gig_id', id)
+        ? supabase.from('applications').select('*, worker:users!worker_id(id, name, rating, college, username, resume_url)').eq('gig_id', id)
         : Promise.resolve({ data: [] as any[] }),
       !isPoster && me
         ? supabase.from('applications').select('*').eq('gig_id', id).eq('worker_id', me).maybeSingle()
@@ -214,6 +214,18 @@ export default function GigDetail() {
                         startPayment('/api/gig/hire', { gigId: id, workerId: a.worker_id }),
                       )
                     }
+                  />
+                ) : null}
+                {a.worker?.resume_url ? (
+                  <Button
+                    label="Resume"
+                    variant="ghost"
+                    onPress={async () => {
+                      // Authorised server-side: only a poster the student applied to may open it.
+                      const url = await signedUrlFrom(`/api/profile/resume?userId=${a.worker_id}`);
+                      if (url) Linking.openURL(url);
+                      else Alert.alert('Could not open resume', 'Try again in a moment.');
+                    }}
                   />
                 ) : null}
                 <Button label="Message" variant="ghost" onPress={() => chatWith(a.worker_id, a.worker?.name ?? 'Student')} />

@@ -3,6 +3,32 @@ import { isDemo, supabase } from './supabase';
 
 export const SITE = 'https://www.doitforme.in';
 
+async function authCookie(): Promise<string | null> {
+  let { data } = await supabase.auth.getSession();
+  // Refresh here, on the device, so the server never has to (it would rotate the token).
+  if (data.session && (data.session.expires_at ?? 0) - Date.now() / 1000 < 300) {
+    const r = await supabase.auth.refreshSession();
+    data = { session: r.data.session } as typeof data;
+  }
+  return data.session ? buildAuthCookie(process.env.EXPO_PUBLIC_SUPABASE_URL!, data.session as any) : null;
+}
+
+/** For routes that answer with a redirect to a short-lived signed URL (e.g. resumes). */
+export async function signedUrlFrom(path: string): Promise<string | null> {
+  if (isDemo()) return null;
+  const cookie = await authCookie();
+  if (!cookie) return null;
+  const ctl = new AbortController();
+  try {
+    const res = await fetch(SITE + path, { headers: { Cookie: cookie }, credentials: 'omit', signal: ctl.signal });
+    const url = res.ok ? res.url : null;
+    ctl.abort(); // we only wanted the final URL, not the file body
+    return url;
+  } catch {
+    return null;
+  }
+}
+
 export type ApiResult<T = any> = { ok: boolean; status: number; data: T; error?: string };
 
 // Calls the website's API routes as the signed-in user (see lib/cookie.ts).

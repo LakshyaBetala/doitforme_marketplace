@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
+import { CollegePicker } from '../components/CollegePicker';
 import { ErrorText, Field } from '../components/form';
 import { Button } from '../components/ui';
 import { api } from '../lib/api';
@@ -15,6 +16,7 @@ export default function FinishProfile() {
   const [phone, setPhone] = useState(profile?.phone ?? '');
   const [college, setCollege] = useState(profile?.college ?? '');
   const [upi, setUpi] = useState('');
+  const [ref, setRef] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -31,8 +33,13 @@ export default function FinishProfile() {
         upi_id: upi.trim() || undefined,
       },
     });
+    if (!res.ok) {
+      setBusy(false);
+      return setErr(res.error ?? 'Could not save.');
+    }
+    // Same follow-up call as app/auth/callback: a referral code is applied once the row exists.
+    if (ref.trim()) await api('/api/referral/apply', { body: { referralCode: ref.trim() } });
     setBusy(false);
-    if (!res.ok) return setErr(res.error ?? 'Could not save.');
     await reload();
   }
 
@@ -43,7 +50,8 @@ export default function FinishProfile() {
         <Text style={s.body}>A few details so posters know who they are hiring and where to pay you.</Text>
         <Field label="Full name" value={name} onChangeText={setName} autoComplete="name" />
         <Field label="Phone number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" hint="Kept private. Never shown to other users." />
-        <Field label="College" value={college} onChangeText={setCollege} />
+        <CollegePicker value={college} onChange={setCollege} />
+        <Field label="Referral code (optional)" value={ref} onChangeText={setRef} autoCapitalize="characters" />
         <Field label="UPI ID (optional)" value={upi} onChangeText={setUpi} autoCapitalize="none" hint="You can add this later, when you deliver your first task." />
         <ErrorText>{err}</ErrorText>
         <Button label="Save and continue" onPress={save} loading={busy} />

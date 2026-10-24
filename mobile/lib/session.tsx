@@ -14,6 +14,14 @@ export type Profile = {
   jobs_completed: number | null;
   kyc_status: string | null;
   kyc_verified: boolean | null;
+  username: string | null;
+  role: string | null;
+  referral_code: string | null;
+  points_balance: number | null;
+  total_earned: number | null;
+  upi_id: string | null;
+  is_elite: boolean | null;
+  inner_circle_role: string | null;
 };
 
 type Ctx = {
