@@ -35,7 +35,8 @@
           "cameraPermission": "Allow DoItForMe to use the camera to photograph your student ID.",
           "photosPermission": "Allow DoItForMe to pick a photo of your student ID."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }

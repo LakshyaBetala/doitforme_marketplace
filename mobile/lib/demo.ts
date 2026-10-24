@@ -53,7 +53,10 @@ function builder(table: string) {
   const eq: Record<string, unknown> = {};
   let single = false;
   let head = false;
+  let write = false;
   const run = () => {
+    // Demo data is read-only: a write must fail, not pretend to succeed.
+    if (write) return { data: null, error: { message: 'Demo mode: changes are switched off.' } };
     let rows = (tables[table] ?? [])
       .filter((r) => Object.entries(eq).every(([k, v]) => k.includes('.') || r[k] === v))
       .map((r) => embed(table, r));
@@ -70,6 +73,7 @@ function builder(table: string) {
     {
       get(_t, prop: string) {
         if (prop === 'then') return (ok: any, bad: any) => Promise.resolve(run()).then(ok, bad);
+        if (prop === 'insert' || prop === 'update' || prop === 'upsert' || prop === 'delete') return () => ((write = true), chain);
         if (prop === 'eq') return (col: string, val: unknown) => ((eq[col] = val), chain);
         if (prop === 'single' || prop === 'maybeSingle') return () => ((single = true), chain);
         if (prop === 'select') return (_cols?: string, opts?: { head?: boolean }) => ((head = Boolean(opts?.head)), chain);
@@ -82,7 +86,13 @@ function builder(table: string) {
 
 export const demoClient = {
   from: (table: string) => builder(table),
-  storage: { from: () => ({ getPublicUrl: () => ({ data: { publicUrl: '' } }) }) },
+  storage: {
+    from: () => ({
+      getPublicUrl: () => ({ data: { publicUrl: '' } }),
+      upload: async () => ({ data: null, error: { message: 'Demo mode: uploads are switched off.' } }),
+      createSignedUrl: async () => ({ data: null, error: { message: 'Demo mode.' } }),
+    }),
+  },
 };
 
 export const demoSession: any = { user: { id: 'demo', email: 'demo@doitforme.in' } };
