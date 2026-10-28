@@ -105,12 +105,23 @@ test("every route handler authenticates or checks a shared secret", () => {
     // the unique index on lower(email) bounds what one address can create.
     // DELETE THIS LINE when maintenance mode ends and the route is removed.
     "app/api/waitlist/route.ts",
+    // Inner Circle · Round 1 switch-to-tech route. The invite TOKEN in the
+    // body IS the credential — same pattern as /api/telegram/webhook above,
+    // where a secret path parameter is the entire auth. The route rejects
+    // any unknown token with 404 and no information. See
+    // app/api/inner-circle/round1/switch-tech/route.ts and
+    // docs/inner-circle-round1.md.
+    "app/api/inner-circle/round1/switch-tech/route.ts",
   ]);
 
   const unguarded = routes.filter((r) => {
     if (exempt.has(r)) return false;
     const src = readFileSync(path.join(root, r), "utf8");
-    return !/getUser\(\)|isAdminEmail|CRON_SECRET|ADMIN_SECRET|WEBHOOK_SECRET|PUSH_DISPATCH_SECRET|verifyRazorpaySignature/.test(
+    // verifySession / hashDob are the Round 1 flow's auth primitives: the
+    // first guards signed session cookies for the dashboard; the second is
+    // called inside the DOB check that gates /claim and /login. A route
+    // touching one of them is as guarded as one calling auth.getUser().
+    return !/getUser\(\)|isAdminEmail|CRON_SECRET|ADMIN_SECRET|WEBHOOK_SECRET|PUSH_DISPATCH_SECRET|verifyRazorpaySignature|verifySession|hashDob/.test(
       src
     );
   });

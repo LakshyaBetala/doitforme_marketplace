@@ -34,6 +34,10 @@ const SCHEDULE: Record<string, string> = {
   // over the free tier; capping the fan-out fixed the inflow, this is the
   // outflow. 03:30 UTC (09:00 IST) is the quietest hour.
   "30 3 * * *": "/api/cron/prune-data",
+  // Inner Circle Round 1 reminders + expiry. Offset by 5 minutes from
+  // auto-release so the two don't contend for Worker CPU on the quarter hour;
+  // the actual campaign is 7 days so a 15-minute cadence is more than enough.
+  "5,20,35,50 * * * *": "/api/cron/inner-circle-round1-nudge",
 };
 
 async function runJob(env: Env, path: string): Promise<void> {

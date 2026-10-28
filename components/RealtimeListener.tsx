@@ -17,6 +17,9 @@ export default function RealtimeListener() {
     pathnameRef.current = pathname;
 
     useEffect(() => {
+        // Supabase env missing (e.g. local dev with no .env.local) — skip the
+        // whole realtime wiring. The Round 1 portal doesn't need Supabase.
+        if (!supabase) return;
         const setupListener = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;

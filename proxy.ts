@@ -65,6 +65,17 @@ const MAINTENANCE_PUBLIC = [
   // it with a maintenance page would consume those retries and silently drop
   // payments that were actually captured.
   '/api/webhooks',
+  // Inner Circle · Round 1 portal runs DURING the maintenance window — that
+  // is the whole point of the campaign. The portal uses its own D1-backed
+  // auth (email + DOB), so Supabase being 402 doesn't affect it. If this
+  // allowlist drops the path, candidates click the invite link and land on
+  // the hold page instead of their task.
+  '/inner-circle/sales/round-1',
+  '/api/inner-circle',
+  // Admin side needs Supabase auth (isAdminEmail), which currently works
+  // again, so the admin desk routes aren't gated by MAINTENANCE_MODE either.
+  '/api/admin/inner-circle-round1',
+  '/api/cron/inner-circle-round1-nudge',
 ]
 
 const isMaintenancePublic = (pathname: string) =>
