@@ -78,7 +78,27 @@ Expected output of the grep:
 "REPLY_TO": "support@doitforme.in",
 ```
 
-The provider auto-detect in `lib/email.ts` prefers ZeptoMail over Brevo over Resend, so adding the token is the entire switch — no code change.
+**The auto-detect does NOT prefer ZeptoMail.** `AUTO_ORDER` in `lib/email.ts` is
+`["brevo", "zeptomail", "resend"]`, and the Worker already has `BREVO_API_KEY`
+set — so Brevo wins and a perfectly valid ZeptoMail token is simply never used.
+This is the usual reason "we added the token and nothing changed".
+
+Adding the token is therefore NOT the whole switch. Pin the provider too, in
+`wrangler.jsonc` vars:
+
+```jsonc
+"EMAIL_PROVIDER": "zeptomail",
+```
+
+`activeEmailProvider()` honours that and falls back with a warning if the key is
+missing, so it is safe to set before the token exists.
+
+**If the token is rejected, check the datacentre before blaming the token.**
+`lib/email.ts` posts to `https://api.zeptomail.in/v1.1/email` — the INDIA
+endpoint. A ZeptoMail account created on `zoho.com` lives in the US datacentre
+and rejects its own token at `.in`, which reads as an invalid key. Accounts made
+on `zoho.in` are correct as-is; for a `.com` account change that URL to
+`api.zeptomail.com`.
 
 ## Step 6 — The two Round 1 secrets (1 min)
 

@@ -44,7 +44,7 @@ export const metadata: Metadata = {
       "650+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
     url: "https://www.doitforme.in",
     siteName: "DoItForMe",
-    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "DoItForMe – India's Campus Freelance Network" }],
+    images: [{ url: "/og-card.png", width: 1200, height: 630, alt: "DoItForMe – India's Campus Freelance Network" }],
     type: "website",
     locale: "en_IN",
   },
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     title: "DoItForMe – India's Campus Freelance Network",
     description:
       "650+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts.",
-    images: ["/logo.png"],
+    images: ["/og-card.png"],
     creator: "@doitformein",
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.doitforme.in'),
