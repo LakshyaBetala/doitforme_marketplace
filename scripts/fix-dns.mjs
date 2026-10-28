@@ -206,6 +206,28 @@ if (!titan.length) {
   );
 }
 
+// ---- MX: one mail host, chosen explicitly ----------------------------------
+//
+// Two providers in one MX set is not redundancy, it is ambiguity: the lowest
+// priority wins and everything else is decoration that will one day receive a
+// message nobody reads. --mx=titan keeps GoDaddy/Titan and removes the rest.
+const MX_CHOICE = (process.argv.find((a) => a.startsWith("--mx=")) || "").split("=")[1];
+const mxPlan = [];
+if (MX_CHOICE === "titan") {
+  const isTitan = (c) => /secureserver\.net\.?$/i.test(c);
+  if (!mx.some((m) => isTitan(m.content))) {
+    console.error("\nREFUSING --mx=titan: no secureserver MX found to keep. That would leave the domain with no mail host.");
+    process.exit(1);
+  }
+  for (const m of mx) {
+    // Keep GoDaddy/Titan. Amazon SES's feedback-smtp record is a bounce
+    // handler for a sender nobody here uses, so it goes with the Google set.
+    if (!isTitan(m.content)) mxPlan.push({ id: m.id, content: m.content, priority: m.priority });
+  }
+  console.log(`\nMX PLAN (--mx=titan): remove ${mxPlan.length}, keep GoDaddy/Titan`);
+  for (const m of mxPlan) console.log(`  DELETE  ${String(m.priority).padStart(3)}  ${m.content}`);
+}
+
 if (!APPLY) {
   console.log("\nDry run. Nothing was changed. Re-run with --apply to make these changes.");
   process.exit(0);
@@ -233,6 +255,11 @@ for (const p of plan) {
   }
   console.log(`  ${p.act} ok  ${p.name}`);
 }
+for (const m of mxPlan) {
+  await api(`/zones/${zone.id}/dns_records/${m.id}`, { method: "DELETE" });
+  console.log(`  mx delete ok  ${m.content}`);
+}
+
 console.log("\ndone. Verify in a minute or two with:");
 console.log(
   `  curl -s -H 'accept: application/dns-json' "https://cloudflare-dns.com/dns-query?name=${ZONE_NAME}&type=TXT"`,
