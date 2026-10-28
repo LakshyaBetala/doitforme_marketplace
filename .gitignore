@@ -94,3 +94,6 @@ screenshots/real/
 android/keystore.properties
 *.jks
 *.keystore
+
+# Playwright MCP snapshots and audit screenshots
+.playwright-mcp/
