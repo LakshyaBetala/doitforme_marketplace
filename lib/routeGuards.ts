@@ -103,6 +103,18 @@ export const MAINTENANCE_PUBLIC = [
   // and rewrites to /maintenance. So exposing /admin exposes nothing an
   // attacker can act on without a whitelisted Supabase session.
   '/admin',
+  // ...which is useless if nobody can sign in to reach it. /admin redirects a
+  // signed-out visitor to /login, and /login was held, so an admin on any
+  // device without a live session could not open the desk and could not send
+  // a single Round 1 invite. It was held because Supabase Auth was answering
+  // 402 and students were meeting a broken form; Auth is healthy again
+  // (GET /auth/v1/health -> 200, 2026-10-29). A student who signs in now just
+  // lands on the hold page from /dashboard, so nothing new is exposed.
+  // '/auth/' WITH the slash: this list is a prefix match, and a bare '/auth'
+  // also opens /auth-transfer, which installs a session from tokens in the
+  // query string. Only the Google sign-in callback is meant here.
+  '/login',
+  '/auth/',
   '/api/admin/inner-circle-round1',
   '/api/cron/inner-circle-round1-nudge',
 ]

@@ -62,12 +62,17 @@ test("what must run during the hold, does", () => {
     "/api/inner-circle/round1/login",
     "/login/inner-circle-sales",
     "/admin",
+    "/login", // or no admin can sign in to reach /admin
+    "/login?redirect_to=%2Fadmin",
+    "/auth/callback",
     "/api/admin/inner-circle-round1/invite",
     "/api/cron/inner-circle-round1-nudge",
   ]) {
     assert.equal(isMaintenancePublic(p), true, `${p} must be reachable while held`);
   }
-  for (const p of ["/dashboard", "/feed", "/u/someone", "/talent", "/inner-circle", "/inner-circle/earnings"]) {
+  // /auth-transfer installs a session from query-string tokens; a bare '/auth'
+  // prefix once let it through the hold by accident.
+  for (const p of ["/dashboard", "/feed", "/u/someone", "/talent", "/inner-circle", "/inner-circle/earnings", "/auth-transfer"]) {
     assert.equal(isMaintenancePublic(p), false, `${p} must be held`);
   }
 });
