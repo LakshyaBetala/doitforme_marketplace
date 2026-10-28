@@ -22,7 +22,23 @@
 //   --no-godaddy   drop include:secureserver.net
 //   --dmarc-rua=<email>   address that receives DMARC reports
 
-const TOKEN = process.env.CLOUDFLARE_API_TOKEN;
+import { readFileSync, existsSync } from "node:fs";
+
+/**
+ * The token, from the environment or from a local file.
+ *
+ * NOT from .env.local, deliberately. Next loads that file for production
+ * builds and @opennextjs/cloudflare bakes everything it loaded into the
+ * deployed Worker — so a DNS-editing token placed there would ship inside the
+ * bundle. CLAUDE.md records this trap costing a live secret once already.
+ *
+ * scratchpad/ is gitignored and nothing reads it at build time, so a token
+ * there stays on this machine.
+ */
+const TOKEN_FILE = "scratchpad/.cf-token";
+const TOKEN =
+  process.env.CLOUDFLARE_API_TOKEN ||
+  (existsSync(TOKEN_FILE) ? readFileSync(TOKEN_FILE, "utf8").trim() : "");
 const ZONE_NAME = "doitforme.in";
 const APPLY = process.argv.includes("--apply");
 const rua =
@@ -53,7 +69,8 @@ if (!TOKEN) {
       "  Permissions:  Zone | Zone | Read\n" +
       "                Zone | DNS  | Edit\n" +
       `  Zone Resources: Include | Specific zone | ${ZONE_NAME}\n\n` +
-      'Then:  $env:CLOUDFLARE_API_TOKEN = "<token>"',
+      "Then either set $env:CLOUDFLARE_API_TOKEN, or save the token to\n" +
+      `  ${TOKEN_FILE}   (gitignored, never read at build time)`,
   );
   process.exit(1);
 }
