@@ -260,6 +260,10 @@ export default function Round1EntryPage({
           from { transform: translateX(0); }
           to   { transform: translateX(-25%); }
         }
+        @keyframes sr1-scroll-hint {
+          0%, 100% { transform: scaleX(1); transform-origin: left; }
+          50%      { transform: scaleX(1.6); }
+        }
         .sr1-letter {
           display: inline-block;
           opacity: 0;
@@ -314,37 +318,44 @@ export default function Round1EntryPage({
           </a>
         </div>
 
-        {/* ─── Hero ─── */}
-        <section className="pt-6 pb-20">
-          <Reveal>
-            <div className="text-[11px] tracking-[0.2em] uppercase text-[#C9A9FF] mb-5">
-              A letter from Mouriyan opened in your inbox.
-            </div>
-          </Reveal>
-          <Reveal delay={120}>
-            <h1
-              className="text-[44px] md:text-[72px] leading-[0.98] font-semibold tracking-[-0.025em] max-w-[18ch]"
-              style={{ fontFamily: "'Space Grotesk', ui-sans-serif, system-ui" }}
-            >
-              You put your hand up.<br />
-              <span className="text-white/50">Round 1 starts when you</span>{" "}
-              <span className="text-[#C9A9FF]">click Start.</span>
-            </h1>
-          </Reveal>
-          <Reveal delay={260}>
-            <p className="mt-7 max-w-xl text-[15.5px] leading-relaxed text-white/65">
-              One of{" "}
-              <span className="font-semibold text-white">
-                <CountUp end={1300} />
-              </span>{" "}
-              people who ticked Inner Circle. We're starting with the side that moves
-              real money, right now, today.
-            </p>
-          </Reveal>
-          <Reveal delay={400}>
-            <div className="mt-10 flex items-center gap-2 text-[11px] text-white/35 tracking-[0.14em] uppercase">
+        {/* ─── Hero (fills the viewport so SALES stays below the fold) ─── */}
+        <section className="min-h-[calc(100dvh-120px)] flex flex-col justify-center pt-4 pb-10">
+          <div>
+            <Reveal>
+              <div className="text-[11px] tracking-[0.2em] uppercase text-[#C9A9FF] mb-5">
+                A letter from Mouriyan opened in your inbox.
+              </div>
+            </Reveal>
+            <Reveal delay={120}>
+              <h1
+                className="text-[36px] sm:text-[48px] md:text-[72px] leading-[0.98] font-semibold tracking-[-0.025em] max-w-[18ch]"
+                style={{ fontFamily: "'Space Grotesk', ui-sans-serif, system-ui" }}
+              >
+                You put your hand up.<br />
+                <span className="text-white/50">Round 1 starts when you</span>{" "}
+                <span className="text-[#C9A9FF]">click Start.</span>
+              </h1>
+            </Reveal>
+            <Reveal delay={260}>
+              <p className="mt-7 max-w-xl text-[15px] md:text-[15.5px] leading-relaxed text-white/65">
+                One of{" "}
+                <span className="font-semibold text-white">
+                  <CountUp end={1300} />
+                </span>{" "}
+                people who ticked Inner Circle. We're starting with the side that moves
+                real money, right now, today.
+              </p>
+            </Reveal>
+          </div>
+          {/* Pinned at the bottom of the viewport so the scroll hint is actually at the fold edge */}
+          <Reveal delay={500}>
+            <div className="mt-auto pt-10 flex items-center gap-2 text-[11px] text-white/35 tracking-[0.14em] uppercase">
               <span>Scroll</span>
-              <span className="inline-block h-[1px] w-10 bg-white/20" />
+              <span
+                className="inline-block h-[1px] w-10 bg-white/20"
+                style={{ animation: "sr1-scroll-hint 2.4s ease-in-out infinite" }}
+              />
+              <span className="inline-block text-white/40 translate-y-[-1px]">↓</span>
             </div>
           </Reveal>
         </section>
