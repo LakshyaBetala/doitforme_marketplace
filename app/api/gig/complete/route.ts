@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { createClient } from "@supabase/supabase-js";
+import { payoutRecipientId } from "@/lib/gigRoles";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies()
@@ -76,7 +77,10 @@ export async function POST(request: Request) {
     }
 
     const payoutAmount = Number(rpcData.amount) || 0;
-    const payoutDestination = gig.assigned_worker_id;
+    // The ledger row must name the same person manual_release_escrow actually
+    // queued, so the recipient comes from lib/gigRoles rather than being assumed
+    // to be the assigned worker.
+    const payoutDestination = payoutRecipientId(gig);
 
     // The RPC owns escrow / gigs / payout_queue. These rows are the
     // human-readable history behind that move.

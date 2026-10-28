@@ -64,17 +64,14 @@ export default function InstallAppButton() {
   return (
     <button
       onClick={handleInstallClick}
-      className="w-full flex items-center px-4 py-3 hover:bg-brand-purple/10 text-sm text-zinc-300 hover:text-brand-purple transition-colors text-left"
+      className="flex min-h-[44px] w-full items-center gap-3 rounded-[9px] px-3 text-left text-[13px] font-semibold text-[var(--fg)] hover:bg-[var(--chip)] transition-colors"
     >
       {isIOS ? (
-        <MonitorSmartphone size={16} className="mr-3 shrink-0 text-brand-purple" />
+        <MonitorSmartphone size={16} className="shrink-0 text-[var(--fg-muted)]" />
       ) : (
-        <Download size={16} className="mr-3 shrink-0 text-brand-purple" />
+        <Download size={16} className="shrink-0 text-[var(--fg-muted)]" />
       )}
-      <div className="flex flex-col">
-        <span className="font-medium text-white">Install App</span>
-        <span className="text-[10px] text-zinc-500">Add to home screen</span>
-      </div>
+      Install app
     </button>
   );
 }

@@ -95,7 +95,19 @@ export async function POST(req: Request) {
     const finalPhone = phone ? (normalizeIndianPhone(phone) || phone) : (existingUser?.phone || null);
     const finalCollege = college || existingUser?.college || null;
     const finalUpi = normalizedUpi || existingUser?.upi_id || null;
-    const finalKyc = existingUser?.kyc_verified || false;
+    // kyc_verified is deliberately NOT read or written here.
+    //
+    // This route is the profile upsert and runs on every edit, so it used to
+    // preserve the flag by reading it and writing it back. That is a lost
+    // update: a student approved in the window between that SELECT and the
+    // UPSERT below had the fresh approval overwritten with the stale `false`,
+    // silently losing their verified tick and their ability to apply. An upsert
+    // only updates the columns it names, and the column default is false, so
+    // omitting it preserves an existing value and is correct for a new row.
+    // KYC is owned by api/kyc/upload and api/admin/review-kyc, which set
+    // kyc_verified and kyc_status together in one statement, and a CHECK
+    // constraint now enforces that pairing
+    // (20261011_kyc_verified_cannot_drift.sql).
     // Once a username is claimed it's permanent for this iteration — no overwrite of an existing one.
     const finalUsername = existingUser?.username || cleanedUsername || null;
 
@@ -131,7 +143,6 @@ export async function POST(req: Request) {
       college: finalCollege,
       upi_id: finalUpi,
       username: finalUsername,
-      kyc_verified: finalKyc,
       updated_at: new Date().toISOString(),
     };
 

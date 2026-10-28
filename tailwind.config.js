@@ -1,5 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  future: {
+    // Tailwind v3 emits `hover:` as a plain :hover, and touch browsers apply
+    // :hover on first tap and leave it applied until you tap elsewhere — so a
+    // tapped button keeps its hover fill. This wraps every hover: utility in
+    // @media (hover: hover), which is the whole fix for sticky hover app-wide.
+    // Default in v4; opt-in here.
+    hoverOnlyWhenSupported: true,
+  },
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",

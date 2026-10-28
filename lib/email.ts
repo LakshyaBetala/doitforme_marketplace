@@ -17,15 +17,20 @@
 // whichever key is present, preferring the roomier provider, so adding
 // BREVO_API_KEY in Vercel is the entire migration — no code change, no
 // redeploy of call sites, and the 68 templates below are untouched.
-const FROM_EMAIL = "noreply@doitforme.in";
-const FROM_NAME = "doitforme";
+// Overridable via environment so a campaign (Inner Circle, say) can route from
+// a branded address like support@ while platform mail stays on noreply@. The
+// address itself is set in wrangler.jsonc `vars`; a dev build with nothing set
+// falls back to the historical defaults.
+const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@doitforme.in";
+const FROM_NAME = process.env.FROM_NAME || "doitforme";
 const FROM = `${FROM_NAME} <${FROM_EMAIL}>`;
-const REPLY_TO = "doitforme.in@gmail.com";
+const REPLY_TO = process.env.REPLY_TO || "doitforme.in@gmail.com";
 const SITE = "https://doitforme.in";
 
 type EmailKind =
   | "applied"
   | "new_applicant"
+  | "service_requested"
   | "application_accepted"
   | "application_rejected"
   | "hired_direct"
@@ -37,12 +42,21 @@ type EmailKind =
   | "changes_requested"
   | "poster_nudge"
   | "hire_followup"
+  | "delivery_overdue"
   | "application_closed"
   | "company_approved"
   | "company_pro_activated"
   | "kyc_approved"
   | "kyc_rejected"
-  | "new_gig_alert";
+  | "new_gig_alert"
+  | "inner_circle_approved"
+  | "inner_circle_rejected"
+  | "inner_circle_round1_invite"
+  | "inner_circle_round1_reminder"
+  | "inner_circle_round1_submitted"
+  | "inner_circle_round1_expired"
+  | "inner_circle_round1_advanced"
+  | "inner_circle_round1_rejected";
 
 interface BaseArgs {
   to: string;
@@ -58,6 +72,11 @@ interface RenderResult {
   subject: string;
   preheader: string;
   bodyHtml: string;
+  // If present, wrap() returns this verbatim instead of the shared card
+  // shell. Used by heavily branded one-offs like the Inner Circle invite
+  // letter, which reads as a page not a notification and shouldn't be forced
+  // into the same `<h1>subject</h1>` + white card layout.
+  rawHtml?: string;
 }
 
 function escapeHtml(s: string): string {
@@ -90,7 +109,7 @@ function categoryCopy(category?: string | null) {
   return (category && CATEGORY_COPY[category]) || { short: "", angle: "a fresh paid opportunity that fits you." };
 }
 
-function render(kind: EmailKind, args: BaseArgs): RenderResult {
+export function render(kind: EmailKind, args: BaseArgs): RenderResult {
   const name = escapeHtml(args.recipientName || "there");
   const title = escapeHtml(args.gigTitle || "your gig");
   const url = gigUrl(args.gigId);
@@ -110,7 +129,11 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
       };
 
     case "new_applicant":
-      const applicantReviewUrl = `${SITE}/company/task/${args.gigId}`;
+      // /company/task/<id> hard-checks company ownership and bounces anyone else
+      // to /company/dashboard, so every STUDENT poster who got this mail landed
+      // on a redirect instead of their applicants. /gig/<id>/applicants
+      // authorizes on poster_id alone and therefore works for both.
+      const applicantReviewUrl = `${SITE}/gig/${args.gigId}/applicants`;
       return {
         subject: `New applicant on ${args.gigTitle || "your gig"}`,
         preheader: "Review the pitch and respond.",
@@ -118,6 +141,22 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p>Hi ${name},</p>
           <p>You have a new applicant on <strong>${title}</strong>.</p>
           <p><a href="${applicantReviewUrl}" class="cta">Review applicant</a></p>
+        `,
+      };
+
+    // Someone wants to hire you from your service listing. This is the good
+    // news end of the shopfront, so it says plainly what happens next: they pay
+    // into escrow, you do the work, you get paid. See lib/gigRoles.ts for why a
+    // request creates a fresh engagement rather than attaching to the advert.
+    case "service_requested":
+      return {
+        subject: `Someone wants to hire you — ${args.gigTitle || "your service"}`,
+        preheader: "A client sent you a request. Reply to get started.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>A client wants to hire you for <strong>${title}</strong>${rupees ? ` at <strong>${rupees}</strong>` : ""}.</p>
+          <p>Reply to them and agree the details. When they pay, the money is held in escrow until you deliver — so it is there before you start work.</p>
+          <p><a href="${url}" class="cta">View the request</a></p>
         `,
       };
 
@@ -188,6 +227,45 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
           <p class="muted">Keep everything here — the money is only released once the work is approved.</p>
         `,
       };
+
+    // Deliberately NOT hire_followup, which says "there haven't been any
+    // messages since". That is a different situation and the wrong thing to
+    // tell someone who has been talking to their counterparty for a month. This
+    // one is about the money having no exit: nothing was delivered, so
+    // auto-release cannot fire, and it will sit there until a human acts.
+    case "delivery_overdue": {
+      const days = Number(args.extra?.days ?? 0);
+      // extra is Record<string, string | number | null | undefined>, so the
+      // audience travels as a flag rather than a boolean.
+      const forWorker = args.extra?.forWorker === "1";
+      return {
+        subject: forWorker
+          ? `Still waiting on your work — ${args.gigTitle || "your gig"}`
+          : `Nothing delivered yet — ${args.gigTitle || "your gig"}`,
+        preheader: forWorker
+          ? "The payment is held and cannot reach you until you submit."
+          : "Your payment is still held. You can ask for it, or raise a dispute.",
+        bodyHtml: forWorker
+          ? `
+          <p>Hi ${name},</p>
+          <p><strong>${title}</strong> was funded ${days} days ago and nothing has been
+             submitted yet. The money is sitting in escrow and it cannot reach you
+             until you deliver — there is no timer that pays it out on its own.</p>
+          <p><a href="${SITE}/gig/${args.gigId}" class="cta">Submit your work</a></p>
+          <p class="muted">If you can no longer do it, say so in the chat so the poster
+             can get their money back. That is a much better outcome than silence.</p>
+        `
+          : `
+          <p>Hi ${name},</p>
+          <p>You paid for <strong>${title}</strong> ${days} days ago and nothing has been
+             delivered. Your money is still held in escrow — it has not been paid out,
+             and it will not move until the work is submitted.</p>
+          <p><a href="${SITE}/gig/${args.gigId}" class="cta">Open the gig</a></p>
+          <p class="muted">Chase it in the chat, or raise a dispute from the gig page and
+             we will review it and return your money if the work never arrives.</p>
+        `,
+      };
+    }
 
     case "application_rejected":
       return {
@@ -318,6 +396,195 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
       };
     }
 
+    case "inner_circle_approved": {
+      const role = String(args.extra?.role || "TECH") === "OUTREACH" ? "outreach" : "building";
+      return {
+        subject: "You're in the Inner Circle",
+        preheader: "Company briefs come to you first now.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>You're in the <strong>Inner Circle</strong>, on the ${role} side.</p>
+          <p>${
+            role === "outreach"
+              ? "Your pipeline is live. Add the companies you can reach, keep a next action on everything open, and we'll back you up when a conversation gets real."
+              : "Paid company briefs come to you before they reach the open board, and we put your name forward directly instead of leaving you in a pile. Money is held in escrow before you start, exactly as it is everywhere else on the platform."
+          }</p>
+          <p><a href="${SITE}/inner-circle" class="cta">Open the Inner Circle</a></p>
+        `,
+      };
+    }
+
+    case "inner_circle_rejected": {
+      // The note is written by a person and is the only thing the student is
+      // told, so it is the body of the email rather than a footnote to it.
+      const note = args.extra?.reason
+        ? escapeHtml(String(args.extra.reason))
+        : "We're keeping the group small for now.";
+      return {
+        subject: "About your Inner Circle application",
+        preheader: "Not this time — here's where you stand.",
+        bodyHtml: `
+          <p>Hi ${name},</p>
+          <p>Thanks for applying to the Inner Circle. We're not taking you on right now.</p>
+          <p>${note}</p>
+          <p>You can apply again, and this isn't a closed door — finished work on the open board is the strongest thing you can add, because it's what we point to when we vouch for someone.</p>
+          <p><a href="${SITE}/feed" class="cta">Find work on the board</a></p>
+        `,
+      };
+    }
+
+    // ─── Inner Circle · Round 1 (Sales) ───────────────────────────────────
+    //
+    // The six templates below drive the 7-day selection sprint for the ~607
+    // people who ticked "Put me forward for the Inner Circle" on the hold
+    // page. They are not signed-up users, so every link carries a token that
+    // identifies the candidate; the DOB is a secondary factor they set on
+    // first visit and use for return logins. See /inner-circle/sales/round-1
+    // for the portal and docs/inner-circle-round1.md for the full plan.
+
+    case "inner_circle_round1_invite": {
+      // The invite is a letter, not a notification — Mouriyan writing to a
+      // specific candidate about why DoItForMe exists and what the Inner
+      // Circle is trying to do. Breaks out of the shared card shell via
+      // `rawHtml` so the design can carry the mascot, the giant "Sales." word
+      // and the signature plate without fighting the base styles.
+      const token = args.extra?.token ? encodeURIComponent(String(args.extra.token)) : "";
+      const entryUrl = `${SITE}/inner-circle/sales/round-1/${token}`;
+      const switchUrl = `${SITE}/inner-circle/sales/round-1/switch-to-tech/${token}`;
+      // Cohort size, read fresh at batch time by the invite route and threaded
+      // in via extras. Hedged phrasing when missing so a lost extra never
+      // produces "There are undefined of you." on a real send.
+      const totalRaw = Number(args.extra?.totalCohort);
+      const totalCohort = Number.isFinite(totalRaw) && totalRaw > 0 ? totalRaw : null;
+      const countShort = totalCohort ? totalCohort.toLocaleString("en-IN") : "hundreds";
+      const subject = "A letter from Mouriyan, about the Inner Circle and India.";
+      const preheader = `You put your hand up. ${countShort} of you did. Why we're starting with Sales.`;
+      return {
+        subject,
+        preheader,
+        bodyHtml: "", // unused on the rawHtml path
+        rawHtml: inviteLetterHtml({ name, entryUrl, switchUrl, subject, totalCohort }),
+      };
+    }
+
+    case "inner_circle_round1_reminder": {
+      // hoursLeft is a float coming in; display the right bucket phrasing.
+      const hoursLeft = Number(args.extra?.hoursLeft || 0);
+      const token = args.extra?.token ? encodeURIComponent(String(args.extra.token)) : "";
+      const dashUrl = `${SITE}/inner-circle/sales/round-1/${token}`;
+      const bucket =
+        hoursLeft <= 0.75 ? "30 minutes"
+        : hoursLeft <= 3.5 ? "3 hours"
+        : hoursLeft <= 7 ? "6 hours"
+        : "12 hours";
+      const subject =
+        bucket === "30 minutes"
+          ? "Last 30 minutes on your Inner Circle task"
+          : `${bucket} left on your Round 1`;
+      const preheader = `Your Round 1 window closes in ${bucket}.`;
+      return {
+        subject,
+        preheader,
+        bodyHtml: "",
+        rawHtml: miniLetterHtml({
+          name,
+          subject,
+          eyebrow: "Inner Circle · Sales · Round 1",
+          paragraphs: [
+            `Quick ping. <strong style="color:#ffffff">${bucket} left</strong> on your Round 1 window. The portal still has the brief, the template sheet, and the submission box exactly where you left them.`,
+            `A complete, rough list beats an unsubmitted one. Submit what you have, we'll read it.`,
+          ],
+          cta: { url: dashUrl, label: "Open the portal" },
+          closing: `Something got in the way? Hit reply and tell me honestly, I read every one.`,
+        }),
+      };
+    }
+
+    case "inner_circle_round1_submitted": {
+      const subject = "Got it. Your Round 1 is in.";
+      return {
+        subject,
+        preheader: "I'll read your sheet myself and come back within 7 days.",
+        bodyHtml: "",
+        rawHtml: miniLetterHtml({
+          name,
+          subject,
+          eyebrow: "Inner Circle · Sales · Round 1",
+          paragraphs: [
+            `Got it. Your Round 1 submission is in and the clock is on our side now.`,
+            `I read every sheet myself. I'm looking at how you picked the companies, whether the decision-makers are real, and whether the fit column reads like a list a founder would actually open on a Monday morning.`,
+            `You'll hear back within <strong style="color:#ffffff">7 days</strong> either way, with a yes or no on Round 2 and a line on what I saw.`,
+          ],
+          closing: `If anything's wrong with the sheet after sending, just reply with a corrected link before the review window closes.`,
+        }),
+      };
+    }
+
+    case "inner_circle_round1_expired": {
+      const subject = "Your Round 1 window closed";
+      return {
+        subject,
+        preheader: "Your 24 hours ran out, but this isn't a closed door.",
+        bodyHtml: "",
+        rawHtml: miniLetterHtml({
+          name,
+          subject,
+          eyebrow: "Inner Circle · Sales · Round 1",
+          paragraphs: [
+            `Your Round 1 window closed without a submission. That's it for this cohort.`,
+            `It isn't a closed door though. This is the first Inner Circle intake; more will open as we grow. We'll keep you on the list and reach out when the next round opens.`,
+          ],
+          closing: `If something real got in the way and you'd like a second look, reply and tell me honestly. I read every one.`,
+        }),
+      };
+    }
+
+    case "inner_circle_round1_advanced": {
+      const note = args.extra?.note
+        ? `<em style="color:rgba(255,255,255,0.75)">${escapeHtml(String(args.extra.note))}</em>`
+        : null;
+      const subject = "You're through to Round 2.";
+      return {
+        subject,
+        preheader: "Your Round 1 sheet made the cut.",
+        bodyHtml: "",
+        rawHtml: miniLetterHtml({
+          name,
+          subject,
+          eyebrow: "Inner Circle · Sales · Round 2 incoming",
+          paragraphs: [
+            `Your Round 1 sheet made it through. <strong style="color:#ffffff">You're into Round 2.</strong>`,
+            ...(note ? [note] : []),
+            `Round 2 is another 24-hour task, a real-world one. I'll send the brief and the window in a separate email within the next couple of days. Keep an eye on this inbox.`,
+          ],
+        }),
+      };
+    }
+
+    case "inner_circle_round1_rejected": {
+      // Admin writes a human note; it's the only thing we tell the candidate,
+      // so render it as the body, not a footnote.
+      const note = args.extra?.note
+        ? escapeHtml(String(args.extra.note))
+        : "The sheet didn't quite land the way we're looking for right now.";
+      const subject = "About your Round 1 submission";
+      return {
+        subject,
+        preheader: "Not this cohort, but here's what I saw.",
+        bodyHtml: "",
+        rawHtml: miniLetterHtml({
+          name,
+          subject,
+          eyebrow: "Inner Circle · Sales · Round 1",
+          paragraphs: [
+            `Thanks for sending Round 1 in. I'm not taking you forward to Round 2 this cohort.`,
+            `<em style="color:rgba(255,255,255,0.75)">${note}</em>`,
+            `Future rounds will open as we grow, and the Inner Circle isn't the only path on the platform. We'll stay in touch, this isn't a closed door.`,
+          ],
+        }),
+      };
+    }
+
     case "kyc_rejected": {
       const reason = args.extra?.reason ? escapeHtml(String(args.extra.reason)) : "We couldn't confirm this is a valid student ID.";
       return {
@@ -415,8 +682,318 @@ function render(kind: EmailKind, args: BaseArgs): RenderResult {
   }
 }
 
-function wrap({ subject, preheader, bodyHtml }: RenderResult): string {
+// ─────────────────────────────────────────────────────────────────────────
+// Inner Circle · Round 1 invite — hand-built HTML letter.
+//
+// The invite isn't a transactional notification — it's a cold-ish letter
+// from the founder to a specific person who said they're interested. So
+// the design does three things the shared shell can't:
+//
+//   1. Lead with the brand mark + the sloth mascot, so the recipient knows
+//      who this is from before reading a word.
+//   2. Use a dark surface and large typography — the hold page and the
+//      portal both use the same, this is the same world not a different one.
+//   3. End with a signature plate (Mouriyan, Founder) + an explicit
+//      "reply to me" line. The whole point of the sender being
+//      support@doitforme.in and the reply-to being the same is that this
+//      is a person, not a no-reply.
+//
+// Email constraints that drove the tag choices:
+//   - Table layout everywhere outlook touches; divs for the simple blocks.
+//   - All CSS inline. No @media (dark Gmail inverts anyway, and we deliver
+//     the dark version regardless).
+//   - Font-family lists Space Grotesk first for clients that happen to have
+//     it (unlikely) and falls back to Inter and system-ui — the subject
+//     doesn't depend on a web font loading.
+//   - Images use absolute https URLs on doitforme.in because email clients
+//     can't resolve relative paths and most block background-image URLs.
+// ─────────────────────────────────────────────────────────────────────────
+// Shared type helpers for both inviteLetterHtml and miniLetterHtml.
+const SERIFISH = "'Space Grotesk','Inter',system-ui,-apple-system,'Segoe UI',sans-serif";
+const SANS = "'Inter',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
+const LOGO_URL = `${SITE}/logo.png`;
+const MASCOT_URL = `${SITE}/sloth.png`;
+
+/** Reusable masthead: logo + brand mark + eyebrow tag. */
+function roundOneMasthead(eyebrow: string): string {
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="padding-right:12px;vertical-align:middle">
+          <img src="${LOGO_URL}" width="40" height="40" alt="DoItForMe" style="display:block;border-radius:10px;border:1px solid rgba(255,255,255,0.08)">
+        </td>
+        <td style="vertical-align:middle">
+          <div style="font-family:${SERIFISH};font-size:17px;font-weight:600;color:#ffffff;letter-spacing:-0.01em">DoItForMe</div>
+          <div style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:#C9A9FF;margin-top:2px">${eyebrow}</div>
+        </td>
+      </tr>
+    </table>`;
+}
+
+/** Reusable signature plate: mascot + "Mouriyan Gandhi" + reply-to line. */
+function roundOneSignature(reminder = "Reply to this email. I read every one."): string {
+  return `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="width:76px;vertical-align:middle;padding-right:14px">
+          <img src="${MASCOT_URL}" width="60" height="60" alt="The DoItForMe sloth" style="display:block">
+        </td>
+        <td style="vertical-align:middle">
+          <div style="font-family:${SERIFISH};font-size:17px;color:#ffffff;font-weight:600;letter-spacing:-0.01em">Mouriyan</div>
+          <div style="font-size:12.5px;color:rgba(255,255,255,0.55);margin-top:2px">Cofounder, DoItForMe (with Laksh Betala)</div>
+          <div style="font-size:12.5px;color:rgba(255,255,255,0.4);margin-top:1px">chennai, india</div>
+          <div style="font-size:12.5px;color:rgba(255,255,255,0.55);margin-top:6px">${escapeHtml(reminder)}</div>
+        </td>
+      </tr>
+    </table>`;
+}
+
+/** Reusable round card: a numbered row with pill badge for the duration. */
+function roundCard(num: string, title: string, duration: string, body: string): string {
+  return `
+    <tr>
+      <td style="padding:20px 22px;background:#13131A;border:1px solid rgba(255,255,255,0.1);border-radius:14px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="vertical-align:top;width:60px;padding-right:16px">
+              <div style="font-family:${SERIFISH};font-size:34px;color:#C9A9FF;font-weight:600;letter-spacing:-0.02em;line-height:1">${num}</div>
+            </td>
+            <td style="vertical-align:top">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align:middle">
+                    <div style="font-family:${SERIFISH};font-size:16px;color:#ffffff;font-weight:600;letter-spacing:-0.01em">${title}</div>
+                  </td>
+                  <td align="right" style="vertical-align:middle;white-space:nowrap">
+                    <div style="display:inline-block;padding:4px 10px;background:rgba(136,37,245,0.15);border:1px solid rgba(136,37,245,0.35);border-radius:999px;font-size:10.5px;color:#C9A9FF;letter-spacing:0.08em;text-transform:uppercase;font-weight:600">${duration}</div>
+                  </td>
+                </tr>
+              </table>
+              <div style="font-size:13.5px;color:rgba(255,255,255,0.68);line-height:1.55;margin-top:8px">${body}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>`;
+}
+
+function inviteLetterHtml(opts: {
+  name: string;
+  entryUrl: string;
+  switchUrl: string;
+  subject: string;
+  totalCohort: number | null;
+}): string {
+  const { name, entryUrl, switchUrl, subject, totalCohort } = opts;
+  const countPhrase = totalCohort
+    ? `There are <strong style="color:#ffffff">${totalCohort.toLocaleString("en-IN")} of you</strong>.`
+    : `There are hundreds of you.`;
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark only">
+<meta name="supported-color-schemes" content="dark only">
+<title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background:#0B0B11;color:#fafafa;font-family:${SANS};line-height:1.6;-webkit-font-smoothing:antialiased">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0B0B11;width:100%">
+  <tr>
+    <td align="center" style="padding:40px 16px 32px 16px">
+
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%">
+
+        <!-- Masthead -->
+        <tr>
+          <td style="padding-bottom:36px">${roundOneMasthead("Inner Circle · Sales · Round 1")}</td>
+        </tr>
+
+        <!-- Letter body -->
+        <tr>
+          <td style="color:#fafafa;font-size:15.5px;line-height:1.65">
+
+            <p style="margin:0 0 20px 0">Hey ${name},</p>
+
+            <p style="margin:0 0 20px 0">I'm <strong style="color:#ffffff">Mouriyan Gandhi</strong>, cofounder of DoItForMe along with <strong style="color:#ffffff">Laksh Betala</strong>.</p>
+
+            <p style="margin:0 0 20px 0">A few months back, Laksh and I were running a small agency and we needed people. A sales guy who could actually close. A couple of techies to build things. Someone with real influencer reach to move content. We spent weeks on Upwork and Fiverr, paying in <strong>dollars</strong>, hiring people we never met. Half of them were Indian students sitting in Pune and Chennai, charging in dollars because that was where the platform was.</p>
+
+            <p style="margin:0 0 20px 0">That stuck with us. We are a billion people. The talent is here. And somehow Indian businesses were paying foreign platforms, in foreign currency, to reach <em>Indian</em> freelancers. That doesn't make sense to us.</p>
+
+            <p style="margin:0 0 20px 0">So we built <strong style="color:#ffffff">DoItForMe</strong>. One platform. Rupees. Real students, real work, money held in escrow before anyone starts so nobody gets stiffed. The goal is simple: every freelance need an Indian business or an Indian student has, done at home, by Indians.</p>
+
+            <p style="margin:0 0 20px 0">Then we noticed what would decide whether this becomes a product or just a project. The top students. The 2% who turn a brief into a contract. The ones you'd want in front of a founder on day one. Scattered across colleges, usually invisible to the market until years after they graduate.</p>
+
+            <p style="margin:0 0 28px 0">That's the <strong style="color:#ffffff">Inner Circle</strong>. A small group we vet, train, and put in front of real companies first. You put your hand up for it when you ticked the box on the hold page. ${countPhrase}</p>
+
+            <p style="margin:0 0 8px 0">And we're starting with the one lane that doesn't just run businesses, but runs the whole economy.</p>
+
+            <!-- Big "Sales." -->
+            <div style="font-family:${SERIFISH};font-size:88px;font-weight:600;letter-spacing:-0.045em;line-height:1;color:#C9A9FF;margin:24px 0 24px 0">Sales.</div>
+
+            <p style="margin:0 0 28px 0">A five-letter word. The thing that moved the first spice from Kerala to Rome, and the thing that will move Indian software to Silicon Valley. Sales isn't a department. It's the muscle. Everything else assumes it works.</p>
+
+            <!-- How selection works -->
+            <div style="margin:0 0 28px 0">
+              <div style="font-size:10px;letter-spacing:0.22em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:12px">How selection works</div>
+
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;border-spacing:0 10px">
+                ${roundCard("01", "The lead-list brief", "24 hrs", "30 B2B prospects for an India-based AI/IT consultancy, in a sheet we share. Honest work, done the way you'd actually do it.")}
+                ${roundCard("02", "A real-world task", "24 hrs", "Only briefed if you clear Round 1. A live situation, not a case study.")}
+                ${roundCard("03", "A conversation", "~30 min", "Us, you, and the shape of what comes next inside the Inner Circle.")}
+              </table>
+            </div>
+
+            <p style="margin:0 0 24px 0">Your 24 hours start when <em>you</em> click Start, not when this email arrived. Open the portal when you're actually ready to work on it, not before.</p>
+
+            <!-- CTA -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px 0">
+              <tr>
+                <td style="background:#8825F5;border-radius:12px;box-shadow:0 0 0 1px rgba(255,255,255,0.08) inset">
+                  <a href="${entryUrl}" style="display:inline-block;padding:15px 30px;color:#ffffff;text-decoration:none;font-family:${SANS};font-weight:600;font-size:15px;letter-spacing:-0.005em">
+                    Join the Inner Circle, begin Round 1 →
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 28px 0;color:rgba(255,255,255,0.55);font-size:13.5px">
+              More interested in <strong style="color:#ffffff;font-weight:600">building</strong> than selling? Totally fair, this isn't a one-shot.
+              <br>
+              <a href="${switchUrl}" style="color:#C9A9FF;text-decoration:underline;text-underline-offset:3px">Hold my spot for the Tech cohort instead →</a>
+            </p>
+
+          </td>
+        </tr>
+
+        <!-- Signature plate -->
+        <tr>
+          <td style="padding:28px 0 0 0;border-top:1px solid rgba(255,255,255,0.08)">${roundOneSignature()}</td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding-top:28px;text-align:center">
+            <div style="font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:0.04em">
+              doitforme.in · the invite link stays live for 7 days
+            </div>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>`;
+}
+
+/**
+ * Shorter sibling of inviteLetterHtml. Used by the five transactional Round 1
+ * emails (reminder, submitted, expired, advanced, rejected) so they come
+ * from the same visual world as the invite rather than the generic card
+ * shell every other platform email uses.
+ */
+function miniLetterHtml(opts: {
+  name: string;
+  subject: string;
+  eyebrow: string;
+  paragraphs: string[];
+  cta?: { url: string; label: string };
+  closing?: string;
+}): string {
+  const { name, subject, eyebrow, paragraphs, cta, closing } = opts;
+
+  const paragraphHtml = paragraphs
+    .map((p) => `<p style="margin:0 0 18px 0">${p}</p>`)
+    .join("");
+
+  const ctaHtml = cta
+    ? `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 24px 0">
+        <tr>
+          <td style="background:#8825F5;border-radius:12px;box-shadow:0 0 0 1px rgba(255,255,255,0.08) inset">
+            <a href="${cta.url}" style="display:inline-block;padding:13px 26px;color:#ffffff;text-decoration:none;font-family:${SANS};font-weight:600;font-size:14.5px;letter-spacing:-0.005em">
+              ${escapeHtml(cta.label)} →
+            </a>
+          </td>
+        </tr>
+      </table>`
+    : "";
+
+  const closingHtml = closing
+    ? `<p style="margin:0 0 24px 0;color:rgba(255,255,255,0.65);font-size:13.5px">${closing}</p>`
+    : "";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark only">
+<meta name="supported-color-schemes" content="dark only">
+<title>${escapeHtml(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background:#0B0B11;color:#fafafa;font-family:${SANS};line-height:1.6;-webkit-font-smoothing:antialiased">
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0B0B11;width:100%">
+  <tr>
+    <td align="center" style="padding:40px 16px 32px 16px">
+
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%">
+
+        <!-- Masthead -->
+        <tr>
+          <td style="padding-bottom:28px">${roundOneMasthead(eyebrow)}</td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="color:#fafafa;font-size:15px;line-height:1.65">
+            <p style="margin:0 0 18px 0">Hey ${name},</p>
+            ${paragraphHtml}
+            ${ctaHtml}
+            ${closingHtml}
+          </td>
+        </tr>
+
+        <!-- Signature -->
+        <tr>
+          <td style="padding:24px 0 0 0;border-top:1px solid rgba(255,255,255,0.08)">${roundOneSignature()}</td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding-top:24px;text-align:center">
+            <div style="font-size:11px;color:rgba(255,255,255,0.3);letter-spacing:0.04em">doitforme.in</div>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>`;
+}
+
+export function wrap(result: RenderResult): string {
+  const { subject, preheader, bodyHtml, rawHtml } = result;
   const safePreheader = escapeHtml(preheader);
+
+  // Custom-HTML path: inject the preheader span right after <body> so inbox
+  // previews pick it up, otherwise return the caller's HTML untouched. The
+  // Inner Circle invite is the only kind using this today.
+  if (rawHtml) {
+    const preheaderSpan = `<span style="display:none !important;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden">${safePreheader}</span>`;
+    return rawHtml.replace(/<body([^>]*)>/i, `<body$1>${preheaderSpan}`);
+  }
+
   return `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(subject)}</title>

@@ -1,0 +1,20 @@
+{
+	// Separate from the app's tsconfig on purpose. This Worker needs
+	// @cloudflare/workers-types (ScheduledController, ExecutionContext), and
+	// those redeclare globals like Request/Response with Workers semantics —
+	// pulling them into the Next app's config would conflict with its DOM lib.
+	// The root tsconfig excludes workers/ for the same reason.
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"types": ["@cloudflare/workers-types"],
+		"strict": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"isolatedModules": true,
+		"esModuleInterop": true
+	},
+	"include": ["src/**/*.ts"]
+}

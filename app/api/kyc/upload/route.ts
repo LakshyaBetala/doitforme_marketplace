@@ -92,12 +92,35 @@ export async function POST(req: Request) {
     const approved = result.decision === "approved";
     const rejected = result.decision === "rejected";
 
+    // 6b. Throw the image away when there was no document in it.
+    //
+    // Only for the hopeless band (confidence < 0.10): a selfie, a landscape, a
+    // blank wall. There is nothing for an admin to review on appeal, and it is
+    // a photo of somebody's face sitting in a private bucket, so retaining it
+    // has a cost and no benefit. id_card_url is cleared below so the next
+    // attempt starts clean rather than pointing at an object that is gone.
+    //
+    // Deliberately NOT done for a confident rejection — an Aadhaar card or a
+    // fee receipt is the kind of refusal a person might reasonably dispute, and
+    // the evidence should still be there when they do.
+    //
+    // A failed delete must not fail the upload: the student has already been
+    // told the outcome, and a stranded object is a storage problem, not theirs.
+    if (result.purgeDocument) {
+      const { error: rmError } = await supabaseAdmin.storage
+        .from("kyc-ids")
+        .remove([filePath]);
+      if (rmError) {
+        console.error(`[kyc] purge failed for ${filePath}: ${rmError.message}`);
+      }
+    }
+
     // 7. Persist decision. Status drives the UI + admin queue; kyc_verified is the
     //    boolean the rest of the app already keys off, so keep it in sync.
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
-        id_card_url: filePath,
+        id_card_url: result.purgeDocument ? null : filePath,
         kyc_verified: approved,
         kyc_status: result.decision,
         kyc_confidence: result.confidence,

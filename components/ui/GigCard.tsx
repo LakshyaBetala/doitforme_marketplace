@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Briefcase, ShoppingBag, Building2, IndianRupee, Users, Sparkles, Zap } from "lucide-react";
+import { MapPin, Briefcase, ShoppingBag, Building2, Users, Sparkles, Zap } from "lucide-react";
 import StatusBadge, { statusToTone, humanizeStatus } from "./StatusBadge";
+import { isServiceAdvert, responderNoun } from "@/lib/gigRoles";
 
 /**
  * Canonical gig card. Renders any gigs row regardless of listing_type.
@@ -70,7 +71,7 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
   // one loud label so students can spot paid company work at a glance.
   if (listing_type === "COMPANY_TASK" && isPriority) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#8825F5] text-white border border-[#8825F5] text-[10px] font-semibold tracking-tight uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent)] text-[var(--on-accent)] border border-[var(--accent)] text-[10px] font-semibold tracking-tight uppercase">
         <Zap size={10} />
         Priority
       </span>
@@ -78,7 +79,7 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
   }
   if (listing_type === "MARKET") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60 border border-white/[0.08] text-[10px] font-medium tracking-tight uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--chip)] text-[var(--fg-muted)] border border-[var(--line)] text-[10px] font-medium tracking-tight uppercase">
         <ShoppingBag size={10} />
         {market_type === "REQUEST" ? "Looking for" : market_type || "Market"}
       </span>
@@ -89,7 +90,7 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
   // page can tell "work available" from "person available" at a glance.
   if (listing_type === "SERVICE") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.04] text-white/60 border border-white/[0.08] text-[10px] font-medium tracking-tight uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--chip)] text-[var(--fg-muted)] border border-[var(--line)] text-[10px] font-medium tracking-tight uppercase">
         <Sparkles size={10} />
         Offering
       </span>
@@ -97,14 +98,14 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
   }
   if (listing_type === "COMPANY_TASK") {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#8825F5]/10 text-[#C9A9FF] border border-[#8825F5]/20 text-[10px] font-medium tracking-tight uppercase">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--accent-line)] text-[10px] font-medium tracking-tight uppercase">
         <Building2 size={10} />
         Company
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#8825F5]/10 text-[#C9A9FF] border border-[#8825F5]/20 text-[10px] font-medium tracking-tight uppercase">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--accent-soft)] text-[var(--accent-ink)] border border-[var(--accent-line)] text-[10px] font-medium tracking-tight uppercase">
       <Briefcase size={10} />
       Hustle
     </span>
@@ -113,61 +114,109 @@ function TypePill({ listing_type, market_type, isPriority }: { listing_type?: st
 
 export default function GigCard({ gig, imageUrl, variant = "detailed", className = "" }: GigCardProps) {
   const isMarket = gig.listing_type === "MARKET";
+  const isAdvert = isServiceAdvert(gig);
   const isHighlighted = !!gig.is_featured || !!(gig.is_highlighted && gig.highlight_expires_at && new Date(gig.highlight_expires_at) > new Date());
   const showStatus = gig.status && gig.status.toLowerCase() !== "open";
-  const isHiring = !isMarket && (gig.applicant_count ?? 0) > 0;
-  const hiringLabel = isHiring ? `${gig.applicant_count} hiring` : null;
+  const responderCount = gig.applicant_count ?? 0;
+  // "3 hiring" is a fact about a task: three people want the job. On a service
+  // advert the same number means three people want to BUY, so the word has to
+  // flip with the listing — calling a prospective customer an applicant is what
+  // pointed this whole flow backwards. See lib/gigRoles.ts.
+  const responderLabel =
+    !isMarket && responderCount > 0
+      ? isAdvert
+        ? `${responderCount} ${responderNoun(gig, responderCount)}`
+        : `${responderCount} hiring`
+      : null;
 
   const ringClass = isHighlighted
-    ? "border-[#8825F5]/40 ring-1 ring-[#8825F5]/20"
-    : "border-white/[0.08] hover:border-white/[0.16]";
+    ? "border-[var(--accent-line)] ring-1 ring-[var(--accent-soft)]"
+    : "border-[var(--line)] hover:border-[var(--line-strong)]";
 
   if (variant === "compact") {
+    // THE MEDIA BOX ONLY EXISTS WHEN THERE IS MEDIA.
+    //
+    // This used to render `aspect-square` unconditionally, with a 28px briefcase
+    // centred in it when the gig had no photo. Most gigs have no photo — this is
+    // a task board, not a gallery — so the common case was a card whose top 350px
+    // on a phone (and ~640px in a three-column desktop grid) was empty cream with
+    // a small grey icon in the middle. Three cards filled a phone screen with
+    // almost no information on it.
+    //
+    // With no image the card becomes text-first and about a third of the height,
+    // which is what makes the feed scannable. With an image, nothing changes.
+    const hasMedia = Boolean(imageUrl);
+    const priceChip =
+      gig.price != null && gig.market_type !== "REQUEST" ? (
+        <span className="inline-flex shrink-0 items-baseline text-[13.5px] font-bold tabular-nums text-[var(--fg)]">
+          ₹{gig.price}
+          {isMarket && gig.market_type === "RENT" && (
+            <span className="ml-0.5 text-[10px] font-semibold text-[var(--fg-faint)]">/day</span>
+          )}
+        </span>
+      ) : null;
+
     return (
-      <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
-        <div className={`bg-[#13131A] rounded-2xl overflow-hidden border transition-colors ${ringClass}`}>
-          <div className="w-full aspect-square bg-[#0B0B11] relative overflow-hidden">
-            {imageUrl ? (
+      <Link href={`/gig/${gig.id}`} className={`block group h-full ${className}`}>
+        <div
+          className={`flex h-full flex-col overflow-hidden rounded-2xl bg-[var(--surface)] border transition-colors ${ringClass}`}
+        >
+          {hasMedia && (
+            <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--chip)]">
               <Image
-                src={imageUrl}
+                src={imageUrl!}
                 alt={gig.title}
                 fill
-                sizes="(max-width: 768px) 50vw, 33vw"
-                className="object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/20">
-                {isMarket ? <ShoppingBag size={28} /> : <Briefcase size={28} />}
-              </div>
-            )}
-            <div className="absolute top-2 left-2 z-10">
-              <TypePill listing_type={gig.listing_type} market_type={gig.market_type} isPriority={isHighlighted} />
+              {/* The dark scrim is right over a photograph and wrong over a flat
+                  placeholder, which is the other reason the no-image card does
+                  not keep it — the price moves inline below instead. */}
+              <span className="absolute right-2 top-2 z-10 inline-flex items-center rounded-full border border-white/20 bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-md">
+                {gig.price != null && gig.market_type !== "REQUEST" ? `₹${gig.price}` : "Open offer"}
+              </span>
             </div>
-            {gig.price != null && gig.market_type !== "REQUEST" && (
-              <div className="absolute top-2 right-2 z-10 inline-flex items-center px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-semibold text-white">
-                <IndianRupee size={10} className="mr-0.5" />
-                {gig.price}
-              </div>
-            )}
-          </div>
-          <div className="p-3">
-            <h3 className="text-sm font-semibold text-white leading-snug line-clamp-2 mb-2 group-hover:text-[#C9A9FF] transition-colors">
+          )}
+
+          <div className="flex flex-1 flex-col p-3.5">
+            <div className="flex items-start justify-between gap-2">
+              <TypePill
+                listing_type={gig.listing_type}
+                market_type={gig.market_type}
+                isPriority={isHighlighted}
+              />
+              {!hasMedia && priceChip}
+            </div>
+
+            <h3 className="mt-2.5 line-clamp-2 text-[14.5px] font-semibold leading-snug text-[var(--fg)] transition-colors group-hover:text-[var(--accent-ink)]">
               {gig.title}
             </h3>
-            <div className="flex items-center justify-between text-[11px] text-white/50">
-              <span className="flex items-center gap-1 truncate max-w-[60%]">
-                <MapPin size={10} /> {gig.location || posterLabel(gig) || "Campus"}
-              </span>
-              <span>{timeAgo(gig.created_at)}</span>
-            </div>
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
-              {hiringLabel && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/10 border border-[#8825F5]/20 px-2 py-0.5 rounded-full">
-                  <Users size={10} /> {hiringLabel}
+
+            {/* mt-auto pins the meta row to the bottom so cards in a grid line up
+                along their footer even when titles wrap to different heights. */}
+            <div className="mt-auto pt-2.5">
+              <div className="flex items-center justify-between gap-2 text-[11.5px] text-[var(--fg-muted)]">
+                <span className="flex min-w-0 items-center gap-1 truncate">
+                  <MapPin size={11} className="shrink-0" />
+                  <span className="truncate">{gig.location || posterLabel(gig) || "Campus"}</span>
                 </span>
-              )}
-              {showStatus && (
-                <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>
+                <span className="shrink-0">{timeAgo(gig.created_at)}</span>
+              </div>
+
+              {(responderLabel || showStatus) && (
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {responderLabel && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[var(--accent-line)] bg-[var(--accent-soft)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent-ink)]">
+                      <Users size={10} /> {responderLabel}
+                    </span>
+                  )}
+                  {showStatus && (
+                    <StatusBadge tone={statusToTone(gig.status)}>
+                      {humanizeStatus(gig.status)}
+                    </StatusBadge>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -180,44 +229,48 @@ export default function GigCard({ gig, imageUrl, variant = "detailed", className
   // COMPANY_TASK is distinguished only by its pill + a hairline purple ring, never a hue change.
   const isCompany = gig.listing_type === "COMPANY_TASK";
   const detailedRing = isHighlighted || isCompany
-    ? "border-[#8825F5]/30 hover:border-[#8825F5]/50"
-    : "border-white/[0.08] hover:border-white/[0.16]";
+    ? "border-[var(--accent-line)] hover:border-[var(--accent)]"
+    : "border-[var(--line)] hover:border-[var(--line-strong)]";
 
   return (
     <Link href={`/gig/${gig.id}`} className={`block group ${className}`}>
-      <div className={`bg-[#13131A] rounded-2xl p-5 md:p-6 border transition-colors flex flex-col h-full ${detailedRing}`}>
+      <div className={`bg-[var(--surface)] rounded-2xl p-5 md:p-6 border transition-colors flex flex-col h-full ${detailedRing}`}>
         <div className="flex items-center justify-between mb-3">
           <TypePill listing_type={gig.listing_type} market_type={gig.market_type} isPriority={isHighlighted} />
           {isHighlighted && (
-            <span className="text-[10px] font-medium tracking-tight text-[#C9A9FF] uppercase">Featured</span>
+            <span className="text-[10px] font-medium tracking-tight text-[var(--accent-ink)] uppercase">Featured</span>
           )}
         </div>
-        <h3 className="font-semibold text-white text-base leading-snug line-clamp-2 mb-3 group-hover:text-[#C9A9FF] transition-colors">
+        <h3 className="font-semibold text-[var(--fg)] text-base leading-snug line-clamp-2 mb-3 group-hover:text-[var(--accent-ink)] transition-colors">
           {gig.title}
         </h3>
         <div className="flex items-baseline gap-1 mb-auto">
           {gig.price != null ? (
             <>
-              <span className="text-xl font-semibold text-white tracking-tight">₹{gig.price}</span>
-              {isMarket && gig.market_type === "RENT" && <span className="text-xs text-white/40">/day</span>}
+              {/* An advert quotes a starting rate, not a fixed budget — the
+                  final figure is agreed per job. Saying "from" is the
+                  difference between a price and a quote. */}
+              {isAdvert && <span className="text-xs text-[var(--fg-faint)] mr-1">from</span>}
+              <span className="text-xl font-semibold text-[var(--fg)] tracking-tight">₹{gig.price}</span>
+              {isMarket && gig.market_type === "RENT" && <span className="text-xs text-[var(--fg-faint)]">/day</span>}
             </>
           ) : (
-            <span className="text-xs text-white/40">Open offer</span>
+            <span className="text-xs text-[var(--fg-faint)]">Open offer</span>
           )}
         </div>
-        <div className="mt-5 pt-4 border-t border-white/[0.06] flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-[11px] text-white/50">
+        <div className="mt-5 pt-4 border-t border-[var(--line)] flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-[11px] text-[var(--fg-muted)]">
             <MapPin size={11} /> {gig.is_physical ? (isCompany ? "On-site" : "Physical") : "Remote"}
-            {posterLabel(gig) && <span className="text-white/30">· {posterLabel(gig)}</span>}
+            {posterLabel(gig) && <span className="text-[var(--fg-faint)]">· {posterLabel(gig)}</span>}
           </span>
           <div className="flex items-center gap-2">
-            {hiringLabel && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#C9A9FF] bg-[#8825F5]/10 border border-[#8825F5]/20 px-2 py-0.5 rounded-full">
-                <Users size={10} /> {hiringLabel}
+            {responderLabel && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--accent-ink)] bg-[var(--accent-soft)] border border-[var(--accent-line)] px-2 py-0.5 rounded-full">
+                <Users size={10} /> {responderLabel}
               </span>
             )}
             {showStatus && <StatusBadge tone={statusToTone(gig.status)}>{humanizeStatus(gig.status)}</StatusBadge>}
-            <span className="text-[11px] text-white/40">{timeAgo(gig.created_at)}</span>
+            <span className="text-[11px] text-[var(--fg-faint)]">{timeAgo(gig.created_at)}</span>
           </div>
         </div>
       </div>

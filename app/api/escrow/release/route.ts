@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { isAdminEmail } from "@/lib/admins";
+import { payoutRecipientId } from "@/lib/gigRoles";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,15 +13,23 @@ export async function POST(req: Request) {
   try {
     const { gigId } = await req.json();
 
-    if (!gigId) {
-      return NextResponse.json({ error: "Missing gigId" }, { status: 400 });
-    }
-
+    // Authenticate BEFORE validating the body.
+    //
+    // Answering an anonymous caller with a 400 that names the missing fields
+    // confirms the endpoint exists and tells a prober exactly what to send
+    // next; a 401 tells them only that they are not signed in. This is the
+    // same ordering bug /api/payments/verify-payment had, which
+    // tests/uat-readiness.spec.ts pins — it was pinned for one route, not as
+    // a rule, so five others kept doing it.
     // get session user
     const authSupabase = await supabaseServer();
     const { data: userData } = await authSupabase.auth.getUser();
     const user = userData?.user ?? null;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (!gigId) {
+      return NextResponse.json({ error: "Missing gigId" }, { status: 400 });
+    }
 
     // Authorize HERE, not in the RPC.
     //
@@ -73,15 +82,19 @@ export async function POST(req: Request) {
     try {
       const { data: gig } = await supabase
         .from('gigs')
-        .select('title, assigned_worker_id, net_worker_pay')
+        .select('title, assigned_worker_id, poster_id, listing_type, net_worker_pay')
         .eq('id', gigId)
         .single();
 
-      if (gig?.assigned_worker_id) {
+      // Tell whoever was actually paid, not whoever happens to be the assigned
+      // worker — lib/gigRoles is the one place that answers this.
+      const paidUserId = gig ? payoutRecipientId(gig) : null;
+
+      if (gig && paidUserId) {
         const { data: worker } = await supabase
           .from('users')
           .select('email, name, telegram_chat_id')
-          .eq('id', gig.assigned_worker_id)
+          .eq('id', paidUserId)
           .single();
 
         if (worker?.email) {

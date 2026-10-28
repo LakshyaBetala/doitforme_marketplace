@@ -9,7 +9,7 @@ import Link from "next/link";
 import Avatar from "@/components/ui/Avatar";
 import { toast } from "sonner";
 import { toWhatsAppNumber } from "@/lib/phone";
-import { ATTACHMENT_ACCEPT } from "@/lib/attachments";
+import { ATTACHMENT_ACCEPT, attachmentRejection, uploadRejection } from "@/lib/attachments";
 import { openRazorpayCheckout } from "@/lib/razorpayCheckout";
 import {
   Loader2, ArrowLeft, Users, Download, ShieldCheck, FileText, CheckCircle2, Gift, MessageCircle, AlertTriangle, X, ArrowRight
@@ -186,9 +186,14 @@ export default function CompanyTaskHubPage() {
       toast.error(`Max ${MAX_ATTACHMENTS} attachments.`);
       return;
     }
-    const tooBig = picked.find((f) => f.size > 10 * 1024 * 1024);
-    if (tooBig) {
-      toast.error(`"${tooBig.name}" is over 10MB.`);
+    // This was a local 10MB check, and it was the ONLY attachment size limit in
+    // the product — /post and /company/post had none, which is where the 29MB
+    // PDF came from. The rule lives in lib/attachments.ts now so all three
+    // pickers agree, and it is lower for documents because nothing downstream
+    // can shrink them.
+    const rejected = picked.map(attachmentRejection).find(Boolean);
+    if (rejected) {
+      toast.error(rejected);
       return;
     }
     setEditNewFiles((prev) => [...prev, ...picked]);
@@ -201,6 +206,13 @@ export default function CompanyTaskHubPage() {
       const uploadedPaths: string[] = [];
       for (const raw of editNewFiles) {
         const file = await compressImage(raw, COMPRESS_PRESETS.attachment);
+        // Backstop: compressImage returns the original when it cannot re-encode.
+        const tooBig = uploadRejection(file);
+        if (tooBig) {
+          toast.error(tooBig);
+          setSavingEdit(false);
+          return;
+        }
         const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "");
         const path = `${user.id}/${Date.now()}_${safeName}`;
         const { error: upErr } = await supabase.storage.from("gig-images").upload(path, file);

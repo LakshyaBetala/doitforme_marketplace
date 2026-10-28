@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { isServiceAdvert } from '@/lib/gigRoles'
 
 export async function POST(req: Request) {
     const cookieStore = await cookies()
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
         // 2. Fetch Gig to validate
         const { data: gig, error: gigError } = await supabase
             .from("gigs")
-            .select("poster_id, status, title, price, listing_type")
+            .select("poster_id, status, title, price, listing_type, source_service_id")
             .eq("id", gigId)
             .single();
 
@@ -49,6 +50,30 @@ export async function POST(req: Request) {
 
         if (gig.status !== 'open') {
             return NextResponse.json({ error: "This item is no longer available." }, { status: 400 });
+        }
+
+        // A service listing is a shopfront advert, not a job — you cannot apply
+        // to it, you hire the person. Applying attached the CUSTOMER to the
+        // advert as its "worker", which pointed every later step the wrong way:
+        // the customer could not fund it and would have had to deliver the work.
+        // 787 applications went down that path and none of them ever completed.
+        // /api/gig/request-service creates a real engagement instead.
+        if (isServiceAdvert(gig)) {
+            return NextResponse.json({
+                error: "This is a service someone is offering, not a task. Send them a request to hire them instead.",
+                code: "USE_SERVICE_REQUEST",
+            }, { status: 400 });
+        }
+
+        // A gig created by hiring someone from their advert is addressed to that
+        // one person. It is hidden from the feed and from the new-gig alerts, but
+        // it is still a HUSTLE with status='open', so anyone holding the URL could
+        // otherwise apply to work that already has its provider.
+        if (gig.source_service_id) {
+            return NextResponse.json(
+                { error: "This is a direct request to a specific person, not an open task." },
+                { status: 403 }
+            );
         }
 
         // Company tasks are verified-students-only.
@@ -165,7 +190,10 @@ export async function POST(req: Request) {
             if (poster?.telegram_chat_id) {
                 await sendTelegramAlert(
                     poster.telegram_chat_id,
-                    `📄 <b>New Offer / Application!</b>\nSomeone just made an offer on your listing: <i>${gig.title}</i>.\n<a href="https://doitforme.in/company/task/${gigId}">Review Offer</a>`
+                    // /company/task/<id> is company-only and redirects everyone
+                    // else, so this link was dead for every student poster.
+                    // /gig/<id>/applicants authorizes on poster_id and works for both.
+                    `📄 <b>New Offer / Application!</b>\nSomeone just made an offer on your listing: <i>${gig.title}</i>.\n<a href="https://doitforme.in/gig/${gigId}/applicants">Review Offer</a>`
                 );
             }
 

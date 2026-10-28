@@ -15,10 +15,14 @@ export async function POST(req: Request) {
     try {
         const { referralCode } = await req.json();
 
-        if (!referralCode) {
-            return NextResponse.json({ error: "Missing referralCode" }, { status: 400 });
-        }
-
+        // Authenticate BEFORE validating the body.
+        //
+        // Answering an anonymous caller with a 400 that names the missing fields
+        // confirms the endpoint exists and tells a prober exactly what to send
+        // next; a 401 tells them only that they are not signed in. This is the
+        // same ordering bug /api/payments/verify-payment had, which
+        // tests/uat-readiness.spec.ts pins — it was pinned for one route, not as
+        // a rule, so five others kept doing it.
         // SECURITY: Authenticate the caller via cookie/header — NEVER trust userId from body
         const cookieStore = await cookies();
         const supabaseAuth = createServerClient(
@@ -30,6 +34,10 @@ export async function POST(req: Request) {
         const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
         if (authError || !user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        if (!referralCode) {
+            return NextResponse.json({ error: "Missing referralCode" }, { status: 400 });
         }
 
         const userId = user.id; // Server-verified user ID

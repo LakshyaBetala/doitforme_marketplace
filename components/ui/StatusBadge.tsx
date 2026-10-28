@@ -3,22 +3,25 @@ import { ReactNode } from "react";
 /**
  * Single source of truth for all status pills across the app.
  *
- * Design rule: depth comes from the BORDER color, not a saturated background fill.
- * This keeps the dark-minimal aesthetic intact while still signalling intent.
+ * Design rule: depth comes from the BORDER color, not a saturated background
+ * fill. Written against the shared token contract so the same pill reads
+ * correctly on the dark marketing pages and on the cream workspace — the tones
+ * used to be hardcoded tailwind dark-mode colors (text-emerald-300 on cream is
+ * a pale green on near-white, which is how status disappears).
  */
 export type Tone = "neutral" | "info" | "success" | "warning" | "danger";
 
 const TONES: Record<Tone, string> = {
-  // muted gray — default; pending, draft, applied
-  neutral: "bg-white/[0.04] text-white/70 border-white/[0.08]",
-  // brand purple — in-progress, assigned, delivered, hired
-  info: "bg-[#8825F5]/10 text-[#C9A9FF] border-[#8825F5]/25",
-  // green — completed, released, accepted, paid
-  success: "bg-emerald-500/[0.08] text-emerald-300 border-emerald-500/20",
-  // amber — needs-action, held, awaiting-release
-  warning: "bg-amber-500/[0.08] text-amber-300 border-amber-500/20",
-  // red — cancelled, rejected, disputed, refunded
-  danger: "bg-red-500/[0.08] text-red-300 border-red-500/20",
+  // default — pending, draft, applied
+  neutral: "bg-[var(--chip)] text-[var(--fg-muted)] border-[var(--line)]",
+  // brand — in-progress, assigned, delivered, hired
+  info: "bg-[var(--accent-soft)] text-[var(--accent-ink)] border-[var(--accent-line)]",
+  // completed, released, accepted, paid
+  success: "bg-[var(--ok-soft)] text-[var(--ok)] border-[var(--ok-line)]",
+  // needs-action, held, awaiting-release
+  warning: "bg-[var(--warn-soft)] text-[var(--warn)] border-[var(--warn-line)]",
+  // cancelled, rejected, disputed, refunded
+  danger: "bg-[var(--bad-soft)] text-[var(--bad)] border-[var(--bad-line)]",
 };
 
 type StatusBadgeProps = {
@@ -53,8 +56,21 @@ export function statusToTone(status: string | null | undefined): Tone {
   // needs attention
   if (["pending", "submitted", "awaiting_release", "applied"].includes(s)) return "warning";
   // failure / terminated
-  if (["cancelled", "rejected", "refunded", "failed", "disputed", "open", "opted_out", "expired"].includes(s)) return "danger";
-  // neutral default — draft, signed_up, anything unrecognized
+  if (["cancelled", "rejected", "refunded", "failed", "disputed", "expired"].includes(s)) return "danger";
+  // Resting states, deliberately quiet.
+  //
+  // `open` used to be in the danger list, so every healthy listing accepting
+  // applications wore a RED pill — on a board where open is the overwhelming
+  // majority (995 of 1,254 gigs), which made the feed read as broken at a
+  // glance. It is not an error and it is not an achievement; it is the state a
+  // listing rests in. Neutral is also the right visual WEIGHT: a coloured pill
+  // repeated on every card is noise, and the pills that matter — delivered,
+  // disputed, completed — stop standing out.
+  //
+  // `opted_out` is a choice someone made about the referral programme, not a
+  // failure, and it was red for the same reason.
+  if (["open", "opted_out", "draft"].includes(s)) return "neutral";
+  // neutral default — signed_up, anything unrecognized
   return "neutral";
 }
 

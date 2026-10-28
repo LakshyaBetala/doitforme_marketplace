@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: "%s | DoItForMe",
   },
   description:
-    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Payment held until you approve, instant UPI payouts.",
+    "DoItForMe is India's campus freelance network. 650+ verified students earning by completing real tasks for peers and companies. Payment held until you approve, instant UPI payouts.",
   keywords: [
     "DoItForMe", "doitforme.in", "student gig network India",
     "campus freelance India", "student freelance network India", "hire student hustlers",
@@ -27,11 +27,21 @@ export const metadata: Metadata = {
   creator: "DoItForMe",
   publisher: "DoItForMe",
   formatDetection: { email: false, address: false, telephone: false },
-  icons: { icon: "/logo.png", shortcut: "/logo.png", apple: "/logo.png" },
+  // Sized files, not one 890KB 1024x1024 PNG reused for every slot. The apple
+  // entry is pre-flattened onto the brand grape because iOS composites a
+  // transparent apple-touch-icon onto black. See scripts/make-app-icons.mjs.
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/icons/icon-192.png",
+    apple: { url: "/icons/apple-touch-icon.png", sizes: "180x180" },
+  },
   openGraph: {
     title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "700+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
+      "650+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
     url: "https://www.doitforme.in",
     siteName: "DoItForMe",
     images: [{ url: "/logo.png", width: 1200, height: 630, alt: "DoItForMe – India's Campus Freelance Network" }],
@@ -42,7 +52,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "700+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts.",
+      "650+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts.",
     images: ["/logo.png"],
     creator: "@doitformein",
   },
@@ -50,7 +60,13 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "DoItForMe",
-    statusBarStyle: "black-translucent",
+    // "black-translucent" draws the page UNDER the status bar, which only looks
+    // right if the layout pads itself back out with env(safe-area-inset-top) —
+    // and that inset was 0px until viewport-fit=cover was added below. With a
+    // cream workspace the translucent bar also puts white text on cream. The
+    // default lets iOS tint the bar from theme-color instead, which
+    // WorkspaceThemeColor keeps correct per route.
+    statusBarStyle: "default",
   },
   robots: {
     index: true,
@@ -62,7 +78,19 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Never 1. Pinch-zoom is an accessibility requirement; the reason people reach
+  // for maximumScale: 1 is iOS zooming into small inputs, and that is fixed at
+  // the cause by the 16px input rule in globals.css.
   maximumScale: 5,
+  // Lets the page paint under the notch and the home indicator, which is what
+  // makes env(safe-area-inset-*) return real numbers. Without this the insets
+  // are all 0px and every safe-area pad in components/shell/ is a no-op — the
+  // mobile bottom bar sits under the home indicator on an iPhone.
+  viewportFit: "cover",
+  // The dark marketing palette, which is genuinely the colour at the top of the
+  // page on every public route. The cream workspace overrides it per-route from
+  // components/shell/WorkspaceThemeColor.tsx, because the right value here is
+  // decided by the route, not by the OS colour scheme.
   themeColor: "#0B0B11",
   interactiveWidget: "resizes-content", // Fix for Android keyboard covering inputs
 };
@@ -74,7 +102,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     "name": "DoItForMe",
     "url": "https://www.doitforme.in",
     "logo": "https://www.doitforme.in/logo.png",
-    "description": "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies.",
+    "description": "DoItForMe is India's campus freelance network. 650+ verified students earning by completing real tasks for peers and companies.",
     "foundingDate": "2024",
     "areaServed": "IN",
     "founder": [

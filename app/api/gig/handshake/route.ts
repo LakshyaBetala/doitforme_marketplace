@@ -8,10 +8,14 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const gigId = searchParams.get('gigId');
 
-    if (!gigId) {
-      return NextResponse.json({ error: 'Gig ID is required' }, { status: 400 });
-    }
-
+    // Authenticate BEFORE validating the query.
+    //
+    // This endpoint hands back handshake_code, the PIN two people read to each
+    // other to confirm an in-person handover. Answering an anonymous caller
+    // with `400 Gig ID is required` told them the endpoint exists and which
+    // parameter it wants; a 401 tells them only that they are not signed in.
+    // Authorization below was always correct — poster or assigned worker only —
+    // so this was disclosure, not access.
     const cookieStore = await cookies();
     const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,6 +27,10 @@ export async function GET(req: Request) {
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!gigId) {
+      return NextResponse.json({ error: 'Gig ID is required' }, { status: 400 });
     }
 
     const supabaseAdmin = createClient(

@@ -28,6 +28,11 @@ const supabase = createClient(
 
 const NUDGE_AFTER_HOURS = 24;
 const EXPIRE_AFTER_DAYS = 7;
+
+// Funded, assigned, nothing delivered. See STAGE 4.
+const DELIVERY_OVERDUE_AFTER_DAYS = 3;
+const DELIVERY_OVERDUE_REPEAT_DAYS = 4;
+const DELIVERY_STUCK_ESCALATE_DAYS = 14;
 const BATCH = 50;
 
 const SITE = "https://doitforme.in";
@@ -77,6 +82,27 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized cron invocation" }, { status: 401 });
   }
 
+  // EVERY STAGE IN HERE TELLS SOMEONE TO COME AND LOOK AT THE SITE.
+  //
+  // The cron routes stay reachable while the hold page is up, and for
+  // auto-release that is the point: escrow must keep settling whatever the
+  // front door says. This job is the opposite. It nudges, expires listings and
+  // emails applicants, and every message it sends links to a page that is
+  // currently answering 503. Sending "your application was closed, here is the
+  // listing" to hundreds of students who then hit a hold page is worse than
+  // sending nothing, and it burns the day's mail allowance doing it.
+  //
+  // It defers rather than skips: nothing here is time-critical, the ages only
+  // grow, and the first run after the hold page lifts picks up the whole
+  // backlog in age order.
+  if (process.env.MAINTENANCE_MODE !== "off") {
+    return NextResponse.json({
+      success: true,
+      skipped: "maintenance",
+      note: "Hold page is up; every notification this job sends would link to a 503.",
+    });
+  }
+
   const now = Date.now();
   const nudgeCutoff = new Date(now - NUDGE_AFTER_HOURS * 3600e3).toISOString();
   const expireCutoff = new Date(now - EXPIRE_AFTER_DAYS * 86400e3).toISOString();
@@ -84,13 +110,46 @@ export async function GET(req: Request) {
   const result = { nudged: 0, expired: 0, applicantsClosed: 0, errors: [] as string[] };
 
   try {
-    // Open gigs that have at least one still-pending application. One query,
-    // then group in memory — the volumes here are small (tens of gigs).
-    const { data: gigs, error: gigErr } = await supabase
-      .from("gigs")
-      .select("id, title, poster_id, listing_type, poster_nudged_at, applications(id, worker_id, status, created_at)")
-      .eq("status", "open")
-      .limit(200);
+    // DRIVEN FROM THE APPLICATIONS, NOT FROM A SLICE OF GIGS.
+    //
+    // This used to ask for `gigs?status=eq.open&limit=200` with no ORDER BY, and
+    // the comment said "the volumes here are small (tens of gigs)". They are
+    // not: there are 983 open gigs and 463 of them hold a pending application.
+    // An unordered LIMIT returns whatever the plan produces, and for a table
+    // that is not changing underneath it that is the SAME 200 rows every run —
+    // so the remainder was not merely delayed, it was unreachable on every run
+    // forever. Measured on the live database:
+    //
+    //   463 gigs hold a pending application
+    //   147 of them fell inside the 200 the cron could see
+    //   316 never reached, stranding 849 applications
+    //
+    // Which makes the file's own opening claim false. It was written because
+    // "silence — not rejection — is what was killing the applicant side", and it
+    // was reaching under a third of the gigs causing that silence. ~53 of its
+    // 200 slots were also spent on gigs with no applications at all.
+    //
+    // Driving from `applications` fixes both: the stale thing is the
+    // application, so order by ITS age, oldest first. Nothing can be starved,
+    // because anything not handled this run is still the oldest next run.
+    const { data: staleApps, error: staleErr } = await supabase
+      .from("applications")
+      .select("gig_id")
+      .in("status", ["pending", "applied"])
+      .order("created_at", { ascending: true })
+      .limit(600); // under PostgREST's 1,000-row ceiling, which silently truncates
+
+    if (staleErr) return NextResponse.json({ error: staleErr.message }, { status: 500 });
+
+    const candidateIds = [...new Set((staleApps || []).map((a) => a.gig_id))].slice(0, 200);
+
+    const { data: gigs, error: gigErr } = candidateIds.length
+      ? await supabase
+          .from("gigs")
+          .select("id, title, poster_id, listing_type, poster_nudged_at, applications(id, worker_id, status, created_at)")
+          .eq("status", "open")
+          .in("id", candidateIds)
+      : { data: [], error: null };
 
     if (gigErr) return NextResponse.json({ error: gigErr.message }, { status: 500 });
 
@@ -320,7 +379,125 @@ export async function GET(req: Request) {
       releaseWarnings++;
     }
 
-    return NextResponse.json({ success: true, ...result, pokedPairs, releaseWarnings });
+    // ---- STAGE 4: funded, assigned, and nothing has been delivered ----
+    //
+    // There is no timeout anywhere for this state, which is the one where money
+    // is actually trapped. auto-release only scans status='DELIVERED', so a gig
+    // that was paid for and never submitted sits at status='assigned' with
+    // payment_status='ESCROW_FUNDED' forever, and the only exit is a dispute
+    // that only the poster can open.
+    //
+    // STAGE 2 above looks like it covers this and does not: it skips a gig the
+    // moment one message exists after the money landed, so it only ever reaches
+    // the pair who never started. Measured live, 100% of funded-undelivered
+    // gigs had such a message, so it was disabled for every one of them. The
+    // case that mattered was ₹500 held for 35 days between a real company and a
+    // real student who had exchanged 20 messages and then stopped.
+    //
+    // So this stage keys off AGE ALONE and ignores messages entirely. Talking is
+    // not delivering.
+    const overdueCutoff = new Date(now - DELIVERY_OVERDUE_AFTER_DAYS * 86400e3).toISOString();
+    const repeatCutoff = new Date(now - DELIVERY_OVERDUE_REPEAT_DAYS * 86400e3).toISOString();
+    const { data: overdue } = await supabase
+      .from("gigs")
+      .select("id, title, poster_id, assigned_worker_id, escrow_locked_at, escrow_stale_nudged_at")
+      .eq("status", "assigned")
+      .in("payment_status", ["HELD", "ESCROW_FUNDED"])
+      .is("delivered_at", null)
+      .not("assigned_worker_id", "is", null)
+      .lt("escrow_locked_at", overdueCutoff)
+      .or(`escrow_stale_nudged_at.is.null,escrow_stale_nudged_at.lt.${repeatCutoff}`)
+      .limit(BATCH);
+
+    let overdueNudges = 0;
+    let escalated = 0;
+    for (const gig of overdue || []) {
+      const days = Math.floor((now - new Date(gig.escrow_locked_at).getTime()) / 86400e3);
+      const link = `${SITE}/gig/${gig.id}`;
+
+      await notify(
+        gig.assigned_worker_id!,
+        {
+          telegram: `<b>Your work is ${days} days overdue</b>\nThe money for <i>${gig.title}</i> is held in escrow and cannot reach you until you submit.\n<a href="${link}">Submit your work</a>`,
+          email: {
+            kind: "delivery_overdue",
+            args: { gigTitle: gig.title, gigId: gig.id, extra: { days, forWorker: "1" } },
+          },
+        },
+        {
+          type: "delivery_overdue",
+          content: `"${gig.title}" was funded ${days} days ago and nothing has been submitted. The payment cannot reach you until you deliver.`,
+          link: `/gig/${gig.id}`,
+        }
+      );
+
+      await notify(
+        gig.poster_id,
+        {
+          telegram: `<b>Nothing delivered after ${days} days</b>\nYour payment for <i>${gig.title}</i> is still held. You can chase it, or raise a dispute and we will review it.\n<a href="${link}">Open the gig</a>`,
+          email: {
+            kind: "delivery_overdue",
+            args: { gigTitle: gig.title, gigId: gig.id, extra: { days } },
+          },
+        },
+        {
+          type: "delivery_overdue",
+          content: `Nothing has been delivered on "${gig.title}" after ${days} days. Your money is still held — you can raise a dispute from the gig page.`,
+          link: `/gig/${gig.id}`,
+        }
+      );
+
+      // Past two weeks, nudging the same two people again is not going to work.
+      // Tell an admin, because at that point someone has to decide, and until
+      // now nothing in the system treated trapped money as abnormal.
+      if (days >= DELIVERY_STUCK_ESCALATE_DAYS) {
+        // Always logged, so it is visible in `wrangler tail` whether or not a
+        // human channel is reachable. The first version of this read a
+        // TELEGRAM_ADMIN_CHAT_ID that is set nowhere in this project, guarded by
+        // `if (adminChat)` — which is precisely the silent no-op this stage
+        // exists to replace.
+        console.error(
+          `[stuck-escrow] gig=${gig.id} days=${days} title="${gig.title}" — funded, assigned, undelivered; auto-release cannot fire`
+        );
+        // Admins get it through the same per-user Telegram link every other
+        // alert in the product uses, so it needs no new configuration.
+        try {
+          const { ADMIN_EMAILS } = await import("@/lib/admins");
+          const { data: admins } = await supabase
+            .from("users")
+            .select("telegram_chat_id")
+            .in("email", ADMIN_EMAILS as unknown as string[])
+            .not("telegram_chat_id", "is", null);
+          if (admins?.length) {
+            const { sendTelegramAlert } = await import("@/lib/telegram");
+            for (const a of admins) {
+              await sendTelegramAlert(
+                a.telegram_chat_id!,
+                `<b>Escrow stuck ${days} days</b>\n<i>${gig.title}</i> is funded, assigned and undelivered. Auto-release cannot fire on it, so it needs a decision.\n<a href="${link}">Open the gig</a>`
+              );
+            }
+          }
+        } catch (e) {
+          console.error("nudge-posters: admin escalation failed:", e);
+        }
+        escalated++;
+      }
+
+      await supabase
+        .from("gigs")
+        .update({ escrow_stale_nudged_at: new Date().toISOString() })
+        .eq("id", gig.id);
+      overdueNudges++;
+    }
+
+    return NextResponse.json({
+      success: true,
+      ...result,
+      pokedPairs,
+      releaseWarnings,
+      overdueNudges,
+      escalated,
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("nudge-posters error:", message);

@@ -13,6 +13,7 @@ npm run test:e2e        # Playwright (auto-starts `npm run dev` on :3000 via web
 npx playwright test tests/golden-path.spec.ts   # run a single spec
 npm run test:unit       # explicit file list — see the tsx --test trap below
 npm run test:escrow     # end-to-end escrow money movement, disposable rows
+npm run test:service-request  # live-schema check that hiring from an advert builds a valid engagement
 npm run db:audit        # live DB: are the constraints we rely on actually there?
 npm run db:anon-audit   # live DB: what can a stranger read with the anon key?
 npm run db:migrate <file.sql ...>   # direct-Postgres migration runner
@@ -30,7 +31,8 @@ Path alias: `@/*` → repo root (see [tsconfig.json](tsconfig.json)).
 
 - **Next.js 16 + React 19.2 + React Compiler** (`babel-plugin-react-compiler` is enabled).
 - **`proxy.ts` at repo root is the middleware.** Next.js 16 renamed middleware → proxy. It handles auth-gating for `/dashboard`, `/profile`, `/post`, `/feed`, `/gig`, `/onboarding`, `/verify-id` and bounces logged-in users away from `/login`. Do not confuse it with an HTTP proxy.
-- **Webpack is forced** via `--webpack` flags. This is deliberate because `@xenova/transformers` (used for client-side moderation) requires the webpack aliases in [next.config.ts](next.config.ts) (`onnxruntime-node: false`, `sharptools: false`) and `serverExternalPackages`.
+- **Webpack is forced** via `--webpack` flags. This is deliberate because `@xenova/transformers` (used for client-side moderation) requires the aliases and the server-side `externals` interception in [next.config.ts](next.config.ts) — see the trap below. `serverExternalPackages` was removed: it is what broke the Cloudflare build.
+- **Hosted on Cloudflare Workers** via [@opennextjs/cloudflare](https://opennext.js.org/cloudflare). [CLOUDFLARE.md](CLOUDFLARE.md) is the deploy runbook; [wrangler.jsonc](wrangler.jsonc) configures the app Worker and [workers/cron/](workers/cron/) is a second Worker holding the scheduled jobs. Wrangler needs **Node 22+** (developed on 24.20.0) — it hard-refuses on Node 20.
 - **Cross-domain redirects:** `/marketplace/*` and `/store/*` are permanently redirected to `marketforme.in` in [next.config.ts](next.config.ts). The marketplace lives on a sister domain; this repo only hosts the hustle/gig side.
 
 ## Architecture
@@ -50,9 +52,44 @@ Auth has two layers that must both pass:
 The OAuth callback at [app/auth/callback/route.ts](app/auth/callback/route.ts) exchanges the code, then POSTs to `/api/auth/create-user` to sync the user row, and optionally POSTs to `/api/referral/apply` if a `ref` code was attached.
 
 ### Gig lifecycle & escrow (core domain model)
-Two listing types drive branching logic everywhere:
-- `HUSTLE` — service work; the **assigned worker** is the payout recipient.
-- `MARKET` with `market_type` ∈ `SELL | RENT | REQUEST` — product; the **poster (seller)** is the payout recipient. `RENT` additionally tracks `security_deposit` which is refunded to the renter on release.
+
+**There is one money direction, and [lib/gigRoles.ts](lib/gigRoles.ts) is the only
+place that answers questions about it.** This is a freelance platform: the
+**poster is the client and pays**, the **assigned worker does the work and is
+paid**. Every lifecycle guard is built on exactly that — `/api/gig/deliver`
+accepts only the assigned worker, `manual_release_escrow` authorizes only the
+poster, dispute and request-changes are poster actions. Do not add a second,
+mirrored direction; that is the bug described below, not a feature.
+
+- `HUSTLE` / `COMPANY_TASK` — a task. The **assigned worker** is the payout recipient.
+- `SERVICE` — **a shopfront advert, not a transaction.** Someone publishing what
+  they can do. It is browsable at `/talent` (`/feed` carries only the task
+  board), it can be messaged, and it can **never hold escrow** — `canFundEscrow()`
+  is false for it and both payment routes refuse it at the door. Hiring from one
+  goes through [app/api/gig/request-service/route.ts](app/api/gig/request-service/route.ts),
+  which creates a **normal engagement** (customer = poster, provider = assigned
+  worker, `source_service_id` linking back to the advert), so the entire
+  lifecycle then applies with no special cases. A DB CHECK constraint,
+  `gigs_service_advert_never_assigned`, enforces that an advert is never assigned
+  or funded.
+- `MARKET` with `market_type` ∈ `SELL | RENT | REQUEST` — product; the **poster
+  (seller)** is the payout recipient. This is the sister marketplace on
+  marketforme.in and has **zero rows** in this database; it is the one type where
+  `posterIsRecipient()` is true, and nothing else may join it. `RENT` additionally
+  tracks `security_deposit` which is refunded to the renter on release.
+
+**The inversion that cost 787 conversions.** `SERVICE` used to be modelled as a
+mirrored money direction where the poster collects instead of paying. That
+inverted every guard above at once, so a service listing could not complete even
+in principle: the customer was not allowed to fund it (`/api/gig/hire` requires
+the caller to be the poster, which on an advert is the *provider*), the customer
+would have had to deliver the work, and the provider would have approved their
+own delivery. Meanwhile `/api/payments/create-order` set the recipient to the
+poster and then overwrote it with `assigned_worker_id` unconditionally, while
+`cron/auto-release` branched on `MARKET` — of which there are zero rows — so the
+two only agreed by accident. 407 of 444 listings are `SERVICE`; they took **787
+applications and never once funded, assigned, completed or paid**. Guarded by
+[tests/unit/gig-roles.test.mjs](tests/unit/gig-roles.test.mjs).
 
 Escrow flow: payment creates `HELD` funds → delivery sets `status='DELIVERED'` + `auto_release_at = now + 24h` → after 24h the cron releases (or the poster manually releases sooner).
 
@@ -103,7 +140,11 @@ Strategy pivot recorded in [supabase/migrations/20260619_managed_mode.sql](supab
 
 When touching gig/payment code, the canonical reference for state transitions and RLS is [supabase/migrations/20260421_standardize_naming_and_rls.sql](supabase/migrations/20260421_standardize_naming_and_rls.sql) (RLS baseline) and [supabase/migrations/v6_master.sql](supabase/migrations/v6_master.sql).
 
-### Vercel deploy constraints (read before touching [vercel.json](vercel.json))
+### Vercel deploy constraints — HISTORICAL, kept for the rollback path only
+The app is on Cloudflare Workers. `vercel.json` still exists so that rolling back
+is repointing DNS rather than a rebuild, and the notes below are why the crons
+looked the way they did. **Nothing here governs the live deployment** — see the
+Cron section above for what actually runs.
 Two rules that fail the **deploy**, not the build, so `npm run build` passing locally proves nothing:
 - **`vercel.json` is schema-validated and has no comment syntax.** Any unrecognised top-level key (e.g. `"comment"`) fails deployment on both production and preview. Document constraints here instead.
 - **Hobby allows once-per-day crons only.** `0 * * * *` or `*/30 * * * *` fail with *"Hobby accounts are limited to daily cron jobs"*. Hobby timing is also hour-accurate only — a `30 7 * * *` job fires anywhere in 07:00–07:59, so nothing may depend on precise minutes. Pro is required for anything more frequent.
@@ -111,7 +152,23 @@ Two rules that fail the **deploy**, not the build, so `npm run build` passing lo
 Both are guarded by [tests/unit/vercel-config.test.mjs](tests/unit/vercel-config.test.mjs), which also asserts every scheduled path has a matching route file. Run `npm run test:unit` before pushing config changes.
 
 ### Cron (auto-release)
-[vercel.json](vercel.json) schedules a daily GET to `/api/cron/auto-release`. The handler requires an `x-cron-secret` header matching `CRON_SECRET` env var, then scans `gigs` where `status='DELIVERED' AND auto_release_at < now() AND payment_status='HELD' AND dispute_reason IS NULL` in batches of 50 and transitions them to `completed` / `PAYOUT_PENDING`. A near-duplicate handler exists at [app/cron/auto-release/route.ts](app/cron/auto-release/route.ts) (note: **no `/api`** prefix) — it is *not* the one wired into [vercel.json](vercel.json); the scheduled path is the one under `app/api/`. Don't edit the wrong one.
+Scheduling lives in a **second Cloudflare Worker**, [workers/cron/](workers/cron/), not in `vercel.json`. It holds three Cron Triggers and calls the app's own HTTP routes with the `x-cron-secret` header:
+
+| schedule (UTC) | route |
+|---|---|
+| `*/15 * * * *` | `/api/cron/auto-release` |
+| `30 7 * * *` | `/api/cron/nudge-posters` |
+| `0 9 * * *` | `/api/cron/process-payouts` |
+
+`/api/cron/auto-release` scans `gigs` where `status='DELIVERED' AND auto_release_at < now() AND payment_status='HELD' AND dispute_reason IS NULL` in batches of 50 and transitions them to `completed` / `PAYOUT_PENDING`.
+
+**Auto-release runs every 15 minutes, not daily.** That is the main reason the app is on Cloudflare: Vercel Hobby capped crons at once per day and was only hour-accurate, so the 24h auto-release the product promises could take up to ~48h to fire.
+
+`APP_ORIGIN` in [workers/cron/wrangler.jsonc](workers/cron/wrangler.jsonc) deliberately points at the **workers.dev hostname**, not `doitforme.in`. Both route to the same Worker, but the workers.dev one has no dependency on the custom domain, the zone staying active, or a certificate renewing — a DNS problem should take the website down, not silently stop escrow releasing.
+
+The cron Worker is separate on purpose: `.open-next/worker.js` is regenerated on every build, so putting a `scheduled` handler there would mean editing generated output. [tests/unit/cloudflare-config.test.mjs](tests/unit/cloudflare-config.test.mjs) pins the schedules to the routes so the two cannot drift.
+
+`vercel.json` is still in the repo as a rollback artifact and is no longer the scheduler. A near-duplicate handler that used to sit at `app/cron/auto-release/route.ts` (no `/api` prefix) was **deleted** — it called `release_escrow_transactional`, which never inserts the `payout_queue` row.
 
 ### Two-tier content moderation
 Posts and chat messages are filtered for phone/UPI/social-handle leakage and illegal content:
@@ -207,7 +264,21 @@ recognising at a glance.
 
 ## Required environment variables
 From README + handler code:
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_WEBHOOK_SECRET`, `CRON_SECRET`, `ADMIN_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), **one** of `BREVO_API_KEY` / `ZEPTOMAIL_TOKEN` / `RESEND_API_KEY` (transactional email — none set = email no-ops; optional `EMAIL_PROVIDER` pins the choice), `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `NEXT_PUBLIC_RAZORPAY_KEY_ID`, `RAZORPAY_WEBHOOK_SECRET`, `CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY` (student-ID auto-verification), **one** of `BREVO_API_KEY` / `ZEPTOMAIL_TOKEN` / `RESEND_API_KEY` (transactional email — none set = email no-ops; optional `EMAIL_PROVIDER` pins the choice), `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `PUSH_DISPATCH_SECRET` (web push).
+
+Three entries were listed here and are **not read by anything**: `ADMIN_SECRET`
+and `VAPID_PUBLIC_KEY` have zero `process.env` references (the push key is
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, because the browser needs it), and
+`NEXT_PUBLIC_SITE_URL` is read in six places but every one falls back to a
+hardcoded `https://www.doitforme.in`, so leaving it unset changes nothing.
+`lib/email.ts` hardcodes its own `SITE`. Keeping dead names on a required list
+is not harmless: this is the list someone copies into a new environment, and
+`.env.local` IS production configuration (see the trap below), so a dead name
+there becomes a deployed secret.
+
+`MAINTENANCE_MODE` is **not** in this list on purpose. It is declared in
+[wrangler.jsonc](wrangler.jsonc) under `vars`, where it is visible in a diff,
+and `proxy.ts` defaults it ON so a missing value cannot expose a broken site.
 
 ## Traps that have already bitten (do not re-learn these)
 
@@ -251,7 +322,7 @@ From README + handler code:
   to the next field, and the value silently counts down under the cursor — reaching
   negative numbers if they scroll far enough. It presents as "the amount changes to a
   random value". Every number input must carry `onWheel={blurOnWheel}` from
-  [lib/inputs.ts](lib/inputs.ts); there are 7 of them.
+  [lib/inputs.ts](lib/inputs.ts); there are 8 of them.
 
 - **`REVOKE ... FROM anon` does nothing; the grant comes from `PUBLIC`.** Postgres
   grants `EXECUTE` on every new function to `PUBLIC`, and `anon`/`authenticated`
@@ -265,6 +336,30 @@ From README + handler code:
   Verify with a real anonymous call: a `400` carrying the function's own `P0001`
   message means it **executed**, not that it was blocked. Only `42501 permission
   denied` is a denial.
+
+- **`REVOKE ... FROM PUBLIC` is only half the fix on Supabase; `anon` is granted
+  directly too.** The rule above is correct — `anon` inherits `EXECUTE` from
+  `PUBLIC` — but Supabase *also* runs `ALTER DEFAULT PRIVILEGES` granting
+  `EXECUTE` on every new function in `public` to `anon` and `authenticated`
+  **directly**. So a function hardened with `REVOKE ... FROM PUBLIC` keeps a
+  direct grant that the revoke never touches, and the migration reads as
+  complete while changing nothing.
+  `prune_notification_tables()` lived like this: `SECURITY DEFINER`, it
+  **deletes rows**, and it was reachable at
+  `POST /rest/v1/rpc/prune_notification_tables` by anyone holding the anon key
+  that ships in every page load — one unauthenticated call wipes every user's
+  notifications older than 14 days. `20261003_stop_the_notification_fanout.sql`
+  revoked it `FROM PUBLIC` and granted `service_role`, exactly as documented,
+  and `anon` kept `EXECUTE` the whole time. Found by auditing `pg_proc` against
+  `information_schema.routine_privileges`, not by reading the migration.
+  Always `REVOKE ALL ... FROM PUBLIC, anon, authenticated` and then `GRANT` back
+  explicitly, and assert the result with `has_function_privilege` inside the
+  migration so it fails loudly instead of lying —
+  [20261006_revoke_execute_from_anon_directly.sql](supabase/migrations/20261006_revoke_execute_from_anon_directly.sql)
+  is the pattern. **`is_admin()` is the one deliberate exception**: policies on
+  anon-readable tables are `USING (... OR is_admin())` and `EXECUTE` is checked
+  against the calling role even inside a policy, so revoking it makes anonymous
+  reads of `/talent` fail with `42501` instead of returning rows.
 
 - **A `SECURITY DEFINER` guard on `auth.uid()` is not a guard for anonymous callers.**
   `manual_release_escrow` reads `if auth.uid() is distinct from poster_id and not
@@ -296,6 +391,36 @@ From README + handler code:
   open — an undecodable file uploads unchanged rather than erroring. Vercel image
   optimization is deliberately `unoptimized: true` to keep transformations off a Hobby
   quota; flip it back on a paid plan.
+
+- **`resolve.alias` cannot stop a package reaching the server bundle; `externals` can.**
+  `@xenova/transformers` is browser-only — its sole consumer,
+  [app/hooks/useModeration.ts](app/hooks/useModeration.ts), is imported by `"use
+  client"` pages and loads it through a dynamic import. But Next compiles client
+  components for SSR too, so the specifier still entered the **server** graph, and
+  from there dragged in `onnxruntime-node` (20MB of per-platform `.node` native
+  binaries) and @xenova's bundled `sharp`. esbuild has no loader for `.node`, so
+  the Cloudflare Worker build failed outright.
+  Everything obvious fails: `serverExternalPackages` makes it a runtime `require`,
+  fine on a Node server with node_modules on disk and impossible in a Worker (it
+  is what caused the breakage, and is now removed). Aliasing the package name, the
+  local wrapper, and the resolved absolute path **all silently did nothing** —
+  Next puts ~75 entries in `config.externals` and webpack settles externals during
+  `factorize`, which runs *before* alias resolution, so the alias is never
+  consulted. The fix is an externals **function placed first in the array**
+  returning `var {}`: webpack takes the first entry that returns a result, so
+  Next's handlers never see the request and the package leaves the graph. Paired
+  with `outputFileTracingExcludes`, this is what took the Worker from "fails to
+  build" to **2.84 MB gzipped** against a 3 MB free ceiling.
+
+- **`next/og` throws if any `<div>` with two children lacks an explicit `display`.**
+  Satori — which renders `ImageResponse` — requires it, and
+  `doitforme.in/{username}` counts as two children (a text node and an
+  expression). The route threw for every request and the socket closed with **no
+  response at all**: no status, no error page, just a dead connection, which reads
+  like a platform incompatibility rather than a bug in the JSX. It was broken on
+  Vercel too and nobody noticed, because a broken OG image only shows up as a
+  missing preview when someone shares a profile link. Covered by the smoke test in
+  [CLOUDFLARE.md](CLOUDFLARE.md); if you touch that file, re-render it once.
 
 - **RLS enabled + `USING (true)` + a table-wide grant is not security.** `public.users`
   had *two* duplicate `FOR SELECT USING (true)` policies granted to `PUBLIC` and no
@@ -354,10 +479,230 @@ From README + handler code:
   [scripts/migrate-resumes-private.mjs](scripts/migrate-resumes-private.mjs) — run
   it **before** flipping a bucket like this, or every link breaks in between.
 
+- **`.env.local` reaches production, and OpenNext bakes it into the Worker.**
+  Next loads `.env.local` in **every** environment, including `next build`.
+  `@opennextjs/cloudflare` then writes everything Next loaded into
+  `.open-next/cloudflare/next-env.mjs` and `populateProcessEnv()` injects it
+  into the Worker's `process.env`. So `.env.local` is not a local file — it is
+  **production configuration and part of the deployed artifact**.
+  `MAINTENANCE_MODE=off` was set there so the signed-in pages could be worked on
+  while Supabase was 402. It travelled into the build and **lifted the hold page
+  the moment the Worker was deployed** — no diff said so, and `proxy.ts` looked
+  correct, because it *is* correct: it defaults the flag ON (`!== 'off'`)
+  specifically so a missing variable cannot expose a broken site. A default
+  cannot save you from a value set for the wrong environment.
+  Two rules follow. Dev-only overrides go in **`.env.development.local`**, which
+  is loaded only when `NODE_ENV=development`. Anything production depends on is
+  declared where you can see it — `vars` in [wrangler.jsonc](wrangler.jsonc) for
+  non-secrets, `wrangler secret put` for the rest.
+  Precedence is the one piece of good news: `populateProcessEnv()` applies
+  Cloudflare bindings **first** and only fills gaps from the baked values with
+  `??=`, so a Cloudflare var or secret always wins over `.env.local` and
+  rotating a secret genuinely takes effect. But the baked copies still **ship**:
+  the service-role key, `CRON_SECRET`, the Telegram and Gemini keys and the
+  VAPID private key all sit in plaintext inside the bundle, alongside whatever
+  is stale — two live **Cashfree** production keys were still riding along in a
+  repo whose gateway was deleted months ago. Keep `.env.local` to what is
+  actually read; a dead key there is a deployed key.
+
+- **`resolve.alias` and file tracing are different mechanisms.** Aliasing
+  `lib/devPreview` to `false` removes it from the module graph — `.open-next/worker.js`
+  has zero references and the dev-preview auth bypass is genuinely unreachable.
+  Tracing does not consult the alias: it read the same `require()` and OpenNext
+  copied the raw 17.7KB `.ts` into `.open-next/server-functions/default/lib/`
+  anyway. Unreachable, unexecutable, and still inside a bundle at **2982.89 KiB
+  gzipped against a 3 MB ceiling**. It takes `outputFileTracingExcludes` as
+  well. Grepping `.next/` is not enough — grep `.open-next/` too, since that is
+  what ships.
+
+- **An unordered `LIMIT` is a permanent filter, not a page.** The
+  application-nudge cron asked for `gigs?status=eq.open&limit=200` with no
+  `ORDER BY`, under a comment reading "the volumes here are small (tens of
+  gigs)". There were **983** open gigs, **463** of them holding a pending
+  application. An unordered LIMIT returns whatever the plan produces, and
+  against a table that is not changing underneath it that is the *same* 200 rows
+  every run — so **316 gigs and 849 applications were unreachable on every run,
+  forever**, and ~53 of the 200 slots went to gigs with no applications at all.
+  The job written to fix the application black hole had one inside it, and it
+  reported success every day. The fix is to drive from the thing that is
+  actually stale — the application — ordered by its own age, so nothing can be
+  starved. If you write a `.limit()`, either order it or justify in a comment
+  why an arbitrary subset is acceptable.
+  Related: **PostgREST silently truncates at 1,000 rows.** Asking for
+  `limit=2000` returns 1,000 with no error and no warning, which is how the
+  first measurement of this bug undercounted it, and how 97% of storage files
+  once looked orphaned. Count in SQL, not over REST.
+
+- **Gemini's free tier is 20 requests per model per DAY.** Not per minute, and
+  far below what the KYC auto-approve was built on. Read straight off the 429:
+  `GenerateRequestsPerDayPerProjectPerModel-FreeTier = 20`, against 2,065 new
+  users a month. Every upload past the twentieth each day failed open to
+  `manual_review`, and since nothing reviews that queue the student simply
+  waited — which is why **348 of the 372** people parked there sat at confidence
+  exactly `0.00`. The quota id ends in `PerProjectPerModel`, so a second model
+  carries its own twenty: `KYC_MODELS` in
+  [lib/kycVerification.ts](lib/kycVerification.ts) is an ordered cascade that
+  falls through on a 429. Note that `gemini-2.5-flash-lite` is **measurably more
+  lenient** — it approved an entrance-exam score card that `gemini-2.5-flash`
+  had rejected minutes earlier — so it is a safety net, not a default. The real
+  fix is billing on the Google project.
+  **A fail-open must be distinguishable from a decision.** `KycResult.failure`
+  exists because a service that could not answer and a document that was
+  genuinely unclear were being written to the database identically, which is
+  what made a dead service look like 348 ambiguous IDs.
+
+- **Nothing times out a funded gig that is never delivered.**
+  `cron/auto-release` only scans `status='DELIVERED'`, so a gig that was paid
+  for and never submitted sits at `status='assigned'` /
+  `payment_status='ESCROW_FUNDED'` indefinitely, and the only exit is a dispute
+  **only the poster can open**. A nudge that looks like it covers this does not:
+  it skips the gig the moment one message exists after the money landed
+  (`if ((recentMsgs || 0) > 0) continue;`), so it only ever reaches the pair who
+  never started. Live, **100%** of funded-undelivered gigs had such a message,
+  so it was disabled for every one — including ₹500 held 35 days between a real
+  company and a real student who had exchanged 20 messages and stopped. STAGE 4
+  of [cron/nudge-posters](app/api/cron/nudge-posters/route.ts) keys off **age
+  alone**, because talking is not delivering, and escalates to an admin at 14
+  days. Its escalation deliberately reads **no new env var** — the first version
+  guarded on a `TELEGRAM_ADMIN_CHAT_ID` that is set nowhere in this project,
+  which would have made it the silent no-op it exists to replace.
+
+- **`kyc_verified` is a cache of `kyc_status = 'approved'`, and it had drifted.**
+  The boolean is what the product reads — `gig/apply`, the `COMPANY_TASK` gate,
+  the profile tick, the public `/u` page, the OG share card — while
+  `kyc_status` drives the admin queue. Three users held a verified tick on an
+  application that had been refused or never decided. Both paths that matter set
+  the pair in one UPDATE; the hole was `/api/auth/create-user`, the profile
+  upsert, which preserved the flag by **reading it and writing it back** — a lost
+  update, so a student approved between that SELECT and the UPSERT lost it
+  again. An upsert updates only the columns it names, so the fix was to stop
+  naming it. Now enforced by a CHECK
+  ([20261011_kyc_verified_cannot_drift.sql](supabase/migrations/20261011_kyc_verified_cannot_drift.sql)),
+  written as `coalesce(kyc_verified,false) = (kyc_status = 'approved')` because
+  the column is nullable and **a CHECK that evaluates to NULL passes** — a bare
+  equality would have let a NULL masquerading as approved walk through the
+  constraint meant to stop it.
+
+- **Attachments that cannot be compressed had no size limit.**
+  [lib/imageCompress.ts](lib/imageCompress.ts) only shrinks images and returns
+  everything else untouched, so documents arrived at full size: `gig-images`
+  holds 310 MB of which **145 MB is not images** (52 PDFs, 15 Word documents, 8
+  PowerPoints), ten files over 5 MB accounting for 111 MB, the largest a single
+  **29 MB PDF**. About a fifth of the whole storage quota is uncompressed
+  coursework nobody decided to allow — it was simply never refused.
+  `/company/task` carried the only check in the product, a local 10 MB
+  `find()`; `/post` and `/company/post` had none. The limits now live in
+  [lib/attachments.ts](lib/attachments.ts), which already owned the accept list
+  and the image/document split: 5 MB for documents, refused at the picker, and 8
+  MB for images checked **after** compression, because compressImage fails open
+  and returns the original when canvas cannot re-encode.
+
 ## Stale-doc warning
 Four tables were dropped on 2026-06-19 ([supabase/migrations/20260619_drop_unused_tables.sql](supabase/migrations/20260619_drop_unused_tables.sql)) — `vasooli_bounties`, `deliveries`, `payout_methods`, `chat_blocked_logs`. Older migrations and schema dumps still reference them. Delivery artifacts live on `gigs.delivery_link` / `delivery_files` + `messages`; payout UPI lives on `users.upi_id` and payouts are manual.
 
 [supabase/README.md](supabase/README.md) references files `supabase/sql/01_..08_*.sql`. That directory was removed in commit `0c8f119` ("Cleanup: remove redundant root sql directory"). The live migrations are in [supabase/migrations/](supabase/migrations/) and are date-stamped (e.g. `20260421_standardize_naming_and_rls.sql`). Trust the dated migrations, not the README's ordering.
+
+## The workspace shell and the two palettes
+
+Signed-in routes render inside an app shell; public routes do not. The two have
+different palettes, and that split is the thing to understand before touching any
+UI.
+
+**There was no shell at all before [components/shell/](components/shell/).**
+`app/dashboard/layout.tsx` was a 36-line auth gate around a bare `<div>`, the root
+layout rendered `{children}` with no navigation, and **25 files hand-rolled their
+own back button**. `/dashboard` additionally carried a full 72px top bar — logo,
+search, Refer & Earn, messages, notification bell, profile dropdown — so against
+a sidebar that was three navigations for one product.
+
+- [components/shell/nav.ts](components/shell/nav.ts) is the only place navigation
+  is declared. `secondaryNavFor({ isElite, innerCircleRole })` adds the Inner
+  Circle role surface for members who can use it. **There is deliberately no
+  Wallet**: payouts are manual, so a withdrawable balance would be a promise we
+  cannot keep. `/payouts` survives as an account-menu item and an Overview panel,
+  not a destination.
+- [AppShell](components/shell/AppShell.tsx) composes Sidebar (desktop rail),
+  MobileNav (top bar + sheet + 4-item bottom bar) and Topbar (breadcrumb, **not** a
+  second nav). [WorkspaceLayout](components/shell/WorkspaceLayout.tsx) is the auth
+  gate + fonts + shell, and each workspace route has a thin `layout.tsx` calling
+  it — rather than moving 2,800 lines of page code into a route group.
+- [AccountMenu](components/shell/AccountMenu.tsx) holds **log out**. Before the
+  shell, logging out existed only inside the dashboard's top-bar dropdown, along
+  with Install app and Enable alerts. Deleting that bar without moving them first
+  would leave a signed-in user with no way to sign out from anywhere.
+
+### One token contract, two palettes
+The primitives in [components/ui/](components/ui/) had the dark palette hardcoded
+(`bg-[#13131A]`, `text-white`, `border-white/[0.08]`), and `GigCard` renders on
+`/talent` (public, dark) **and** `/feed` + `/dashboard` (workspace, cream).
+Literals force a fork of every shared component, so there is now a semantic
+contract: `--fg` / `--fg-muted` / `--fg-faint`, `--surface` / `--surface-2`,
+`--line` / `--line-strong`, `--chip` / `--chip-strong`, `--accent` /
+`--accent-ink` / `--accent-soft` / `--accent-line` / `--on-accent`, and
+`--ok|warn|bad(-soft|-line|-solid)`. Dark values are at the end of
+[app/globals.css](app/globals.css); cream values are in
+[app/workspace-theme.css](app/workspace-theme.css), scoped to `.workspace`.
+
+Write page and component colors as `text-[var(--fg)]` / `bg-[var(--surface)]`,
+never as a literal. Two traps this encodes:
+
+- **`--accent-ink` inverts between palettes** — a light lavender on near-black,
+  a dark violet on cream. Name the role, not the color; "soft purple" would have
+  to mean two opposite things.
+- **`--on-accent` exists so a theme sweep cannot make a button invisible.** A
+  blanket `text-white` → `text-[var(--fg)]` rewrite turned "Pay & start work"
+  into dark-violet text on a violet fill — the primary escrow action, unreadable.
+  Any solid fill carries `--on-accent`, never `--fg`.
+- `.workspace` also sets `color-scheme: light` and re-does the autofill
+  box-shadow. The global `:root` sets `color-scheme: dark` and a `#0B0B11`
+  autofill shadow, which on cream render date pickers as black panels and
+  autofilled email as white-on-black inside a white field.
+
+## The Inner Circle — two roles
+
+`users.is_elite` existed since the managed-mode pivot and the assignment desk
+sorted by it, but **nothing ever set it (0 rows) and nothing in the product
+mentioned it** — a tier that was real in the database and invisible to everyone it
+was meant to reward.
+
+- [20261005_inner_circle.sql](supabase/migrations/20261005_inner_circle.sql) adds
+  the application trail;
+  [20261006_inner_circle_roles_and_outreach.sql](supabase/migrations/20261006_inner_circle_roles_and_outreach.sql)
+  adds the two roles and the outreach CRM.
+- `users.inner_circle_role ∈ TECH | OUTREACH`. Membership stays `is_elite` (that
+  is what the assignment desk reads); the role sits beside it. Approving flips
+  both, via [api/admin/inner-circle](app/api/admin/inner-circle/route.ts), and the
+  **user row is written first** — a half-failure then leaves a member whose
+  application reads pending, which is visible, rather than an approved application
+  with no access, which looks like it worked.
+- **TECH's workflow is derived, not stored.** `workflowFor()` in
+  [lib/innerCircle.ts](lib/innerCircle.ts) projects the seven steps from the gig
+  row. There are already three state machines describing one gig (`gigs.status`,
+  `gigs.payment_status`, `gigs.managed_status`) and the third has to be kept in
+  sync by hand; a fourth could disagree with the money, and the one that disagrees
+  is always the one the UI reads. Pinned by
+  [tests/unit/inner-circle.test.mjs](tests/unit/inner-circle.test.mjs).
+- **OUTREACH gets a real table** (`outreach_leads` + append-only
+  `outreach_touches`) because its pipeline has no existing home. Readable only via
+  `is_outreach()` or `is_admin()` — it holds third-party contact details — and
+  updates are owner-only. A unique index on `lower(btrim(company_name))` stops two
+  members cold-emailing the same company in the same week. Reads and writes go
+  through the browser client against RLS on purpose: there is no authorization an
+  API route could add that the policies do not already enforce, and a route would
+  be a second place for the rules to drift.
+
+## Mobile and the store builds
+
+[docs/APP.md](docs/APP.md) is the runbook; [capacitor.config.ts](capacitor.config.ts)
+explains why the wrapper loads the live site instead of a static export.
+
+The one to remember: **`viewportFit: "cover"` is load-bearing.** Until it was added
+to the `viewport` export in [app/layout.tsx](app/layout.tsx), every
+`env(safe-area-inset-*)` in the app resolved to `0px` — so the mobile bottom bar
+sat under the iPhone home indicator while the CSS looked correct. Also
+`hoverOnlyWhenSupported` in [tailwind.config.js](tailwind.config.js): Tailwind v3
+emits `hover:` as a bare `:hover`, which touch browsers apply on first tap and
+leave applied, so every tapped button kept its hover fill.
 
 ## Design system (read before any UI change)
 
@@ -386,3 +731,13 @@ These live in [components/ui/](components/ui/). If you find yourself open-coding
 
 ## Local maintenance scripts
 [scripts/maintenance/](scripts/maintenance/) holds ad-hoc PowerShell color-migration scripts and one-off test runners (`test_onboard*.ts`). Gitignored. **Never move `proxy.ts` here** — it is the Next.js 16 middleware and must live at repo root or auth-gating silently breaks (Next does not error when middleware is missing).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

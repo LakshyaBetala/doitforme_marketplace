@@ -98,15 +98,84 @@ test("every route handler authenticates or checks a shared secret", () => {
     "app/api/auth/check-username/route.ts", // availability probe, no PII returned
     "app/api/telegram/webhook/route.ts", // verified by bot-token path secrecy
     "app/auth/callback/route.ts", // the OAuth exchange itself
+    // Public on purpose, and only while Supabase is restricted. It is the
+    // signup form on /maintenance — the visitor has no account and no session
+    // to authenticate with, which is the entire reason the endpoint exists.
+    // It writes to Cloudflare D1, never to Supabase, stores no password, and
+    // the unique index on lower(email) bounds what one address can create.
+    // DELETE THIS LINE when maintenance mode ends and the route is removed.
+    "app/api/waitlist/route.ts",
+    // Inner Circle · Round 1 switch-to-tech route. The invite TOKEN in the
+    // body IS the credential — same pattern as /api/telegram/webhook above,
+    // where a secret path parameter is the entire auth. The route rejects
+    // any unknown token with 404 and no information. See
+    // app/api/inner-circle/round1/switch-tech/route.ts and
+    // docs/inner-circle-round1.md.
+    "app/api/inner-circle/round1/switch-tech/route.ts",
   ]);
 
   const unguarded = routes.filter((r) => {
     if (exempt.has(r)) return false;
     const src = readFileSync(path.join(root, r), "utf8");
-    return !/getUser\(\)|isAdminEmail|CRON_SECRET|ADMIN_SECRET|WEBHOOK_SECRET|PUSH_DISPATCH_SECRET|verifyRazorpaySignature/.test(
+    // verifySession / hashDob are the Round 1 flow's auth primitives: the
+    // first guards signed session cookies for the dashboard; the second is
+    // called inside the DOB check that gates /claim and /login. A route
+    // touching one of them is as guarded as one calling auth.getUser().
+    return !/getUser\(\)|isAdminEmail|CRON_SECRET|ADMIN_SECRET|WEBHOOK_SECRET|PUSH_DISPATCH_SECRET|verifyRazorpaySignature|verifySession|hashDob/.test(
       src
     );
   });
 
   assert.deepEqual(unguarded, [], "These handlers take no caller identity at all.");
+});
+
+// Authenticate before validating the body — as a RULE, not as one example.
+//
+// /api/payments/verify-payment checked its body first, so an anonymous caller
+// got `400 Missing fields` instead of `401`: that answer confirms the endpoint
+// exists and names what to send next. It was fixed, and pinned in
+// tests/uat-readiness.spec.ts — for that one route. Five others were doing the
+// same thing and nothing noticed, because the pin was an example rather than a
+// rule:
+//
+//   /api/escrow/release        400 "Missing gigId"
+//   /api/gig/dispute           400 "gigId and reason are required"
+//   /api/gig/request-changes   400 "gigId and feedback are required"
+//   /api/referral/apply        400 "Missing referralCode"
+//   /api/referral/redeem       400 "Missing required fields"
+//
+// All five were still safe — authorization ran before anything happened — so
+// this was disclosure, not a breach. They were found by probing production
+// after a deploy, which is later than a test should find it.
+//
+// Scoped to FIELD-VALIDATION 400s on purpose. A 400 for malformed JSON has to
+// precede auth (you cannot read a body you cannot parse) and names no fields,
+// so app/api/gig/complete is not an offender.
+test("no handler returns a field-validation 400 before it authenticates", () => {
+  const AUTH =
+    /auth\.getUser\(\)|isAdminEmail|CRON_SECRET|ADMIN_SECRET|WEBHOOK_SECRET|PUSH_DISPATCH_SECRET|verifyRazorpaySignature/;
+
+  const offenders = [];
+  for (const r of routes) {
+    const src = readFileSync(path.join(root, r), "utf8");
+    const auth = src.search(AUTH);
+    if (auth === -1) continue;
+
+    for (const m of src.matchAll(/status:\s*400/g)) {
+      if (m.index > auth) continue;
+      // Look back at the response this 400 belongs to. "required" / "missing"
+      // is the shape that describes the schema to a stranger.
+      const context = src.slice(Math.max(0, m.index - 220), m.index);
+      if (/\b(required|missing)\b/i.test(context)) {
+        offenders.push(`${r} -> ${(context.match(/["'`]([^"'`]{0,70}(?:required|missing)[^"'`]{0,70})["'`]/i) || [, "?"])[1]}`);
+        break;
+      }
+    }
+  }
+
+  assert.deepEqual(
+    offenders,
+    [],
+    "These answer an unauthenticated caller with the field names they need."
+  );
 });

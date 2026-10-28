@@ -20,13 +20,21 @@ export async function POST(req: Request) {
   try {
     const { gigId, reason } = await req.json();
 
-    if (!gigId || !reason) {
-      return NextResponse.json({ error: 'gigId and reason are required' }, { status: 400 });
-    }
-
+    // Authenticate BEFORE validating the body.
+    //
+    // Answering an anonymous caller with a 400 that names the missing fields
+    // confirms the endpoint exists and tells a prober exactly what to send
+    // next; a 401 tells them only that they are not signed in. This is the
+    // same ordering bug /api/payments/verify-payment had, which
+    // tests/uat-readiness.spec.ts pins — it was pinned for one route, not as
+    // a rule, so five others kept doing it.
     // 1. Auth check
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    if (!gigId || !reason) {
+      return NextResponse.json({ error: 'gigId and reason are required' }, { status: 400 });
+    }
 
     // 2. Fetch gig
     const { data: gig } = await supabaseAdmin

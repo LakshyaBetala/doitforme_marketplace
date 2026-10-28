@@ -11,7 +11,7 @@ import Image from "next/image";
 import {
   Loader2, X, Camera, FileText, Image as ImageIcon, MapPin, CheckCircle, ArrowLeft, Building2, User
 } from "lucide-react";
-import { ATTACHMENT_ACCEPT } from "@/lib/attachments";
+import { ATTACHMENT_ACCEPT, attachmentRejection, uploadRejection } from "@/lib/attachments";
 import { blurOnWheel } from "@/lib/inputs";
 
 export default function CompanyPostTask() {
@@ -111,7 +111,17 @@ export default function CompanyPostTask() {
       toast.error("Max 5 images allowed.");
       return;
     }
-    const newFiles = Array.from(files);
+    // Documents cannot be compressed, so an oversize one has to be refused here
+    // or it lands in storage at full size — which is how 145 MB of PDFs and
+    // decks ended up in the gig-images bucket. See lib/attachments.ts.
+    const newFiles = Array.from(files).filter((f) => {
+      const rejection = attachmentRejection(f);
+      if (rejection) {
+        toast.error(rejection);
+        return false;
+      }
+      return true;
+    });
     const newPreviews = newFiles.map(file => URL.createObjectURL(file));
     setImages(prev => [...prev, ...newFiles]);
     setImagePreviews(prev => [...prev, ...newPreviews]);
@@ -157,6 +167,10 @@ export default function CompanyPostTask() {
         await Promise.all(
           images.map(async (raw) => {
             const file = await compressImage(raw, COMPRESS_PRESETS.attachment);
+            // Backstop: compressImage returns the original when it cannot
+            // re-encode, so an uncompressible image is still oversize here.
+            const tooBig = uploadRejection(file);
+            if (tooBig) throw new Error(tooBig);
             const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
             const path = `${user.id}/${Date.now()}_${fileName}`;
             const { error: uploadError } = await supabase.storage.from("gig-images").upload(path, file);

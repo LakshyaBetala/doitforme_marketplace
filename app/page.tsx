@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   // appending a second "DoItForMe" to the home tab title.
   title: { absolute: "DoItForMe – India's Campus Freelance Network" },
   description:
-    "DoItForMe is India's campus freelance network. 700+ verified students earning by completing real tasks for peers and companies. Payment held until you approve, instant UPI payouts.",
+    "DoItForMe is India's campus freelance network. 650+ verified students earning by completing real tasks for peers and companies. Payment held until you approve, instant UPI payouts.",
   keywords: [
     "DoItForMe", "doitforme.in", "campus freelance India",
     "student freelance network", "hire student talent India",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     siteName: "DoItForMe",
     title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "700+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
+      "650+ verified students. Real tasks. Instant UPI payouts. India's campus freelance network.",
     images: [
       {
         url: `${BASE_URL}/logo.png`,
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     creator: "@doitformein",
     title: "DoItForMe – India's Campus Freelance Network",
     description:
-      "700+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts. doitforme.in",
+      "650+ verified students earning by completing real tasks. Payment held until you approve. Instant UPI payouts. doitforme.in",
     images: [`${BASE_URL}/logo.png`],
   },
   robots: {
@@ -75,7 +75,7 @@ export default function Home() {
        name: "DoItForMe",
       url: BASE_URL,
       description:
-        "DoItForMe is India's campus freelance network. 700+ verified students completing real tasks for peers and companies.",
+        "DoItForMe is India's campus freelance network. 650+ verified students completing real tasks for peers and companies.",
       potentialAction: {
         "@type": "SearchAction",
         target: {

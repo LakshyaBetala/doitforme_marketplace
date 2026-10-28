@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseServer } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
 import { buildPaymentBreakdown, audienceForGig } from "@/lib/fees";
+import { payoutRecipientId, canFundEscrow } from "@/lib/gigRoles";
 import { createRazorpayOrder, razorpayConfigured } from "@/lib/razorpay";
 
 
@@ -26,12 +27,41 @@ export async function POST(req: Request) {
 
     if (gigError || !gig) return NextResponse.json({ error: "Gig not found" }, { status: 404 });
 
-    // 3. Determine Recipient (Who gets the money/whose stats determine fee?)
-    // Market: Poster (Seller)
-    // Hustle: Assigned Worker (Worker)
-    let recipientId = gig.poster_id;
-    if (!gig.assigned_worker_id) return NextResponse.json({ error: "No worker assigned to pay" }, { status: 400 });
-    recipientId = gig.assigned_worker_id;
+    // A service listing is a shopfront advert and cannot hold escrow. Funding
+    // one produces a gig whose delivery step nobody is able to perform, because
+    // the provider is its poster and /api/gig/deliver only accepts the assigned
+    // worker. Hiring goes through /api/gig/request-service, which creates a real
+    // engagement. See lib/gigRoles.ts.
+    if (!canFundEscrow(gig)) {
+      return NextResponse.json(
+        { error: "This is a service listing. Send the provider a request to hire them." },
+        { status: 400 }
+      );
+    }
+
+    // 3. Determine Recipient (who gets the money, and whose stats set the fee).
+    //
+    // This used to assign gig.poster_id and then overwrite it unconditionally
+    // with assigned_worker_id — no listing_type check at all — while
+    // cron/auto-release branched on 'MARKET'. The two disagreed; they only
+    // matched because no MARKET row exists. payoutRecipientId is now the single
+    // answer both use. See lib/gigRoles.ts.
+    if (!gig.assigned_worker_id) {
+      return NextResponse.json({ error: "No counterparty assigned yet." }, { status: 400 });
+    }
+    const recipientId = payoutRecipientId(gig);
+    if (!recipientId) {
+      return NextResponse.json({ error: "Cannot determine who to pay for this listing." }, { status: 400 });
+    }
+
+    // Refuse to let the recipient fund their own payout — a round trip that
+    // charges a platform fee on money that never changed hands.
+    if (user.id === recipientId) {
+      return NextResponse.json(
+        { error: "You are the one being paid for this listing." },
+        { status: 403 }
+      );
+    }
 
     // 4. Fetch Recipient Stats (for Tiered Fee) & Payer Details (for Gateway)
     // We need the payer's name/email/phone to prefill checkout

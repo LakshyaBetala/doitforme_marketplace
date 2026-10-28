@@ -65,13 +65,13 @@ export default function ProfileCompletion({ user }: Props) {
   };
 
   return (
-    <section className="bg-[var(--card)] border border-white/[0.08] rounded-3xl p-5 md:p-6 mb-4">
+    <section className="bg-[var(--card)] border border-[var(--line)] rounded-3xl p-5 md:p-6 mb-4">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
           <h2 className="text-base md:text-lg font-semibold tracking-tight">
             {profileUrl ? "Your page is live" : "Claim your page"}
           </h2>
-          <p className="text-xs md:text-[13px] text-white/60 mt-1 leading-relaxed">
+          <p className="text-xs md:text-[13px] text-[var(--fg-muted)] mt-1 leading-relaxed">
             {profileUrl
               ? "Share it anywhere — it works as your portfolio."
               : "A public profile you can send to anyone, instead of a resume PDF."}
@@ -79,7 +79,7 @@ export default function ProfileCompletion({ user }: Props) {
         </div>
         <button
           onClick={() => setDismissed(true)}
-          className="text-[11px] text-white/40 hover:text-white/70 transition-colors shrink-0"
+          className="text-[11px] text-[var(--fg-faint)] hover:text-[var(--fg-muted)] transition-colors shrink-0"
           aria-label="Dismiss"
         >
           Hide
@@ -88,13 +88,13 @@ export default function ProfileCompletion({ user }: Props) {
 
       {/* Progress */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="h-1.5 flex-1 rounded-full bg-white/[0.06] overflow-hidden">
+        <div className="h-1.5 flex-1 rounded-full bg-[var(--chip)] overflow-hidden">
           <div
             className="h-full bg-[var(--brand-purple)] rounded-full transition duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
-        <span className="text-[11px] font-semibold text-white/50 tabular-nums shrink-0">
+        <span className="text-[11px] font-semibold text-[var(--fg-muted)] tabular-nums shrink-0">
           {doneCount}/{steps.length}
         </span>
       </div>
@@ -105,11 +105,11 @@ export default function ProfileCompletion({ user }: Props) {
             key={s.key}
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border ${
               s.done
-                ? "bg-white/[0.04] border-white/[0.08] text-white/40"
-                : "bg-white/[0.02] border-white/[0.12] text-white/70"
+                ? "bg-[var(--chip)] border-[var(--line)] text-[var(--fg-faint)]"
+                : "bg-[var(--chip)] border-[var(--line-strong)] text-[var(--fg-muted)]"
             }`}
           >
-            {s.done && <Check size={11} className="text-[#C9A9FF]" />}
+            {s.done && <Check size={11} className="text-[var(--accent-ink)]" />}
             {s.label}
           </span>
         ))}
@@ -118,14 +118,14 @@ export default function ProfileCompletion({ user }: Props) {
       <div className="flex flex-col sm:flex-row gap-2">
         <Link
           href={next.href}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--brand-purple)] hover:opacity-90 text-white text-sm font-semibold transition active:scale-[0.99] min-h-[44px]"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--brand-purple)] hover:opacity-90 text-[var(--fg)] text-sm font-semibold transition active:scale-[0.99] min-h-[44px]"
         >
           {next.label} <ArrowRight size={16} />
         </Link>
         {profileUrl && (
           <button
             onClick={share}
-            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white text-sm font-semibold transition active:scale-[0.99] min-h-[44px]"
+            className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[var(--chip)] hover:bg-[var(--chip-strong)] border border-[var(--line)] text-[var(--fg)] text-sm font-semibold transition active:scale-[0.99] min-h-[44px]"
           >
             <Share2 size={15} /> Share
           </button>

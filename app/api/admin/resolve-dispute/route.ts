@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 import { platformFeeFor, audienceForGig } from "@/lib/fees";
 import { isAdminEmail } from "@/lib/admins";
+import { payoutRecipientId, posterIsRecipient } from "@/lib/gigRoles";
 
 // Admin dispute desk.
 //
@@ -185,8 +186,13 @@ export async function POST(req: Request) {
   const gig: Gig | null = (Array.isArray(embedded) ? embedded[0] : embedded) ?? null;
   if (!gig) return NextResponse.json({ error: "Gig not found for dispute" }, { status: 404 });
 
-  const isMarket = gig.listing_type === "MARKET";
-  const recipientId = isMarket ? gig.poster_id : gig.assigned_worker_id;
+  // Who gets paid comes from lib/gigRoles, the single answer every money path
+  // shares. This was a hand-rolled `isMarket ? poster : worker` — the same
+  // inline branch that had already drifted apart in create-order and
+  // auto-release. A disputed gig must settle identically to a normal one, and
+  // that cannot be true while each route decides the recipient for itself.
+  const isMarket = posterIsRecipient(gig);
+  const recipientId = payoutRecipientId(gig);
 
   // Filled by the SPLIT branch so both parties are told the exact division.
   let settlementSummary = "";

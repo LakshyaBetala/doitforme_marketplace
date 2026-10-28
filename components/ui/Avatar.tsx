@@ -11,6 +11,13 @@ interface AvatarProps {
   sizes?: string;
 }
 
+/**
+ * Every user and company avatar in the app. Initial fallback on a neutral
+ * surface with a hairline ring.
+ *
+ * Token-based rather than bg-[#1A1A24]/text-white so the initial stays legible
+ * on the cream workspace as well as the dark marketing pages.
+ */
 export default function Avatar({
   src,
   fallback,
@@ -23,15 +30,15 @@ export default function Avatar({
 
   return (
     <div
-      className={`relative rounded-full overflow-hidden flex items-center justify-center bg-[#1A1A24] ring-1 ring-white/10 text-white font-medium ${className}`}
+      className={`relative rounded-full overflow-hidden flex items-center justify-center bg-[var(--surface-2)] ring-1 ring-[var(--line-strong)] text-[var(--fg)] font-medium ${className}`}
     >
       {src && !error ? (
-        <Image 
-          src={src} 
-          alt="" 
-          fill 
-          sizes={sizes} 
-          className="object-cover" 
+        <Image
+          src={src}
+          alt=""
+          fill
+          sizes={sizes}
+          className="object-cover"
           onError={() => setError(true)}
         />
       ) : (

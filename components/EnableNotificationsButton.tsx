@@ -38,13 +38,10 @@ export default function EnableNotificationsButton() {
   return (
     <button
       onClick={handleEnableClick}
-      className="w-full flex items-center px-4 py-3 hover:bg-blue-500/10 text-sm text-zinc-300 hover:text-blue-400 transition-colors text-left"
+      className="flex min-h-[44px] w-full items-center gap-3 rounded-[9px] px-3 text-left text-[13px] font-semibold text-[var(--fg)] hover:bg-[var(--chip)] transition-colors"
     >
-      <BellRing size={16} className="mr-3 shrink-0 text-blue-400" />
-      <div className="flex flex-col">
-        <span className="font-medium text-white">Enable Alerts</span>
-        <span className="text-[10px] text-zinc-500">Get push notifications</span>
-      </div>
+      <BellRing size={16} className="shrink-0 text-[var(--fg-muted)]" />
+      Turn on alerts
     </button>
   );
 }

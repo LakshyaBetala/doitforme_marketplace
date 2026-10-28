@@ -1,0 +1,79 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"main": ".open-next/worker.js",
+	"name": "doitforme1",
+	"compatibility_date": "2026-09-07",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	// Production liveness, stated out loud rather than inherited.
+	//
+	// proxy.ts reads `process.env.MAINTENANCE_MODE !== 'off'`, defaulting the
+	// hold page ON so that a missing variable cannot expose a broken site. That
+	// default was correct and still got defeated: the value arrived from
+	// .env.local, which Next loads for production builds too and OpenNext bakes
+	// into the Worker — so a flag set for local development lifted the hold page
+	// in production on deploy, with nothing in the diff that said so.
+	//
+	// It belongs here instead. OpenNext's populateProcessEnv() applies
+	// Cloudflare bindings FIRST and only fills gaps from the baked .env with
+	// `??=`, so this is the authoritative value and the one place to change it.
+	// Set it to anything other than "off" to put the hold page back up; no
+	// rebuild is needed, because proxy.ts reads it at runtime.
+	"vars": {
+		"MAINTENANCE_MODE": "on",
+		// Inner Circle · Round 1 campaign.
+		//
+		// FROM_EMAIL sets the sender for every transactional email in lib/email.ts
+		// (not just Round 1). We route from the branded address rather than
+		// noreply@ so replies land in a mailbox a human watches. The provider
+		// (ZeptoMail recommended) must have the domain verified at the registrar
+		// before this address delivers — see docs/inner-circle-round1.md.
+		"FROM_EMAIL": "support@doitforme.in",
+		"FROM_NAME": "DoItForMe · Inner Circle",
+		"REPLY_TO": "support@doitforme.in",
+		// Public URL of the template Google Sheet Round 1 candidates clone. The
+		// portal reads this via the /me endpoint and renders it as the "Open the
+		// template sheet" button.
+		"ROUND1_SALES_SHEET_TEMPLATE_URL": "https://docs.google.com/spreadsheets/d/1ILhCN7x1m1ZTQU4vwY7yFK4kOiPeI36jEyD85pyYfrs/edit?usp=sharing"
+		// Secrets set separately with `wrangler secret put`:
+		//   ROUND1_DOB_PEPPER       -- peppered into sha256(dob) so a D1 dump
+		//                              can't rainbow-table candidate DOBs
+		//   ROUND1_SESSION_SECRET   -- HMAC key for the signed session cookie
+		//   ZEPTOMAIL_TOKEN         -- or BREVO_API_KEY / RESEND_API_KEY, picked
+		//                              by lib/email.ts auto-detect
+	},
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"services": [
+		{
+			// Self-reference service binding, the service name must match the worker name
+			// see https://opennext.js.org/cloudflare/caching
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "doitforme1"
+		}
+	],
+	// Signups captured while Supabase is restricted.
+	//
+	// Supabase Auth and REST both answer 402 (exceed_storage_size_quota), so the
+	// normal signup path cannot record anyone. D1 is free, binds natively to this
+	// Worker, and is a real SQL database we can export from — so nobody who turns
+	// up during the outage is lost. These rows get replayed into public.users once
+	// service is restored.
+	"d1_databases": [
+		{
+			"binding": "WAITLIST",
+			"database_name": "doitforme-waitlist",
+			"database_id": "9f83b32e-6c34-4117-98f6-4f8e2ad002e7"
+		}
+	],
+
+	"images": {
+		// Enable image optimization
+		// see https://opennext.js.org/cloudflare/howtos/image
+		"binding": "IMAGES"
+	}
+}

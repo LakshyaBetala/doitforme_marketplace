@@ -54,10 +54,25 @@ async function rpc(fn, args) {
 const stamp = Date.now();
 const created = { gigs: [], escrow: [], payouts: [], users: [] };
 
+// Hoisted, because restoring the worker's UPI is not an assertion — it is
+// repair. It used to live at the end of the happy path, so a crash or a Ctrl-C
+// anywhere between the refusal test and the release left a REAL student with a
+// wiped upi_id, and manual_release_escrow refuses without one: the next time
+// they delivered work, their payout would not queue. The test's own failure
+// mode was the bug it exists to catch.
+let workerId = null;
+let originalUpi = null;
+let upiTouched = false;
+
 async function cleanup() {
+  if (upiTouched && workerId) {
+    await patch(`users?id=eq.${workerId}`, { upi_id: originalUpi });
+  }
   for (const id of created.payouts) await del(`payout_queue?id=eq.${id}`);
   for (const id of created.escrow) await del(`escrow?id=eq.${id}`);
   for (const id of created.gigs) {
+    await del(`notifications?link=eq./gig/${id}`);
+    await del(`gig_alerts_sent?gig_id=eq.${id}`);
     await del(`payout_queue?gig_id=eq.${id}`);
     await del(`escrow?gig_id=eq.${id}`);
     await del(`transactions?gig_id=eq.${id}`);
@@ -69,20 +84,30 @@ async function cleanup() {
 async function main() {
   console.log("\nESCROW RELEASE — end to end\n");
 
-  // Reuse two real users as poster/worker stand-ins is risky, so make our own.
-  // users.id references auth.users, so borrow ids from existing rows instead of
-  // inventing uuids: we only need distinct ids that satisfy the FK.
-  const { body: sample } = await get("users?select=id,upi_id&limit=2");
-  if (!Array.isArray(sample) || sample.length < 2) {
-    console.error("Need at least 2 users in the database to run this test.");
+  // users.id references auth.users, so borrow ids from existing rows rather
+  // than inventing uuids: we only need two distinct ids that satisfy the FK.
+  //
+  // The worker is chosen from accounts whose upi_id is ALREADY null and which
+  // have never completed a job. Step 1 has to null the worker's UPI to prove
+  // the release refuses without one, and on a live database with thousands of
+  // real students that write is the only genuinely destructive thing this file
+  // does. Choosing a row where it is a no-op removes the hazard instead of
+  // promising to undo it. There are ~2,290 such accounts.
+  const { body: workers } = await get(
+    "users?select=id&upi_id=is.null&jobs_completed=in.(0)&limit=1"
+  );
+  const { body: posters } = await get("users?select=id&limit=2");
+  if (!Array.isArray(workers) || !workers.length || !Array.isArray(posters) || posters.length < 2) {
+    console.error("Need a UPI-less user and at least 2 users in the database to run this test.");
     process.exit(1);
   }
-  const posterId = sample[0].id;
-  const workerId = sample[1].id;
+  workerId = workers[0].id;
+  const posterId = posters.find((u) => u.id !== workerId)?.id;
+  if (!posterId) { console.error("Could not pick a distinct poster."); process.exit(1); }
 
-  // Snapshot the worker's UPI so we can restore it.
+  // Snapshot anyway: the assertion that it came back is still worth making.
   const { body: workerBefore } = await get(`users?id=eq.${workerId}&select=upi_id`);
-  const originalUpi = workerBefore[0]?.upi_id ?? null;
+  originalUpi = workerBefore[0]?.upi_id ?? null;
 
   // ---------- fixture: a funded, delivered gig ----------
   const price = 1000;
@@ -121,6 +146,7 @@ async function main() {
   if (esc?.[0]?.id) created.escrow.push(esc[0].id);
 
   // ---------- 1. refuses when the worker has no UPI ----------
+  upiTouched = true;
   await patch(`users?id=eq.${workerId}`, { upi_id: null });
   const noUpi = await rpc("manual_release_escrow", { p_gig_id: gigId });
   ok("release refused when worker has no UPI",
@@ -166,6 +192,7 @@ async function main() {
 
   // ---------- restore + clean ----------
   await patch(`users?id=eq.${workerId}`, { upi_id: originalUpi });
+  upiTouched = false;
   const { body: restored } = await get(`users?id=eq.${workerId}&select=upi_id`);
   ok("worker UPI restored", (restored?.[0]?.upi_id ?? null) === originalUpi, `${restored?.[0]?.upi_id}`);
 
@@ -175,6 +202,23 @@ async function main() {
 
   console.log(`\n  ${pass} passed, ${fail} failed\n`);
   process.exit(fail === 0 ? 0 : 1);
+}
+
+// Ctrl-C is not a crash, and it was the one exit that ran no repair at all:
+// the process died with the worker's UPI still nulled and the fixture gig still
+// in the table. It is also the likeliest way a run against a live database ends
+// early, because the first thing you do when a test touching money looks wrong
+// is stop it.
+let cleaning = false;
+for (const sig of ["SIGINT", "SIGTERM"]) {
+  process.on(sig, async () => {
+    if (cleaning) return;
+    cleaning = true;
+    console.log(`
+  ${sig} — repairing and removing disposable rows...`);
+    try { await cleanup(); console.log("  done."); } catch (e) { console.error("  CLEANUP FAILED:", e); }
+    process.exit(130);
+  });
 }
 
 main().catch(async (e) => {

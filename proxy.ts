@@ -22,8 +22,108 @@ const PROTECTED_ROUTES = [
   '/admin',
 ]
 
+// MAINTENANCE MODE.
+//
+// Supabase answers 402 on every endpoint (exceed_storage_size_quota), which
+// takes Auth, REST, Storage and Realtime with it — so login, signup, the feed
+// and every gig page are dead, not slow. Leaving them reachable means students
+// meet a broken login form and write to support about "authentication errors",
+// which is exactly what started happening.
+//
+// Everything is rewritten to /maintenance, which talks to Cloudflare D1 instead
+// and so keeps working. Two things stay reachable: the page itself, and
+// /api/waitlist, which is the only reason the page exists.
+//
+// Env-driven so the hold page can be lifted without a code change, and so dev
+// can work on signed-in screens while production stays held. Default is ON:
+// forgetting to set a variable must not accidentally expose a broken site.
+//   MAINTENANCE_MODE=off   in .env.local  -> normal site (dev)
+//   unset / anything else                 -> hold page (production today)
+const MAINTENANCE_MODE = process.env.MAINTENANCE_MODE !== 'off' 
+
+// Pages that still work with no backend, so they stay up.
+//
+// The landing page touches Supabase only for an optional auth.getUser() to
+// greet a signed-in visitor; supabase-js resolves that with an error object
+// rather than throwing, so it renders exactly as normal. The legal pages are
+// static text. Taking those down would cost SEO and tell a first-time visitor
+// nothing about what we do — the maintenance page is for people trying to get
+// INTO the product, not for everyone who hears the name.
+//
+// /talent and /u/[username] are deliberately NOT here: both read gigs and
+// profiles from Supabase and would render an empty shell.
+const MAINTENANCE_PUBLIC = [
+  '/pricing',
+  '/terms',
+  '/privacy-policy',
+  '/refund-policy',
+  '/shipping-policy',
+  '/contact',
+  '/maintenance',
+  '/api/waitlist',
+  // Keep the webhook reachable. Razorpay retries a 5xx for ~24h, so answering
+  // it with a maintenance page would consume those retries and silently drop
+  // payments that were actually captured.
+  '/api/webhooks',
+  // Inner Circle · Round 1 portal runs DURING the maintenance window — that
+  // is the whole point of the campaign. The portal uses its own D1-backed
+  // auth (email + DOB), so Supabase being 402 doesn't affect it. If this
+  // allowlist drops the path, candidates click the invite link and land on
+  // the hold page instead of their task.
+  '/inner-circle/sales/round-1',
+  '/api/inner-circle',
+  // Shorter branded path to the Round 1 return-login. The page itself just
+  // redirects to /inner-circle/sales/round-1, but it needs to be reachable
+  // through maintenance for the redirect to fire. Marketing / email signatures
+  // can link to this instead of the longer /inner-circle/sales/round-1.
+  '/login/inner-circle-sales',
+  // Admin desk needs to be reachable so the operator can trigger invites,
+  // download the mail-merge CSV and decide on submissions during the Round 1
+  // campaign. The /admin page itself gates on isAdminEmail — a non-admin who
+  // reaches it gets redirected straight to /dashboard, which is still blocked
+  // and rewrites to /maintenance. So exposing /admin exposes nothing an
+  // attacker can act on without a whitelisted Supabase session.
+  '/admin',
+  '/api/admin/inner-circle-round1',
+  '/api/cron/inner-circle-round1-nudge',
+]
+
+const isMaintenancePublic = (pathname: string) =>
+  pathname === '/' || MAINTENANCE_PUBLIC.some(p => pathname.startsWith(p))
+
+/**
+ * True only in a dev build with the preview flag on. See lib/devPreview.ts.
+ *
+ * `process.env.NODE_ENV` is a build-time literal, so a production build compiles
+ * this to `return false` and drops the require() — which is what keeps the
+ * fixtures, and this bypass, out of the deployed Worker entirely.
+ */
+function devPreviewEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') return false
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return (require('./lib/devPreview') as typeof import('./lib/devPreview')).DEV_PREVIEW
+}
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+
+  if (MAINTENANCE_MODE && !isMaintenancePublic(pathname)) {
+    // Rewrite, not redirect: the visitor keeps the URL they came for, so a
+    // shared /gig/<id> link still works the moment the flag goes off.
+    const url = request.nextUrl.clone()
+    url.pathname = '/maintenance'
+    return NextResponse.rewrite(url, { status: 503, headers: { 'Retry-After': '604800' } })
+  }
+
+  // DEV PREVIEW. Supabase Auth is 402, so auth.getUser() fails and every
+  // protected route redirects to /login — which makes the whole signed-in
+  // product impossible to look at. This lets it through with fixture data.
+  //
+  // DEV_PREVIEW is `process.env.NODE_ENV !== "production" && <opt-in flag>`, and
+  // NODE_ENV is a compile-time constant, so in a production build this folds to
+  // `if (false)` and the auth gate is exactly as it was. An env var cannot turn
+  // it on in the deployed Worker. See lib/devPreview.ts.
+  if (devPreviewEnabled()) return NextResponse.next()
 
   const isProtected = PROTECTED_ROUTES.some(route => pathname.startsWith(route))
 

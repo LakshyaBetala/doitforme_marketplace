@@ -23,14 +23,14 @@ export default function TelegramLinkButton({
     return (
       <div className="w-full relative group">
         <div className="absolute inset-0 bg-[#0088cc]/10 rounded-xl blur pointer-events-none"></div>
-        <div className="p-4 rounded-xl border border-[#0088cc]/30 bg-[#1A1A24] flex items-center justify-between relative z-10 transition">
+        <div className="p-4 rounded-xl border border-[#0088cc]/30 bg-[var(--surface-2)] flex items-center justify-between relative z-10 transition">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#0088cc]/20 text-[#0088cc] flex items-center justify-center shrink-0">
               <CheckCircle2 size={20} />
             </div>
             <div>
-              <p className="font-bold text-white text-sm">Telegram Linked</p>
-              <p className="text-xs text-white/50">You're receiving instant notifications natively.</p>
+              <p className="font-bold text-[var(--fg)] text-sm">Telegram Linked</p>
+              <p className="text-xs text-[var(--fg-muted)]">You're receiving instant notifications natively.</p>
             </div>
           </div>
         </div>
@@ -44,13 +44,13 @@ export default function TelegramLinkButton({
       <button 
         onClick={handleConnect} 
         disabled={clicked}
-        className="w-full p-4 rounded-xl border border-[#0088cc]/50 bg-[#1A1A24] hover:bg-[#1A1A24] flex flex-col items-center justify-center gap-2 relative z-10 transition active:scale-[0.98]"
+        className="w-full p-4 rounded-xl border border-[#0088cc]/50 bg-[var(--surface-2)] hover:bg-[var(--surface-2)] flex flex-col items-center justify-center gap-2 relative z-10 transition active:scale-[0.98]"
       >
-        <div className="flex items-center gap-2 font-bold text-white text-base">
+        <div className="flex items-center gap-2 font-bold text-[var(--fg)] text-base">
           <Send className="text-[#0088cc] w-5 h-5" />
           {clicked ? "Connecting..." : "Connect Telegram Alerts"}
         </div>
-        <p className="text-[10px] text-white/50 text-center max-w-[280px]">
+        <p className="text-[10px] text-[var(--fg-muted)] text-center max-w-[280px]">
           Requires the free Telegram App. Link your account to get instant push notifications for gigs and messages.
         </p>
       </button>
