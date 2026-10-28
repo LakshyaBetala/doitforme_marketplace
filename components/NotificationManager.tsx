@@ -32,6 +32,7 @@ export default function NotificationManager() {
       try {
         // Only subscribe authenticated users — the subscription is tied to their row.
         const supabase = supabaseBrowser();
+        if (!supabase) return;
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || cancelled) return;
 

@@ -8,6 +8,7 @@ import { Loader2, CheckCircle2, RefreshCcw, Building2, UserCheck, Plus, Trash2 }
 import Link from "next/link";
 import { isAdminEmail } from "@/lib/admins";
 import { blurOnWheel } from "@/lib/inputs";
+import InnerCircleRound1Panel from "@/components/admin/InnerCircleRound1Panel";
 
 // Interest taxonomy used for "related field" targeting in the broadcast tab.
 const BROADCAST_CATEGORIES = [
@@ -31,7 +32,7 @@ export default function AdminDashboardPage() {
     const [icBusy, setIcBusy] = useState<string | null>(null);
     const [icError, setIcError] = useState("");
 
-    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "DISPUTES" | "MANAGED" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "INNER_CIRCLE" | "BROADCAST">("PAYOUTS");
+    const [activeTab, setActiveTab] = useState<"PAYOUTS" | "DISPUTES" | "MANAGED" | "COMPANY_LIST" | "PENDING_COMPANIES" | "PENDING_KYC" | "INNER_CIRCLE" | "IC_ROUND1" | "BROADCAST">("PAYOUTS");
 
     // Disputes desk. A disputed gig has frozen escrow and a 48-hour promise
     // attached to it, so this queue is the most time-sensitive one here.
@@ -548,6 +549,9 @@ export default function AdminDashboardPage() {
                 </button>
                 <button onClick={() => setActiveTab("INNER_CIRCLE")} className={getTabClass("INNER_CIRCLE")}>
                     Inner Circle ({icApps.filter((a) => a.status === "pending").length})
+                </button>
+                <button onClick={() => setActiveTab("IC_ROUND1")} className={getTabClass("IC_ROUND1")}>
+                    IC · Sales R1
                 </button>
                 <button onClick={() => setActiveTab("BROADCAST")} className={getTabClass("BROADCAST")}>
                     Broadcast Gig
@@ -1074,6 +1078,13 @@ export default function AdminDashboardPage() {
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {/* IC · Sales Round 1 — campaign queue, see components/admin/InnerCircleRound1Panel */}
+                    {activeTab === "IC_ROUND1" && (
+                        <div className="max-w-6xl">
+                            <InnerCircleRound1Panel />
                         </div>
                     )}
 

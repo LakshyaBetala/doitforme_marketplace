@@ -22,7 +22,27 @@
 	// Set it to anything other than "off" to put the hold page back up; no
 	// rebuild is needed, because proxy.ts reads it at runtime.
 	"vars": {
-		"MAINTENANCE_MODE": "on"
+		"MAINTENANCE_MODE": "on",
+		// Inner Circle · Round 1 campaign.
+		//
+		// FROM_EMAIL sets the sender for every transactional email in lib/email.ts
+		// (not just Round 1). We route from the branded address rather than
+		// noreply@ so replies land in a mailbox a human watches. The provider
+		// (ZeptoMail recommended) must have the domain verified at the registrar
+		// before this address delivers — see docs/inner-circle-round1.md.
+		"FROM_EMAIL": "support@doitforme.in",
+		"FROM_NAME": "DoItForMe · Inner Circle",
+		"REPLY_TO": "support@doitforme.in",
+		// Public URL of the template Google Sheet Round 1 candidates clone. The
+		// portal reads this via the /me endpoint and renders it as the "Open the
+		// template sheet" button.
+		"ROUND1_SALES_SHEET_TEMPLATE_URL": "https://docs.google.com/spreadsheets/d/1ILhCN7x1m1ZTQU4vwY7yFK4kOiPeI36jEyD85pyYfrs/edit?usp=sharing"
+		// Secrets set separately with `wrangler secret put`:
+		//   ROUND1_DOB_PEPPER       -- peppered into sha256(dob) so a D1 dump
+		//                              can't rainbow-table candidate DOBs
+		//   ROUND1_SESSION_SECRET   -- HMAC key for the signed session cookie
+		//   ZEPTOMAIL_TOKEN         -- or BREVO_API_KEY / RESEND_API_KEY, picked
+		//                              by lib/email.ts auto-detect
 	},
 	"assets": {
 		"directory": ".open-next/assets",

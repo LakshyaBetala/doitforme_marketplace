@@ -15,10 +15,27 @@ export function supabaseBrowser() {
   }
 
   if (!client) {
-    client = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    // Fail soft when Supabase env is missing. The hold page and the Round 1
+    // portal are D1-backed and don't need Supabase, but RealtimeListener,
+    // the landing page's optional sign-in greeting, and ~30 signed-in pages
+    // are mounted/compiled across the same app — a construction-time throw
+    // here crashes every one of them, including pages that don't touch
+    // Supabase at all.
+    //
+    // Returning null changes the type and would force a null check in
+    // every call site. Instead, construct against invalid placeholders:
+    // `createBrowserClient` accepts them, and any subsequent network call
+    // returns `{ data: { user: null }, error }`, which every caller
+    // already handles as "logged out". Dev stays usable, production is
+    // unaffected because env vars are set there.
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+    const anon =
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder.placeholder";
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL && typeof window !== "undefined") {
+      console.warn("[supabaseBrowser] NEXT_PUBLIC_SUPABASE_URL missing — using placeholder, auth calls will return null user.");
+    }
+    client = createBrowserClient(url, anon);
   }
   return client;
 }

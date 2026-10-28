@@ -83,6 +83,27 @@ const MAINTENANCE_PUBLIC = [
   // marketplace is paused stops the actual business rather than protecting it.
   // A non-member who finds the URL gets the invite-only screen, not the site.
   '/app',
+  // Inner Circle · Round 1 portal runs DURING the maintenance window — that
+  // is the whole point of the campaign. The portal uses its own D1-backed
+  // auth (email + DOB), so Supabase being 402 doesn't affect it. If this
+  // allowlist drops the path, candidates click the invite link and land on
+  // the hold page instead of their task.
+  '/inner-circle/sales/round-1',
+  '/api/inner-circle',
+  // Shorter branded path to the Round 1 return-login. The page itself just
+  // redirects to /inner-circle/sales/round-1, but it needs to be reachable
+  // through maintenance for the redirect to fire. Marketing / email signatures
+  // can link to this instead of the longer /inner-circle/sales/round-1.
+  '/login/inner-circle-sales',
+  // Admin desk needs to be reachable so the operator can trigger invites,
+  // download the mail-merge CSV and decide on submissions during the Round 1
+  // campaign. The /admin page itself gates on isAdminEmail — a non-admin who
+  // reaches it gets redirected straight to /dashboard, which is still blocked
+  // and rewrites to /maintenance. So exposing /admin exposes nothing an
+  // attacker can act on without a whitelisted Supabase session.
+  '/admin',
+  '/api/admin/inner-circle-round1',
+  '/api/cron/inner-circle-round1-nudge',
 ]
 
 const isMaintenancePublic = (pathname: string) =>

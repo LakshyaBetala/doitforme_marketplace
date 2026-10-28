@@ -65,7 +65,7 @@ test("every cron schedule is mapped to a route in the cron worker", () => {
 });
 
 test("every route the cron worker calls exists as a handler", () => {
-  const paths = [...cronSource.matchAll(/"(\/api\/cron\/[a-z-]+)"/g)].map((m) => m[1]);
+  const paths = [...cronSource.matchAll(/"(\/api\/cron\/[a-z0-9-]+)"/g)].map((m) => m[1]);
   assert.ok(paths.length > 0, "cron worker maps no routes");
 
   for (const p of paths) {
@@ -75,22 +75,45 @@ test("every route the cron worker calls exists as a handler", () => {
 });
 
 test("each mapped route is scheduled exactly once", () => {
-  const paths = [...cronSource.matchAll(/"(\/api\/cron\/[a-z-]+)"/g)].map((m) => m[1]);
+  const paths = [...cronSource.matchAll(/"(\/api\/cron\/[a-z0-9-]+)"/g)].map((m) => m[1]);
   const dupes = paths.filter((p, i) => paths.indexOf(p) !== i);
   assert.deepEqual(dupes, [], "a route scheduled twice runs twice and double-processes the queue");
 });
+
+/**
+ * Return the route path mapped to a specific cron expression in the Worker's
+ * SCHEDULE object. The naive `cronSource.split(c)[1].includes(name)` the
+ * tests here used before silently matched downstream routes too, since split
+ * returns everything after the key — so the first cron would answer for
+ * every later route's existence.
+ */
+function routeForCron(cron) {
+  const escaped = cron.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`"${escaped}":\\s*"(/api/cron/[a-z0-9-]+)"`);
+  const m = cronSource.match(re);
+  return m ? m[1] : null;
+}
 
 test("auto-release runs more often than daily", () => {
   // The whole point of leaving Vercel Hobby. The product promises a 24h
   // auto-release; a once-a-day job made the real worst case ~48h.
   const schedules = cronConfig.triggers?.crons || [];
-  const autoRelease = schedules.find(
-    (c) => cronSource.split(`"${c}"`)[1]?.includes("auto-release")
-  );
+  const autoRelease = schedules.find((c) => routeForCron(c) === "/api/cron/auto-release");
   assert.ok(autoRelease, "auto-release has no schedule");
   assert.match(
     autoRelease,
     /^\*\/\d+ /,
     `auto-release is scheduled "${autoRelease}" — it should use a */N minute step`
   );
+});
+
+test("inner-circle round 1 nudge is scheduled sub-hourly and offset from auto-release", () => {
+  // Reminders need to fire reasonably close to their 12h/6h/3h/30m targets,
+  // so sub-hourly. Offset from auto-release because both touch D1 and run on
+  // the same Worker — contending on the quarter-hour would just slow both.
+  const schedules = cronConfig.triggers?.crons || [];
+  const nudge = schedules.find((c) => routeForCron(c) === "/api/cron/inner-circle-round1-nudge");
+  assert.ok(nudge, "inner-circle-round1-nudge has no schedule");
+  const autoRelease = schedules.find((c) => routeForCron(c) === "/api/cron/auto-release");
+  assert.notEqual(nudge, autoRelease, "nudge and auto-release must not share a cron expression");
 });
