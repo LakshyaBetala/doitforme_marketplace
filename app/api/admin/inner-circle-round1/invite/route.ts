@@ -1,8 +1,9 @@
 // POST /api/admin/inner-circle-round1/invite
 //
 // Operator action from the admin desk: send out the next batch of invites.
-// Each click pulls N uninvited waitlist rows (people who ticked Inner Circle
-// but have no row in inner_circle_round1 for this cohort yet), creates
+// Each click pulls N uninvited waitlist rows (people who ticked Inner Circle,
+// chose Sales or "not sure yet" -- never TECH -- and have no row in
+// inner_circle_round1 for this cohort yet, Sales side first), creates
 // candidate rows with fresh tokens, and fires the invite email.
 //
 // Idempotent by the UNIQUE (cohort, email) constraint on inner_circle_round1
@@ -90,7 +91,14 @@ export async function POST(req: Request) {
        LEFT JOIN inner_circle_round1 r
          ON r.cohort = ?1 AND lower(r.email) = lower(w.email)
        WHERE w.inner_circle = 1 AND r.id IS NULL AND w.intent = 'student'
-       ORDER BY w.created_at ASC
+         -- This is the SALES round. People who chose "Build the work" get
+         -- their own round; inviting them here handed 242 builders a lead-list
+         -- task and a "switch to Tech" escape hatch, in that order.
+         AND coalesce(w.inner_circle_role, '') <> 'TECH'
+       -- "Bring the work in" first, then "Not sure yet" (NULL role), each
+       -- oldest-signup first. Live D1 2026-10-29: 188 OUTREACH, 893 undecided.
+       ORDER BY CASE WHEN w.inner_circle_role = 'OUTREACH' THEN 0 ELSE 1 END,
+                w.created_at ASC
        LIMIT ?2`
     )
     .bind(CURRENT_COHORT, limit)
