@@ -97,6 +97,7 @@ export default function Round1LoginPage() {
             <span className="block text-[12px] uppercase tracking-[0.14em] text-white/50 mb-1.5">Date of birth</span>
             <input
               type="date"
+              autoComplete="bday"
               value={dob}
               onChange={(e) => setDob(e.target.value)}
               className="w-full min-h-[48px] rounded-lg bg-[#13131A] border border-white/10 px-4 py-3 text-[15px] text-white placeholder:text-white/35 outline-none transition-colors focus-visible:border-[#8825F5] focus-visible:ring-2 focus-visible:ring-[#8825F5]/40"

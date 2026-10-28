@@ -496,7 +496,7 @@ export default function MaintenancePage() {
           </div>
         </div>
 
-        <footer className="mt-16 border-t border-white/[0.08] pt-7 text-[13px] leading-[1.7] text-white/40">
+        <footer className="mt-16 border-t border-white/[0.08] pt-7 text-[13px] leading-[1.7] text-white/60">
           <p>
             Already have an account? It&apos;s untouched. Sign in as normal when we&apos;re back.
           </p>

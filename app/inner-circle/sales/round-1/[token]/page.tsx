@@ -701,6 +701,7 @@ export default function Round1EntryPage({
                   </span>
                   <input
                     type="date"
+                    autoComplete="bday"
                     value={dob}
                     onChange={(e) => setDob(e.target.value)}
                     onWheel={blurOnWheel}
