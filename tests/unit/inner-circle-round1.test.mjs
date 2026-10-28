@@ -21,6 +21,7 @@ import {
   generateToken,
   hashDob,
   isValidSubmissionUrl,
+  sheetIdOf,
   nextReminderAt,
   normaliseDob,
   parseRemindersSent,
@@ -223,6 +224,21 @@ test("isValidSubmissionUrl accepts Google Sheets URLs only", () => {
   assert.equal(isValidSubmissionUrl("https://notion.so/sheet"), false);
   assert.equal(isValidSubmissionUrl("https://example.com/docs.google.com"), false);
   assert.equal(isValidSubmissionUrl("not-a-url"), false);
+  // Same host, not a sheet. These were accepted and closed the round.
+  assert.equal(isValidSubmissionUrl("https://docs.google.com/document/d/abc/edit"), false);
+  assert.equal(isValidSubmissionUrl("https://docs.google.com/forms/d/abc/edit"), false);
+  assert.equal(isValidSubmissionUrl("https://docs.google.com/presentation/d/abc"), false);
+  // Lookalike hosts.
+  assert.equal(isValidSubmissionUrl("https://docs.google.com.evil.example/spreadsheets/d/a"), false);
+  assert.equal(isValidSubmissionUrl("https://docs.google.com@evil.example/spreadsheets/d/a"), false);
+});
+
+test("sheetIdOf finds the id so the blank template can be refused", () => {
+  const tpl = "https://docs.google.com/spreadsheets/d/1ILhCN7x1m1ZTQU4vwY7yFK4kOiPeI36jEyD85pyYfrs/edit?usp=sharing";
+  assert.equal(sheetIdOf(tpl), "1ILhCN7x1m1ZTQU4vwY7yFK4kOiPeI36jEyD85pyYfrs");
+  assert.equal(sheetIdOf(tpl.replace("/edit?usp=sharing", "/edit#gid=0")), sheetIdOf(tpl));
+  assert.notEqual(sheetIdOf("https://docs.google.com/spreadsheets/d/someoneElsesCopy123/edit"), sheetIdOf(tpl));
+  assert.equal(sheetIdOf("https://docs.google.com/document/d/abc"), null);
 });
 
 // ─── Constants sanity ───────────────────────────────────────────────────

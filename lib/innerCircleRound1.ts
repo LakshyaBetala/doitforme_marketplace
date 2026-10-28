@@ -394,8 +394,16 @@ export function isValidSubmissionUrl(raw: string): boolean {
     const u = new URL(raw);
     if (u.protocol !== "https:") return false;
     const host = u.hostname.toLowerCase();
-    return host === "docs.google.com" || host.endsWith(".docs.google.com");
+    if (host !== "docs.google.com" && !host.endsWith(".docs.google.com")) return false;
+    // Docs, Forms and Slides live on the same host. Checking the host alone
+    // recorded a Google Doc as a finished Round 1.
+    return u.pathname.startsWith("/spreadsheets/");
   } catch {
     return false;
   }
+}
+
+/** The spreadsheet id in a Sheets URL, or null. Used to spot the blank template. */
+export function sheetIdOf(raw: string): string | null {
+  return /\/spreadsheets\/d\/([A-Za-z0-9_-]+)/.exec(raw)?.[1] ?? null;
 }

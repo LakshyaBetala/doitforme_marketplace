@@ -17,6 +17,7 @@ import {
   Round1Row,
   SESSION_COOKIE,
   isValidSubmissionUrl,
+  sheetIdOf,
   missingBindings,
   nowSeconds,
   round1Env,
@@ -51,7 +52,19 @@ export async function POST(req: Request) {
   const submissionUrl = typeof body.submissionUrl === "string" ? body.submissionUrl.trim() : "";
   if (!submissionUrl || !isValidSubmissionUrl(submissionUrl)) {
     return NextResponse.json(
-      { error: "Please paste a Google Sheets link (docs.google.com/...)." },
+      { error: "Please paste a Google Sheets link (docs.google.com/spreadsheets/...)." },
+      { status: 400 }
+    );
+  }
+  // The likeliest honest mistake: pasting the link we handed out instead of
+  // the copy they filled in. Accepting it closes their Round 1 on a blank sheet.
+  const templateId = sheetIdOf(e.ROUND1_SALES_SHEET_TEMPLATE_URL || "");
+  if (templateId && sheetIdOf(submissionUrl) === templateId) {
+    return NextResponse.json(
+      {
+        error:
+          "That's our blank template. Make your own copy (File → Make a copy), fill it in, and paste the link to your copy.",
+      },
       { status: 400 }
     );
   }
