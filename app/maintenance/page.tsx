@@ -120,6 +120,46 @@ export default function MaintenancePage() {
               Your account, your gigs and your money are exactly where you left them.
             </p>
 
+            {/* ROUND 1 SALES IS LIVE, WHILE THE PUBLIC SITE IS STILL HELD.
+                It sits here, above the form, because of the phone layout: the
+                Inner Circle panel lives in the other column and on a phone
+                stacks under the whole form, which put this 2 screens down --
+                past the submit button of the very person ticking the Inner
+                Circle box. Measured at 390px; that is why it moved.
+
+                A hairline row, not a filled button: most visitors are NOT
+                invited yet, so the form stays the page's one primary action,
+                and the copy leads with "Invited?". /inner-circle/sales/round-1
+                is the RETURN login (email + date of birth) -- first entry is
+                the tokened link in the invite mail -- and it refuses, by
+                design, to say whether an address is on the list. Without the
+                second sentence an uninvited visitor meets an error that reads
+                like a broken site. */}
+            <div
+              className="rise mt-8 flex flex-col gap-3.5 rounded-xl border border-[#8825F5]/40 bg-[#8825F5]/[0.08] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5"
+              style={{ animationDelay: "150ms" }}
+            >
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 text-[13.5px] font-semibold text-white">
+                  <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-[#8825F5]/60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[#C9A9FF]" />
+                  </span>
+                  Inner Circle &middot; Round 1 Sales is live
+                </p>
+                <p className="mt-1.5 max-w-[48ch] text-[13px] leading-[1.55] text-white/70">
+                  Invited? Sign in with your email and date of birth. Not yet? Tick the Inner
+                  Circle box below &mdash; invites go out by email, in batches.
+                </p>
+              </div>
+              <Link
+                href="/inner-circle/sales/round-1"
+                className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 self-start rounded-lg border border-white/[0.16] bg-white/[0.06] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-white/[0.11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8825F5]/50 sm:self-auto"
+              >
+                Open my task <span aria-hidden>&rarr;</span>
+              </Link>
+            </div>
+
             {/* The form. Quiet by design — hairline, no fill — so the Inner
                 Circle stays the loudest thing on the page. */}
             <div
@@ -139,10 +179,22 @@ export default function MaintenancePage() {
                     <span className="text-white/90">{form.email}</span> the day we reopen, with a
                     link that finishes your account in one step. No queue.
                   </p>
+                  {innerCircle && intent === "student" && (
+                    <p className="mt-3 max-w-[42ch] rounded-lg border border-[#8825F5]/35 bg-[#8825F5]/[0.07] px-3.5 py-3 text-[13.5px] leading-[1.6] text-white/80">
+                      You&apos;re in the queue for the Inner Circle. Round 1 invites go out by
+                      email in batches &mdash; the link in that mail is your way in, so keep an
+                      eye on your inbox (and your spam folder).
+                    </p>
+                  )}
                   <button
                     onClick={() => {
                       setStatus("idle");
                       setForm({ email: "", name: "", phone: "", college: "", lookingFor: "" });
+                      // The opt-in is per person. Left ticked, the next person
+                      // added was put forward -- and later mailed a Round 1
+                      // invite -- on someone else's say-so.
+                      setInnerCircle(false);
+                      setIcRole("");
                     }}
                     className="mt-5 min-h-[44px] text-[14px] font-medium text-[#C9A9FF] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8825F5]/50 rounded"
                   >
@@ -267,9 +319,9 @@ export default function MaintenancePage() {
                               its own one-line explanation and its own social
                               proof, right where it is made. */}
                           <span className="mt-0.5 block text-[12.5px] leading-[1.6] text-white/55">
-                            The students we put in front of real companies first. Invite-only, and
-                            we are still building the selection properly. This puts you on the
-                            list we invite from, not an application yet.
+                            The students we put in front of real companies first. Selection is
+                            running now: Round 1 is a 24-hour sales task, and ticking this puts
+                            you in the next invite batch.
                           </span>
                           {icWaiting > 0 && (
                             <span className="mt-1.5 block text-[12px] font-semibold text-[#C9A9FF]">
@@ -394,7 +446,7 @@ export default function MaintenancePage() {
               aria-labelledby="inner-circle"
             >
               <div className="p-6 sm:p-7">
-                <p className="text-[13px] font-medium text-white/70">Arriving with the relaunch</p>
+                <p className="text-[13px] font-medium text-white/90">Selection has started</p>
                 <h2
                   id="inner-circle"
                   className="mt-2 text-[28px] sm:text-[32px] font-semibold leading-[1.05] tracking-[-0.03em] text-white"
@@ -409,7 +461,7 @@ export default function MaintenancePage() {
                 {/* Two paragraphs, not four. This was a wall of text in the
                     loudest colour on the page, competing with the form for
                     attention while saying things the opt-in now says itself. */}
-                <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/70">
+                <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/90">
                   Two sides to start with: building the work, and bringing it in. More as this
                   grows. Tick{" "}
                   <strong className="font-semibold text-white">
@@ -418,44 +470,8 @@ export default function MaintenancePage() {
                   when you save your spot.
                 </p>
               </div>
-              {/* ROUND 1 SALES IS OPEN, WHILE THE PUBLIC SITE IS STILL HELD.
-                  The hold page's job was to collect intent. It now also has to
-                  hand the first cohort their task, because the waitlist
-                  campaign drives people here and the Round 1 portal is the one
-                  thing behind the hold that is actually running.
-
-                  Deliberately the panel's own action, not a second page-level
-                  primary button: most visitors are NOT invited yet, so the
-                  waitlist form stays the single primary CTA. Promoting this
-                  above it would send the majority to a login they cannot pass.
-
-                  The sub-line is the honest part. /inner-circle/sales/round-1
-                  is the RETURN login (email + date of birth) -- first entry is
-                  the tokened link in the invite mail. Without that sentence an
-                  uninvited visitor meets a login that, by design, refuses to
-                  say whether they are on the list. */}
-              <div className="border-t border-white/20 px-6 sm:px-7 py-5">
-                <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#C9A9FF]">
-                  <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#C9A9FF]" />
-                  Round 1 &middot; Sales is live
-                </p>
-                <p className="mt-2.5 max-w-[42ch] text-[14px] leading-[1.6] text-white/80">
-                  The first cohort is being picked now. Thirty qualified leads, twenty-four hours,
-                  read by a human who writes back either way.
-                </p>
-                <Link
-                  href="/inner-circle/sales/round-1"
-                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-white/[0.14] bg-white/[0.07] px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8825F5]/50"
-                >
-                  Open your Round 1 task
-                </Link>
-                <p className="mt-2.5 max-w-[42ch] text-[12.5px] leading-[1.55] text-white/45">
-                  Invited candidates sign in with their email and date of birth. Not invited yet?
-                  Save your spot below &mdash; invites go out in batches.
-                </p>
-              </div>
               <div className="border-t border-white/20 px-6 sm:px-7 py-4">
-                <p className="text-[13px] text-white/75">
+                <p className="text-[13px] text-white/90">
                   {icWaiting > 0
                     ? `${icWaiting.toLocaleString("en-IN")} already asked to be considered.`
                     : "Premium side of DoItForMe. Same escrow, bigger work."}
