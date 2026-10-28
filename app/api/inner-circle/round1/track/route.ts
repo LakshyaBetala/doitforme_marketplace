@@ -34,6 +34,16 @@ export const dynamic = "force-dynamic";
 
 type Body = { event?: string; token?: string; metadata?: Record<string, unknown> };
 
+// Analytics must never be able to starve the campaign. This endpoint takes no
+// login, and every row it writes comes out of D1's 100k-rows-per-day free
+// allowance -- the same allowance the hold page's signups and the portal's
+// claims and submissions draw on. Unbounded, a loop hitting it about once a
+// second spends the day's writes and then signups and Round 1 submissions fail
+// until midnight UTC. So: no candidate, no row (the admin funnel already
+// ignores candidate_id IS NULL, so nothing reported is lost), and each
+// candidate is capped per hour, far above anything a real browser sends.
+const EVENTS_PER_CANDIDATE_PER_HOUR = 120;
+
 export async function POST(req: Request) {
   let body: Body;
   try {
@@ -76,7 +86,17 @@ export async function POST(req: Request) {
   const userAgent = (req.headers.get("user-agent") || "").slice(0, 200);
   const metadata = body.metadata ? JSON.stringify(body.metadata).slice(0, 2000) : null;
 
+  if (!candidateId) return new Response(null, { status: 204 });
+
   try {
+    const recent = await db
+      .prepare(
+        "SELECT count(*) AS n FROM inner_circle_round1_events WHERE candidate_id = ?1 AND occurred_at > unixepoch() - 3600"
+      )
+      .bind(candidateId)
+      .first<{ n: number }>();
+    if ((recent?.n ?? 0) >= EVENTS_PER_CANDIDATE_PER_HOUR) return new Response(null, { status: 204 });
+
     await db
       .prepare(
         `INSERT INTO inner_circle_round1_events
