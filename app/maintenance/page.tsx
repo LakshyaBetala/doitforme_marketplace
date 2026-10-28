@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { blurOnWheel } from "@/lib/inputs";
 
 /**
@@ -415,6 +416,42 @@ export default function MaintenancePage() {
                     &ldquo;Put me forward for the Inner Circle&rdquo;
                   </strong>{" "}
                   when you save your spot.
+                </p>
+              </div>
+              {/* ROUND 1 SALES IS OPEN, WHILE THE PUBLIC SITE IS STILL HELD.
+                  The hold page's job was to collect intent. It now also has to
+                  hand the first cohort their task, because the waitlist
+                  campaign drives people here and the Round 1 portal is the one
+                  thing behind the hold that is actually running.
+
+                  Deliberately the panel's own action, not a second page-level
+                  primary button: most visitors are NOT invited yet, so the
+                  waitlist form stays the single primary CTA. Promoting this
+                  above it would send the majority to a login they cannot pass.
+
+                  The sub-line is the honest part. /inner-circle/sales/round-1
+                  is the RETURN login (email + date of birth) -- first entry is
+                  the tokened link in the invite mail. Without that sentence an
+                  uninvited visitor meets a login that, by design, refuses to
+                  say whether they are on the list. */}
+              <div className="border-t border-white/20 px-6 sm:px-7 py-5">
+                <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#C9A9FF]">
+                  <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#C9A9FF]" />
+                  Round 1 &middot; Sales is live
+                </p>
+                <p className="mt-2.5 max-w-[42ch] text-[14px] leading-[1.6] text-white/80">
+                  The first cohort is being picked now. Thirty qualified leads, twenty-four hours,
+                  read by a human who writes back either way.
+                </p>
+                <Link
+                  href="/inner-circle/sales/round-1"
+                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-white/[0.14] bg-white/[0.07] px-4 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-white/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8825F5]/50"
+                >
+                  Open your Round 1 task
+                </Link>
+                <p className="mt-2.5 max-w-[42ch] text-[12.5px] leading-[1.55] text-white/45">
+                  Invited candidates sign in with their email and date of birth. Not invited yet?
+                  Save your spot below &mdash; invites go out in batches.
                 </p>
               </div>
               <div className="border-t border-white/20 px-6 sm:px-7 py-4">
