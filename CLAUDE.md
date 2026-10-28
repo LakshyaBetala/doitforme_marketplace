@@ -152,13 +152,15 @@ Two rules that fail the **deploy**, not the build, so `npm run build` passing lo
 Both are guarded by [tests/unit/vercel-config.test.mjs](tests/unit/vercel-config.test.mjs), which also asserts every scheduled path has a matching route file. Run `npm run test:unit` before pushing config changes.
 
 ### Cron (auto-release)
-Scheduling lives in a **second Cloudflare Worker**, [workers/cron/](workers/cron/), not in `vercel.json`. It holds three Cron Triggers and calls the app's own HTTP routes with the `x-cron-secret` header:
+Scheduling lives in a **second Cloudflare Worker**, [workers/cron/](workers/cron/), not in `vercel.json`. It holds five Cron Triggers and calls the app's own HTTP routes with the `x-cron-secret` header:
 
 | schedule (UTC) | route |
 |---|---|
 | `*/15 * * * *` | `/api/cron/auto-release` |
 | `30 7 * * *` | `/api/cron/nudge-posters` |
 | `0 9 * * *` | `/api/cron/process-payouts` |
+| `30 3 * * *` | `/api/cron/prune-data` |
+| `5,20,35,50 * * * *` | `/api/cron/inner-circle-round1-nudge` — Round 1 reminders (12h/6h/3h/30m before each deadline) and expiry. Marks a reminder sent *before* sending, so a provider cap skips it rather than retrying it |
 
 `/api/cron/auto-release` scans `gigs` where `status='DELIVERED' AND auto_release_at < now() AND payment_status='HELD' AND dispute_reason IS NULL` in batches of 50 and transitions them to `completed` / `PAYOUT_PENDING`.
 
@@ -412,9 +414,11 @@ and `proxy.ts` defaults it ON so a missing value cannot expose a broken site.
   Next's handlers never see the request and the package leaves the graph. Paired
   with `outputFileTracingExcludes`, this is what took the Worker from "fails to
   build" to **2.84 MB gzipped** against a 3 MB free ceiling.
-  **That figure is historical and the margin is now almost gone.** Measured
-  2026-10-13 with `npm run cf:size`: **3038.66 KiB gzipped against the 3072 KiB
-  (3 MiB) ceiling — 33 KiB of headroom, 98.9% full.** Assets are uploaded
+  **That figure is historical.** It reached 3038.66 KiB (33 KiB of headroom) on
+  2026-10-13 and crossed the ceiling at 3074.30 KiB, which is what got `next/og`
+  deleted (see below). Measured 2026-10-29 with `npm run cf:size`, after the
+  Round 1 merge: **2328.63 KiB gzipped against the 3072 KiB (3 MiB) ceiling —
+  about 743 KiB of headroom, 75.8% full.** Assets are uploaded
   separately and do not count; this is the Worker script. Two consequences:
   check `npm run cf:size` *before* adding any dependency the server graph can
   reach, and remember this fails at **deploy** time, so a green `npm run build`
@@ -467,6 +471,23 @@ and `proxy.ts` defaults it ON so a missing value cannot expose a broken site.
   sites keep working; `public.my_profile` (a `security_invoker = off` view filtered
   to `auth.uid()`) exists for own-row reads so that tightening is a find-and-replace
   later rather than a redesign.
+
+- **The middleware's path lists are prefix matches, and a merge can make two
+  correct lists wrong together.** `cloudflare-migration` put `'/inner-circle'`
+  into `PROTECTED_ROUTES` for the member workspace; `main` put the Round 1
+  portal at `/inner-circle/sales/round-1` with its own D1 login (email + date of
+  birth — candidates have no Supabase account). Merged, the prefix match sent
+  every candidate to `/login`, a page they cannot pass. The build was green
+  and 182 tests passed, because `proxy.ts` imports `next/server` and
+  `@supabase/ssr` and nothing tested it; it was found by `curl` against the
+  live site after deploy. The lists now live in
+  [lib/routeGuards.ts](lib/routeGuards.ts) — pure data, no Next imports — with
+  `SELF_AUTHENTICATING` for surfaces that carry their own login, pinned by
+  [tests/unit/route-guards.test.mjs](tests/unit/route-guards.test.mjs). The
+  same night, opening the Google callback with a bare `'/auth'` would also have
+  opened `/auth-transfer`, which installs a session from tokens in the query
+  string; the entry is `'/auth/'` with the slash. **Add to these lists by full
+  segment, and add the path you mean to the test.**
 
 - **An uncalled `route.ts` is still a public endpoint.** Four handlers with zero
   callers anywhere in the UI were live and wrong: `/api/escrow/refund` was a
