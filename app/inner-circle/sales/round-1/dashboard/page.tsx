@@ -259,7 +259,7 @@ function StartedView({
           <span className="text-[20px] md:text-[24px] text-white/50">s</span>
         </div>
         <p className="mt-3 text-[13px] text-white/60">
-          Submit before the clock hits zero. The portal keeps your draft here, nowhere else — close the tab if you need to, come back any time.
+          Submit before the clock hits zero. Your work lives in your own Google Sheet, so close this tab whenever you need to and come back any time.
         </p>
       </div>
 
@@ -295,13 +295,13 @@ function StartedView({
               target="_blank"
               rel="noreferrer"
               onClick={() => track("template_clicked_task")}
-              className="rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-[13px] text-white/85 hover:bg-white/[0.08] transition"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-white/10 bg-white/[0.04] px-4 text-[13px] text-white/85 hover:bg-white/[0.08] transition"
             >
               Open the template sheet ↗
             </a>
           )}
-          <span className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-2 text-[13px] text-white/55">
-            Make a copy &rarr; File &rarr; Make a copy
+          <span className="self-center text-[13px] text-white/60">
+            Then <strong className="font-semibold text-white/85">File &rarr; Make a copy</strong>, and work in your copy.
           </span>
         </div>
       </div>

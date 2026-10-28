@@ -15,6 +15,7 @@
 // the scroll progress bar and count-up numbers. Zero animation libs.
 
 import { useEffect, useRef, useState, use } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { blurOnWheel } from "@/lib/inputs";
 import { track } from "@/lib/round1TrackClient";
@@ -197,12 +198,29 @@ export default function Round1EntryPage({
     fetch("/api/inner-circle/round1/me", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
-        if (d?.candidate?.status === "started" || d?.candidate?.status === "submitted") {
+        // Any claimed status has a dashboard view -- including expired and
+        // the admin's decision. Only 'invited' belongs on this page; sending
+        // anyone else here put a "Start my 24 hours" button in front of a
+        // candidate whose clock had already run, or whose result was in.
+        if (d?.candidate?.status && d.candidate.status !== "invited") {
           router.replace("/inner-circle/sales/round-1/dashboard");
         }
       })
       .catch(() => {});
   }, [router, token]);
+
+  // The real count, not a literal. /api/waitlist is reachable during the hold
+  // and is what the maintenance page already reads. Starts at a floor so the
+  // sentence is never empty or wrong while the fetch is in flight.
+  const [icCount, setIcCount] = useState(1300);
+  useEffect(() => {
+    fetch("/api/waitlist")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (typeof d?.innerCircle === "number" && d.innerCircle > 0) setIcCount(d.innerCircle);
+      })
+      .catch(() => {});
+  }, []);
 
   const start = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -340,7 +358,7 @@ export default function Round1EntryPage({
               <p className="mt-7 max-w-xl text-[15px] md:text-[15.5px] leading-relaxed text-white/65">
                 One of{" "}
                 <span className="font-semibold text-white">
-                  <CountUp end={1300} />
+                  <CountUp end={icCount} />
                 </span>{" "}
                 people who ticked Inner Circle. We're starting with the side that moves
                 real money, right now, today.
@@ -357,6 +375,18 @@ export default function Round1EntryPage({
               />
               <span className="inline-block text-white/40 translate-y-[-1px]">↓</span>
             </div>
+            {/* Second device. Someone who started on a laptop and reopens this
+                invite on a phone has no session here, and the only way
+                forward was the whole letter, the read-gate, and a button
+                labelled "Start my 24 hours" -- with their clock running.
+                The claim route never restarts a timer, but the button says
+                it might. This sends them to the one-screen return login. */}
+            <Link
+              href="/inner-circle/sales/round-1"
+              className="mt-4 inline-flex min-h-[44px] items-center text-[13px] text-white/60 underline-offset-4 hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8825F5]/50 rounded"
+            >
+              Already started? Sign in to your task &rarr;
+            </Link>
           </Reveal>
         </section>
 
@@ -732,13 +762,15 @@ export default function Round1EntryPage({
       {/* ─── Marquee ticker at bottom ─── */}
       <Marquee
         items={[
-          "607 submitted interest",
-          "1,300+ on the waitlist",
+          // Floors, not live counts: these only grow, so a floor stays true.
+          // Live D1 2026-10-29: 1,323 Inner Circle opt-ins, 2,207 on the waitlist.
+          "1,300+ asked for the Inner Circle",
+          "2,200+ on the waitlist",
           "24 hours per round",
           "30 B2B prospects",
           "Sales cohort opens first",
           "Round 1 live now",
-          "Reply to Mouriyan on this email",
+          "Questions? Reply to your invite email",
         ]}
       />
 
