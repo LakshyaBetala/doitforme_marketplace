@@ -84,7 +84,7 @@ export async function POST(req: Request) {
   const inWindow = now - windowStart < LOGIN_WINDOW_SECONDS;
   if (inWindow && row.login_fail_count >= LOGIN_MAX_FAILS) {
     return NextResponse.json(
-      { error: "Too many attempts. Try again in a few minutes." },
+      { error: "Too many attempts on this email. Use the link in your invite email to get straight back in, or try again in 15 minutes." },
       { status: 429 }
     );
   }

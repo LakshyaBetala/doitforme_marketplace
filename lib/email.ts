@@ -473,8 +473,12 @@ export function render(kind: EmailKind, args: BaseArgs): RenderResult {
     case "inner_circle_round1_reminder": {
       // hoursLeft is a float coming in; display the right bucket phrasing.
       const hoursLeft = Number(args.extra?.hoursLeft || 0);
-      const token = args.extra?.token ? encodeURIComponent(String(args.extra.token)) : "";
-      const dashUrl = `${SITE}/inner-circle/sales/round-1/${token}`;
+      // The RETURN login, not the token page. Everyone getting a reminder has
+      // already started, so they have read the brief; the token page is a
+      // 6-screen letter behind a read-gate ending in "Start my 24 hours". On a
+      // second device -- started on a laptop, reminder on a phone -- that was
+      // the whole path to their submission box with 30 minutes left.
+      const dashUrl = `${SITE}/inner-circle/sales/round-1`;
       const bucket =
         hoursLeft <= 0.75 ? "30 minutes"
         : hoursLeft <= 3.5 ? "3 hours"
@@ -714,7 +718,11 @@ export function render(kind: EmailKind, args: BaseArgs): RenderResult {
 // Shared type helpers for both inviteLetterHtml and miniLetterHtml.
 const SERIFISH = "'Space Grotesk','Inter',system-ui,-apple-system,'Segoe UI',sans-serif";
 const SANS = "'Inter',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
-const LOGO_URL = `${SITE}/logo.png`;
+// The 192px app icon, not /logo.png: same mark, but logo.png is a 912 KB
+// 1024px canvas mostly transparent padding, shown here at 40px. Every email
+// header pulled nearly a megabyte on mobile data for a thumbnail, and the
+// padding shrank the sloth inside its own frame. 37 KB, sharp at 2x.
+const LOGO_URL = `${SITE}/icons/icon-192.png`;
 const MASCOT_URL = `${SITE}/sloth.png`;
 
 /** Reusable masthead: logo + brand mark + eyebrow tag. */
