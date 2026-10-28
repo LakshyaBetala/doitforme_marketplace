@@ -72,8 +72,18 @@ const MAINTENANCE_PUBLIC = [
   // the hold page instead of their task.
   '/inner-circle/sales/round-1',
   '/api/inner-circle',
-  // Admin side needs Supabase auth (isAdminEmail), which currently works
-  // again, so the admin desk routes aren't gated by MAINTENANCE_MODE either.
+  // Shorter branded path to the Round 1 return-login. The page itself just
+  // redirects to /inner-circle/sales/round-1, but it needs to be reachable
+  // through maintenance for the redirect to fire. Marketing / email signatures
+  // can link to this instead of the longer /inner-circle/sales/round-1.
+  '/login/inner-circle-sales',
+  // Admin desk needs to be reachable so the operator can trigger invites,
+  // download the mail-merge CSV and decide on submissions during the Round 1
+  // campaign. The /admin page itself gates on isAdminEmail — a non-admin who
+  // reaches it gets redirected straight to /dashboard, which is still blocked
+  // and rewrites to /maintenance. So exposing /admin exposes nothing an
+  // attacker can act on without a whitelisted Supabase session.
+  '/admin',
   '/api/admin/inner-circle-round1',
   '/api/cron/inner-circle-round1-nudge',
 ]
