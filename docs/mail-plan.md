@@ -135,18 +135,34 @@ Paste the HTML into Sender's code editor and replace each placeholder with
 Sender's personalisation field for the matching CSV column.
 Subject: *A letter from Mouriyan, about the Inner Circle and India.*
 
-**Each batch:**
-1. Admin desk → Inner Circle Round 1 → **Dry run** with the batch size. Check the
-   count (batch 1 should be 188, all *Bring the work in*).
-2. **Create only** with the same size. This makes the candidate rows and tokens
-   and sends **no** email.
-3. **Download CSV**. Columns: `email, name, phone, college, status, invite_url,
-   switch_to_tech_url, invited_at_iso`.
-4. Sender → Subscribers → Import, into a group named for the batch. Map
-   `invite_url`, `switch_to_tech_url` and `name` to custom fields.
-5. Send the campaign to that group only.
-6. **Delete the CSV.** Each `invite_url` is a bearer link: whoever opens it first
+**The batching happens in Sender, not on the admin desk.** The desk has no
+batch-size box: its buttons are fixed (*Dry run (preview 90)*, *Send 90*,
+*Send 240*, *Generate all pending rows (no email)*), and *Download CSV ·
+uninvited* exports every un-started row, not a slice. So generate everything
+once and split it in the campaign tool, which is where segments belong anyway.
+
+1. Admin desk → Inner Circle Round 1 → **Dry run (preview 90)**. This is only a
+   sanity check that the query works and the addresses look right; the number it
+   prints is 90, not your batch size.
+2. **Generate all pending rows (no email)**. One click. It creates all 1,081
+   candidate rows with their tokens and sends **nothing**. Idempotent: running it
+   twice does not duplicate anyone.
+3. **Download CSV · uninvited**. Columns: `email, name, phone, college, status,
+   invite_url, switch_to_tech_url, invited_at_iso`.
+4. **The first 188 rows are the Sales side.** The CSV has no role column, but
+   the invite query orders *Bring the work in* before *Not sure yet* and the
+   export orders by `invited_at ASC`, so the file comes out in sending order.
+   Split it there: rows 1–188 are batch 1, the rest follow oldest-first.
+5. Sender → Subscribers → Import each slice into its own group, named for the
+   batch. Map `invite_url`, `switch_to_tech_url` and `name` to custom fields.
+6. Send the campaign to one group at a time.
+7. **Delete the CSV.** Each `invite_url` is a bearer link: whoever opens it first
    and types any date of birth takes the seat (see §6).
+
+> Every row is created on day 0, so `campaign_closes_at` (invited_at + 7 days)
+> is the same for everyone. A candidate mailed on day 5 still gets a full 24
+> hours once they click Start, but they have less of the 7-day window to click
+> it in. Keep the whole send inside the first two or three days.
 
 **Pacing.** Invites don't touch Brevo, but every candidate who clicks Start
 generates up to 6 portal emails over about 36 hours (4 reminders, which stop the
@@ -209,7 +225,7 @@ button labelled *Start my 24 hours* with their clock already running.
 
 | Failure | Impact | Mitigation |
 |---|---|---|
-| Invite forwarded **before** the candidate clicks Start | The stranger sets their own DOB and takes the seat; the real candidate is locked out | Delete the CSV after import. To reset one person: `npx wrangler d1 execute doitforme-waitlist --remote --command "UPDATE inner_circle_round1 SET status='invited', dob_hash=NULL, started_at=NULL, deadline_at=NULL, next_reminder_at=NULL, reminders_sent='[]' WHERE lower(email)=lower('person@x.com')"` |
+| Invite forwarded **before** the candidate clicks Start | The stranger sets their own DOB and takes the seat; the real candidate is locked out | Delete the CSV after import. To reset one person you must also **change the token**, or the stranger's link still works: `npx wrangler d1 execute doitforme-waitlist --remote --command "UPDATE inner_circle_round1 SET status='invited', dob_hash=NULL, started_at=NULL, deadline_at=NULL, next_reminder_at=NULL, reminders_sent='[]', login_fail_count=0, login_fail_window_start=NULL, token=lower(hex(randomblob(24))) WHERE lower(email)=lower('person@x.com')"` then send them the new link: `https://doitforme.in/inner-circle/sales/round-1/<the new token>` |
 | Someone types a candidate's email with wrong DOBs | 5 failures lock that email for 15 min | Their invite link still works (it does not go through the email lockout), and the lockout message now tells them so |
 | Brevo hits 300/day | Reminders silently not sent | Pacing in §4, or switch to ZeptoMail |
 | `ROUND1_DOB_PEPPER` rotated or lost mid-campaign | Everyone who has clicked Start is locked out of **both** doors: the return login and the invite link check the DOB against hashes made with the old pepper | Don't rotate it. **Keep a copy of the value somewhere safe** the day you set it; restoring it is the only fix |
@@ -243,9 +259,11 @@ button labelled *Start my 24 hours* with their clock already running.
 - **Tech round (the 242):** a separate cohort. The current table and portal are
   Sales-shaped (`cohort = 'sales-2026-10'`, the lead-list brief). It needs its own
   brief before any invite goes out.
-- **The reopen email (all 2,207):** one Sender campaign on reopen day. Sender's
-  free tier counts **subscribers on file**, capped at 2,500, so delete the Round 1
-  groups first or this import will not fit.
+- **The reopen email (all 2,207):** one Sender campaign on reopen day. Every
+  Round 1 invitee is already a waitlist row, so importing all 2,207 adds only
+  the ~1,126 not already on file — 2,207 total, inside the free tier's 2,500
+  subscriber cap. No need to delete the Round 1 groups, but watch the cap if
+  the waitlist keeps growing.
 - **Supabase users active in September–October who are not on the waitlist:**
   they have accounts, so a service announcement is fair, but count them against
   the same 2,500 before importing.
