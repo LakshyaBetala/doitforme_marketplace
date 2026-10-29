@@ -92,6 +92,16 @@ export default function MaintenancePage() {
       `}</style>
 
       <div className="mx-auto w-full max-w-[1120px] px-5 sm:px-8 py-14 md:py-24">
+        {/* Round 1 banner sits FULL-WIDTH above everything else: when it was
+            tucked inside the left grid column, on a signed-in /dashboard view
+            (which rewrites here through maintenance) it rendered at ~550px
+            against the right column's whitespace and read as right-shifted
+            with a wall of black on its left. Promoting it out of the grid
+            puts it at the full container width across every viewport. */}
+        <div className="rise mb-12 md:mb-16" style={{ animationDelay: "150ms" }}>
+          <Round1LiveBanner joinHref="#save-your-spot" />
+        </div>
+
         <div className="grid gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:items-start">
           {/* ───────────── statement ───────────── */}
           <div className="order-1">
@@ -119,14 +129,6 @@ export default function MaintenancePage() {
               DoItForMe is down for about a week while we rebuild the parts you don&apos;t see.
               Your account, your gigs and your money are exactly where you left them.
             </p>
-
-            {/* Round 1 sits ABOVE the form, not inside the Inner Circle panel: on
-                a phone that panel stacks under the whole form, which put the
-                announcement 2 screens down, past the submit button of the very
-                person ticking the Inner Circle box. Shared with the landing page. */}
-            <div className="rise mt-8" style={{ animationDelay: "150ms" }}>
-              <Round1LiveBanner joinHref="#save-your-spot" />
-            </div>
 
             {/* The form. Quiet by design — hairline, no fill — so the Inner
                 Circle stays the loudest thing on the page. */}

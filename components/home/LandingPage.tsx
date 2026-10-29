@@ -151,7 +151,13 @@ export default function LandingPage() {
   }, []);
 
   const scrollToSection = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  const goEarn = () => router.push(userEmail ? "/dashboard" : "/login");
+  // Signed-out "earn" / "log in" buttons funnel into the Round 1 Sales flow
+  // during the campaign. /login itself is still rewritten to /maintenance in
+  // production (the platform is dark); /login/inner-circle-sales is the one
+  // branded path that redirects to /inner-circle/sales/round-1, which IS
+  // allowlisted through maintenance. Signed-in users still land on their
+  // dashboard.
+  const goEarn = () => router.push(userEmail ? "/dashboard" : "/login/inner-circle-sales");
   const goHire = () => router.push("/company/onboarding");
   const isAdmin = userEmail === "betala911@gmail.com" || userEmail === "doitforme.in@gmail.com";
 
@@ -448,7 +454,7 @@ export default function LandingPage() {
               <li><button onClick={() => scrollToSection("how")} className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">How it works</button></li>
               <li><button onClick={() => scrollToSection("pricing")} className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Pricing</button></li>
               <li><Link href="/company/onboarding" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Hire talent</Link></li>
-              <li><Link href="/login" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Start earning</Link></li>
+              <li><Link href="/login/inner-circle-sales" className="inline-flex min-h-[40px] items-center text-white/50 hover:text-white transition-colors">Start earning</Link></li>
             </ul>
           </div>
           <div>
