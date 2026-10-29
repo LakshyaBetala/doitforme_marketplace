@@ -50,6 +50,8 @@ export default function Round1Dashboard() {
   // Fire-once guards for events that should log exactly once per session.
   const trackedDashboardViewed = useRef(false);
   const trackedCountdownCritical = useRef(false);
+  // Last tick on which the post-deadline poll fired. See the throttle below.
+  const lastExpiryPoll = useRef(-Infinity);
 
   const refresh = useCallback(async () => {
     try {
@@ -92,7 +94,23 @@ export default function Round1Dashboard() {
       trackedCountdownCritical.current = true;
       track("countdown_critical", { metadata: { secondsLeft: sl } });
     }
-    if (sl <= 0) refresh();
+    // POLL AT MOST ONCE EVERY 30s AFTER THE DEADLINE, NOT EVERY RENDER.
+    //
+    // The cron flips 'started' -> 'expired' on its own schedule (every 15
+    // minutes), so for up to 15 minutes after the clock hits zero the server
+    // still answers 'started' and this branch stays live. Unthrottled,
+    // refresh() -> setData(fresh object) -> `data` identity changes -> this
+    // effect re-runs -> refresh() again, as fast as the network allows. The
+    // 1s tick is not the limit; the response is. Every candidate sitting on
+    // the page at their deadline -- which is exactly when they sit on it --
+    // would hammer /me and D1 until the cron caught up.
+    //
+    // Throttling on `tick` rather than a clock also breaks the loop itself:
+    // re-entry with an unchanged tick cannot pass this test.
+    if (sl <= 0 && tick - lastExpiryPoll.current >= 30) {
+      lastExpiryPoll.current = tick;
+      refresh();
+    }
   }, [tick, data, refresh]);
 
   if (loading) {

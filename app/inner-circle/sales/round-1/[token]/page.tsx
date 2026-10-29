@@ -209,18 +209,6 @@ export default function Round1EntryPage({
       .catch(() => {});
   }, [router, token]);
 
-  // The real count, not a literal. /api/waitlist is reachable during the hold
-  // and is what the maintenance page already reads. Starts at a floor so the
-  // sentence is never empty or wrong while the fetch is in flight.
-  const [icCount, setIcCount] = useState(1300);
-  useEffect(() => {
-    fetch("/api/waitlist")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (typeof d?.innerCircle === "number" && d.innerCircle > 0) setIcCount(d.innerCircle);
-      })
-      .catch(() => {});
-  }, []);
 
   const start = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -356,9 +344,9 @@ export default function Round1EntryPage({
             </Reveal>
             <Reveal delay={260}>
               <p className="mt-7 max-w-xl text-[15px] md:text-[15.5px] leading-relaxed text-white/65">
-                One of{" "}
+                One of over{" "}
                 <span className="font-semibold text-white">
-                  <CountUp end={icCount} />
+                  <CountUp end={1300} />
                 </span>{" "}
                 people who ticked Inner Circle. We're starting with the side that moves
                 real money, right now, today.
@@ -561,7 +549,7 @@ export default function Round1EntryPage({
           <Reveal>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { n: 1300, label: "waitlisted", suffix: "" },
+                { n: 1300, label: "ticked Inner Circle", suffix: "+" },
                 { n: 24, label: "hours per round", suffix: "h" },
                 { n: 30, label: "leads to source", suffix: "" },
                 { n: 3, label: "rounds, then in", suffix: "" },
