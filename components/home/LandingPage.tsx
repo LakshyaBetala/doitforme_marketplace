@@ -7,6 +7,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ArrowUpRight, ChevronDown, Linkedin, Instagram, Mail } from "lucide-react";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import Round1LiveBanner from "@/components/Round1LiveBanner";
 
 // -------------------------------------------------------
 // PRELOADER (curtain reveal, asset-aware) — kept by request
@@ -186,7 +187,12 @@ export default function LandingPage() {
       </header>
 
       {/* ============ HERO ============ */}
-      <section className="relative max-w-6xl mx-auto px-5 md:px-8 pt-16 md:pt-24 pb-20">
+      <section className="relative max-w-6xl mx-auto px-5 md:px-8 pt-10 md:pt-16 pb-20">
+        {/* Round 1 first, above the headline: most people arrive here, not on
+            the hold page, and this is the one thing that is live right now. */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={loadingComplete ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.5 }} className="mb-12 md:mb-16">
+          <Round1LiveBanner joinHref="/maintenance#save-your-spot" />
+        </motion.div>
         <div className="grid lg:grid-cols-[1fr_400px] gap-10 items-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={loadingComplete ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.08] bg-white/[0.02] mb-7">

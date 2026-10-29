@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Round1LiveBanner from "@/components/Round1LiveBanner";
 import { blurOnWheel } from "@/lib/inputs";
 
 /**
@@ -120,50 +120,19 @@ export default function MaintenancePage() {
               Your account, your gigs and your money are exactly where you left them.
             </p>
 
-            {/* ROUND 1 SALES IS LIVE, WHILE THE PUBLIC SITE IS STILL HELD.
-                It sits here, above the form, because of the phone layout: the
-                Inner Circle panel lives in the other column and on a phone
-                stacks under the whole form, which put this 2 screens down --
-                past the submit button of the very person ticking the Inner
-                Circle box. Measured at 390px; that is why it moved.
-
-                A hairline row, not a filled button: most visitors are NOT
-                invited yet, so the form stays the page's one primary action,
-                and the copy leads with "Invited?". /inner-circle/sales/round-1
-                is the RETURN login (email + date of birth) -- first entry is
-                the tokened link in the invite mail -- and it refuses, by
-                design, to say whether an address is on the list. Without the
-                second sentence an uninvited visitor meets an error that reads
-                like a broken site. */}
-            <div
-              className="rise mt-8 flex flex-col gap-3.5 rounded-xl border border-[#8825F5]/40 bg-[#8825F5]/[0.08] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-5"
-              style={{ animationDelay: "150ms" }}
-            >
-              <div className="min-w-0">
-                <p className="flex items-center gap-2 text-[13.5px] font-semibold text-white">
-                  <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-[#8825F5]/60" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-[#C9A9FF]" />
-                  </span>
-                  Inner Circle &middot; Round 1 Sales is live
-                </p>
-                <p className="mt-1.5 max-w-[48ch] text-[13px] leading-[1.55] text-white/70">
-                  Invited? Sign in with your email and date of birth. Not yet? Tick the Inner
-                  Circle box below &mdash; invites go out by email, in batches.
-                </p>
-              </div>
-              <Link
-                href="/inner-circle/sales/round-1"
-                className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 self-start rounded-lg border border-white/[0.16] bg-white/[0.06] px-4 text-[14px] font-semibold text-white transition-colors hover:bg-white/[0.11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8825F5]/50 sm:self-auto"
-              >
-                Open my task <span aria-hidden>&rarr;</span>
-              </Link>
+            {/* Round 1 sits ABOVE the form, not inside the Inner Circle panel: on
+                a phone that panel stacks under the whole form, which put the
+                announcement 2 screens down, past the submit button of the very
+                person ticking the Inner Circle box. Shared with the landing page. */}
+            <div className="rise mt-8" style={{ animationDelay: "150ms" }}>
+              <Round1LiveBanner joinHref="#save-your-spot" />
             </div>
 
             {/* The form. Quiet by design — hairline, no fill — so the Inner
                 Circle stays the loudest thing on the page. */}
             <div
-              className="rise mt-10 rounded-2xl border border-white/[0.08] bg-[#13131A] p-5 sm:p-7"
+              id="save-your-spot"
+              className="rise mt-10 scroll-mt-6 rounded-2xl border border-white/[0.08] bg-[#13131A] p-5 sm:p-7"
               style={{ animationDelay: "180ms" }}
             >
               {status === "done" ? (
