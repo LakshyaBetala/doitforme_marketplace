@@ -38,6 +38,19 @@ export interface D1Database {
   batch(stmts: D1Prepared[]): Promise<unknown>;
 }
 
+// Lifecycle statuses a candidate row can be in. Reused by Round1Row.status
+// and anywhere else (admin filters, waitlist-pool annotations) that needs
+// the same union. Keep this in sync with the CHECK constraint in
+// supabase/d1/inner_circle_round1.sql — same seven values, same spellings.
+export type Round1Status =
+  | "invited"
+  | "started"
+  | "submitted"
+  | "expired"
+  | "advanced"
+  | "rejected"
+  | "switched_to_tech";
+
 export interface Round1Row {
   id: number;
   cohort: string;
@@ -51,14 +64,7 @@ export interface Round1Row {
   started_at: number | null;
   deadline_at: number | null;
   campaign_closes_at: number;
-  status:
-    | "invited"
-    | "started"
-    | "submitted"
-    | "expired"
-    | "advanced"
-    | "rejected"
-    | "switched_to_tech";
+  status: Round1Status;
   submission_url: string | null;
   submitted_at: number | null;
   next_reminder_at: number | null;
