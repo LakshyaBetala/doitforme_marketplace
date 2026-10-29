@@ -394,12 +394,18 @@ export default function MaintenancePage() {
             </div>
           </div>
 
-          {/* ───────────── mascot + the one loud thing ───────────── */}
+          {/* ───────────── mascot + platform description ─────────────
+              The solid-purple "The Inner Circle" panel used to live here, next
+              to a mascot and a count line. Round 1 is live now and the banner
+              at the top is already a solid-purple panel saying the same thing
+              with a stronger CTA (Open my Round 1 task), so keeping this one
+              put TWO identical purple blocks on the same screen — the exact
+              "cluttered" the hold page was supposed to avoid. The panel is
+              gone; the mascot stays as the visual anchor; the three feature
+              bullets stay because they describe the platform, not the Inner
+              Circle, and complement the form rather than competing with the
+              banner. */}
           <div className="order-2 lg:pt-2">
-            {/* Decorative, and on a phone it landed in the gap between the form
-                and the Inner Circle panel — a mascot floating in dead space,
-                pushing the thing that explains the checkbox even further below
-                the checkbox. Desktop has a column for it; a phone does not. */}
             <div className="rise hidden lg:flex lg:justify-start" style={{ animationDelay: "90ms" }}>
               <Image
                 src="/sloth.png"
@@ -411,47 +417,7 @@ export default function MaintenancePage() {
               />
             </div>
 
-            {/* The only filled surface on the page. */}
-            <section
-              className="rise mt-9 overflow-hidden rounded-2xl bg-[#8825F5]"
-              style={{ animationDelay: "240ms" }}
-              aria-labelledby="inner-circle"
-            >
-              <div className="p-6 sm:p-7">
-                <p className="text-[13px] font-medium text-white/90">Selection has started</p>
-                <h2
-                  id="inner-circle"
-                  className="mt-2 text-[28px] sm:text-[32px] font-semibold leading-[1.05] tracking-[-0.03em] text-white"
-                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
-                >
-                  The Inner Circle
-                </h2>
-                <p className="mt-4 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/85">
-                  A small group of students we put in front of real companies first. Paid briefs,
-                  proper budgets, and work worth putting your name on.
-                </p>
-                {/* Two paragraphs, not four. This was a wall of text in the
-                    loudest colour on the page, competing with the form for
-                    attention while saying things the opt-in now says itself. */}
-                <p className="mt-3 max-w-[44ch] text-[14.5px] leading-[1.65] text-white/90">
-                  Two sides to start with: building the work, and bringing it in. More as this
-                  grows. Tick{" "}
-                  <strong className="font-semibold text-white">
-                    &ldquo;Put me forward for the Inner Circle&rdquo;
-                  </strong>{" "}
-                  when you save your spot.
-                </p>
-              </div>
-              <div className="border-t border-white/20 px-6 sm:px-7 py-4">
-                <p className="text-[13px] text-white/90">
-                  {icWaiting > 0
-                    ? `${icWaiting.toLocaleString("en-IN")} already asked to be considered.`
-                    : "Premium side of DoItForMe. Same escrow, bigger work."}
-                </p>
-              </div>
-            </section>
-
-            <dl className="mt-9 space-y-5">
+            <dl className="rise mt-9 space-y-5" style={{ animationDelay: "240ms" }}>
               {[
                 ["Your own shopfront", "List what you do, set your rate, let clients come to you."],
                 ["Money held up front", "Clients pay into escrow before you start. Released when the work is approved."],
