@@ -54,6 +54,27 @@ interface FunnelResponse {
   funnel: { step: string; count: number; hint: string }[];
 }
 
+interface PoolRow {
+  email: string;
+  name: string | null;
+  phone: string | null;
+  college: string | null;
+  inner_circle_role: "OUTREACH" | null;
+  created_at: number;
+  isInvited: boolean;
+  candidateStatus: Status | null;
+}
+
+interface PoolResponse {
+  cohort: string;
+  counts: { total: number; invited: number; pending: number };
+  byRole: {
+    OUTREACH: { total: number; invited: number; pending: number };
+    UNDECIDED: { total: number; invited: number; pending: number };
+  };
+  rows: PoolRow[];
+}
+
 const STATUS_FILTERS: { value: Status; label: string }[] = [
   { value: "invited", label: "Invited" },
   { value: "started", label: "Started" },
@@ -67,6 +88,9 @@ const STATUS_FILTERS: { value: Status; label: string }[] = [
 export default function InnerCircleRound1Panel() {
   const [data, setData] = useState<ListResponse | null>(null);
   const [funnel, setFunnel] = useState<FunnelResponse | null>(null);
+  const [pool, setPool] = useState<PoolResponse | null>(null);
+  const [poolFilter, setPoolFilter] = useState<"pending" | "invited" | "all">("pending");
+  const [poolOpen, setPoolOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<string>("");
@@ -83,17 +107,20 @@ export default function InnerCircleRound1Panel() {
       const params = new URLSearchParams();
       if (selectedStatuses.size) params.set("status", Array.from(selectedStatuses).join(","));
       if (needsDecision) params.set("needsDecision", "1");
-      const [listR, funnelR] = await Promise.all([
+      const poolParams = new URLSearchParams({ status: poolFilter });
+      const [listR, funnelR, poolR] = await Promise.all([
         fetch(`/api/admin/inner-circle-round1/list?${params.toString()}`),
         fetch(`/api/admin/inner-circle-round1/funnel`),
+        fetch(`/api/admin/inner-circle-round1/waitlist-pool?${poolParams.toString()}`),
       ]);
       if (listR.ok) setData((await listR.json()) as ListResponse);
       if (funnelR.ok) setFunnel((await funnelR.json()) as FunnelResponse);
+      if (poolR.ok) setPool((await poolR.json()) as PoolResponse);
       setLoading(false);
     } catch {
       setLoading(false);
     }
-  }, [selectedStatuses, needsDecision]);
+  }, [selectedStatuses, needsDecision, poolFilter]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -186,6 +213,108 @@ export default function InnerCircleRound1Panel() {
 
   return (
     <div className="space-y-6">
+      {/* ─── Waitlist pool (eligible candidates, invited or not) ─── */}
+      {pool && (
+        <div className="rounded-lg border border-white/10 bg-black/30 p-4">
+          <div className="flex items-baseline justify-between mb-3">
+            <div className="text-[11px] uppercase tracking-wider text-white/50">
+              Eligible waitlist (Sales + Not sure yet, excl. TECH)
+            </div>
+            <button
+              onClick={() => setPoolOpen((v) => !v)}
+              className="text-[11px] text-white/60 hover:text-white underline underline-offset-2"
+            >
+              {poolOpen ? "Hide list" : `Show list (${pool.rows.length})`}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="rounded border border-white/10 bg-white/[0.02] p-3">
+              <div className="text-[10px] uppercase tracking-wider text-white/40">Total eligible</div>
+              <div className="mt-1 text-2xl font-semibold text-white tabular-nums">{pool.counts.total}</div>
+            </div>
+            <div className="rounded border border-[#8825F5]/40 bg-[#8825F5]/10 p-3">
+              <div className="text-[10px] uppercase tracking-wider text-[#C9A9FF]">Invited so far</div>
+              <div className="mt-1 text-2xl font-semibold text-white tabular-nums">{pool.counts.invited}</div>
+            </div>
+            <div className="rounded border border-white/15 bg-white/[0.04] p-3">
+              <div className="text-[10px] uppercase tracking-wider text-white/60">Pending invite</div>
+              <div className="mt-1 text-2xl font-semibold text-white tabular-nums">{pool.counts.pending}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-[11px] text-white/60 mb-3">
+            <span>
+              <span className="text-white font-semibold">{pool.byRole.OUTREACH.total}</span> Sales
+              <span className="text-white/40"> ({pool.byRole.OUTREACH.pending} pending)</span>
+            </span>
+            <span className="text-white/20">·</span>
+            <span>
+              <span className="text-white font-semibold">{pool.byRole.UNDECIDED.total}</span> Not sure yet
+              <span className="text-white/40"> ({pool.byRole.UNDECIDED.pending} pending)</span>
+            </span>
+          </div>
+
+          {poolOpen && (
+            <>
+              <div className="flex gap-2 mb-3">
+                {(["pending", "invited", "all"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setPoolFilter(f)}
+                    className={`rounded-md px-3 py-1 text-[11px] uppercase tracking-wider transition ${
+                      poolFilter === f
+                        ? "bg-white/[0.1] text-white border border-white/20"
+                        : "bg-white/[0.02] text-white/50 border border-white/10 hover:bg-white/[0.05]"
+                    }`}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+              <div className="max-h-[400px] overflow-y-auto rounded border border-white/10">
+                <table className="w-full text-[12px]">
+                  <thead className="bg-white/[0.03] text-white/50 uppercase text-[10px] tracking-wider sticky top-0">
+                    <tr>
+                      <th className="text-left p-2 font-medium">Email</th>
+                      <th className="text-left p-2 font-medium">Name</th>
+                      <th className="text-left p-2 font-medium">Role</th>
+                      <th className="text-left p-2 font-medium">College</th>
+                      <th className="text-left p-2 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pool.rows.map((r) => (
+                      <tr key={r.email} className="border-t border-white/[0.06] text-white/80">
+                        <td className="p-2 font-mono text-[11px]">{r.email}</td>
+                        <td className="p-2">{r.name || <span className="text-white/30">—</span>}</td>
+                        <td className="p-2 text-white/60">
+                          {r.inner_circle_role === "OUTREACH" ? "Sales" : "Not sure"}
+                        </td>
+                        <td className="p-2 text-white/60 truncate max-w-[180px]">
+                          {r.college || <span className="text-white/30">—</span>}
+                        </td>
+                        <td className="p-2">
+                          {r.isInvited ? (
+                            <span className="rounded px-2 py-0.5 text-[10px] uppercase tracking-wider bg-[#8825F5]/15 text-[#C9A9FF] border border-[#8825F5]/30">
+                              {r.candidateStatus || "invited"}
+                            </span>
+                          ) : (
+                            <span className="rounded px-2 py-0.5 text-[10px] uppercase tracking-wider bg-white/[0.04] text-white/50 border border-white/10">
+                              Pending
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Status breakdown */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
         {STATUS_FILTERS.map((f) => (
