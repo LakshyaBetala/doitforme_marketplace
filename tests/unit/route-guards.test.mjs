@@ -63,7 +63,7 @@ test("what must run during the hold, does", () => {
     "/login/inner-circle-sales",
     "/admin",
     "/login", // or no admin can sign in to reach /admin
-    "/login?redirect_to=%2Fadmin",
+    "/verify", // ...and OTP is the only sign-in method, so the code box too
     "/auth/callback",
     "/api/admin/inner-circle-round1/invite",
     "/api/cron/inner-circle-round1-nudge",
@@ -75,6 +75,28 @@ test("what must run during the hold, does", () => {
   for (const p of ["/dashboard", "/feed", "/u/someone", "/talent", "/inner-circle", "/inner-circle/earnings", "/auth-transfer"]) {
     assert.equal(isMaintenancePublic(p), false, `${p} must be held`);
   }
+});
+
+test("the whole OTP sign-in path survives the hold, or /login alone is theatre", () => {
+  // Supabase here is email-OTP only, so every sign-in is /login -> emailed
+  // code -> /verify. Opening /login and not /verify left an admin holding a
+  // code with nowhere to type it. /auth is the Google callback.
+  for (const p of ["/login", "/verify", "/auth/callback"]) {
+    assert.equal(isMaintenancePublic(p), true, `${p} must survive the hold`);
+  }
+});
+
+test("matching is segment-aware, so a prefix cannot open its neighbour", () => {
+  // The two that bit: '/verify' must not open the KYC upload, and '/auth'
+  // must not open the page that installs a session from query-string tokens.
+  assert.equal(isMaintenancePublic("/verify-id"), false, "/verify-id (KYC) must stay held");
+  assert.equal(isMaintenancePublic("/auth-transfer"), false, "/auth-transfer must stay held");
+  assert.equal(isProtectedPath("/verify-id"), true, "/verify-id is still gated");
+  // Same rule in the other direction: a longer path under an entry matches.
+  assert.equal(isMaintenancePublic("/login/inner-circle-sales"), true);
+  assert.equal(isProtectedPath("/gig/abc123"), true);
+  // ...and a route that merely starts with the same letters does not.
+  assert.equal(isProtectedPath("/application-status"), false, "'/app' must not swallow /application-status");
 });
 
 test("no duplicate entries in either list", () => {

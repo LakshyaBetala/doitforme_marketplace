@@ -239,6 +239,19 @@ test("sheetIdOf finds the id so the blank template can be refused", () => {
   assert.equal(sheetIdOf(tpl.replace("/edit?usp=sharing", "/edit#gid=0")), sheetIdOf(tpl));
   assert.notEqual(sheetIdOf("https://docs.google.com/spreadsheets/d/someoneElsesCopy123/edit"), sheetIdOf(tpl));
   assert.equal(sheetIdOf("https://docs.google.com/document/d/abc"), null);
+  // Google's multi-account form. Anyone signed in to two Google accounts
+  // (personal + college) gets this in the address bar, and without it the
+  // blank template read as null and slipped past the template check.
+  assert.equal(sheetIdOf(tpl.replace("/spreadsheets/d/", "/spreadsheets/u/1/d/")), sheetIdOf(tpl));
+  assert.equal(sheetIdOf("https://docs.google.com/spreadsheets/u/12/d/abc123/edit"), "abc123");
+});
+
+test("the Sheets home page is not a submission", () => {
+  // /spreadsheets/ with no document id is where Google sends you when you are
+  // signed in. It passed the host-and-path check and closed a round on nothing.
+  assert.equal(isValidSubmissionUrl("https://docs.google.com/spreadsheets/"), false);
+  assert.equal(isValidSubmissionUrl("https://docs.google.com/spreadsheets/u/0/"), false);
+  assert.equal(isValidSubmissionUrl("https://docs.google.com/spreadsheets/u/1/d/abc123/edit"), true);
 });
 
 // ─── Constants sanity ───────────────────────────────────────────────────

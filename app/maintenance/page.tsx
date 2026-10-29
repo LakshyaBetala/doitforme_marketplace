@@ -289,8 +289,9 @@ export default function MaintenancePage() {
                               proof, right where it is made. */}
                           <span className="mt-0.5 block text-[12.5px] leading-[1.6] text-white/55">
                             The students we put in front of real companies first. Selection is
-                            running now: Round 1 is a 24-hour sales task, and ticking this puts
-                            you in the next invite batch.
+                            running now, <strong className="font-semibold text-white/80">Sales
+                            first</strong>: Round 1 is a 24-hour sales task. Pick your side
+                            below &mdash; the Tech round opens after it.
                           </span>
                           {icWaiting > 0 && (
                             <span className="mt-1.5 block text-[12px] font-semibold text-[#C9A9FF]">

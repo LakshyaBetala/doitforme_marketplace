@@ -33,7 +33,10 @@ export default function Round1LiveBanner({
     >
       <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-white">
         <span className="relative flex h-2 w-2" aria-hidden>
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75 motion-reduce:animate-none" />
+          {/* No motion-reduce: here on purpose — the prefers-reduced-motion
+              block in app/globals.css zeroes every animation with !important,
+              which is where this codebase handles motion safety. */}
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
         </span>
         Inner Circle &middot; Round 1

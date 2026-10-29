@@ -113,8 +113,13 @@ export async function proxy(request: NextRequest) {
   // If user is NOT logged in and tries to access a protected route -> Redirect to Login
   if (!user && isProtected) {
     const loginUrl = new URL('/login', request.url)
-    // Optional: Save where they were trying to go to redirect back after login
-    loginUrl.searchParams.set('redirect_to', request.nextUrl.pathname)
+    // 'next', not 'redirect_to'. app/login/page.tsx and app/verify/page.tsx
+    // both read searchParams.get('next') and fall back to /dashboard; nothing
+    // reads the 'redirect_to' this used to set. So an admin sent here from
+    // /admin signed in and landed on /dashboard -- which during the hold is
+    // the maintenance page. ('redirect_to' is a different flow's parameter,
+    // read by /auth-transfer and CrossDomainLink; leave those alone.)
+    loginUrl.searchParams.set('next', request.nextUrl.pathname)
     return NextResponse.redirect(loginUrl)
   }
 

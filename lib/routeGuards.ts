@@ -47,9 +47,22 @@ export const PROTECTED_ROUTES = [
 // portal under it on the other.
 export const SELF_AUTHENTICATING = ['/inner-circle/sales/round-1']
 
+/**
+ * Prefix match on SEGMENT boundaries, not raw characters.
+ *
+ * `pathname.startsWith(entry)` is what these lists used, and it matches far
+ * more than it reads: '/auth' also opens '/auth-transfer' (which installs a
+ * session from query-string tokens) and '/verify' also opens '/verify-id'
+ * (the KYC upload). Both are real entries we wanted, and neither of those
+ * extra routes is. An entry now matches the path itself or anything under
+ * its slash, so '/verify' covers '/verify' and '/verify/x' but never
+ * '/verify-id'.
+ */
+const matches = (pathname: string, list: readonly string[]) =>
+  list.some(entry => pathname === entry || pathname.startsWith(entry.endsWith('/') ? entry : entry + '/'))
+
 export const isProtectedPath = (pathname: string) =>
-  !SELF_AUTHENTICATING.some(p => pathname.startsWith(p)) &&
-  PROTECTED_ROUTES.some(route => pathname.startsWith(route))
+  !matches(pathname, SELF_AUTHENTICATING) && matches(pathname, PROTECTED_ROUTES)
 
 // Pages that still work with no backend, so they stay up.
 //
@@ -110,14 +123,24 @@ export const MAINTENANCE_PUBLIC = [
   // 402 and students were meeting a broken form; Auth is healthy again
   // (GET /auth/v1/health -> 200, 2026-10-29). A student who signs in now just
   // lands on the hold page from /dashboard, so nothing new is exposed.
-  // '/auth/' WITH the slash: this list is a prefix match, and a bare '/auth'
-  // also opens /auth-transfer, which installs a session from tokens in the
-  // query string. Only the Google sign-in callback is meant here.
+  // ...and /verify, or opening /login achieves nothing: Supabase here is
+  // configured for email OTP only (CLAUDE.md), so EVERY sign-in and signup
+  // goes /login -> code emailed -> /verify to type it in. With /verify held,
+  // an admin got the code and then the hold page, and could not reach the
+  // desk at all. Found by review after /login alone was shipped.
+  //
+  // /verify is only an OTP box; it needs no backend of ours. The sync call it
+  // makes to /api/auth/create-user is wrapped in try/catch and non-fatal, and
+  // an existing account (which every admin has) already has its row.
+  //
+  // '/verify' does NOT open '/verify-id' (the KYC upload): matches() is
+  // segment-aware. '/auth' likewise no longer opens '/auth-transfer'.
   '/login',
-  '/auth/',
+  '/verify',
+  '/auth',
   '/api/admin/inner-circle-round1',
   '/api/cron/inner-circle-round1-nudge',
 ]
 
 export const isMaintenancePublic = (pathname: string) =>
-  pathname === '/' || MAINTENANCE_PUBLIC.some(p => pathname.startsWith(p))
+  pathname === '/' || matches(pathname, MAINTENANCE_PUBLIC)

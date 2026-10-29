@@ -395,15 +395,25 @@ export function isValidSubmissionUrl(raw: string): boolean {
     if (u.protocol !== "https:") return false;
     const host = u.hostname.toLowerCase();
     if (host !== "docs.google.com" && !host.endsWith(".docs.google.com")) return false;
-    // Docs, Forms and Slides live on the same host. Checking the host alone
-    // recorded a Google Doc as a finished Round 1.
-    return u.pathname.startsWith("/spreadsheets/");
+    // Docs, Forms and Slides live on the same host, so the host alone recorded
+    // a Google Doc as a finished Round 1. And /spreadsheets/ alone is the
+    // Sheets HOME PAGE -- a link to it is not a submission. Require a real
+    // document id, which sheetIdOf also normalises across URL shapes.
+    return sheetIdOf(raw) !== null;
   } catch {
     return false;
   }
 }
 
-/** The spreadsheet id in a Sheets URL, or null. Used to spot the blank template. */
+/**
+ * The spreadsheet id in a Sheets URL, or null.
+ *
+ * The `/u/N/` segment is Google's multi-account form, and anyone signed in to
+ * two Google accounts (personal plus college, which is the norm here) gets it
+ * in their address bar. Without it, pasting the blank TEMPLATE as
+ * /spreadsheets/u/1/d/<templateId>/edit read as null -- so the template check
+ * was skipped and the candidate's round closed on our empty sheet.
+ */
 export function sheetIdOf(raw: string): string | null {
-  return /\/spreadsheets\/d\/([A-Za-z0-9_-]+)/.exec(raw)?.[1] ?? null;
+  return /\/spreadsheets\/(?:u\/\d+\/)?d\/([A-Za-z0-9_-]+)/.exec(raw)?.[1] ?? null;
 }
