@@ -1045,7 +1045,9 @@ export function wrap(result: RenderResult): string {
 </body></html>`;
 }
 
-type ProviderName = "brevo" | "zeptomail" | "resend";
+import { signSigV4 } from "./aws-sigv4";
+
+type ProviderName = "brevo" | "zeptomail" | "resend" | "ses";
 
 type ProviderRequest = {
   url: string;
@@ -1053,10 +1055,23 @@ type ProviderRequest = {
   body: unknown;
 };
 
-/** Each provider's wire format for one transactional send. */
+/** Each provider's wire format for one transactional send.
+ *
+ * `build` returns either the ready request or a promise of one. Three of the
+ * four providers are bearer-token APIs and can build synchronously; SES uses
+ * AWS SigV4 which needs HMAC-SHA256 — awaited in sendEmail below. */
 const PROVIDERS: Record<
   ProviderName,
-  { envKey: string; build: (k: string, to: string, subject: string, html: string, kind: string) => ProviderRequest }
+  {
+    envKey: string;
+    build: (
+      k: string,
+      to: string,
+      subject: string,
+      html: string,
+      kind: string
+    ) => ProviderRequest | Promise<ProviderRequest>;
+  }
 > = {
   brevo: {
     envKey: "BREVO_API_KEY",
@@ -1105,10 +1120,75 @@ const PROVIDERS: Record<
       },
     }),
   },
+  // Amazon SES V2.
+  //
+  // Three env vars required: AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY,
+  // and AWS_SES_REGION (default ap-south-1 — Mumbai region, best inbox
+  // placement for Indian recipients). The `envKey` field here points at the
+  // access key id so activeEmailProvider's "is any key set?" check works; the
+  // secret and region are read directly inside build().
+  //
+  // THE SANDBOX TRAP. Fresh SES accounts start in **sandbox mode**: they can
+  // only send to and from verified addresses. The 1,300-recipient Round 1
+  // campaign will silently fail every send until AWS lifts the sandbox via
+  // Account dashboard → "Request production access" (approval is usually
+  // 24–48 hours). Verify the sender domain (SPF + DKIM at GoDaddy) *before*
+  // requesting production — the request form asks for your sending volume
+  // and bounce handling plan, both of which need the domain live first.
+  //
+  // Cost: $0.10 per 1,000 emails outside EC2. For the full Round 1 campaign
+  // (~7,500 sends) that's $0.75. The free tier (62k/month) only applies to
+  // sends originating from EC2 instances, which the Worker is not.
+  //
+  // SigV4 signing is in lib/aws-sigv4.ts — awaited by sendEmail below.
+  ses: {
+    envKey: "AWS_SES_ACCESS_KEY_ID",
+    build: async (accessKeyId, to, subject, html, kind) => {
+      const secretAccessKey = process.env.AWS_SES_SECRET_ACCESS_KEY || "";
+      const region = process.env.AWS_SES_REGION || "ap-south-1";
+      const host = `email.${region}.amazonaws.com`;
+      const payload = JSON.stringify({
+        FromEmailAddress: FROM,
+        Destination: { ToAddresses: [to] },
+        ReplyToAddresses: [REPLY_TO],
+        // ConfigurationSetName is omitted — we want sends to work without a
+        // pre-configured set, since first-time setup usually skips that step.
+        // Add it later for open/click tracking at the SES event destination.
+        Content: {
+          Simple: {
+            Subject: { Data: subject, Charset: "UTF-8" },
+            Body: { Html: { Data: html, Charset: "UTF-8" } },
+          },
+        },
+        // SES tags end up on event destination records; one tag per kind so
+        // we can split bounce/complaint rates by template later.
+        EmailTags: [{ Name: "kind", Value: kind }],
+      });
+      const signed = await signSigV4({
+        method: "POST",
+        host,
+        path: "/v2/email/outbound-emails",
+        region,
+        service: "ses",
+        accessKeyId,
+        secretAccessKey,
+        body: payload,
+        additionalHeaders: { "content-type": "application/json" },
+      });
+      // Normalise to the ProviderRequest shape used elsewhere — body as the
+      // string we already JSON.stringify'd, which the sendEmail call sites
+      // will JSON.stringify a second time if we're not careful. Return the
+      // raw string in `body` and let sendEmail pass it through.
+      return { url: signed.url, headers: signed.headers, body: payload };
+    },
+  },
 };
 
 // Roomiest daily cap first, so simply adding a key upgrades the transport.
-const AUTO_ORDER: ProviderName[] = ["brevo", "zeptomail", "resend"];
+// SES goes last in the auto-detect because it needs sender-domain verification
+// AND sandbox lifting before it works — an admin should opt in explicitly by
+// setting EMAIL_PROVIDER=ses rather than tripping into it.
+const AUTO_ORDER: ProviderName[] = ["brevo", "zeptomail", "resend", "ses"];
 
 /** Resolves the active provider, or null when no key is configured at all. */
 export function activeEmailProvider(): { name: ProviderName; key: string } | null {
@@ -1136,13 +1216,19 @@ export async function sendEmail(kind: EmailKind, args: BaseArgs): Promise<{ ok: 
 
   const rendered = render(kind, args);
   const html = wrap(rendered);
-  const req = PROVIDERS[provider.name].build(provider.key, args.to, rendered.subject, html, kind);
+  // await regardless of promise-ness — SES's build is async (SigV4 signing),
+  // the others return sync; `await` on a non-promise is a no-op.
+  const req = await PROVIDERS[provider.name].build(provider.key, args.to, rendered.subject, html, kind);
 
   try {
+    // SES's build already returns `body` as a stringified JSON (so the SigV4
+    // signature matches what we send over the wire). The other providers
+    // return `body` as an object expecting us to stringify. Normalise here.
+    const wireBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
     const res = await fetch(req.url, {
       method: "POST",
       headers: req.headers,
-      body: JSON.stringify(req.body),
+      body: wireBody,
     });
 
     if (!res.ok) {
