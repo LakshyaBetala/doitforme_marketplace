@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/ic/Text';
 import { ErrorText, Field, Sheet } from '../../components/form';
 import { Button, Card, Pill } from '../../components/ui';
 import { api, SITE } from '../../lib/api';

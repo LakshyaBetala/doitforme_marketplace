@@ -1,5 +1,6 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './ic/Text';
 import { c, r } from '../lib/theme';
 
 // Optional deadline. Android has only an imperative dialog API (date, then time);

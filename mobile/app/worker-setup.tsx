@@ -1,7 +1,8 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../components/ic/Text';
 import { ErrorText, Field } from '../components/form';
 import { Button, Pill } from '../components/ui';
 import { api, signedUrlFrom } from '../lib/api';

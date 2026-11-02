@@ -1,35 +1,34 @@
-import { Stack, router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Button, Card, Empty, Loading, Pill } from '../../components/ui';
-import { humanize, rupees } from '../../lib/format';
+import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Progress, Reveal, ScreenHeader, Stat } from '../../components/ic/kit';
+import { Txt } from '../../components/ic/Txt';
+import { Button, Card, Empty, Loading } from '../../components/ui';
+import { rupees } from '../../lib/format';
 import { useSession } from '../../lib/session';
 import { supabase } from '../../lib/supabase';
 import { c } from '../../lib/theme';
-import { WorkflowStep, workflowFor, workflowHeadline } from '../../shared/innerCircle';
+import { StepRow } from '../../components/ic/Workflow';
+import { workflowFor, workflowHeadline } from '../../shared/innerCircle';
 
-// Ported from app/inner-circle/work/page.tsx. The steps are COMPUTED by workflowFor() from
-// the gig row (shared with the website), never stored, so the tracker cannot disagree with
-// the escrow it describes.
-export default function InnerCircleWork() {
-  const { session } = useSession();
+// Every step is COMPUTED by workflowFor() from the gig row (shared with the website), never
+// stored, so this tracker cannot disagree with the escrow it describes.
+export default function Briefs() {
+  const { session, profile } = useSession();
   const [loading, setLoading] = useState(true);
-  const [allowed, setAllowed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [briefs, setBriefs] = useState<any[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const allowed = Boolean(profile?.is_elite) && profile?.inner_circle_role === 'TECH';
 
   const load = useCallback(async () => {
-    if (!session) return;
+    if (!session || !allowed) return setLoading(false);
     const uid = session.user.id;
-    const { data: p } = await supabase.from('users').select('is_elite, inner_circle_role').eq('id', uid).maybeSingle();
-    const tech = Boolean(p?.is_elite) && p?.inner_circle_role === 'TECH';
-    setAllowed(tech);
-    if (!tech) return setLoading(false);
-
     const { data: gigs, error: e } = await supabase
       .from('gigs')
-      .select('id, title, price, status, payment_status, assigned_worker_id, delivered_at, auto_release_at, dispute_reason, created_at, companies:company_id(name)')
+      .select('id, title, price, status, payment_status, assigned_worker_id, poster_id, delivered_at, auto_release_at, dispute_reason, created_at, companies:company_id(name)')
       .eq('assigned_worker_id', uid)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -39,89 +38,147 @@ export default function InnerCircleWork() {
     const paid = new Set((payouts ?? []).filter((x: any) => String(x.status).toLowerCase() === 'completed').map((x: any) => x.gig_id));
     const rows = (gigs ?? []).map((g: any) => ({ ...g, paid_out: paid.has(g.id) }));
     setBriefs(rows);
+    // Open the one that needs them, not just the newest.
     const needsYou = rows.find((g: any) => {
       const h = workflowHeadline(workflowFor(g));
       return h && (h.state === 'blocked' || (h.state === 'current' && h.owner === 'you'));
     });
-    setOpenId((needsYou ?? rows[0])?.id ?? null);
+    setOpenId((cur) => cur ?? (needsYou ?? rows[0])?.id ?? null);
     setLoading(false);
-  }, [session]);
+  }, [session, allowed]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  const stats = useMemo(() => {
+    let active = 0, need = 0, paid = 0;
+    for (const g of briefs) {
+      const steps = workflowFor(g);
+      const h = workflowHeadline(steps);
+      if (steps.every((x) => x.state === 'done')) paid += 1;
+      else active += 1;
+      if (h && (h.state === 'blocked' || (h.state === 'current' && h.owner === 'you'))) need += 1;
+    }
+    return { active, need, paid };
+  }, [briefs]);
 
   if (loading) return <Loading />;
+
   if (!allowed) {
     return (
-      <View style={{ flex: 1, backgroundColor: c.page, padding: 16 }}>
-        <Stack.Screen options={{ headerShown: true, title: 'My briefs', headerTintColor: c.violet, headerStyle: { backgroundColor: c.page } }} />
-        <Card style={{ gap: 8 }}>
-          <Text style={s.h}>This is for Inner Circle builders</Text>
-          <Text style={s.body}>Company briefs are handed out here. You can ask to join: a person reads every application.</Text>
-          <Button label="About the Inner Circle" onPress={() => router.replace('/inner-circle')} />
-        </Card>
+      <View style={s.page}>
+        <ScreenHeader eyebrow="The Inner Circle" title="My briefs" />
+        <View style={{ padding: 20 }}>
+          <Card style={{ gap: 10 }}>
+            <View style={s.lock}><Ionicons name="lock-closed-outline" size={20} color={c.muted} /></View>
+            <Txt v="heading">This is for Inner Circle builders</Txt>
+            <Txt v="small">Company briefs are handed out here. You can ask to join. A person reads every application.</Txt>
+            <Button label="About the Inner Circle" icon="arrow-forward" onPress={() => router.replace('/inner-circle')} />
+          </Card>
+        </View>
       </View>
     );
   }
 
   return (
-    <ScrollView style={{ backgroundColor: c.page }} contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <Stack.Screen options={{ headerShown: true, title: 'My briefs', headerTintColor: c.violet, headerStyle: { backgroundColor: c.page } }} />
-      <Text style={s.body}>Every brief you have been put forward for, and exactly where it has got to. If a step says it is your move, it is.</Text>
-      {error ? <Text style={{ color: c.bad }}>{error}</Text> : null}
-      {briefs.length === 0 ? <Empty title="No briefs yet" hint="When a company brief is assigned to you it appears here." /> : null}
-      {briefs.map((g) => {
-        const steps = workflowFor(g);
-        const head = workflowHeadline(steps);
-        const open = openId === g.id;
-        return (
-          <Card key={g.id} style={{ gap: 8 }} onPress={() => setOpenId(open ? null : g.id)}>
-            <View style={s.row}>
-              <Text style={s.title} numberOfLines={2}>{g.title}</Text>
-              <Text style={s.price}>{rupees(g.price)}</Text>
-            </View>
-            <Text style={s.muted}>{[g.companies?.name, head?.title].filter(Boolean).join(' · ')}</Text>
-            {open ? (
-              <View style={{ gap: 10, marginTop: 4 }}>
-                {steps.map((st) => (
-                  <Step key={st.key} step={st} />
-                ))}
-                <Button label="Open task" variant="ghost" onPress={() => router.push(`/gig/${g.id}`)} />
-              </View>
-            ) : null}
-          </Card>
-        );
-      })}
+    <ScrollView
+      style={s.page}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={c.violet} />}
+    >
+      <ScreenHeader eyebrow="The Inner Circle" title="My briefs" subtitle="Every brief you have been put forward for, and exactly where it has got to. If a step says it is your move, it is." />
+      <View style={{ padding: 20, gap: 16 }}>
+        <Reveal i={0} style={{ flexDirection: 'row', gap: 10 }}>
+          <Stat label="Active" value={stats.active} />
+          <Stat label="Need you" value={stats.need} tone={stats.need ? 'orange' : 'ink'} />
+          <Stat label="Finished" value={stats.paid} tone="ok" />
+        </Reveal>
+
+        {error ? <Txt v="small" style={{ color: c.bad }}>{error}</Txt> : null}
+
+        {briefs.length === 0 ? (
+          <Empty
+            icon="hammer-outline"
+            title="No briefs yet"
+            hint="We put members forward as company work comes in. Keep your profile and payout details current. They are what we point to."
+          />
+        ) : (
+          briefs.map((g, idx) => {
+            const steps = workflowFor(g);
+            const head = workflowHeadline(steps);
+            const doneCount = steps.filter((x) => x.state === 'done').length;
+            const finished = doneCount === steps.length;
+            const mine = head && head.state !== 'blocked' && head.owner === 'you' && !finished;
+            const blocked = head?.state === 'blocked';
+            const open = openId === g.id;
+            return (
+              <Reveal key={g.id} i={idx + 1}>
+                <Card onPress={() => setOpenId(open ? null : g.id)} style={[s.brief, mine && s.briefMine, blocked && s.briefBlocked]}>
+                  <View style={s.top}>
+                    <View style={{ flex: 1, gap: 6 }}>
+                      {g.companies?.name ? (
+                        <View style={s.company}><Txt v="caption" style={{ color: c.muted, fontWeight: '700' }}>{g.companies.name}</Txt></View>
+                      ) : null}
+                      <Txt v="heading" numberOfLines={2} style={{ fontSize: 17 }}>{g.title}</Txt>
+                    </View>
+                    {g.price != null ? <Txt v="num" style={{ fontSize: 19 }}>{rupees(g.price)}</Txt> : null}
+                  </View>
+
+                  <View style={{ gap: 7 }}>
+                    <Progress value={doneCount} total={steps.length} color={finished ? c.ok : blocked ? c.bad : c.violet} />
+                    <View style={s.rowBetween}>
+                      <Txt v="small" numberOfLines={1} style={{ flex: 1, fontWeight: '700', color: blocked ? c.bad : mine ? c.orangeInk : c.muted }}>
+                        {finished ? 'Finished and paid' : head?.title}
+                      </Txt>
+                      <Txt v="caption">{doneCount} of {steps.length}</Txt>
+                    </View>
+                  </View>
+
+                  {open ? (
+                    <View style={{ marginTop: 6 }}>
+                      {steps.map((st, i) => (
+                        <StepRow key={st.key} step={st} last={i === steps.length - 1} />
+                      ))}
+                      <View style={{ gap: 10, marginTop: 14 }}>
+                        <Button label="Open the brief" icon="arrow-forward" onPress={() => router.push(`/gig/${g.id}`)} />
+                        {g.poster_id ? (
+                          <Button
+                            label="Message the client"
+                            variant="outline"
+                            icon="chatbubble-ellipses-outline"
+                            onPress={() => router.push({ pathname: '/chat/[gigId]', params: { gigId: g.id, other: g.poster_id, name: g.companies?.name ?? 'Client' } })}
+                          />
+                        ) : null}
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={s.more}>
+                      <Txt v="caption" style={{ color: c.violet, fontWeight: '700' }}>Show steps</Txt>
+                      <Ionicons name="chevron-down" size={14} color={c.violet} />
+                    </View>
+                  )}
+                </Card>
+              </Reveal>
+            );
+          })
+        )}
+      </View>
     </ScrollView>
   );
 }
 
-function Step({ step }: { step: WorkflowStep }) {
-  const color = step.state === 'done' ? c.ok : step.state === 'blocked' ? c.bad : step.state === 'current' ? c.orange : c.line;
-  return (
-    <View style={[s.step, step.state === 'todo' && { opacity: 0.6 }]}>
-      <View style={[s.dot, { backgroundColor: color }]}>{step.state === 'done' ? <Text style={s.tick}>✓</Text> : null}</View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <View style={s.row}>
-          <Text style={[s.stepTitle, (step.state === 'current' || step.state === 'blocked') && { fontWeight: '800' }]}>{step.title}</Text>
-          {step.state === 'current' || step.state === 'blocked' ? <Pill label={step.owner === 'you' ? 'Your move' : step.owner === 'client' ? 'With the client' : 'With us'} tone={step.owner === 'you' ? 'warn' : 'neutral'} /> : null}
-        </View>
-        <Text style={s.muted}>{step.detail}</Text>
-      </View>
-    </View>
-  );
-}
-
 const s = StyleSheet.create({
-  h: { color: c.inkStrong, fontSize: 17, fontWeight: '700' },
-  body: { color: c.muted, fontSize: 15, lineHeight: 22 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, alignItems: 'center' },
-  title: { flex: 1, color: c.inkStrong, fontSize: 16, fontWeight: '700' },
-  price: { color: c.violet, fontSize: 16, fontWeight: '700' },
-  muted: { color: c.muted, fontSize: 13, lineHeight: 19 },
-  step: { flexDirection: 'row', gap: 10 },
-  dot: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
-  tick: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  stepTitle: { color: c.ink, fontSize: 14, fontWeight: '600', flexShrink: 1 },
+  page: { flex: 1, backgroundColor: c.page },
+  lock: { width: 44, height: 44, borderRadius: 13, backgroundColor: c.violetSoft, alignItems: 'center', justifyContent: 'center' },
+  brief: { gap: 14, padding: 18 },
+  briefMine: { borderColor: c.orange, borderWidth: 1.5 },
+  briefBlocked: { borderColor: c.bad, borderWidth: 1.5 },
+  top: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  company: { alignSelf: 'flex-start', backgroundColor: c.violetSoft, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  more: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start' },
 });

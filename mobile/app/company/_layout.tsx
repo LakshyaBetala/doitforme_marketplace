@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { ColorValue } from 'react-native';
+import { INNER_CIRCLE_ONLY } from '../../lib/config';
 import { c } from '../../lib/theme';
 import { useAlerts } from '../../lib/alerts';
 import { Pressable, Text, View } from 'react-native';
@@ -26,7 +27,7 @@ const icon = (name: keyof typeof Ionicons.glyphMap) =>
 
 // The business side: a parallel funnel to the student tabs (see "Company vs. Student flows"
 // in CLAUDE.md). Gate in app/_layout.tsx sends COMPANY accounts here.
-export default function CompanyTabs() {
+function CompanyTabsInner() {
   return (
     <Tabs
       screenOptions={{
@@ -45,4 +46,9 @@ export default function CompanyTabs() {
       <Tabs.Screen name="account" options={{ title: 'Company', tabBarIcon: icon('business-outline') }} />
     </Tabs>
   );
+}
+
+// The student and business screens are kept in the repo but hidden in the Inner Circle build.
+export default function CompanyTabs() {
+  return INNER_CIRCLE_ONLY ? <Redirect href="/inner-circle" /> : <CompanyTabsInner />;
 }

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Text } from '../../components/ic/Text';
 import { DeadlineField } from '../../components/DeadlineField';
 import { ErrorText, Field } from '../../components/form';
 import { Button, Card, Loading } from '../../components/ui';

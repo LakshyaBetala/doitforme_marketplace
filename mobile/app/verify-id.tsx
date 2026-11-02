@@ -1,7 +1,8 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Stack } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../components/ic/Text';
 import { ErrorText } from '../components/form';
 import { Button, Card } from '../components/ui';
 import { api } from '../lib/api';

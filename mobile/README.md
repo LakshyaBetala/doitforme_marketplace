@@ -3,10 +3,74 @@
 Handoff document. It is written so that a new developer, or a new Claude Code session, can
 read this one file and carry on the work without asking the previous author anything.
 
-Last updated: 2026-10-26. Branch: `feat/mobile-app`. Everything for the app lives in
+Last updated: 2026-11-02. Branch: `feat/mobile-app`. Everything for the app lives in
 `mobile/`; nothing outside that folder was changed.
 
 ---
+
+## 0. Current product decision: this build is Inner Circle only
+
+As of 2026-11-02 the app is **only for Inner Circle members** (the TECH "Builder" and OUTREACH
+roles). Decided with the owner:
+
+- `lib/config.ts` has `INNER_CIRCLE_ONLY = true`. The student and business screens are **still in
+  the repo** (`app/(tabs)`, `app/company`, `talent`, `worker-setup`, `company-register`, ...) but
+  the gate in `app/_layout.tsx` never lets anyone reach them, and `(tabs)/_layout.tsx` and
+  `company/_layout.tsx` redirect to `/inner-circle`. Set the flag to `false` to get the full app
+  back. The allow-list of reachable routes is `IC_ROUTES` in `lib/config.ts`.
+- **Non-members are not blocked.** They land on the Inner Circle home, which shows the
+  application flow (verify student ID, apply, then an application status tracker).
+- **Company accounts** get `app/not-for-you.tsx` (sign out and a link to the website).
+- Support and legal pages (help, terms, privacy, refund, shipping) are on the Account tab and
+  open the website.
+- Design: the website's cream workspace palette plus the grape hero and orange CTA, DM Sans and
+  Manrope fonts (`lib/theme.ts`, `components/ic/`). The Figma export was not available, so the
+  screens follow the website's Inner Circle pages (`app/inner-circle/*`) and the design system
+  already in this repo. If the Figma is supplied later, restyle against it.
+
+### The Inner Circle app, screen by screen
+
+| Route | Who | What |
+|---|---|---|
+| splash (`components/ic/Splash.tsx`) | everyone | Native splash (grape, logo) hands over to an animated logo, pulse ring and wordmark, then fades out once fonts and the session are ready |
+| `welcome.tsx` | signed out | Invite-only landing: headline, two roles, three facts, Apply and Sign in, legal links. Preview builds also show demo buttons |
+| `login.tsx` | signed out | Sign in / Sign up tabs, emailed code in six boxes, friendly errors |
+| `finish-profile.tsx` | new account | Name, phone, college (needed by `/api/auth/create-user`) |
+| `inner-circle/index.tsx` (Circle tab) | everyone | Member: role card, stats, "needs you today", what membership means. Not a member: verify-ID step, apply form, or application status tracker |
+| `inner-circle/work.tsx` (Briefs tab) | TECH | Stats, brief cards with progress bar and the 7-step tracker (computed by `shared/innerCircle.ts`), open the brief, message the client |
+| `inner-circle/outreach.tsx` (Pipeline tab) | OUTREACH | Stats, To do / Mine / All, lead cards, move stage, call/email/website, add lead sheet |
+| `inner-circle/messages.tsx` (Messages tab) | TECH | Conversation list, opens `chat/[gigId].tsx` |
+| `inner-circle/me.tsx` (Account tab) | everyone | Profile card, stats, edit profile, payout details, student ID, notification settings, help and legal (website), sign out, delete account |
+| `gig/[id].tsx`, `chat/[gigId].tsx`, `payouts.tsx`, `edit-profile.tsx`, `verify-id.tsx`, `notifications.tsx`, `notification-settings.tsx`, `u/[username].tsx`, `c/[id].tsx` | members | Existing screens, restyled by the shared UI kit. The task screen shows the same 7-step tracker for the assigned worker |
+
+Shared UI kit: `components/ui.tsx` (Card, Pill, Button, Empty), `components/form.tsx` (Field, Sheet),
+`components/ic/kit.tsx` (Hero, ScreenHeader, Stat, Segmented, Reveal, Bell, Progress),
+`components/ic/Txt.tsx` (typed text variants) and `components/ic/Text.tsx` (a drop-in for
+react-native's Text that renders DM Sans; older screens import it).
+
+Android note: custom fonts ignore `fontWeight`, so every weight maps to its own font file
+(`font` and `fontFor` in `lib/theme.ts`). Always use `Txt` or `Text` from `components/ic`, not
+react-native's Text, or the brand font is lost.
+
+Navigation gotcha learned the hard way: **never return `<Redirect>` instead of the navigator in
+the root layout.** It unmounts the router and, on web, remounts the whole root (wiping the session).
+`Gate` renders `<Shell />` next to the Redirect.
+
+### Demo mode personas
+
+Preview builds (`EXPO_PUBLIC_DEMO=1`) show four buttons on the welcome screen: **Builder**,
+**Outreach**, **Applying** (the apply form) and **In review** (the status tracker). Fixtures are in
+`lib/demo.ts`: five briefs, one per workflow state (in progress, with the client, on hold, paid,
+waiting for escrow), six leads (two overdue), notifications and chats. Writes stay blocked.
+
+### How the UI was checked without a device
+
+`npx expo export -p web` with a temporary `npm install --no-save react-native-web @expo/metro-runtime`,
+served statically and screenshotted with Playwright at 390x844 (the scripts lived in a scratch
+folder and are not committed). This shows layout, fonts and navigation but is **not** a device:
+haptics, the native splash handover, safe-area insets, the keyboard and the Razorpay WebView were
+not exercised.
+
 
 ## 1. What we are building
 
@@ -19,7 +83,7 @@ Goal: an **Android APK now**, with the same code shipping to **iOS later with mi
 changes** (the author has no Mac yet). So the app uses Expo modules only and no
 Android-specific APIs.
 
-Scope decided with the owner:
+Scope decided with the owner (the first two bullets are superseded by section 0: the app is now Inner Circle only):
 
 - Everything a student or a business can do on the website is in the app.
 - **Left out on purpose:** admin tools (disputes, payouts, KYC review, managed queue,
@@ -267,8 +331,8 @@ or `proxy.ts` starts gating `/api`, the app's write path breaks.
    (`https://www.doitforme.in/privacy-policy`, currently on the maintenance allow-list) and
    the data-safety / privacy-label forms. Move from APK to an `.aab` with the `production`
    profile. Keystores live on EAS; never commit them.
-7. **Brand fonts** (DM Sans, Manrope). The app uses the system font. `expo-font` is already a
-   dependency.
+7. **Figma pass.** If the Figma export for the Inner Circle is supplied, restyle against it
+   (this build follows the website's pages and design tokens instead).
 8. **Client-side AI moderation.** The website runs a model in the browser; the app uses only
    the server's regex check, which is the same check the website's server runs.
 9. **Admin tools in the app.** Deliberately excluded; leave on the website.

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/ic/Text';
 import { Card, Empty, Loading, Pill } from '../../components/ui';
 import { humanize, rupees, timeAgo, toneFor } from '../../lib/format';
 import { useSession } from '../../lib/session';

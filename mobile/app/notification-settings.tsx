@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text } from 'react-native';
+import { Linking, ScrollView, StyleSheet } from 'react-native';
+import { Text } from '../components/ic/Text';
 import { Button, Card, Pill } from '../components/ui';
 import { useSession } from '../lib/session';
 import { supabase } from '../lib/supabase';

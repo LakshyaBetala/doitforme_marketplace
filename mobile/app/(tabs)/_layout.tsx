@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { ColorValue } from 'react-native';
+import { INNER_CIRCLE_ONLY } from '../../lib/config';
 import { c } from '../../lib/theme';
 import { useAlerts } from '../../lib/alerts';
 import { Pressable, Text, View } from 'react-native';
@@ -24,7 +25,7 @@ function Bell() {
 const icon = (name: keyof typeof Ionicons.glyphMap) =>
   ({ color, size }: { color: ColorValue; size: number }) => <Ionicons name={name} color={color as string} size={size} />;
 
-export default function TabsLayout() {
+function TabsLayoutInner() {
   return (
     <Tabs
       screenOptions={{
@@ -46,4 +47,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: icon('person-outline') }} />
     </Tabs>
   );
+}
+
+// The student and business screens are kept in the repo but hidden in the Inner Circle build.
+export default function TabsLayout() {
+  return INNER_CIRCLE_ONLY ? <Redirect href="/inner-circle" /> : <TabsLayoutInner />;
 }

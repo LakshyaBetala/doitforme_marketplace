@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/ic/Text';
 import { Checkout, CheckoutResult, RazorpayOrder } from '../../components/Checkout';
 import { Button, Card, Empty, Loading, Pill } from '../../components/ui';
 import { api } from '../../lib/api';

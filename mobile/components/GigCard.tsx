@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text } from './ic/Text';
 import { humanize, rupees, timeAgo } from '../lib/format';
 import { c } from '../lib/theme';
 import { Card, Pill } from './ui';

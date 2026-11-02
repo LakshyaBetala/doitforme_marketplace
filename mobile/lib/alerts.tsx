@@ -4,7 +4,8 @@ import { Animated, Pressable, StyleSheet, Text } from 'react-native';
 import { humanize } from './format';
 import { useSession } from './session';
 import { isDemo, supabase } from './supabase';
-import { c, r } from './theme';
+import { INNER_CIRCLE_ONLY } from './config';
+import { c, font, r } from './theme';
 
 // The one global realtime listener (ported from components/RealtimeListener.tsx, extended
 // with the unread count the website's NotificationBell shows). Do not add a second one.
@@ -18,10 +19,10 @@ export function openLink(link: string | null | undefined) {
   if (!link) return;
   const gig = link.match(/^\/(?:gig|company\/task)\/([^/?#]+)/);
   if (gig) return router.push(`/gig/${gig[1]}`);
-  if (link.startsWith('/messages') || link.startsWith('/chat')) return router.push('/messages');
-  if (link.startsWith('/activity') || link.startsWith('/dashboard')) return router.push('/activity');
+  if (link.startsWith('/messages') || link.startsWith('/chat')) return router.push(INNER_CIRCLE_ONLY ? '/inner-circle/messages' : '/messages');
+  if (link.startsWith('/activity') || link.startsWith('/dashboard')) return router.push(INNER_CIRCLE_ONLY ? '/inner-circle/work' : '/activity');
   if (link.startsWith('/payouts')) return router.push('/payouts');
-  if (link.startsWith('/profile')) return router.push('/profile');
+  if (link.startsWith('/profile')) return router.push(INNER_CIRCLE_ONLY ? '/inner-circle/me' : '/profile');
   if (link.startsWith('/verify-id')) return router.push('/verify-id');
 }
 
@@ -110,8 +111,8 @@ export function AlertsProvider({ children }: { children: React.ReactNode }) {
 }
 
 const s = StyleSheet.create({
-  wrap: { position: 'absolute', top: 48, left: 12, right: 12 },
-  card: { backgroundColor: c.rail, borderRadius: r.lg, padding: 14, gap: 2 },
-  title: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  body: { color: 'rgba(255,255,255,0.85)', fontSize: 14 },
+  wrap: { position: 'absolute', top: 48, left: 12, right: 12, zIndex: 50 },
+  card: { backgroundColor: c.rail, borderRadius: r.lg, padding: 14, gap: 2, borderLeftWidth: 4, borderLeftColor: c.orange, shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
+  title: { color: '#fff', fontFamily: font.bold, fontSize: 14 },
+  body: { color: 'rgba(255,255,255,0.85)', fontFamily: font.regular, fontSize: 14, lineHeight: 20 },
 });

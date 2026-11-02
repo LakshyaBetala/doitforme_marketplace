@@ -1,12 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
+import { Txt } from '../components/ic/Txt';
 import { Card, Empty, Loading } from '../components/ui';
 import { openLink, useAlerts } from '../lib/alerts';
 import { timeAgo } from '../lib/format';
 import { useSession } from '../lib/session';
 import { supabase } from '../lib/supabase';
 import { c } from '../lib/theme';
+
+const iconFor = (type: string | null): keyof typeof Ionicons.glyphMap =>
+  /pay|money|escrow/i.test(type ?? '') ? 'wallet-outline' : /message|chat/i.test(type ?? '') ? 'chatbubble-outline' : 'briefcase-outline';
 
 // Ported from components/NotificationBell.tsx: the 20 newest rows of `notifications`.
 // Opening the screen marks them read, like opening the bell does on the website.
@@ -34,16 +39,22 @@ export default function Notifications() {
   if (loading) return <Loading />;
   return (
     <View style={{ flex: 1, backgroundColor: c.page }}>
-      <Stack.Screen options={{ headerShown: true, title: 'Notifications', headerTintColor: c.violet, headerStyle: { backgroundColor: c.page } }} />
+      <Stack.Screen options={{ headerShown: true, title: 'Notifications' }} />
       <FlatList
         data={rows}
         keyExtractor={(n) => n.id}
-        contentContainerStyle={{ padding: 16, gap: 10 }}
-        ListEmptyComponent={<Empty title="You are all caught up" hint="Updates about your tasks and payments show up here." />}
+        contentContainerStyle={{ padding: 20, gap: 10 }}
+        ListEmptyComponent={<Empty icon="notifications-outline" title="You are all caught up" hint="Updates about your briefs and payments show up here." />}
         renderItem={({ item }) => (
-          <Card onPress={() => openLink(item.link)} style={{ gap: 4 }}>
-            <Text style={[s.body, !item.is_read && { fontWeight: '700' }]}>{item.content}</Text>
-            <Text style={s.muted}>{timeAgo(item.created_at)}</Text>
+          <Card onPress={() => openLink(item.link)} style={s.row}>
+            <View style={[s.icon, !item.is_read && { backgroundColor: c.orangeSoft }]}>
+              <Ionicons name={iconFor(item.type)} size={18} color={item.is_read ? c.violet : c.orangeInk} />
+            </View>
+            <View style={{ flex: 1, gap: 3 }}>
+              <Txt v="body" style={{ fontWeight: item.is_read ? '500' : '700', color: c.inkStrong, fontSize: 14.5, lineHeight: 21 }}>{item.content}</Txt>
+              <Txt v="caption">{timeAgo(item.created_at)}</Txt>
+            </View>
+            {!item.is_read ? <View style={s.dot} /> : null}
           </Card>
         )}
       />
@@ -52,6 +63,7 @@ export default function Notifications() {
 }
 
 const s = StyleSheet.create({
-  body: { color: c.ink, fontSize: 15, lineHeight: 21 },
-  muted: { color: c.faint, fontSize: 12 },
+  row: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  icon: { width: 38, height: 38, borderRadius: 12, backgroundColor: c.violetSoft, alignItems: 'center', justifyContent: 'center' },
+  dot: { width: 9, height: 9, borderRadius: 5, backgroundColor: c.orange, marginTop: 6 },
 });

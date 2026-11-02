@@ -1,6 +1,7 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/ic/Text';
 import { Card, Empty, Loading, Pill } from '../../components/ui';
 import { humanize, rupees, timeAgo } from '../../lib/format';
 import { supabase } from '../../lib/supabase';

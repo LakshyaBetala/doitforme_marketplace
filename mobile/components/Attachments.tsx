@@ -1,4 +1,5 @@
-import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from './ic/Text';
 import { attachmentLabel, isImageAttachment } from '../shared/attachments';
 import { supabase } from '../lib/supabase';
 import { c, r } from '../lib/theme';

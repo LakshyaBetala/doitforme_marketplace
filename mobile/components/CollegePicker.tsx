@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Text } from './ic/Text';
 import { COLLEGES } from '../shared/colleges';
 import { c, r } from '../lib/theme';
 import { Field } from './form';

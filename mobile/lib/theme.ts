@@ -29,3 +29,38 @@ export const c = {
 };
 
 export const r = { sm: 8, md: 11, lg: 16 };
+
+// The website's grape hero (app/inner-circle/page.tsx): 115deg, #351144 > #5b1479 > #8324af.
+export const grape = {
+  colors: ['#351144', '#5b1479', '#8324af'] as const,
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 1 },
+  deep: '#251030',
+  gold: '#ffd28c', // eyebrow text on grape
+  onAccent: '#371448', // text on the orange CTA
+};
+
+// One family per weight: Android ignores fontWeight on custom fonts, so a bare
+// fontWeight:'700' would render regular. Loaded in app/_layout.tsx.
+export const font = {
+  regular: 'DMSans_400Regular',
+  medium: 'DMSans_500Medium',
+  semi: 'DMSans_600SemiBold',
+  bold: 'DMSans_700Bold',
+  display: 'Manrope_700Bold',
+  displayHeavy: 'Manrope_800ExtraBold',
+};
+
+export const fontFor = (weight?: string | number) => {
+  const w = Number(weight ?? 400);
+  return w >= 700 ? font.bold : w >= 600 ? font.semi : w >= 500 ? font.medium : font.regular;
+};
+
+// Depth comes from a soft grape-tinted shadow, never a grey one.
+export const lift = {
+  shadowColor: '#341044',
+  shadowOpacity: 0.07,
+  shadowRadius: 14,
+  shadowOffset: { width: 0, height: 5 },
+  elevation: 2,
+} as const;

@@ -1,7 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/ic/Text';
 import { Attachments } from '../../components/Attachments';
+import { BriefProgress } from '../../components/ic/Workflow';
 import { Checkout, CheckoutResult, RazorpayOrder } from '../../components/Checkout';
 import { ErrorText, Field, Sheet } from '../../components/form';
 import { Button, Card, Empty, Loading, Pill } from '../../components/ui';
@@ -174,6 +176,8 @@ export default function GigDetail() {
             {gig.deadline ? ` · due ${new Date(gig.deadline).toLocaleDateString('en-IN')}` : ''}
           </Text>
         </Card>
+
+        {!advert && me && gig.assigned_worker_id === me ? <BriefProgress gig={gig} workerId={me} /> : null}
 
         {gig.description ? (
           <Card>

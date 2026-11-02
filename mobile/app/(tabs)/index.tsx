@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/ic/Text';
 import { GigCard } from '../../components/GigCard';
 import { Button, Card, Loading } from '../../components/ui';
 import { rupees } from '../../lib/format';

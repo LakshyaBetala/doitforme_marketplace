@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from '../../components/ic/Text';
 import { GigCard } from '../../components/GigCard';
 import { Empty, Loading } from '../../components/ui';
 import { supabase } from '../../lib/supabase';

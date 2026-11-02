@@ -1,6 +1,6 @@
 import { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { demoProfile, demoSession } from './demo';
+import { Persona, demoProfile, demoSession, setPersona } from './demo';
 import { setDemo, supabase } from './supabase';
 
 export type Profile = {
@@ -29,7 +29,7 @@ type Ctx = {
   profile: Profile | null;
   loading: boolean;
   reload: () => Promise<void>;
-  startDemo: () => void;
+  startDemo: (who?: Persona) => void;
   signOut: () => Promise<void>;
 };
 
@@ -79,10 +79,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     profile,
     loading,
     reload: () => loadProfile(session?.user.id ?? null),
-    startDemo: () => {
+    startDemo: (who: Persona = 'TECH') => {
+      setPersona(who);
       setDemo(true);
       setSession(demoSession);
-      setProfile(demoProfile as Profile);
+      setProfile({ ...demoProfile } as Profile);
     },
     signOut: async () => {
       if (session === demoSession) {

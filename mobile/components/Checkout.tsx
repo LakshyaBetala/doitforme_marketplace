@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Text } from './ic/Text';
 import { WebView } from 'react-native-webview';
 import { c } from '../lib/theme';
 
