@@ -7,6 +7,7 @@ import { Txt } from '../../components/ic/Txt';
 import { Button, Card, Empty, Loading } from '../../components/ui';
 import { rupees } from '../../lib/format';
 import { useSession } from '../../lib/session';
+import { isAdminEmail } from '../../shared/admins';
 import { supabase } from '../../lib/supabase';
 import { c } from '../../lib/theme';
 import { StepRow } from '../../components/ic/Workflow';
@@ -21,7 +22,8 @@ export default function Briefs() {
   const [briefs, setBriefs] = useState<any[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [error, setError] = useState('');
-  const allowed = Boolean(profile?.is_elite) && profile?.inner_circle_role === 'TECH';
+  // Admins pass too, to check the screen. They see the briefs assigned to them, usually none.
+  const allowed = (Boolean(profile?.is_elite) && profile?.inner_circle_role === 'TECH') || isAdminEmail(session?.user.email);
 
   const load = useCallback(async () => {
     if (!session || !allowed) return setLoading(false);

@@ -9,7 +9,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const FILES = ['fees', 'gigRoles', 'attachments', 'innerCircle', 'upi', 'phone'];
+// admins: who reaches the admin surfaces. The database's is_admin() is the other copy;
+// the website keeps the two in step (see lib/admins.ts), and this keeps the app in step too.
+const FILES = ['fees', 'gigRoles', 'attachments', 'innerCircle', 'upi', 'phone', 'admins'];
 const norm = (s) => s.replace(/\r\n/g, '\n');
 const check = process.argv.includes('--check');
 let drift = 0;

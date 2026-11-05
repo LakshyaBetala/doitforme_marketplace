@@ -11,6 +11,7 @@ import { Button, Card, Empty, Loading, Pill } from '../../components/ui';
 import { rupees } from '../../lib/format';
 import { useSession } from '../../lib/session';
 import { isDemo, supabase } from '../../lib/supabase';
+import { isAdminEmail } from '../../shared/admins';
 import { c, lift } from '../../lib/theme';
 import { OPEN_STAGES, OUTREACH_STAGES, OutreachStage, isOverdue, stageLabel } from '../../shared/innerCircle';
 
@@ -25,6 +26,15 @@ const dayLabel = (iso: string | null) => {
 
 const STAGE_COLOR: Record<string, string> = { new: c.faint, contacted: c.violet, replied: c.orange, meeting: c.orangeInk, won: c.ok, lost: c.bad };
 
+// Postgres errors are for us, not for the person tapping a button.
+function leadError(e: { message?: string; code?: string } | null): string {
+  const m = String(e?.message ?? '');
+  if (/outreach_won_has_value/.test(m)) return 'A won lead needs the amount it closed at.';
+  if (e?.code === '42501' || /row-level security|violates row-level/i.test(m)) return 'Only the person who owns this lead can change it. Claim it first if it is unowned.';
+  if (/duplicate|unique/i.test(m)) return 'Someone on the team already has that company in the pipeline.';
+  return m || 'That did not save. Try again.';
+}
+
 const EMPTY = { company_name: '', contact_name: '', contact_email: '', contact_phone: '', website: '', source: '', value_estimate: '', notes: '' };
 
 // Reads and writes go to Supabase under RLS on purpose: is_outreach() / is_admin() and owner-only
@@ -32,7 +42,8 @@ const EMPTY = { company_name: '', contact_name: '', contact_email: '', contact_p
 export default function Pipeline() {
   const { session, profile } = useSession();
   const me = session?.user.id ?? null;
-  const allowed = Boolean(profile?.is_elite) && profile?.inner_circle_role === 'OUTREACH';
+  // Admins pass too: RLS allows is_admin() on every outreach read and write.
+  const allowed = (Boolean(profile?.is_elite) && profile?.inner_circle_role === 'OUTREACH') || isAdminEmail(session?.user.email);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
@@ -42,6 +53,9 @@ export default function Pipeline() {
   const [next, setNext] = useState<Date | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  // The lead being marked won, while we ask what it closed at.
+  const [winning, setWinning] = useState<any>(null);
+  const [wonValue, setWonValue] = useState('');
 
   const load = useCallback(async () => {
     if (!me || !allowed) return setLoading(false);
@@ -79,7 +93,7 @@ export default function Pipeline() {
     setBusy(false);
     if (error) {
       // The unique index on lower(btrim(company_name)) is doing its job here.
-      return setErr(/duplicate|unique/i.test(error.message) ? 'Someone on the team already has that company in the pipeline.' : error.message);
+      return setErr(leadError(error));
     }
     setForm(EMPTY);
     setNext(null);
@@ -89,20 +103,52 @@ export default function Pipeline() {
 
   // Optimistic, because a stage change is the most common action here.
   async function setStage(lead: any, stage: OutreachStage) {
+    // Won needs the closed value first. The database refuses a won lead without one
+    // (outreach_won_has_value), because commission is computed from it; asking here is the
+    // only way the pipeline can ever reach its last step.
+    if (stage === 'won' && lead.stage !== 'won') {
+      setErr('');
+      setWonValue(lead.value_estimate ? String(lead.value_estimate) : '');
+      return setWinning(lead);
+    }
     void Haptics.selectionAsync().catch(() => {});
     const prev = leads;
     setLeads((ls) => ls.map((l) => (l.id === lead.id ? { ...l, stage } : l)));
     const { error } = await supabase.from('outreach_leads').update({ stage, last_touch_at: new Date().toISOString() }).eq('id', lead.id);
     if (error) {
       setLeads(prev); // RLS refused it, almost certainly not the owner
-      return setErr(error.message);
+      return setErr(leadError(error));
     }
     await supabase.from('outreach_touches').insert({ lead_id: lead.id, author_id: me, kind: 'stage_change', body: `${stageLabel(lead.stage)} → ${stageLabel(stage)}` });
   }
 
+  async function confirmWon() {
+    if (!winning) return;
+    if (isDemo()) return setErr('Demo mode: changes are switched off.');
+    const value = Math.round(Number(wonValue.replace(/[^0-9.]/g, '')));
+    if (!Number.isFinite(value) || value <= 0) return setErr('Enter the amount the deal closed at, in rupees.');
+    setBusy(true);
+    setErr('');
+    const { error } = await supabase
+      .from('outreach_leads')
+      .update({ stage: 'won', won_value: value, last_touch_at: new Date().toISOString() })
+      .eq('id', winning.id);
+    setBusy(false);
+    if (error) return setErr(leadError(error));
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    await supabase.from('outreach_touches').insert({
+      lead_id: winning.id,
+      author_id: me,
+      kind: 'stage_change',
+      body: `${stageLabel(winning.stage)} → ${stageLabel('won')} at ${rupees(value)}`,
+    });
+    setWinning(null);
+    await load();
+  }
+
   async function claim(lead: any) {
     const { error } = await supabase.from('outreach_leads').update({ owner_id: me }).eq('id', lead.id);
-    if (error) return setErr(error.message);
+    if (error) return setErr(leadError(error));
     await load();
   }
 
@@ -220,6 +266,18 @@ export default function Pipeline() {
         <DeadlineField value={next} onChange={setNext} />
         <ErrorText>{err}</ErrorText>
         <Button label="Save lead" onPress={addLead} loading={busy} />
+      </Sheet>
+
+      <Sheet visible={Boolean(winning)} title="Mark as won" onClose={() => setWinning(null)}>
+        <Field
+          label="What did it close at? (₹)"
+          hint={winning?.company_name ? `The signed amount for ${winning.company_name}. Commission is worked out from this.` : undefined}
+          value={wonValue}
+          onChangeText={setWonValue}
+          keyboardType="number-pad"
+        />
+        <ErrorText>{err}</ErrorText>
+        <Button label="Mark as won" onPress={confirmWon} loading={busy} />
       </Sheet>
     </View>
   );

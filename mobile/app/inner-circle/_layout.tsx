@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import { ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSession } from '../../lib/session';
+import { isAdminEmail } from '../../shared/admins';
 import { c, font } from '../../lib/theme';
 
 const icon = (on: keyof typeof Ionicons.glyphMap, off: keyof typeof Ionicons.glyphMap) =>
@@ -14,12 +15,16 @@ const icon = (on: keyof typeof Ionicons.glyphMap, off: keyof typeof Ionicons.gly
 // and shows only what this member can use: builders get Briefs and Messages, outreach members
 // get Pipeline, and anyone who has not been approved sees just the Circle and their account.
 export default function InnerCircleTabs() {
-  const { profile } = useSession();
+  const { session, profile } = useSession();
   const { bottom } = useSafeAreaInsets();
   const member = Boolean(profile?.is_elite);
   const role = profile?.inner_circle_role;
-  const tech = member && role === 'TECH';
-  const outreach = member && role === 'OUTREACH';
+  // Admins see both role surfaces. The database already lets them in (outreach_leads and
+  // outreach_touches allow is_admin()), but no admin is an Inner Circle member, so this tab
+  // bar hid the pipeline from the very people who run it and need to check it works.
+  const admin = isAdminEmail(session?.user.email);
+  const tech = (member && role === 'TECH') || admin;
+  const outreach = (member && role === 'OUTREACH') || admin;
 
   return (
     <Tabs
