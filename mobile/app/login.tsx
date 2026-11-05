@@ -101,7 +101,10 @@ export default function Login() {
     setBusy(false);
   }
 
-  // Companies sign in with the password they set at registration (full app only).
+  // Password sign-in. In the full app this is for companies; in the Inner Circle build it is
+  // for anyone who has a password, which is every account created with email on the website.
+  // It is also the way in that does not depend on Supabase sending an email, so it keeps
+  // working when the code email does not arrive.
   async function passwordLogin() {
     if (!valid || !password) return setErr('Enter your email and password.');
     setBusy(true);
@@ -132,7 +135,7 @@ export default function Login() {
               <Image source={require('../assets/splash-icon.png')} style={s.logo} resizeMode="contain" />
               <Txt v="eyebrow" style={{ color: grape.gold, marginTop: 14 }}>The Inner Circle</Txt>
               <Txt v="title" style={{ color: '#fff', marginTop: 6, fontSize: 30, lineHeight: 34 }}>
-                {step === 'code' ? 'Check your email' : step === 'password' ? 'Business sign in' : signup ? 'Apply to join' : 'Welcome back'}
+                {step === 'code' ? 'Check your email' : step === 'password' ? (INNER_CIRCLE_ONLY ? 'Sign in with password' : 'Business sign in') : signup ? 'Apply to join' : 'Welcome back'}
               </Txt>
             </Reveal>
           </LinearGradient>
@@ -215,8 +218,12 @@ export default function Login() {
 
             {step === 'password' ? (
               <View style={{ gap: 14 }}>
-                <Txt v="small">Use the email and password you set when you registered your company.</Txt>
-                <TextInput style={s.input} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder="you@company.com" placeholderTextColor={c.faint} value={email} onChangeText={setEmail} />
+                <Txt v="small">
+                  {INNER_CIRCLE_ONLY
+                    ? 'Use the email and password you sign in with on the DoItForMe website. Joined with Google? You will not have a password, so use the email code instead.'
+                    : 'Use the email and password you set when you registered your company.'}
+                </Txt>
+                <TextInput style={s.input} autoCapitalize="none" autoComplete="email" keyboardType="email-address" placeholder={INNER_CIRCLE_ONLY ? 'you@example.com' : 'you@company.com'} placeholderTextColor={c.faint} value={email} onChangeText={setEmail} />
                 <TextInput style={s.input} secureTextEntry autoCapitalize="none" autoComplete="password" placeholder="Your password" placeholderTextColor={c.faint} value={password} onChangeText={setPassword} onSubmitEditing={passwordLogin} />
                 <Button label="Sign in" onPress={passwordLogin} loading={busy} disabled={!valid || !password} />
                 <Txt v="small" style={[s.link, { textAlign: 'center' }]} onPress={() => { setStep('email'); setErr(''); }}>Back</Txt>
@@ -245,6 +252,10 @@ export default function Login() {
                     <Txt v="small" style={s.link} onPress={() => { setStep('password'); setErr(''); }}>Business sign in</Txt>
                     <Txt v="small" style={s.link} onPress={() => router.push('/company-register')}>Register a company</Txt>
                   </View>
+                ) : !signup ? (
+                  // Hidden behind INNER_CIRCLE_ONLY before, which left email code as the only way
+                  // into this build: when the code email failed, nobody could sign in at all.
+                  <Txt v="small" style={s.link} onPress={() => { setStep('password'); setErr(''); }}>Sign in with password</Txt>
                 ) : null}
                 {DEMO_ENABLED ? (
                   <Txt v="small" style={{ textDecorationLine: 'underline' }} onPress={() => startDemo('TECH')}>
