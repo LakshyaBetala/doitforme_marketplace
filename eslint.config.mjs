@@ -12,6 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Generated build output. Without these, `npm run lint` linted the
+    // bundled Worker and reported ~37,000 problems, which buried every real
+    // one and made the command useless as a check.
+    ".open-next/**",
+    ".wrangler/**",
+    ".wrangler-dryrun/**",
+    ".playwright-mcp/**",
+    // The Expo app lints and type-checks on its own (see mobile/README.md).
+    "mobile/**",
   ]),
 ]);
 

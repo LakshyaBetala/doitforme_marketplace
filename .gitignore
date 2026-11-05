@@ -97,3 +97,8 @@ android/keystore.properties
 
 # Playwright MCP snapshots and audit screenshots
 .playwright-mcp/
+
+# App build artifacts. EAS produces these and they run to ~100 MB; a stray
+# `git add -A` would put one in history permanently.
+*.apk
+*.aab

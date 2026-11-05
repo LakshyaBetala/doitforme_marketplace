@@ -47,6 +47,11 @@
     // Without this line `next build` compiles fine and then dies in the type
     // check with TS2307 on a file that is never part of the web app. Capacitor's
     // CLI loads the file with its own loader and ignores this tsconfig.
-    "capacitor.config.ts"
+    "capacitor.config.ts",
+    // The Expo app has its own tsconfig, dependencies and type-check
+    // (`cd mobile && npx tsc --noEmit`). The include above is **/*.tsx, so
+    // without this the website's build would type-check every app screen
+    // against react-native and expo-router, which are not installed here.
+    "mobile"
   ]
 }
