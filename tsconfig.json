@@ -52,6 +52,8 @@
     // (`cd mobile && npx tsc --noEmit`). The include above is **/*.tsx, so
     // without this the website's build would type-check every app screen
     // against react-native and expo-router, which are not installed here.
-    "mobile"
+    "mobile",
+    // Claude Code git worktrees are full, stale checkouts of this repo.
+    ".claude"
   ]
 }

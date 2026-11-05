@@ -21,6 +21,9 @@ const eslintConfig = defineConfig([
     ".playwright-mcp/**",
     // The Expo app lints and type-checks on its own (see mobile/README.md).
     "mobile/**",
+    // Claude Code git worktrees: full, stale checkouts of this repo. Linting
+    // them reports the same files twice, and old versions of them.
+    ".claude/**",
   ]),
 ]);
 
