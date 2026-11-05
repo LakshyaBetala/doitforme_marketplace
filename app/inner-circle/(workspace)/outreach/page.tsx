@@ -43,6 +43,8 @@ type Lead = {
   stage: OutreachStage;
   lost_reason: string | null;
   value_estimate: number | null;
+  // What the deal closed at. Required by the database once stage is 'won'.
+  won_value: number | null;
   notes: string | null;
   next_action_at: string | null;
   last_touch_at: string | null;
@@ -79,6 +81,9 @@ export default function OutreachPage() {
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // The lead being marked won, while we ask what it closed at.
+  const [winning, setWinning] = useState<Lead | null>(null);
+  const [wonValue, setWonValue] = useState("");
   const [form, setForm] = useState({
     company_name: "", contact_name: "", contact_email: "", contact_phone: "",
     website: "", source: "", value_estimate: "", notes: "", next_action_at: "",
@@ -164,6 +169,17 @@ export default function OutreachPage() {
 
   /** Optimistic, because a stage change is the most common action on this page. */
   const setStage = async (lead: Lead, stage: OutreachStage) => {
+    // Won needs the closed value first. The database refuses a won lead without
+    // one (outreach_won_has_value), because commission is computed from it, and
+    // nothing in the product ever set it -- so no lead could be marked won and no
+    // commission could ever be raised. The select is controlled by lead.stage, so
+    // returning here leaves it showing the old stage until the value is saved.
+    if (stage === "won" && lead.stage !== "won") {
+      setError("");
+      setWonValue(lead.value_estimate ? String(lead.value_estimate) : "");
+      setWinning(lead);
+      return;
+    }
     const prev = leads;
     setLeads((ls) => ls.map((l) => (l.id === lead.id ? { ...l, stage } : l)));
     const { error: err } = await supabase
@@ -181,6 +197,35 @@ export default function OutreachPage() {
       kind: "stage_change",
       body: `${stageLabel(lead.stage)} → ${stageLabel(stage)}`,
     });
+  };
+
+  const confirmWon = async (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!winning) return;
+    const value = Math.round(Number(wonValue));
+    if (!Number.isFinite(value) || value <= 0) {
+      setError("Enter the amount the deal closed at, in rupees.");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    const { error: err } = await supabase
+      .from("outreach_leads")
+      .update({ stage: "won", won_value: value, last_touch_at: new Date().toISOString() })
+      .eq("id", winning.id);
+    setSaving(false);
+    if (err) {
+      setError(friendlyError(err));
+      return;
+    }
+    await supabase.from("outreach_touches").insert({
+      lead_id: winning.id,
+      author_id: me,
+      kind: "stage_change",
+      body: `${stageLabel(winning.stage)} → ${stageLabel("won")} at ₹${value.toLocaleString("en-IN")}`,
+    });
+    setLeads((ls) => ls.map((l) => (l.id === winning.id ? { ...l, stage: "won", won_value: value } : l)));
+    setWinning(null);
   };
 
   const claim = async (lead: Lead) => {
@@ -389,6 +434,46 @@ export default function OutreachPage() {
           >
             {saving ? "Adding" : "Add to pipeline"}
           </button>
+        </form>
+      )}
+
+      {/* ---- mark as won -------------------------------------------------- */}
+      {winning && (
+        <form
+          onSubmit={confirmWon}
+          className="mt-6 rounded-[16px] border border-[var(--w-line-strong)] bg-[var(--w-raised)] p-6"
+        >
+          <label htmlFor="won_value" className={LABEL}>
+            What did {winning.company_name} close at?{" "}
+            <span className="font-semibold text-[var(--w-muted)]">(₹, the signed amount)</span>
+          </label>
+          <input
+            id="won_value"
+            type="number"
+            min={1}
+            value={wonValue}
+            onChange={(e) => setWonValue(e.target.value)}
+            onWheel={blurOnWheel}
+            className={`${FIELD} mt-1.5`}
+            autoFocus
+          />
+          <p className="mt-2 text-[12.5px] text-[var(--w-muted)]">Commission is worked out from this number.</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="min-h-[46px] rounded-[11px] bg-[var(--w-orange)] px-6 text-[14.5px] font-bold text-[#371448] transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {saving ? "Saving" : "Mark as won"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setWinning(null)}
+              className="min-h-[46px] rounded-[11px] border border-[var(--w-line-strong)] px-6 text-[14.5px] font-bold text-[var(--w-ink)]"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       )}
 
