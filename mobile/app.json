@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "DoItForMe",
+    "slug": "doitforme",
+    "scheme": "doitforme",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#341044",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "in.doitforme.app"
+    },
+    "android": {
+      "package": "in.doitforme.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#341044",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "36bb047c-0be5-402c-9abf-ef280ee8a6a0"
+      }
+    },
+    "owner": "infernalcentaur",
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow DoItForMe to use the camera to photograph your student ID.",
+          "photosPermission": "Allow DoItForMe to pick a photo of your student ID."
+        }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 168,
+          "resizeMode": "contain",
+          "backgroundColor": "#341044"
+        }
+      ]
+    ]
+  }
+}
