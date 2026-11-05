@@ -9,6 +9,7 @@
 // only responsible for rendering and operator actions.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { blurOnWheel } from "@/lib/inputs";
 
 type Status =
   | "invited"
@@ -543,6 +544,10 @@ export default function InnerCircleRound1Panel() {
                               max="100"
                               value={decisionScore[c.id] || ""}
                               onChange={(e) => setDecisionScore((m) => ({ ...m, [c.id]: e.target.value }))}
+                              // The score is what a candidate is advanced or rejected on. A focused
+                              // number input treats the wheel as increment, so scrolling past it
+                              // silently changed the score that got recorded.
+                              onWheel={blurOnWheel}
                               placeholder="Score"
                               className="w-16 rounded border border-white/10 bg-black/40 p-1 text-[11px] text-white placeholder:text-white/30"
                             />

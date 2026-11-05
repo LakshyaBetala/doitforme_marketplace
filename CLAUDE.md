@@ -324,8 +324,11 @@ and `proxy.ts` defaults it ON so a missing value cannot expose a broken site.
   to the next field, and the value silently counts down under the cursor — reaching
   negative numbers if they scroll far enough. It presents as "the amount changes to a
   random value". Every number input must carry `onWheel={blurOnWheel}` from
-  [lib/inputs.ts](lib/inputs.ts); there are **10** of them (was 8; re-counted
-  2026-10-13 and all ten carry the handler).
+  [lib/inputs.ts](lib/inputs.ts); there are **12** of them (re-counted
+  2026-11-06 by element, not by grep — a regex stopping at `>` cuts off at the
+  first `=>` in an onChange and misreports). The eleventh, the Round 1 candidate
+  **score** on the admin desk, arrived without it: scrolling past a focused score
+  silently changed the number a candidate was advanced or rejected on.
 
 - **`REVOKE ... FROM anon` does nothing; the grant comes from `PUBLIC`.** Postgres
   grants `EXECUTE` on every new function to `PUBLIC`, and `anon`/`authenticated`
