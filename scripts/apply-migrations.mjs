@@ -43,6 +43,15 @@ const client = new pg.Client({
 
 async function main() {
   await client.connect();
+  // DATABASE_URL is Supabase's transaction pooler, which hands one backend to
+  // many clients, so a session-level SET from an earlier script survives on it
+  // for whoever connects next. A `SET default_transaction_read_only = on` left
+  // by a read-only audit script did exactly that, and every migration on that
+  // backend failed with "cannot execute ... in a read-only transaction".
+  // RESET drops a leaked session value but keeps a database-level one, so if
+  // Supabase itself puts the project in read-only mode (disk full), this still
+  // refuses to migrate, which is what it should do.
+  await client.query("RESET default_transaction_read_only");
   const { rows: who } = await client.query(
     "select current_database() db, current_user usr, version() v"
   );
