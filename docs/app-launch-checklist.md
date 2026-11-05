@@ -14,7 +14,7 @@ Every number here was measured against production that night.
 | **Website** | Live at `30b2a4f`, 59/59 live checks. Includes Mouriyan's PR #4 (SES provider, waitlist-pool view) and his type fix, which `main` had been failing without. |
 | **Round 1 Sales** | Live end to end: both secrets set, both D1 tables present, portal answers `401 Not signed in`. |
 | **App** | Type-check clean, `expo-doctor` 20/20, Android bundle exports. Not yet built as an APK (needs an EAS login). |
-| **Tests** | 198/198 unit, 0 website type errors, DB guard tests 19/19 and 7/7. |
+| **Tests** | 198/198 unit, 0 website type errors, DB guard tests 19/19 and 7/7. Lint: 295 errors across 433 files, 248 of them `no-explicit-any`; none is a runtime bug. |
 | **Worker size** | 2326 KiB of 3072 (75.7%). |
 
 ---
@@ -30,24 +30,48 @@ timeout`. Supabase's built-in email answers instantly (2/hour, team only), so a
 35 s hang means **custom SMTP is configured but its server is not answering**.
 This breaks the website's code login too, not just the app.
 
-Supabase dashboard → **Authentication → SMTP Settings** (enable custom SMTP):
+Read from your Brevo account (via its API) on 2026-11-06: SMTP relay is
+**enabled**, the `doitforme.in` domain is **authenticated and verified**, and
+the free plan's 300/day limit is untouched (0 sends in the last 14 days).
+
+**a. Make an SMTP key in Brevo.** Brevo → *SMTP & API* → *SMTP* tab →
+*Generate a new SMTP key*. Copy it; Brevo shows it once. It is **not** the API
+key the website already uses.
+
+**b. Supabase dashboard → Authentication → SMTP Settings** → enable custom SMTP:
 
 | Field | Value |
 |---|---|
 | Host | `smtp-relay.brevo.com` |
 | Port | `587` |
-| Username | your Brevo **SMTP login** (Brevo → SMTP & API → SMTP tab) |
-| Password | a Brevo **SMTP key** from that tab — *not* the API key |
-| Sender email | `support@doitforme.in` |
+| Username | `b8d10e001@smtp-brevo.com` (your Brevo SMTP login, read from the account) |
+| Password | the SMTP key from step a |
+| Sender email | `noreply@doitforme.in` |
 | Sender name | `DoItForMe` |
 
-Then **Authentication → Rate Limits**: custom SMTP starts at 30 emails/hour;
-raise it to ~100. Brevo's free 300/day is shared with transactional mail and the
-Round 1 reminders; ~35 sign-ups a day plus logins fits.
+`noreply@` because it is the **only registered sender** in Brevo and every email
+recipients have opened came from it, so this works first time. Auth codes need
+no replies.
 
-**Test:** sign in on the website with "email code" — the code should arrive in
-seconds. Brevo is already authenticated for the domain (its DKIM records are
-live), so it will not land in spam.
+**c. Check the code templates.** *Authentication → Email Templates* → open
+**Magic Link** and **Confirm signup**. Both must contain `{{ .Token }}`. The app
+and the website ask for a **6-digit code**; a template that only has
+`{{ .ConfirmationURL }}` sends a link instead, and nobody can type it in.
+
+**d. Authentication → Rate Limits.** Custom SMTP starts at 30 emails/hour; raise
+it to ~100. Brevo's 300/day is shared with transactional mail and the Round 1
+reminders; ~35 sign-ups a day plus logins fits.
+
+**e. Test.** On the website, sign in with *email code*. The code should arrive
+within seconds.
+
+**f. Register `support@doitforme.in` as a Brevo sender** (*Senders, domains &
+IPs → Senders → Add a sender*). The website's transactional mail — KYC, payment,
+dispute, Round 1 reminders — is sent **from** `support@` (set in
+`wrangler.jsonc`), but only `noreply@` is registered, and no email has ever gone
+out from `support@`. An authenticated domain is probably enough (Brevo's own
+rejection text reads "validate your sender *or* authenticate your domain"), but
+this removes the doubt. Nobody is mid-round yet, so nothing has failed.
 
 > Want me to do it instead? Create a Supabase access token (Account → Access
 > Tokens), save it to `scratchpad/.supabase-token`, and I will set this through
@@ -119,11 +143,18 @@ Then save the new deploy token to `scratchpad/.cf-token`.
   Round 1 candidates are waitlist rows in Cloudflare D1 with an email + date of
   birth login and no account, so they cannot use the app. Today that is fine:
   Round 1 runs on the website. Say if it should come into the app.
-- **Storage before reopening.** Supabase Storage is at 731 MB of 1 GB. It has been
-  flat during maintenance (11 MB in the last month), but grew ~335 MB a month
-  before. That is about three weeks of headroom after the site reopens. Moving
-  uploads to Cloudflare R2 (10 GB free, no egress fees) should happen first;
-  R2 has to be enabled in the Cloudflare dashboard.
+- **Storage before reopening.** Supabase Storage is at 731 MB of 1 GB (gig
+  images 315 MB, resumes 310 MB, KYC IDs 105 MB). It has been flat during
+  maintenance (11 MB in the last month), but grew ~335 MB a month before — about
+  three weeks of headroom after the site reopens. Moving uploads to Cloudflare R2
+  (10 GB free, no egress fees) should happen first. I could not check whether R2
+  is enabled: the current Cloudflare token has no R2 permission. When you rotate
+  the tokens (step 5), give the new one **R2 Edit** as well and I can set it up.
+- **Applicant emails on the company task page.** `/company/task/[id]` shows each
+  applicant's email to the company ("College // email"). That is an easy way to
+  take the work off-platform, which is the abuse the chat moderation exists to
+  stop. Left as is — it is a product decision, and the page is held during
+  maintenance.
 
 ---
 
