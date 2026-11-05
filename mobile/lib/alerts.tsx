@@ -1,6 +1,6 @@
 import { router, usePathname } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text } from 'react-native';
+import { AppState, Animated, Pressable, StyleSheet, Text } from 'react-native';
 import { humanize } from './format';
 import { useSession } from './session';
 import { isDemo, supabase } from './supabase';
@@ -62,23 +62,34 @@ export function AlertsProvider({ children }: { children: React.ReactNode }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${uid}` }, (p: any) => {
         if (path.current.startsWith('/chat') || path.current.startsWith('/messages')) return;
         const m = p.new;
+        void refreshUnread();
         show({ title: 'New message', body: m.content || 'You have a new message.', go: () => router.push({ pathname: '/chat/[gigId]', params: { gigId: m.gig_id, other: m.sender_id } }) });
       })
       // 2 and 3. Status changes on tasks I posted or am working on.
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'gigs', filter: `poster_id=eq.${uid}` }, (p: any) => {
         if (p.new.status === p.old?.status) return;
+        void refreshUnread();
         const done = p.new.status === 'completed';
         show({ title: 'Task update', body: done ? `'${p.new.title}' completed. Funds released.` : `'${p.new.title}' is now ${humanize(p.new.status)}`, go: () => router.push(`/gig/${p.new.id}`) });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'gigs', filter: `assigned_worker_id=eq.${uid}` }, (p: any) => {
         if (p.new.status === p.old?.status) return;
+        void refreshUnread();
         const body = p.new.status === 'assigned' ? `You have been assigned to '${p.new.title}'!` : p.new.status === 'cancelled' ? `'${p.new.title}' was cancelled.` : `'${p.new.title}' is now ${humanize(p.new.status)}`;
         show({ title: 'Work update', body, go: () => router.push(`/gig/${p.new.id}`) });
       })
-      // The bell: a new row in `notifications` bumps the unread count.
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${uid}` }, () => void refreshUnread())
+      // No subscription on `notifications`: it is deliberately NOT in the supabase_realtime
+      // publication (supabase/migrations/20261003_realtime_publishes_only_what_is_watched.sql),
+      // because decoding ~45,000 inserts a day for it was the database's largest CPU cost and
+      // pushed log ingestion to 157% of the free tier. A listener here would never fire, so the
+      // bell would sit at a stale count. Instead the count refreshes on the events above, which
+      // are published and arrive alongside most notifications, and when the app is reopened.
       .subscribe();
+    const fg = AppState.addEventListener('change', (st) => {
+      if (st === 'active') void refreshUnread();
+    });
     return () => {
+      fg.remove();
       supabase.removeChannel(ch);
     };
   }, [uid, show, refreshUnread]);
