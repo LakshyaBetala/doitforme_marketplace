@@ -97,6 +97,13 @@ try {
     `INSERT INTO public.gigs (poster_id, title, description, price, status, payment_status) VALUES ($1,'t','t',300,'open','ESCROW_FUNDED')`, [u.id]), "refused");
   expect("poster creates a gig already assigned", await as("authenticated", poster,
     `INSERT INTO public.gigs (poster_id, title, description, price, status, assigned_worker_id) VALUES ($1,'t','t',300,'open',$2)`, [u.id, other]), "refused");
+
+  // ---- posting in a company's name --------------------------------------------
+  const { rows: [co] } = await c.query(`SELECT id, user_id FROM public.companies WHERE user_id IS NOT NULL AND user_id <> $1 LIMIT 1`, [u.id]);
+  expect("a student posts under someone else's company", await as("authenticated", poster,
+    `INSERT INTO public.gigs (poster_id, title, description, price, status, company_id) VALUES ($1,'t','t',300,'open',$2)`, [u.id, co.id]), "refused");
+  expect("a company posts under its own company", await as("authenticated", { sub: co.user_id, role: "authenticated", email: "owner@example.com" },
+    `INSERT INTO public.gigs (poster_id, title, description, price, status, company_id) VALUES ($1,'t','t',300,'open',$2)`, [co.user_id, co.id]), "allowed");
 } finally {
   await c.query("ROLLBACK").catch(() => {});
   await c.end();

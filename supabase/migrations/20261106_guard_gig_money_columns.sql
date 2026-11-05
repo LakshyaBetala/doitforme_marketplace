@@ -16,7 +16,8 @@
 --   * status flipped to 'completed' on a gig holding escrow. The escrow stays
 --     HELD, nothing queues a payout, and the only exit is a dispute the
 --     POSTER alone can open.
--- INSERT had the same gap: a gig could be created already funded and assigned.
+-- INSERT had the same gap: a gig could be created already funded and assigned,
+-- or posted under a company the poster does not own.
 --
 -- WHY A TRIGGER AND NOT COLUMN GRANTS. Two server routes legitimately write gig
 -- columns through the caller's own session, not the service role:
@@ -99,6 +100,13 @@ BEGIN
       WHEN NEW.delivery_link      IS NOT NULL                  THEN 'delivery_link'
       WHEN NEW.handshake_code     IS NOT NULL                  THEN 'handshake_code'
       WHEN NEW.dispute_reason     IS NOT NULL                  THEN 'dispute_reason'
+      -- Posting under a company you do not own. The INSERT policy checks only
+      -- poster_id, so anyone could put a task out in a real company's name.
+      -- The company post page sets company_id to the poster's own company, and
+      -- managed work is assigned through the service role, so neither is hit.
+      WHEN NEW.company_id IS NOT NULL AND NOT EXISTS (
+             SELECT 1 FROM public.companies co
+              WHERE co.id = NEW.company_id AND co.user_id = auth.uid()) THEN 'company_id'
       ELSE NULL
     END;
   END IF;
