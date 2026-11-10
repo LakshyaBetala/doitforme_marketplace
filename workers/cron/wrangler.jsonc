@@ -14,14 +14,16 @@
 	//
 	// The other two keep the exact UTC times they had in vercel.json so their
 	// behaviour is unchanged: 07:30 UTC (13:00 IST) and 09:00 UTC (14:30 IST).
+	// Cloudflare Workers Free caps at 5 cron triggers per account. The Round 1
+	// send-drain shares the nudge trigger rather than adding a 6th — see the
+	// SCHEDULE map in src/index.ts, which fans one trigger out to both routes.
 	"triggers": {
 		"crons": [
 			"*/15 * * * *",
 			"30 7 * * *",
 			"0 9 * * *",
 			"30 3 * * *",
-			"5,20,35,50 * * * *",
-			"10,25,40,55 * * * *"
+			"5,20,35,50 * * * *"
 		]
 	},
 
