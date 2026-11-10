@@ -25,24 +25,32 @@ export interface Env {
   CRON_SECRET: string;
 }
 
-/** cron expression -> the route it should call. Keep in sync with wrangler.jsonc. */
-const SCHEDULE: Record<string, string> = {
-  "*/15 * * * *": "/api/cron/auto-release",
-  "30 7 * * *": "/api/cron/nudge-posters",
-  "0 9 * * *": "/api/cron/process-payouts",
+/** cron expression -> the routes it should call. Keep in sync with wrangler.jsonc.
+ *
+ * One cron trigger can fan out to multiple routes. This is how both Round 1
+ * jobs (nudge + send-drain) share one trigger: Cloudflare Workers Free caps at
+ * 5 cron triggers per account, we were already at 5 before adding the send
+ * drain, and $5/month to raise that cap wasn't worth it when the two routes
+ * can run back-to-back on the same tick without contending. Each route checks
+ * its own kill switch and no-ops when it has nothing to do, so firing both
+ * every 15 minutes is cheap. */
+const SCHEDULE: Record<string, string[]> = {
+  "*/15 * * * *": ["/api/cron/auto-release"],
+  "30 7 * * *": ["/api/cron/nudge-posters"],
+  "0 9 * * *": ["/api/cron/process-payouts"],
   // Retention. The notification tables were 79% of a database that had gone 50%
   // over the free tier; capping the fan-out fixed the inflow, this is the
   // outflow. 03:30 UTC (09:00 IST) is the quietest hour.
-  "30 3 * * *": "/api/cron/prune-data",
-  // Inner Circle Round 1 reminders + expiry. Offset by 5 minutes from
-  // auto-release so the two don't contend for Worker CPU on the quarter hour;
-  // the actual campaign is 7 days so a 15-minute cadence is more than enough.
-  "5,20,35,50 * * * *": "/api/cron/inner-circle-round1-nudge",
-  // Inner Circle Round 1 invite drain. Offset by 10 minutes from nudge so the
-  // two Round 1 crons don't contend; the route is a no-op when
-  // ROUND1_AUTOSEND != "1", so leaving this scheduled permanently costs
-  // nothing but gives the operator a one-env-var kill switch.
-  "10,25,40,55 * * * *": "/api/cron/inner-circle-round1-send",
+  "30 3 * * *": ["/api/cron/prune-data"],
+  // Inner Circle Round 1: two routes sharing one trigger.
+  //   - nudge: fires reminder emails and flips expired candidates
+  //   - send:  drains the pending-invite queue when ROUND1_AUTOSEND=1
+  // Offset by 5 minutes from auto-release so the two don't contend for Worker
+  // CPU on the quarter hour.
+  "5,20,35,50 * * * *": [
+    "/api/cron/inner-circle-round1-nudge",
+    "/api/cron/inner-circle-round1-send",
+  ],
 };
 
 async function runJob(env: Env, path: string): Promise<void> {
@@ -75,12 +83,15 @@ async function runJob(env: Env, path: string): Promise<void> {
 
 export default {
   async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
-    const path = SCHEDULE[event.cron];
-    if (!path) {
-      console.error(`[cron] no route mapped for schedule "${event.cron}"`);
+    const paths = SCHEDULE[event.cron];
+    if (!paths || paths.length === 0) {
+      console.error(`[cron] no routes mapped for schedule "${event.cron}"`);
       return;
     }
-    ctx.waitUntil(runJob(env, path));
+    // Fan out to every route on this trigger. Promise.all rather than sequential
+    // keeps total CPU in-budget on ticks where both Round 1 routes fire, since
+    // each spends most of its time waiting on D1/HTTP, not on CPU.
+    ctx.waitUntil(Promise.all(paths.map((p) => runJob(env, p))));
   },
 
   // Manual trigger, so a job can be run on demand without waiting for its slot.
@@ -95,12 +106,11 @@ export default {
     }
 
     const job = url.searchParams.get("job");
-    const path = Object.values(SCHEDULE).find((p) => p.endsWith(`/${job}`));
+    const allPaths = Object.values(SCHEDULE).flat();
+    const path = allPaths.find((p) => p.endsWith(`/${job}`));
     if (!path) {
       return new Response(
-        `Unknown job. Try one of: ${Object.values(SCHEDULE)
-          .map((p) => p.split("/").pop())
-          .join(", ")}`,
+        `Unknown job. Try one of: ${allPaths.map((p) => p.split("/").pop()).join(", ")}`,
         { status: 400 }
       );
     }
