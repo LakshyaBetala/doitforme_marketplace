@@ -38,6 +38,11 @@ const SCHEDULE: Record<string, string> = {
   // auto-release so the two don't contend for Worker CPU on the quarter hour;
   // the actual campaign is 7 days so a 15-minute cadence is more than enough.
   "5,20,35,50 * * * *": "/api/cron/inner-circle-round1-nudge",
+  // Inner Circle Round 1 invite drain. Offset by 10 minutes from nudge so the
+  // two Round 1 crons don't contend; the route is a no-op when
+  // ROUND1_AUTOSEND != "1", so leaving this scheduled permanently costs
+  // nothing but gives the operator a one-env-var kill switch.
+  "10,25,40,55 * * * *": "/api/cron/inner-circle-round1-send",
 };
 
 async function runJob(env: Env, path: string): Promise<void> {

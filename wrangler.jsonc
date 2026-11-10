@@ -36,7 +36,15 @@
 		// Public URL of the template Google Sheet Round 1 candidates clone. The
 		// portal reads this via the /me endpoint and renders it as the "Open the
 		// template sheet" button.
-		"ROUND1_SALES_SHEET_TEMPLATE_URL": "https://docs.google.com/spreadsheets/d/1ILhCN7x1m1ZTQU4vwY7yFK4kOiPeI36jEyD85pyYfrs/edit?usp=sharing"
+		"ROUND1_SALES_SHEET_TEMPLATE_URL": "https://docs.google.com/spreadsheets/d/1ILhCN7x1m1ZTQU4vwY7yFK4kOiPeI36jEyD85pyYfrs/edit?usp=sharing",
+		// Round 1 invite-send automation. "0" (default) is paused: the drain
+		// cron at /api/cron/inner-circle-round1-send fires every 15 min but
+		// no-ops. Flip to "1" in the Cloudflare dashboard when you're ready to
+		// blast; flip back to "0" to pause. ROUND1_AUTOSEND_LIMIT caps per-tick
+		// so the send pace stays inside the email provider's rate limit —
+		// 75/tick × 4 ticks/hour = 300/hour, which is Brevo Starter's rate.
+		"ROUND1_AUTOSEND": "0",
+		"ROUND1_AUTOSEND_LIMIT": "75"
 		// Secrets set separately with `wrangler secret put`:
 		//   ROUND1_DOB_PEPPER       -- peppered into sha256(dob) so a D1 dump
 		//                              can't rainbow-table candidate DOBs
